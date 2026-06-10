@@ -41,7 +41,11 @@ export async function GET(req: Request) {
     for (const appt of upcomingAppts) {
       if (appt.staff_id) {
         const apptTime = format(new Date(appt.start_time), 'HH:mm');
-        const customerName = appt.customers?.full_name || 'Khách vãng lai';
+        // customers is typed as array by Supabase inference; cast to any to access full_name safely
+        const customersRel = appt.customers as any;
+        const customerName =
+          (Array.isArray(customersRel) ? customersRel[0]?.full_name : customersRel?.full_name) ||
+          'Khách vãng lai';
         
         await sendPushNotification(
           appt.staff_id,
