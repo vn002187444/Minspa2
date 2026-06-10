@@ -349,9 +349,9 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
       .eq('id', usePackageId)
       .single();
 
-    if (customerPkg?.treatment_packages) {
-      coveredServiceId = customerPkg.treatment_packages.service_id;
-    }
+    if (customerPkg?.treatment_packages?.length) {
+  coveredServiceId = customerPkg.treatment_packages[0].service_id;
+}
 
     // Process session deduction if remaining sessions > 0
     if (customerPkg && customerPkg.remaining_sessions > 0) {
