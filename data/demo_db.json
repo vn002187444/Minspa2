@@ -1,0 +1,1064 @@
+{
+  "users": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "role": "ADMIN",
+      "username": "admin",
+      "password_hash": "Admin",
+      "full_name": "Admin",
+      "cccd": null,
+      "created_at": "2026-06-08T07:19:56.415Z"
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000001",
+      "role": "STAFF",
+      "username": "staff1",
+      "password_hash": "Staff@1",
+      "full_name": "Thợ Makeup 1",
+      "cccd": "000000000001",
+      "created_at": "2026-06-08T07:19:56.415Z"
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000002",
+      "role": "STAFF",
+      "username": "staff2",
+      "password_hash": "staff2",
+      "full_name": "Phạm Hà Anh (Nail)",
+      "cccd": "123456789123",
+      "created_at": "2026-06-08T07:19:56.415Z"
+    },
+    {
+      "id": "00000000-0000-0000-0000-000000000003",
+      "role": "STAFF",
+      "username": "staff3",
+      "password_hash": "staff3",
+      "full_name": "Trần Quốc Bảo (Hair)",
+      "cccd": "987654321987",
+      "created_at": "2026-06-08T07:19:56.415Z"
+    }
+  ],
+  "services": [
+    {
+      "id": "1",
+      "name": "Gội nhanh",
+      "category": "Gội dưỡng sinh",
+      "description": "Gội nhanh",
+      "price": 65000,
+      "duration": 30,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "2",
+      "name": "Gội thư giãn",
+      "category": "Gội dưỡng sinh",
+      "description": "Gội thư giãn",
+      "price": 69000,
+      "duration": 30,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "3",
+      "name": "Gội dưỡng sinh CB1 - An Yên",
+      "category": "Gội dưỡng sinh",
+      "description": "Combo 1 An Yên",
+      "price": 149000,
+      "duration": 60,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "4",
+      "name": "Gội dưỡng sinh CB2 - Tầm Trung",
+      "category": "Gội dưỡng sinh",
+      "description": "Combo 2 Tầm Trung",
+      "price": 199000,
+      "duration": 70,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "5",
+      "name": "Gội dưỡng sinh CB3 - Chuyên Sâu",
+      "category": "Gội dưỡng sinh",
+      "description": "Combo 3 Chuyên Sâu",
+      "price": 279000,
+      "duration": 80,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "6",
+      "name": "Gội dưỡng sinh CB4 - Thượng Hạng",
+      "category": "Gội dưỡng sinh",
+      "description": "Combo 4 Thượng Hạng",
+      "price": 379000,
+      "duration": 90,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "7",
+      "name": "Massage Body 60p",
+      "category": "Massage",
+      "description": "Massage body 60 phút",
+      "price": 300000,
+      "duration": 60,
+      "is_active": true,
+      "discount_percentage": 5
+    },
+    {
+      "id": "8",
+      "name": "Massage Body 75p",
+      "category": "Massage",
+      "description": "Massage body 75 phút",
+      "price": 375000,
+      "duration": 75,
+      "is_active": true,
+      "discount_percentage": 5
+    },
+    {
+      "id": "9",
+      "name": "Massage Body 90p",
+      "category": "Massage",
+      "description": "Massage body 90 phút",
+      "price": 425000,
+      "duration": 90,
+      "is_active": true,
+      "discount_percentage": 5
+    },
+    {
+      "id": "10",
+      "name": "Massage Body 120p",
+      "category": "Massage",
+      "description": "Massage body 120 phút",
+      "price": 525000,
+      "duration": 120,
+      "is_active": true,
+      "discount_percentage": 5
+    },
+    {
+      "id": "11",
+      "name": "Chà gót chân lẻ",
+      "category": "Móng",
+      "description": "Chà gót chân lẻ",
+      "price": 120000,
+      "duration": 30,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "12",
+      "name": "Combo chà gót chân 5 bước chuyên sâu",
+      "category": "Móng",
+      "description": "Combo chà gót chân chuyên sâu 5 bước",
+      "price": 149000,
+      "duration": 45,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "13",
+      "name": "Nhặt da lẻ",
+      "category": "Móng",
+      "description": "Chăm sóc móng: Nhặt da lẻ",
+      "price": 45000,
+      "duration": 20,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "14",
+      "name": "Phá sơn gel",
+      "category": "Móng",
+      "description": "Chăm sóc móng: Phá sơn gel",
+      "price": 20000,
+      "duration": 15,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "15",
+      "name": "Tháo móng bột",
+      "category": "Móng",
+      "description": "Chăm sóc móng: Tháo móng bột",
+      "price": 40000,
+      "duration": 20,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "16",
+      "name": "Sơn gel",
+      "category": "Móng",
+      "description": "Chăm sóc móng: Sơn gel",
+      "price": 110000,
+      "duration": 30,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "17",
+      "name": "Nối móng úp",
+      "category": "Móng",
+      "description": "Chăm sóc móng: Nối móng úp",
+      "price": 150000,
+      "duration": 45,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "18",
+      "name": "Tráng gương / Mắt mèo",
+      "category": "Móng",
+      "description": "Chăm sóc móng: Tráng gương, mắt mèo",
+      "price": 150000,
+      "duration": 45,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "19",
+      "name": "Combo Sơn Gel + cắt da",
+      "category": "Deal",
+      "description": "Deal: Sơn gel + cắt da",
+      "price": 99000,
+      "duration": 45,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "20",
+      "name": "Combo Sơn Thạch + cắt da",
+      "category": "Deal",
+      "description": "Deal: Sơn thạch + cắt da",
+      "price": 119000,
+      "duration": 45,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "21",
+      "name": "Combo Mắt mèo + cắt da",
+      "category": "Deal",
+      "description": "Deal: Mắt mèo + cắt da",
+      "price": 139000,
+      "duration": 45,
+      "is_active": true,
+      "discount_percentage": 0
+    },
+    {
+      "id": "22",
+      "name": "Chà gót chân theo combo",
+      "category": "Deal",
+      "description": "Deal: Chà gót chân theo combo",
+      "price": 99000,
+      "duration": 30,
+      "is_active": true,
+      "discount_percentage": 0
+    }
+  ],
+  "customers": [
+    {
+      "id": "cust-1",
+      "full_name": "Vy Nguyễn",
+      "phone": "0912345678",
+      "created_at": "2026-06-08T07:19:56.415Z"
+    },
+    {
+      "id": "cust-2",
+      "full_name": "Lan Anh",
+      "phone": "0987654321",
+      "created_at": "2026-06-08T07:19:56.415Z"
+    },
+    {
+      "id": "cust-3",
+      "full_name": "Trâm Anh",
+      "phone": "0909090909",
+      "created_at": "2026-06-08T07:19:56.415Z"
+    },
+    {
+      "id": "09bdb081-4acc-4e2b-9fa6-5c75c2184ced",
+      "created_at": "2026-06-08T08:04:34.245Z",
+      "full_name": "Sơn",
+      "phone": "0932149249"
+    }
+  ],
+  "appointments": [
+    {
+      "id": "appt-0-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-08T12:00:00.000Z",
+      "end_time": "2026-06-08T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-08T12:00:00.000Z"
+    },
+    {
+      "id": "appt-0-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-08T15:00:00.000Z",
+      "end_time": "2026-06-08T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-08T15:00:00.000Z"
+    },
+    {
+      "id": "appt-1-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-07T12:00:00.000Z",
+      "end_time": "2026-06-07T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-07T12:00:00.000Z"
+    },
+    {
+      "id": "appt-1-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-07T15:00:00.000Z",
+      "end_time": "2026-06-07T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-07T15:00:00.000Z"
+    },
+    {
+      "id": "appt-1-3",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-07T18:00:00.000Z",
+      "end_time": "2026-06-07T19:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 300000,
+      "commission_amount": 45000,
+      "tip_amount": 50000,
+      "created_at": "2026-06-07T18:00:00.000Z"
+    },
+    {
+      "id": "appt-2-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-06T12:00:00.000Z",
+      "end_time": "2026-06-06T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-06T12:00:00.000Z"
+    },
+    {
+      "id": "appt-2-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-06T15:00:00.000Z",
+      "end_time": "2026-06-06T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-06T15:00:00.000Z"
+    },
+    {
+      "id": "appt-2-3",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-06T18:00:00.000Z",
+      "end_time": "2026-06-06T19:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 300000,
+      "commission_amount": 45000,
+      "tip_amount": 50000,
+      "created_at": "2026-06-06T18:00:00.000Z"
+    },
+    {
+      "id": "appt-3-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-05T12:00:00.000Z",
+      "end_time": "2026-06-05T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-05T12:00:00.000Z"
+    },
+    {
+      "id": "appt-3-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-05T15:00:00.000Z",
+      "end_time": "2026-06-05T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-05T15:00:00.000Z"
+    },
+    {
+      "id": "appt-3-3",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-05T18:00:00.000Z",
+      "end_time": "2026-06-05T19:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 300000,
+      "commission_amount": 45000,
+      "tip_amount": 50000,
+      "created_at": "2026-06-05T18:00:00.000Z"
+    },
+    {
+      "id": "appt-4-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-04T12:00:00.000Z",
+      "end_time": "2026-06-04T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-04T12:00:00.000Z"
+    },
+    {
+      "id": "appt-4-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-04T15:00:00.000Z",
+      "end_time": "2026-06-04T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-04T15:00:00.000Z"
+    },
+    {
+      "id": "appt-4-3",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-04T18:00:00.000Z",
+      "end_time": "2026-06-04T19:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 300000,
+      "commission_amount": 45000,
+      "tip_amount": 50000,
+      "created_at": "2026-06-04T18:00:00.000Z"
+    },
+    {
+      "id": "appt-5-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-03T12:00:00.000Z",
+      "end_time": "2026-06-03T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-03T12:00:00.000Z"
+    },
+    {
+      "id": "appt-5-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-03T15:00:00.000Z",
+      "end_time": "2026-06-03T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-03T15:00:00.000Z"
+    },
+    {
+      "id": "appt-5-3",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-03T18:00:00.000Z",
+      "end_time": "2026-06-03T19:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 300000,
+      "commission_amount": 45000,
+      "tip_amount": 50000,
+      "created_at": "2026-06-03T18:00:00.000Z"
+    },
+    {
+      "id": "appt-6-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-02T12:00:00.000Z",
+      "end_time": "2026-06-02T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-02T12:00:00.000Z"
+    },
+    {
+      "id": "appt-6-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-02T15:00:00.000Z",
+      "end_time": "2026-06-02T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-02T15:00:00.000Z"
+    },
+    {
+      "id": "appt-6-3",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-02T18:00:00.000Z",
+      "end_time": "2026-06-02T19:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 300000,
+      "commission_amount": 45000,
+      "tip_amount": 50000,
+      "created_at": "2026-06-02T18:00:00.000Z"
+    },
+    {
+      "id": "appt-7-1",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "start_time": "2026-06-01T12:00:00.000Z",
+      "end_time": "2026-06-01T13:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 149000,
+      "commission_amount": 22350,
+      "tip_amount": 50000,
+      "created_at": "2026-06-01T12:00:00.000Z"
+    },
+    {
+      "id": "appt-7-2",
+      "customer_id": "cust-3",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-01T15:00:00.000Z",
+      "end_time": "2026-06-01T16:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 279000,
+      "commission_amount": 41850,
+      "tip_amount": 20000,
+      "created_at": "2026-06-01T15:00:00.000Z"
+    },
+    {
+      "id": "appt-7-3",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-01T18:00:00.000Z",
+      "end_time": "2026-06-01T19:00:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 300000,
+      "commission_amount": 45000,
+      "tip_amount": 50000,
+      "created_at": "2026-06-01T18:00:00.000Z"
+    },
+    {
+      "id": "appt-pending-1",
+      "customer_id": "cust-1",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-08T14:30:00.000Z",
+      "end_time": "2026-06-08T15:30:00.000Z",
+      "status": "CONFIRMED",
+      "total_amount": 149000,
+      "commission_amount": 0,
+      "tip_amount": 0,
+      "created_at": "2026-06-08T07:19:56.416Z"
+    },
+    {
+      "id": "appt-pending-2",
+      "customer_id": "cust-2",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "start_time": "2026-06-08T16:00:00.000Z",
+      "end_time": "2026-06-08T17:00:00.000Z",
+      "status": "PENDING_RANDOM",
+      "total_amount": 300000,
+      "commission_amount": 0,
+      "tip_amount": 0,
+      "created_at": "2026-06-08T07:19:56.416Z"
+    },
+    {
+      "id": "41b1606a-357f-403a-b48c-be4965be8384",
+      "created_at": "2026-06-08T08:04:34.248Z",
+      "customer_id": "09bdb081-4acc-4e2b-9fa6-5c75c2184ced",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "start_time": "2026-06-08T02:30:00.000Z",
+      "end_time": "2026-06-08T03:15:00.000Z",
+      "status": "COMPLETED",
+      "total_amount": 234000,
+      "commission_amount": 46800,
+      "tip_amount": 0,
+      "is_package_session": false,
+      "use_package_id": null
+    }
+  ],
+  "appointment_services": [
+    {
+      "appointment_id": "appt-0-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-0-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-1-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-1-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-1-3",
+      "service_id": "7"
+    },
+    {
+      "appointment_id": "appt-2-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-2-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-2-3",
+      "service_id": "7"
+    },
+    {
+      "appointment_id": "appt-3-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-3-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-3-3",
+      "service_id": "7"
+    },
+    {
+      "appointment_id": "appt-4-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-4-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-4-3",
+      "service_id": "7"
+    },
+    {
+      "appointment_id": "appt-5-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-5-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-5-3",
+      "service_id": "7"
+    },
+    {
+      "appointment_id": "appt-6-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-6-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-6-3",
+      "service_id": "7"
+    },
+    {
+      "appointment_id": "appt-7-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-7-2",
+      "service_id": "5"
+    },
+    {
+      "appointment_id": "appt-7-3",
+      "service_id": "7"
+    },
+    {
+      "appointment_id": "appt-pending-1",
+      "service_id": "3"
+    },
+    {
+      "appointment_id": "appt-pending-2",
+      "service_id": "7"
+    },
+    {
+      "id": "7d87b3f0-a693-4c5e-98de-f6d62cf60012",
+      "created_at": "2026-06-08T08:04:34.249Z",
+      "appointment_id": "41b1606a-357f-403a-b48c-be4965be8384",
+      "service_id": "1"
+    },
+    {
+      "id": "75b87a36-f502-4bab-9224-53fdf61d737d",
+      "created_at": "2026-06-08T08:04:34.249Z",
+      "appointment_id": "41b1606a-357f-403a-b48c-be4965be8384",
+      "service_id": "14"
+    },
+    {
+      "id": "af1865be-89f1-4348-8458-198159546fc9",
+      "created_at": "2026-06-08T08:06:40.822Z",
+      "appointment_id": "41b1606a-357f-403a-b48c-be4965be8384",
+      "service_id": "3"
+    }
+  ],
+  "reviews": [
+    {
+      "id": "rev-appt-1-1",
+      "appointment_id": "appt-1-1",
+      "rating": 5,
+      "quick_tags": [
+        "Phục vụ chu đáo",
+        "Tay nghề cao",
+        "Không gian sạch sẽ"
+      ],
+      "created_at": "2026-06-07T13:00:00.000Z"
+    },
+    {
+      "id": "rev-appt-2-1",
+      "appointment_id": "appt-2-1",
+      "rating": 5,
+      "quick_tags": [
+        "Phục vụ chu đáo",
+        "Tay nghề cao",
+        "Không gian sạch sẽ"
+      ],
+      "created_at": "2026-06-06T13:00:00.000Z"
+    },
+    {
+      "id": "rev-appt-3-1",
+      "appointment_id": "appt-3-1",
+      "rating": 5,
+      "quick_tags": [
+        "Phục vụ chu đáo",
+        "Tay nghề cao",
+        "Không gian sạch sẽ"
+      ],
+      "created_at": "2026-06-05T13:00:00.000Z"
+    },
+    {
+      "id": "rev-appt-4-1",
+      "appointment_id": "appt-4-1",
+      "rating": 5,
+      "quick_tags": [
+        "Phục vụ chu đáo",
+        "Tay nghề cao",
+        "Không gian sạch sẽ"
+      ],
+      "created_at": "2026-06-04T13:00:00.000Z"
+    },
+    {
+      "id": "rev-appt-5-1",
+      "appointment_id": "appt-5-1",
+      "rating": 5,
+      "quick_tags": [
+        "Phục vụ chu đáo",
+        "Tay nghề cao",
+        "Không gian sạch sẽ"
+      ],
+      "created_at": "2026-06-03T13:00:00.000Z"
+    },
+    {
+      "id": "rev-appt-6-1",
+      "appointment_id": "appt-6-1",
+      "rating": 5,
+      "quick_tags": [
+        "Phục vụ chu đáo",
+        "Tay nghề cao",
+        "Không gian sạch sẽ"
+      ],
+      "created_at": "2026-06-02T13:00:00.000Z"
+    },
+    {
+      "id": "rev-appt-7-1",
+      "appointment_id": "appt-7-1",
+      "rating": 5,
+      "quick_tags": [
+        "Phục vụ chu đáo",
+        "Tay nghề cao",
+        "Không gian sạch sẽ"
+      ],
+      "created_at": "2026-06-01T13:00:00.000Z"
+    }
+  ],
+  "attendance": [
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-08",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-08",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-08T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-08",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-08",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-08T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-08",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-08",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-08T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-07",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-07",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-07T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-07",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-07",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-07T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-07",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-07",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-07T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-06",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-06",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-06T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-06",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-06",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-06T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-06",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-06",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-06T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-05",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-05",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-05T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-05",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-05",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-05T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-05",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-05",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-05T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-04",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-04",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-04T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-04",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-04",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-04T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-04",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-04",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-04T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-03",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-03",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-03T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-03",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-03",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-03T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-03",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-03",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-03T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-02",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-02",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-02T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-02",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-02",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-02T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-02",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-02",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-02T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000001-2026-06-01",
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "date": "2026-06-01",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-01T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000002-2026-06-01",
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "date": "2026-06-01",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-01T08:30:00.000"
+    },
+    {
+      "id": "att-00000000-0000-0000-0000-000000000003-2026-06-01",
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "date": "2026-06-01",
+      "status": "PRESENT",
+      "check_in_time": "2026-06-01T08:30:00.000"
+    }
+  ],
+  "treatment_packages": [
+    {
+      "id": "pkg-1",
+      "name": "Combo 5 Buổi Gội An Yên",
+      "service_id": "3",
+      "buy_count": 5,
+      "free_count": 1,
+      "price": 650000,
+      "total_sessions": 6,
+      "created_at": "2026-06-08T07:19:56.415Z"
+    },
+    {
+      "id": "pkg-2",
+      "name": "Combo 10 Buổi Massage Body 60p",
+      "service_id": "7",
+      "buy_count": 10,
+      "free_count": 2,
+      "price": 2500000,
+      "total_sessions": 12,
+      "created_at": "2026-06-08T07:19:56.415Z"
+    }
+  ],
+  "customer_packages": [],
+  "package_usage_logs": [],
+  "blogs": [
+    {
+      "id": "blog-1",
+      "title": "Bí quyết giữ móng tay sơn gel bền đẹp mịn màng",
+      "slug": "bi-quyet-giu-mong-tay-son-gel-ben-dep-min-mang",
+      "summary": "Tìm hiểu bí mật chăm sóc và gìn giữ bộ móng sơn gel giữ phom bền màu lâu trôi từ các chuyên viên tại Min Nail & Hair.",
+      "content": "Sở hữu một bộ móng **sơn gel bền đẹp** là mong muốn của tất cả chị em phụ nữ. Tuy nhiên, không phải ai cũng biết cách dưỡng móng đúng cách sau khi làm tại tiệm. Dưới đây là các bí quyết vàng từ **Min Nail & Hair** giúp móng của bạn luôn bền màu, không sứt mẻ:\n\n### 1. Không cậy lớp sơn gel bằng tay\nHành động tự cạo hoặc bóc sơn gel tại nhà có thể làm bong tróc lớp sừng bảo vệ của móng tự nhiên, khiến móng mỏng và yếu đi. Hãy ghé ngay tiệm **sơn gel Trường Thọ** của chúng tôi để được phá sơn đúng cách bằng nước tháo móng chuyên dụng.\n\n### 2. Sử dụng dầu dưỡng viền móng (Cuticle Oil) mỗi ngày\nDầu dưỡng cung cấp độ ẩm cần thiết giúp móng chắc khỏe, giảm độ giòn gãy. Điều này cực kỳ quan trọng khi bạn thường xuyên làm móng tại các địa điểm uy tín như **làm móng Lavita Charm**.\n\n### 3. Đeo găng tay khi làm việc nhà\nChất tẩy rửa trong nước rửa chén, bột giặt vô cùng gây hại cho màng gel bảo vệ móng. Đeo găng tay giúp móng của bạn giữ được lớp bóng gương tuyệt mĩ.\n\nĐừng quên đặt lịch hẹn làm đẹp ngay tại [khu vực đặt lịch của Min Salon](/booking) để cập nhật những mẫu móng xu hướng mới nhất!",
+      "image_url": "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop",
+      "created_at": "2026-06-06T07:52:01.999Z"
+    },
+    {
+      "id": "blog-2",
+      "title": "Lợi ích tuyệt vời của Gội dưỡng sinh thảo dược",
+      "slug": "loi-ich-tuyet-voi-cua-goi-duong-sinh-thao-duoc",
+      "summary": "Gội dưỡng sinh không chỉ làm sạch tóc mà còn giúp đả thông kinh lạc, giảm stress và kích thích tuần hoàn máu hiệu quả.",
+      "content": "Trong nhịp sống bận rộn ngày nay, **gội dưỡng sinh thảo dược** đã trở thành sự lựa chọn ưu việt cho những ai muốn giải tỏa stress và chăm sóc sức khỏe chủ động từ thiên nhiên. Tại **Min Nail & Hair**, quy trình gội dưỡng sinh được kết hợp tinh tế giữa nghệ thuật massage bấm huyệt cổ truyền và các thảo mộc quý hiếm vùng Tây Bắc.\n\n### 1. Giảm căng thẳng đầu óc và ngủ sâu hơn\nNhững động tác day ấn huyệt nhẹ nhàng lên vùng thái dương, bách hội và phong trì kích thích hệ thần kinh trung ương giải phóng Endorphin (hormone hạnh phúc), làm tan biến lo âu, cải thiện rõ rệt chứng mất ngủ thâm niên.\n\n### 2. Đả thông kinh lạc vai gáy\nHầu hết nhân viên văn phòng đều gặp các hội chứng đau cơ vai gáy, cổ tê bì. Liệu trình gội chuyên sâu của chúng tôi tại cơ sở **gội dưỡng sinh Thủ Đức** giúp kéo giãn cơ vai gáy, lưu thông khí huyết huyết áp lý tưởng.\n\n### 3. Giúp tóc suôn mượt tự nhiên\nTránh xa các hóa chất tạo bọt công nghiệp, nước gội thảo dược tại Min được nấu thủ công hoàn toàn từ bồ kết, vỏ bưởi, sả chanh, hà thủ ô và hương nhu giúp nang tóc khỏe mạnh từ sâu bên trong, kích mọc tóc con cực nhanh.\n\n👉 Bạn cảm thấy mệt mỏi sau ngày dài làm việc? Hãy nhanh tay [đặt lịch dịch vụ gội dưỡng sinh](/booking) để tìm lại sự thư thái tuyệt vời cho cơ thể và tâm trí!",
+      "image_url": "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop",
+      "created_at": "2026-06-07T07:52:01.999Z"
+    },
+    {
+      "id": "blog-3",
+      "title": "Đón hè rạng rỡ với các ưu đãi combo cực hời",
+      "slug": "don-he-rang-ro-voi-cac-uu-dai-combo-cuc-hoi",
+      "summary": "Chào hè năng động, Min Nail & Hair tung ra loạt chương trình combo tích hợp ưu đãi gội dưỡng sâu và sơn thạch sang chảnh.",
+      "content": "Không khí mùa hè náo nhiệt đã gõ cửa! Đây là thời điểm lý tưởng để F5 bản thân rạng rỡ, tự tin hơn. Nhằm tri ân sự đồng hành của quý khách hàng, **Min Nail & Hair** ra mắt chương trình khuyến mãi hè lớn nhất năm:\n\n### Combo Làm Đẹp Sáng Da Đẹp Dáng\n*   **Combo Móng Xinh Trọn Gói**: Cắt da + sơn thạch/sơn gel Hàn Quốc chống trầy cao cấp với mức giá ưu đãi trải nghiệm chỉ **99.000đ** hoặc **119.000đ**.\n*   **Combo Gội Trị Liệu Trọn Vẹn**: Gội dưỡng sinh CB3 kết hợp chườm mắt thảo mộc, massage cổ vai gáy và ngâm chân thảo dược chỉ từ **279.000đ**.\n\nHãy tranh thủ rủ ngay cô bạn thân cùng đặt lịch thư giãn tại [Min Salon](/booking) để không bỏ lỡ ngày hè tươi vui tràn đầy năng lượng bạn nhé!",
+      "image_url": "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&auto=format&fit=crop",
+      "created_at": "2026-06-07T19:52:01.999Z"
+    },
+    {
+      "id": "blog-4",
+      "title": "Chăm sóc tóc chuyên sâu: Phục hồi hư tổn từ tế bào mầm tóc",
+      "slug": "cham-soc-toc-chuyen-sau-phuc-hoi-hu-ton-tu-te-bao-mam-toc",
+      "summary": "Hiểu rõ nguyên lý sinh trưởng của tóc và các bước massage, hấp dầu dưỡng chất chuyên biệt để tái tạo mái tóc suôn mượt khỏe khoắn tự nhiên.",
+      "content": "Mái tóc khỏe đẹp suôn mượt là chiếc vương miện kiêu hãnh của mỗi người. Nhưng khói bụi, ô nhiễm và các loại hóa chất uốn, duỗi, nhuộm thường xuyên có thể phá hủy lớp biểu bì bảo vệ bên ngoài, khiến tóc xơ xác và chẻ ngọn gãy rụng thảm hại. Hãy cùng **Min Nail & Hair** khám phá phương pháp phục hồi chuyên sâu tận gốc tế bào mầm tóc nhé!\n\n### 1. Nuôi dưỡng từ da dầu khỏe mạnh\nDa đầu chính là 'đất mẹ' để tóc sinh trưởng. Liệu pháp **gội dưỡng sinh thảo dược Thủ Đức** của chúng tôi kết hợp xông hơi thảo mộc nhẹ nhàng giúp mở rộng chân tóc, đẩy sạch bụi mịn và bã nhờn tích tụ sâu trong biểu bì, chuẩn bị điều kiện tốt nhất để hấp thụ dưỡng chất cốt khí.\n\n### 2. Ưu tiên các dưỡng chất tự nhiên hữu cơ\nTránh xa dầu gội chứa nhiều hoạt chất Sulfates làm mất đi lớp dầu ẩm tự nhiên. Tại Min, các loại mặt nạ tóc dưỡng sâu từ bơ hạt mỡ, tinh dầu bưởi và dầu dừa hữu cơ ép lạnh giúp thấm sâu dồi dào, vá lành những trục keratin đứt gãy bên trong sợi tóc.\n\n### 3. Massage đảo huyệt đả thông tuần hoàn máu\nKhi các mạch máu li ti dưới da đầu được mát-xa đả thông và lưu thông khí huyết tốt hơn, các tế bào mầm tóc ở nang tóc sẽ nhận được nhiều dưỡng chất hơn từ cơ thể, kích thích sợi tóc mọc dầy đen nháy, giảm thiểu 80% gãy rụng sau một liệu trình.\n\nĐặt lịch chăm chuốt tóc ngay tại [Min Salon](/booking) hôm nay để lấy lại vẻ bóng mượt nguyên bản bồng bềnh tự tin quyến rũ!",
+      "image_url": "https://images.unsplash.com/photo-1562322140-8baeececf3df?w=800&auto=format&fit=crop",
+      "created_at": "2026-06-07T07:52:01.999Z"
+    },
+    {
+      "id": "blog-5",
+      "title": "Nghệ thuật đắp móng gel đỉnh cao và xu hướng móng thu hút",
+      "slug": "nghe-thuat-dap-mong-gel-dinh-cao-va-xu-huong-mong-thu-hut",
+      "summary": "Điểm qua những kiểu thiết kế móng mộc mạc, thanh nhã và sang quý đang dẫn đầu xu hướng làm móng tại Lavita Charm và khu vực lân cận.",
+      "content": "Đôi bàn tay là nơi thể hiện trọn vẹn sự tinh tế và khí chất của người phụ nữ hiện đại. Nếu bạn đang tìm kiếm ý tưởng để tô điểm cho bộ móng của mình, **Nghệ thuật đắp móng gel** chính là câu trả lời kỳ ảo nhất hiện nay. Hãy cùng điểm qua những dải màu mọc mạc nhưng vô cùng tinh xảo đang 'làm mưa làm gió' tại **Min Nail & Hair**:\n\n### 1. Sơn thạch ombre nhẹ nhàng sương khói\nLớp sơn thạch trong veo như ngọc, ửng hồng duy dáng từ viền trong móng lan tỏa dịu dàng ra ngoài. Phong cách này mang đến vẻ đẹp thuần khiết, trong veo và vô cùng có duyên, cực kỳ tôn nước da của các chị em phụ nữ Á Đông.\n\n### 2. Xu hướng đính đá tối giản sang quý\nQua rồi thời đắp bột dầy cộp nặng nề, xu hướng hiện tại là phom móng mỏng nhẹ tự nhiên kết hợp đính vài viên đá Swarovski nhỏ lấp lánh như sương mai hoặc vẽ cọ mảnh mềm mại. Rất phù hợp cho các buổi tiệc cưới hỏi sang trọng hoặc đi làm hàng ngày tại văn phòng.\n\n### 3. Sơn tráng gương / mắt mèo ánh trăng kì diệu\nMắt mèo kim cương hay mắt mèo cầu vồng khi phản chiếu ánh đèn tạo nên những vệt sáng lóng lánh thay sắc theo từng góc di chuyển của bàn tay. Sự huyền ảo và sang trọng bậc nhất này đang cực kỳ được ưa chuộng tại tiệm **làm móng Lavita Charm**.\n\nĐừng ngần ngại F5 cho đôi tay quý phái của mình. Hãy click ngay vào [luồng Đặt hẹn của Min Nail & Hair](/booking) để chọn cho mình một mẫu thiết kế độc quyền từ bàn tay tài hoa của các thợ móng nhà Min nhé!",
+      "image_url": "https://images.unsplash.com/photo-1519014816548-bf5fe059798b?w=800&auto=format&fit=crop",
+      "created_at": "2026-06-08T07:52:01.999Z"
+    }
+  ],
+  "attendance_reminders_log": [],
+  "random_booking_reminders_log": [
+    {
+      "staff_id": "00000000-0000-0000-0000-000000000001",
+      "appointment_id": "appt-pending-2",
+      "sent_at": "2026-06-08T08:39:40.306Z"
+    },
+    {
+      "staff_id": "00000000-0000-0000-0000-000000000002",
+      "appointment_id": "appt-pending-2",
+      "sent_at": "2026-06-08T08:39:40.306Z"
+    },
+    {
+      "staff_id": "00000000-0000-0000-0000-000000000003",
+      "appointment_id": "appt-pending-2",
+      "sent_at": "2026-06-08T08:39:40.306Z"
+    }
+  ],
+  "unaccepted_booking_reminders_log": [],
+  "uncompleted_booking_reminders_log": []
+}
