@@ -144,7 +144,7 @@ export async function submitBooking(formData: any) {
         let rawTotal = 0;
         dbServices.forEach((s: any) => {
           let svcPrice = s.price || 0;
-          if (custPkg && custPkg.treatment_packages && String(s.id) === String(custPkg.treatment_packages.service_id)) {
+          if (custPkg?.treatment_packages?.length && String(s.id) === String(custPkg.treatment_packages[0].service_id)) {
             svcPrice = 0; // 0đ for package treatment session service!
           }
           rawTotal += svcPrice;
