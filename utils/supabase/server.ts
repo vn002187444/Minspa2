@@ -9,13 +9,14 @@ import { createClient as createRealClient } from '@supabase/supabase-js';
  * because we use a custom `users` table for authentication.
  */
 export const createClient = async () => {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url || !key) {
-    throw new Error(
-      '[Supabase] Missing environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) must be set.'
-    );
+  if (!supabaseUrl) {
+    throw new Error('Supabase URL (NEXT_PUBLIC_SUPABASE_URL) is missing. Please set it in your .env file.');
+  }
+  if (!supabaseKey) {
+    throw new Error('Supabase KEY is missing. Set either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.');
   }
 
   const client = createRealClient(url, key);
