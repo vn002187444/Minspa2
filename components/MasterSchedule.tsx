@@ -234,13 +234,15 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     setIsLoading(false);
   }
 
-  // Generate 30-minute intervals: 09:00, 09:30, etc.
+  // Generate 30-minute intervals: 09:00, 09:30, …, 20:30
   const timeSlots: string[] = [];
   for (let hour = START_HOUR; hour < END_HOUR; hour++) {
     timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
     timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
   }
+  // Include final hour slots
   timeSlots.push(`${END_HOUR}:00`);
+  timeSlots.push(`${END_HOUR}:30`);
 
   // Pre-parse the start/end minutes for optimization to avoid redundant parsing inside high-density slots
   const parsedAppointments = useMemo(() => {
