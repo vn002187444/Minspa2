@@ -19,34 +19,19 @@ function slugify(text: string) {
   return text
     .normalize('NFD')                     // converts to unicode sequence
     .replace(/[\u0300-\u036f]/g, '')     // removes accent diacritics
-    .replace(/[đĐ]/g, 'd')               // handles special Vietnamese characters
+    .replace(/đ/g, 'd')                  // handles lowercase Vietnamese d
+    .replace(/Đ/g, 'D')                  // handles uppercase Vietnamese D
     .replace(/&/g, '')
     .replace(/[^a-zA-Z0-9\s-]/g, '')     // retains only alphanumeric, spaces, and hyphens
     .trim()
     .replace(/\s+/g, '-');               // replaces spaces with hyphens
 }
 
-// Enhanced fallback services structured to align with the physical flyers
-const MOCK_SERVICES = [
-  { id: '1', name: 'Gội nhanh (30 phút)', category: 'Gội dưỡng sinh', price: 65000, duration: 30, description: 'Tẩy trang, rửa mặt, gội đầu 2 nước với dầu gội thảo dược, massage đầu thư giãn nhẹ nhàng.' },
-  { id: '2', name: 'Gội Dưỡng Sinh CB1 - AN YÊN (60 phút)', category: 'Gội dưỡng sinh', price: 149000, duration: 60, description: 'Chườm túi thảo dược (chân, bụng, mắt), massage 2 tay, massage cổ-vai-gáy, tẩy trang, rửa mặt, massage mặt cơ bản, đắp mặt nạ thiên nhiên, gội đầu nước canh thảo dược độc quyền, xả tóc thảo dược và sấy tóc tạo kiểu.' },
-  { id: '3', name: 'Gội Dưỡng Sinh CB2 (70 phút)', category: 'Gội dưỡng sinh', price: 199000, duration: 70, description: 'Kế thừa CB1 kèm theo: hút bã nhờn, tẩy tế bào chết da mặt chuyên sâu, massage mặt chuyên sâu giúp nâng cơ, đắp mặt nạ thiên nhiên cao cấp và xông dập thảo dược.' },
-  { id: '4', name: 'Gội Dưỡng Sinh CB3 (80 phút)', category: 'Gội dưỡng sinh', price: 259000, duration: 80, description: 'Trị liệu tuyệt vời kèm massage cổ-vai-gáy nâng cao bằng đá nóng, massage mặt chuyên sâu chuyên nghiệp, tẩy tế bào chết da đầu giúp trị gàu rụng tóc.' },
-  { id: '5', name: 'Gội Dưỡng Sinh CB4 - ĐẶC BIỆT (90 phút)', category: 'Gội dưỡng sinh', price: 379000, duration: 90, description: 'Trải nghiệm đỉnh cao: Gồm toàn bộ quy trình chăm sóc tóc chuyên sâu, kết hợp 30 phút Massage Body đá nóng đả thông kinh lạc toàn thân, mặt nạ collagen tươi.' },
-  { id: '6', name: 'Combo chà gót chân 5 bước chuyên sâu', category: 'Chà Gót Chân', price: 149000, duration: 45, description: 'Bước 1: Ngâm chân thảo dược ấm áp. Bước 2: Tẩy tế bào chết gót + 5p massage chân kích thích huyệt đạo. Bước 3: Ủ mềm gót xơ cứng. Bước 4: Chà gót sạch mịn hoàn hảo. Bước 5: Thoa kem dưỡng chuyên sâu phục hồi.' },
-  { id: '7', name: 'Massage Body Thư Giãn (60 phút)', category: 'Massage', price: 300000, duration: 60, description: 'Ấn huyệt trị liệu, đắp đá nóng Tây Tạng đả thông kinh lạc, đánh tan mọi nhức mỏi vùng lưng, vai gáy. Giảm ngay 5% khi book online.' },
-  { id: '8', name: 'Massage Body Trị Liệu (90 phút)', category: 'Massage', price: 425000, duration: 90, description: 'Liệu trình 90 phút phục hồi năng lượng toàn diện kết hợp massage tinh dầu thảo dược và đá nóng thư giãn.' },
-  { id: '9', name: 'Combo Sơn Gel + Cắt Da', category: 'Deal Chấn Động', price: 99000, duration: 40, description: 'Trọn gói làm sạch da tay + tạo phom móng mượt mà + sơn gel cao cấp tự chọn màu, bảo hành lên tới 7 ngày.' },
-  { id: '10', name: 'Combo Sơn Thạch + Cắt Da', category: 'Deal Chấn Động', price: 119000, duration: 45, description: 'Làm sạch biểu bì da dư thừa và sơn thạch tạo hiệu ứng bóng bẩy tự nhiên vô cùng sang trọng.' },
-  { id: '11', name: 'Combo Sơn Mắt Mèo + Cắt Da', category: 'Deal Chấn Động', price: 139000, duration: 45, description: 'Dòng sơn mắt mèo huyền ảo kết hơp tinh tế, cuốn hút mọi ánh nhìn cho đôi tay kiêu sa.' },
-  { id: '12', name: 'Chà gót chân theo Combo', category: 'Deal Chấn Động', price: 99000, duration: 30, description: 'Đặc quyền mua kèm làm móng: chà gót chân làm mềm mịn chỉ 99k.' },
-];
-
 export default async function Home() {
   const supabase = await createClient();
   const bannerSettings = await getBannerSettings();
   
-  let services = [];
+  let services: any[] = [];
   try {
     const { data, error } = await supabase
       .from('services')
@@ -54,13 +39,11 @@ export default async function Home() {
       .eq('is_active', true)
       .order('price', { ascending: true });
       
-    if (error || !data || data.length === 0) {
-      services = MOCK_SERVICES;
-    } else {
+    if (!error && data) {
       services = data;
     }
   } catch (err) {
-    services = MOCK_SERVICES;
+    console.error("Lỗi lấy danh sách dịch vụ trang chủ:", err);
   }
 
   let treatmentPackages: any[] = [];
