@@ -973,8 +973,9 @@ function CompleteModal({ appt, allServices, onClose, onComplete }: any) {
         const pkgs = await getCustomerActivePackages(appt.customer_id);
         const pkg = pkgs.find((p: any) => p.id === appt.use_package_id);
         if (pkg) {
-          setPackageName(pkg.treatment_packages?.name || "Gói liệu trình");
-          setCoveredServiceId(pkg.treatment_packages?.service_id || null);
+          const tp = pkg.treatment_packages?.[0];
+          setPackageName(tp?.name || "Gói liệu trình");
+          setCoveredServiceId(tp?.service_id || null);
         }
       }
     }

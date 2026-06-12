@@ -19,7 +19,7 @@ export const createClient = async () => {
     throw new Error('Supabase KEY is missing. Set either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.');
   }
 
-  const client = createRealClient(url, key);
+  const client = createRealClient(supabaseUrl, supabaseKey);
 
   // Override auth.getUser to resolve from our custom JWT cookie session,
   // since we manage users via a custom `users` table, not Supabase Auth.
