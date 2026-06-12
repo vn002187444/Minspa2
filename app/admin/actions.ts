@@ -187,10 +187,18 @@ export async function getStaffs() {
   await checkAdminOrManager();
   const supabase = await createClient();
   try {
-    const { data, error } = await supabase.from('users').select('id, username, full_name, role, cccd, is_active, created_at').in('role', ['STAFF', 'MANAGER']).order('created_at', { ascending: false });
-    if (error) throw error;
+    const { data, error } = await supabase.from('users')
+      .select('id, username, full_name, role, cccd, is_active, created_at')
+      .in('role', ['STAFF', 'MANAGER'])
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching staff list:', error);
+      throw error;
+    }
+    console.log('Fetched staff count:', data?.length);
     return data || [];
-  } catch (error) {
+  } catch (err) {
+    console.error('getStaffs failed:', err);
     return [];
   }
 }
