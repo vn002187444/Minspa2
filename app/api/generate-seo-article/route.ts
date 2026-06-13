@@ -41,7 +41,7 @@ Hãy viết tự nhiên, giọng văn lôi cuốn, mượt mà và thân thiện
 Trả về bài viết chuẩn định dạng Markdown để hiển thị đẹp mắt.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 

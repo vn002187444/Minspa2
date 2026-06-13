@@ -76,6 +76,8 @@ import {
   deleteTreatmentPackageSafely,
   getBannerSettings,
   saveBannerSettings,
+  publishSeoArticleToBlog,
+  getAdminSessionInfo,
 } from "./actions";
 import { VIETNAMESE_BANKS } from "./banks";
 
@@ -86,8 +88,9 @@ export default function AdminDashboard() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Data states
-  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [userRole, setUserRole] = useState<string>('');
   const [staffs, setStaffs] = useState<any[]>([]);
+  const [staffError, setStaffError] = useState<string | null>(null);
   const [services, setServices] = useState<any[]>([]);
   const [packages, setPackages] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
@@ -96,8 +99,16 @@ export default function AdminDashboard() {
 
   const loadData = async (tab: string, additionalParams?: any) => {
     setIsLoading(true);
+    setStaffError(null);
     try {
-      if (tab === "STAFF") setStaffs(await getStaffs());
+      if (tab === "STAFF") {
+        try {
+          setStaffs(await getStaffs());
+        } catch (e: any) {
+          setStaffError(e.message || "Lỗi không xác định khi tải danh sách nhân viên");
+          console.error(e);
+        }
+      }
       else if (tab === "SERVICES") setServices(await getServices());
       else if (tab === "PACKAGES") {
          setPackages(await getTreatmentPackages());
@@ -120,6 +131,12 @@ export default function AdminDashboard() {
         setActiveTab(tabParam);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    getAdminSessionInfo().then((u) => {
+      if (u) setUserRole(u.role);
+    });
   }, []);
 
   useEffect(() => {
@@ -188,7 +205,7 @@ export default function AdminDashboard() {
               </div>
 
               <nav className="flex-1 flex flex-col gap-2.5">
-                {dashboardData?.userRole === 'MANAGER' && (
+                {userRole === 'MANAGER' && (
                   <button
                     onClick={() => router.push('/staff')}
                     className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20"
@@ -275,7 +292,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
         <nav className="flex-1 p-4 flex flex-col gap-2">
-          {dashboardData?.userRole === 'MANAGER' && (
+          {userRole === 'MANAGER' && (
             <button
               onClick={() => router.push('/staff')}
               className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20 shadow-sm shadow-pink-900/10 transition-all"
@@ -347,12 +364,12 @@ export default function AdminDashboard() {
           <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
             {activeTab === "DASHBOARD" && <TabDashboard />}
             {activeTab === "STAFF" && (
-              <TabStaff staffs={staffs} userRole={dashboardData?.userRole} onReload={() => loadData("STAFF")} />
+              <TabStaff staffs={staffs} staffError={staffError} userRole={userRole} onReload={() => loadData("STAFF")} />
             )}
             {activeTab === "SERVICES" && (
               <TabServices
                 services={services}
-                userRole={dashboardData?.userRole}
+                userRole={userRole}
                 onReload={() => loadData("SERVICES")}
               />
             )}
@@ -360,14 +377,14 @@ export default function AdminDashboard() {
               <TabPackages
                 packages={packages}
                 services={services}
-                userRole={dashboardData?.userRole}
+                userRole={userRole}
                 onReload={() => loadData("PACKAGES")}
               />
             )}
             {activeTab === "COMMISSION" && <TabCommission />}
             {activeTab === "REVIEWS" && <TabReviews reviews={reviews} />}
             {activeTab === "SEO" && (
-              <TabSEO data={seoSettings} userRole={dashboardData?.userRole} onReload={() => loadData("SEO")} />
+              <TabSEO data={seoSettings} userRole={userRole} onReload={() => loadData("SEO")} />
             )}
             {activeTab === "BANK" && (
               <TabBank data={bankSettings} onReload={() => loadData("BANK")} />
@@ -1191,10 +1208,12 @@ function TabDashboard() {
 
 function TabStaff({
   staffs,
+  staffError,
   userRole,
   onReload,
 }: {
   staffs: any[];
+  staffError?: string | null;
   userRole?: string;
   onReload: () => void;
 }) {
@@ -1350,6 +1369,22 @@ function TabStaff({
         </div>
       </div>
 
+      {staffError && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex items-start gap-3">
+          <ShieldAlert className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
+          <div className="text-sm text-red-700">
+            <p className="font-semibold mb-1">Lỗi tải danh sách nhân viên:</p>
+            <p>{staffError}</p>
+            <button
+              onClick={onReload}
+              className="mt-2 text-red-600 underline hover:text-red-800 font-medium cursor-pointer"
+            >
+              Thử lại
+            </button>
+          </div>
+        </div>
+      )}
+
       {loadingStats ? (
         <div className="flex justify-center items-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
@@ -1474,6 +1509,7 @@ function AddStaffModal({ onClose, onReload }: any) {
     username: "",
     password: "",
     cccd: "",
+    role: "STAFF",
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -1554,6 +1590,19 @@ function AddStaffModal({ onClose, onReload }: any) {
               className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phân quyền
+            </label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none text-sm"
+            >
+              <option value="STAFF">Nhân viên (STAFF)</option>
+              <option value="MANAGER">Quản lý (MANAGER)</option>
+            </select>
+          </div>
           <div className="flex gap-3 pt-4">
             <button
               type="button"
@@ -1581,6 +1630,7 @@ function EditStaffModal({ staff, userRole, onClose, onReload }: any) {
     fullName: staff.full_name || "",
     username: staff.username || "",
     cccd: staff.cccd || "",
+    role: staff.role || "STAFF",
   });
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -1595,7 +1645,8 @@ function EditStaffModal({ staff, userRole, onClose, onReload }: any) {
     const res = await updateStaff(staff.id, {
       full_name: form.fullName,
       username: form.username,
-      cccd: form.cccd
+      cccd: form.cccd,
+      role: form.role,
     });
     if (res.success) {
       onReload();
@@ -1686,6 +1737,21 @@ function EditStaffModal({ staff, userRole, onClose, onReload }: any) {
               placeholder="Nhập 12 số CCCD"
             />
           </div>
+          {userRole === 'ADMIN' && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phân quyền
+            </label>
+            <select
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none text-sm"
+            >
+              <option value="STAFF">Nhân viên (STAFF)</option>
+              <option value="MANAGER">Quản lý (MANAGER)</option>
+            </select>
+          </div>
+          )}
           <div className="pt-4 flex justify-between gap-3 border-t border-gray-100">
             {userRole === 'ADMIN' ? (
               <button
@@ -2176,6 +2242,58 @@ function ServiceModal({ service, onClose, onReload }: any) {
               <option value="Deal">Deal Khuyến Mãi</option>
             </select>
           </div>
+
+          {/* Service Image */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ảnh dịch vụ
+            </label>
+            <div className="space-y-3">
+              {form.image_url && (
+                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <img src={form.image_url} alt={form.name} className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setForm({ ...form, image_url: '' })}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow-md cursor-pointer"
+                  >&times;</button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-sm font-medium text-gray-600">
+                  <ImageIcon className="w-4 h-4" />
+                  Tải ảnh lên
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setForm({ ...form, image_url: reader.result as string });
+                    reader.readAsDataURL(file);
+                  }} />
+                </label>
+                <button type="button" onClick={async () => {
+                  if (!form.name) { setErrorMsg("Vui lòng nhập tên dịch vụ trước!"); return; }
+                  setIsGenerating(true);
+                  setErrorMsg("");
+                  try {
+                    const res = await fetch('/api/generate-seo-image', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ prompt: `Dịch vụ ${form.name} tại spa, ${form.category || 'spa'}, phong cách chuyên nghiệp, sang trọng, ảnh chụp quảng cáo` })
+                    });
+                    const data = await res.json();
+                    if (data.image) setForm({ ...form, image_url: data.image });
+                    else if (data.error) setErrorMsg(data.error);
+                  } catch { setErrorMsg("Lỗi kết nối khi tạo ảnh AI"); }
+                  finally { setIsGenerating(false); }
+                }} disabled={isGenerating}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-xl hover:bg-pink-100 transition-colors cursor-pointer text-sm font-medium text-pink-700 disabled:opacity-50"
+                >
+                  {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  AI tạo ảnh
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Trạng thái hiển thị
@@ -2411,6 +2529,8 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
       meta_description: "",
       meta_keywords: "",
       og_image_url: "",
+      online_discount_enabled: true,
+      online_discount_percent: 5,
     }
   );
   const [loading, setLoading] = useState(false);
@@ -2453,6 +2573,7 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   
   const [isSavingArticle, setIsSavingArticle] = useState(false);
+  const [isPublishingBlog, setIsPublishingBlog] = useState(false);
 
   // SAVED_ARTICLES Tab States
   const [savedArticles, setSavedArticles] = useState<any[]>([]);
@@ -2589,6 +2710,44 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
       showToast("Lỗi hệ thống: " + e.message);
     }
     setIsSavingArticle(false);
+  };
+
+  const handlePublishToBlog = async () => {
+    if (!seoArticleText) {
+      showToast("Không có nội dung bài viết để đăng!");
+      return;
+    }
+    setIsPublishingBlog(true);
+    try {
+      const res = await publishSeoArticleToBlog(seoArticleText, seoImageUrl);
+      if (res.success) {
+        showToast("Đã đăng bài lên Blog thành công! 🎉");
+        window.open('/blog/' + res.slug, '_blank');
+      } else {
+        showToast("Lỗi: " + res.error);
+      }
+    } catch (e: any) {
+      showToast("Lỗi hệ thống: " + e.message);
+    }
+    setIsPublishingBlog(false);
+  };
+
+  const [publishingBlogId, setPublishingBlogId] = useState<string | null>(null);
+
+  const handlePublishSavedToBlog = async (art: any) => {
+    setPublishingBlogId(art.id);
+    try {
+      const res = await publishSeoArticleToBlog(art.article, art.imageUrl);
+      if (res.success) {
+        showToast("Đã đăng bài lên Blog thành công! 🎉");
+        window.open('/blog/' + res.slug, '_blank');
+      } else {
+        showToast("Lỗi: " + res.error);
+      }
+    } catch (e: any) {
+      showToast("Lỗi hệ thống: " + e.message);
+    }
+    setPublishingBlogId(null);
   };
 
   const handleDeleteArticle = async (id: string, e: React.MouseEvent) => {
@@ -2865,6 +3024,37 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
                 </div>
               )}
             </div>
+
+            {/* Online Booking Discount Settings */}
+            <div className="pt-4 border-t border-gray-100 space-y-4">
+              <h3 className="text-xs font-extrabold text-gray-700 uppercase tracking-widest">Ưu đãi đặt lịch Online</h3>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-gray-600">Bật giảm giá khi đặt lịch Online</label>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, online_discount_enabled: !form.online_discount_enabled })}
+                  className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${form.online_discount_enabled ? 'bg-emerald-500' : 'bg-gray-300'}`}
+                >
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.online_discount_enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+              {form.online_discount_enabled && (
+                <div className="flex items-center gap-3">
+                  <label className="text-xs font-semibold text-gray-600 shrink-0">Phần trăm giảm:</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.5}
+                    value={form.online_discount_percent ?? 5}
+                    onChange={(e) => setForm({ ...form, online_discount_percent: Math.min(100, Math.max(0, Number(e.target.value))) })}
+                    className="w-24 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-xs font-semibold text-gray-800 text-center"
+                  />
+                  <span className="text-xs font-bold text-gray-500">%</span>
+                </div>
+              )}
+            </div>
+
             <div className="pt-4 border-t border-gray-100 flex justify-end">
               <button
                 type="submit"
@@ -3019,6 +3209,13 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
                   >
                     {isSavingArticle ? "Đang lưu..." : "Lưu Kho Bài"}
                   </button>
+                  <button
+                    onClick={handlePublishToBlog}
+                    disabled={isPublishingBlog}
+                    className="text-[10px] items-center gap-1 font-bold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-all flex disabled:opacity-50 cursor-pointer"
+                  >
+                    {isPublishingBlog ? "Đang đăng..." : "Đăng lên Blog"}
+                  </button>
                 </div>
               )}
             </div>
@@ -3126,14 +3323,28 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
                         <p className="text-[10px] text-gray-400 font-medium">Từ khóa phụ: {art.keywords || "không có"}</p>
                         <div className="flex justify-between items-center text-[9px] text-gray-400 font-semibold pt-1">
                           <span>{format(new Date(art.createdAt), "dd/MM/yyyy")}</span>
-                          {userRole === 'ADMIN' && (
+                          <div className="flex items-center gap-1">
                             <button
-                              onClick={(e) => handleDeleteArticle(art.id, e)}
-                              className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50/50 transition-colors cursor-pointer"
+                              onClick={(e) => { e.stopPropagation(); handlePublishSavedToBlog(art); }}
+                              disabled={publishingBlogId === art.id}
+                              className="text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50/50 transition-colors cursor-pointer disabled:opacity-40"
+                              title="Đăng lên Blog"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              {publishingBlogId === art.id ? (
+                                <div className="w-3.5 h-3.5 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
+                              )}
                             </button>
-                          )}
+                            {userRole === 'ADMIN' && (
+                              <button
+                                onClick={(e) => handleDeleteArticle(art.id, e)}
+                                className="text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-50/50 transition-colors cursor-pointer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -3193,6 +3404,13 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
                               className="text-[10px] font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 px-2.5 py-1.5 rounded-lg transition-all cursor-pointer"
                             >
                               {copiedIndex === "copy-exist" ? "✓ Đã copy" : "Copy"}
+                            </button>
+                            <button
+                              onClick={() => handlePublishSavedToBlog(selectedArticle)}
+                              disabled={publishingBlogId === selectedArticle.id}
+                              className="text-[10px] font-bold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              {publishingBlogId === selectedArticle.id ? "Đang đăng..." : "Đăng lên Blog"}
                             </button>
                             <button
                               onClick={() => setIsEditingSavedArticle(true)}
@@ -3994,9 +4212,12 @@ function TabPackages({
         {packages.map((pkg) => (
           <div
             key={pkg.id}
-            className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden"
+            className={`bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden ${!pkg.is_active ? 'opacity-60' : ''}`}
           >
             <div className="absolute top-0 right-0 p-4 flex gap-2">
+              {!pkg.is_active && (
+                <span className="absolute top-2 left-2 bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Đã ẩn</span>
+              )}
               <button
                 onClick={() => setEditingPackage(pkg)}
                 className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition-colors cursor-pointer"
@@ -4086,6 +4307,7 @@ function EditPackageModal({ pkg, services, onClose, onReload }: any) {
     free_count: pkg.free_count || 1,
     price: pkg.price || 0,
     commission_percentage: pkg.commission_percentage !== undefined && pkg.commission_percentage !== null ? pkg.commission_percentage : 10,
+    is_active: pkg.is_active !== false,
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -4251,6 +4473,13 @@ function EditPackageModal({ pkg, services, onClose, onReload }: any) {
             />
             <p className="text-[10px] text-gray-400 mt-1">Khi nhân viên bán thành công gói này, thợ được nhận: <strong className="text-pink-600">{Math.round((Number(form.price) || 0) * (Number(form.commission_percentage) || 0) / 100).toLocaleString("vi")}đ</strong> hoa hồng.</p>
           </div>
+
+          {pkg.id && (
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
+              <input type="checkbox" id="pkg_is_active" checked={form.is_active !== false} onChange={(e) => setForm((prev: any) => ({ ...prev, is_active: e.target.checked }))} className="w-4 h-4 rounded border-gray-300 text-[#8D6E53] focus:ring-[#8D6E53] cursor-pointer" />
+              <label htmlFor="pkg_is_active" className="text-sm font-medium text-gray-700 cursor-pointer">Gói đang kích hoạt (hiển thị trên website)</label>
+            </div>
+          )}
 
           <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-2">
             <button

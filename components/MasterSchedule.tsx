@@ -265,6 +265,20 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     });
   }, [data.appointments]);
 
+  // Only show time slots that have at least one appointment (grid optimization)
+  const activeTimeSlots = useMemo(() => {
+    const staffIds = displayStaffList.map((s: any) => s.id);
+    return timeSlots.filter((slot) => {
+      const [sh, sm] = slot.split(':').map(Number);
+      const slotMinutes = sh * 60 + sm;
+      return parsedAppointments.some((appt: any) => {
+        const apptStaffId = appt.staff_id || '_unassigned';
+        if (!staffIds.includes(apptStaffId)) return false;
+        return slotMinutes >= appt._startMins && slotMinutes < appt._endMins;
+      });
+    });
+  }, [timeSlots, parsedAppointments, displayStaffList]);
+
   // Helper to check if an appointment covers a specific 30-min slot
   function getSlotAppointment(staffId: string, slotStr: string) {
     const [sh, sm] = slotStr.split(':').map(Number);
@@ -491,6 +505,12 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       ) : (
         <div className="space-y-6">
           {/* Grid View (Horizontal table) - Only visible on md screens and up when viewType is 'grid' */}
+          {activeTimeSlots.length === 0 && viewType === 'grid' && (
+            <div className="p-8 text-center text-sm text-gray-400 bg-[#FAF6F0]/40 rounded-2xl italic border border-[#EADDCD]/30">
+              Hôm nay chưa có lịch hẹn nào. Chọn ngày khác hoặc kiểm tra lại sau.
+            </div>
+          )}
+          {activeTimeSlots.length > 0 && (
           <div className={`${viewType === 'grid' ? 'hidden md:block' : 'hidden'} overflow-x-auto border border-[#EADDCD] rounded-2xl scrollbar-thin`}>
             <table className="w-full border-collapse text-left min-w-[800px] table-fixed">
               <thead>
@@ -498,7 +518,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                   <th className="sticky left-0 bg-[#FAF6F0] z-10 p-3 text-xs font-bold uppercase tracking-wider text-gray-500 w-36 border-r border-[#EADDCD]">
                     Kỹ Thuật Viên
                   </th>
-                  {timeSlots.map((slot) => (
+                  {activeTimeSlots.map((slot) => (
                     <th key={slot} className="p-3 text-center text-[10px] font-bold text-gray-400 border-r border-[#EADDCD]/60">
                       {slot}
                     </th>
@@ -508,7 +528,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
               <tbody>
                 {displayStaffList.length === 0 ? (
                   <tr>
-                    <td colSpan={timeSlots.length + 1} className="p-8 text-center text-sm text-gray-400">
+                    <td colSpan={activeTimeSlots.length + 1} className="p-8 text-center text-sm text-gray-400">
                       Chưa có thợ nào ghi nhận làm việc vào ngày này.
                     </td>
                   </tr>
@@ -531,8 +551,8 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                         )}
                       </td>
 
-                      {/* Time slots columns */}
-                      {timeSlots.map((slot) => {
+                      {/* Time slots columns - only show active (busy) slots */}
+                      {activeTimeSlots.map((slot) => {
                         const appt = getSlotAppointment(staff.id, slot);
                         return (
                           <DroppableSlotCell 
@@ -573,6 +593,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
               </tbody>
             </table>
           </div>
+          )}
 
           {/* List View / Timeline Mode (Stacked cards & Vertial timeline) - Always visible on mobile, or on md and up when viewType is 'list' */}
           <div className={viewType === 'list' ? 'block space-y-6' : 'block md:hidden space-y-6'}>

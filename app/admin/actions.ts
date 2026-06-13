@@ -1,5 +1,6 @@
 'use server'
 
+import sharp from 'sharp';
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { format, startOfDay, endOfDay, subDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
@@ -191,14 +192,23 @@ export async function getStaffs() {
       .select('id, username, full_name, role, cccd, is_active, created_at')
       .in('role', ['STAFF', 'MANAGER'])
       .order('created_at', { ascending: false });
-    if (error) {
-      console.error('Error fetching staff list:', error);
-      throw error;
-    }
+    if (error) throw error;
     console.log('Fetched staff count:', data?.length);
     return data || [];
-  } catch (err) {
-    console.error('getStaffs failed:', err);
+  } catch (error: any) {
+    if (error?.code === '42703') {
+      console.warn('is_active column missing from users table, retrying query without it');
+      const { data, error: err2 } = await supabase.from('users')
+        .select('id, username, full_name, role, cccd, created_at')
+        .in('role', ['STAFF', 'MANAGER'])
+        .order('created_at', { ascending: false });
+      if (err2) {
+        console.error('Error fetching staff list (fallback):', err2);
+        return [];
+      }
+      return (data || []).map(s => ({ ...s, is_active: true }));
+    }
+    console.error('Error fetching staff list:', error);
     return [];
   }
 }
@@ -223,11 +233,13 @@ export async function updateStaff(staffId: string, staffData: any) {
     throw new Error('Unauthorized');
   }
   const supabase = await createClient();
-  const { error } = await supabase.from('users').update({
+  const updates: any = {
     username: staffData.username,
     full_name: staffData.full_name,
-    cccd: staffData.cccd
-  }).eq('id', staffId);
+    cccd: staffData.cccd,
+  };
+  if (staffData.role) updates.role = staffData.role;
+  const { error } = await supabase.from('users').update(updates).eq('id', staffId);
 
   if (!error) {
     await logAuditAction(session.user.id, "EDIT_STAFF", `Sửa thông tin nhân viên: ${staffData.full_name} (${staffData.username})`);
@@ -331,11 +343,14 @@ export async function saveService(serviceData: any) {
     throw new Error('Unauthorized');
   }
   const supabase = await createClient();
+  let imageUrl = serviceData.image_url;
+  if (imageUrl && imageUrl.startsWith('data:')) {
+    imageUrl = await uploadBase64ToStorage(imageUrl);
+  }
+  const { id, ...updateData } = { ...serviceData, image_url: imageUrl };
   if (serviceData.id) {
-    // Check old service for price change
     const { data: oldService } = await supabase.from('services').select('price, name').eq('id', serviceData.id).single();
     
-    const { id, ...updateData } = serviceData;
     const { error } = await supabase.from('services').update(updateData).eq('id', id);
     if (error) return { success: false, error: error.message };
 
@@ -347,7 +362,7 @@ export async function saveService(serviceData: any) {
       }
     }
   } else {
-    const { error } = await supabase.from('services').insert(serviceData);
+    const { error } = await supabase.from('services').insert(updateData);
     if (error) return { success: false, error: error.message };
     await logAuditAction(session.user.id, "ADD_SERVICE", `Thêm mới dịch vụ '${serviceData.name}'`);
   }
@@ -431,27 +446,40 @@ export async function getReviews() {
 export async function getSeoSettings() {
   await checkAdminOrManager();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/seo.json');
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(data);
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('seo_settings').select('*').eq('id', 1).single();
+    if (error) throw error;
+    if (data) {
+      return {
+        page_title: data.page_title,
+        meta_description: data.meta_description,
+        meta_keywords: data.meta_keywords,
+        og_image_url: data.og_image_url,
+        online_discount_enabled: data.online_discount_enabled !== false,
+        online_discount_percent: data.online_discount_percent ?? 5,
+      };
     }
   } catch (e) {
     console.error(e);
   }
-  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '' };
+  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5 };
 }
 
 export async function saveSeoSettings(payload: any) {
   await checkAdminOrManager();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/seo.json');
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8');
+    const supabase = await createClient();
+    const { error } = await supabase.from('seo_settings').upsert({
+      id: 1,
+      page_title: payload.page_title,
+      meta_description: payload.meta_description,
+      meta_keywords: payload.meta_keywords,
+      og_image_url: payload.og_image_url,
+      online_discount_enabled: payload.online_discount_enabled !== false,
+      online_discount_percent: payload.online_discount_percent ?? 5,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
     return { success: true };
   } catch (e: any) {
     console.error(e);
@@ -462,48 +490,84 @@ export async function saveSeoSettings(payload: any) {
 export async function getSeoArticles() {
   await checkAdminOrManager();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/seo_articles.json');
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(data);
-    }
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('seo_articles')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map((a: any) => ({
+      id: a.id,
+      createdAt: a.created_at,
+      topic: a.topic,
+      keywords: a.keywords,
+      article: a.article,
+      imageUrl: a.image_url,
+    }));
   } catch (e) {
     console.error(e);
   }
   return [];
 }
 
+async function uploadBase64ToStorage(base64Url: string): Promise<string> {
+  if (!base64Url || !base64Url.startsWith('data:')) return base64Url;
+  const matches = base64Url.match(/^data:image\/(\w+);base64,(.+)$/);
+  if (!matches) return base64Url;
+  const base64Data = matches[2];
+  const raw = Buffer.from(base64Data, 'base64');
+  let optimized: Buffer;
+  try {
+    optimized = await sharp(raw).resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+  } catch {
+    try { optimized = await sharp(raw).webp({ quality: 80 }).toBuffer(); } catch { optimized = raw; }
+  }
+  const fileName = `seo-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.webp`;
+  const supabase = await createClient();
+  const { error } = await supabase.storage.from('seo-images').upload(fileName, optimized, { contentType: 'image/webp', upsert: true });
+  if (error) {
+    console.error('[STORAGE UPLOAD ERROR]', error);
+    return base64Url;
+  }
+  const { data: urlData } = supabase.storage.from('seo-images').getPublicUrl(fileName);
+  return urlData.publicUrl;
+}
+
 export async function saveSeoArticle(article: any) {
   await checkAdminOrManager();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/seo_articles.json');
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    
-    let articles = [];
-    if (fs.existsSync(filePath)) {
-      try {
-        articles = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      } catch (jsonErr) {
-        articles = [];
-      }
-    }
-    
-    const existingIndex = articles.findIndex((a: any) => a.id === article.id);
-    if (existingIndex > -1) {
-      articles[existingIndex] = { ...articles[existingIndex], ...article };
+    const imageUrl = await uploadBase64ToStorage(article.image_url || '');
+    const supabase = await createClient();
+    const { data: existing } = await supabase
+      .from('seo_articles')
+      .select('id')
+      .eq('id', article.id)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from('seo_articles')
+        .update({
+          topic: article.topic,
+          keywords: article.keywords,
+          article: article.article,
+          image_url: imageUrl,
+        })
+        .eq('id', article.id);
+      if (error) throw error;
     } else {
-      articles.unshift({
-        id: 'art_' + Math.random().toString(36).substring(2, 11),
-        createdAt: new Date().toISOString(),
-        ...article
-      });
+      const { error } = await supabase
+        .from('seo_articles')
+        .insert({
+          id: article.id || 'art_' + Math.random().toString(36).substring(2, 11),
+          topic: article.topic,
+          keywords: article.keywords,
+          article: article.article,
+          image_url: imageUrl,
+          created_at: article.createdAt || new Date().toISOString(),
+        });
+      if (error) throw error;
     }
-    
-    fs.writeFileSync(filePath, JSON.stringify(articles, null, 2), 'utf-8');
     return { success: true };
   } catch (e: any) {
     console.error(e);
@@ -514,24 +578,70 @@ export async function saveSeoArticle(article: any) {
 export async function deleteSeoArticle(id: string) {
   await checkAdminOrManager();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/seo_articles.json');
-    if (fs.existsSync(filePath)) {
-      let articles = [];
-      try {
-        articles = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      } catch (jsonErr) {
-        articles = [];
-      }
-      articles = articles.filter((a: any) => a.id !== id);
-      fs.writeFileSync(filePath, JSON.stringify(articles, null, 2), 'utf-8');
-    }
+    const supabase = await createClient();
+    const { error } = await supabase.from('seo_articles').delete().eq('id', id);
+    if (error) throw error;
     return { success: true };
   } catch (e: any) {
     console.error(e);
     return { success: false, error: e.message };
   }
+}
+
+export async function publishSeoArticleToBlog(articleText: string, imageUrl: string) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+
+  const titleMatch = articleText.match(/^#\s+(.+)/m);
+  const title = titleMatch ? titleMatch[1].trim() : 'Bài viết SEO';
+
+  const firstParagraph = articleText.replace(/^#\s+.+\n*/m, '').match(/^(.+?)(?:\n\n|$)/m);
+  const summary = firstParagraph ? firstParagraph[1].replace(/\*\*/g, '').trim().substring(0, 300) : title;
+
+  const slug = title
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 200) || 'bai-viet-seo-' + Date.now();
+
+  const finalImageUrl = await uploadBase64ToStorage(imageUrl || '');
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from('blogs')
+    .select('id')
+    .eq('slug', slug)
+    .single();
+
+  if (existing) {
+    return { success: false, error: `Slug "${slug}" đã tồn tại. Vui lòng đổi tiêu đề hoặc đăng bằng trình soạn thảo Blog.` };
+  }
+
+  const { error } = await supabase.from('blogs').insert({
+    title,
+    slug,
+    summary,
+    content: articleText,
+    image_url: finalImageUrl || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
+    created_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/blog');
+  revalidatePath(`/blog/${slug}`);
+  revalidatePath('/sitemap');
+  revalidatePath('/admin/blog');
+
+  return { success: true, slug };
 }
 
 export async function changePassword(oldPassword: string, newPassword: string) {
@@ -603,7 +713,7 @@ export async function getCommissionReport(startDateStr: string, endDateStr: stri
         purchased_at,
         sold_by_staff_id,
         commission_amount,
-        treatment_packages ( id, name, price, commission_percentage ),
+        treatment_packages!package_id ( id, name, price, commission_percentage ),
         customers ( full_name )
       `)
       .gte('purchased_at', startDateStr)
@@ -740,6 +850,7 @@ export async function getTreatmentPackages() {
     const { data, error } = await supabase
       .from('treatment_packages')
       .select('*, services(name, price)')
+      .order('is_active', { ascending: false })
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
@@ -785,21 +896,17 @@ export async function deleteTreatmentPackageSafely(packageId: string, packageNam
   const supabase = await createClient();
 
   try {
-    // Actually we could do soft delete, but instructions say ADMIN can delete.
-    // Let's soft delete or just hard delete?
-    // "Vai trò 'MANAGER' được phép thêm và sửa gói liệu trình, nhưng nút "Xóa" gói phải bị ẩn hoặc vô hiệu hóa (chỉ 'ADMIN' mới được xóa)."
-    // Let's hard delete for packages.
     const { error } = await supabase
       .from('treatment_packages')
-      .delete()
+      .update({ is_active: false })
       .eq('id', packageId);
 
     if (error) throw error;
 
-    await logAuditAction(session.user.id, "DELETE_PACKAGE", `Xóa gói liệu trình: '${packageName}'`);
+    await logAuditAction(session.user.id, "SOFT_DELETE_PACKAGE", `Ẩn gói liệu trình: '${packageName}'`);
 
     revalidatePath('/admin');
-    return { success: true, message: 'Đã xóa gói liệu trình.' };
+    return { success: true, message: 'Đã ẩn gói liệu trình (soft delete).' };
   } catch (err: any) {
     return { success: false, error: err.message };
   }
@@ -864,12 +971,16 @@ export async function getBankSettings() {
     throw new Error('Chưa đăng nhập');
   }
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/bank.json');
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(data);
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('bank_settings').select('*').eq('id', 1).single();
+    if (error) throw error;
+    if (data) {
+      return {
+        bank_id: data.bank_id,
+        bank_name: data.bank_name,
+        account_number: data.account_number,
+        account_owner: data.account_owner,
+      };
     }
   } catch (e) {
     console.error(e);
@@ -880,11 +991,16 @@ export async function getBankSettings() {
 export async function saveBankSettings(payload: any) {
   await checkAdmin();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/bank.json');
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8');
+    const supabase = await createClient();
+    const { error } = await supabase.from('bank_settings').upsert({
+      id: 1,
+      bank_id: payload.bank_id,
+      bank_name: payload.bank_name,
+      account_number: payload.account_number,
+      account_owner: payload.account_owner,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
     return { success: true };
   } catch (e: any) {
     console.error(e);
@@ -1024,12 +1140,14 @@ export async function getAdminSessionInfo() {
 
 export async function getBannerSettings() {
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/banner.json');
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath, 'utf-8');
-      return JSON.parse(data);
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('banner_settings').select('*').eq('id', 1).single();
+    if (error) throw error;
+    if (data) {
+      return {
+        is_enabled: data.is_enabled,
+        content: data.content,
+      };
     }
   } catch (e) {
     console.error(e);
@@ -1040,11 +1158,14 @@ export async function getBannerSettings() {
 export async function saveBannerSettings(payload: any) {
   await checkAdminOrManager();
   try {
-    const fs = await import('fs');
-    const path = await import('path');
-    const filePath = path.join(process.cwd(), 'data/banner.json');
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify(payload, null, 2), 'utf-8');
+    const supabase = await createClient();
+    const { error } = await supabase.from('banner_settings').upsert({
+      id: 1,
+      is_enabled: payload.is_enabled,
+      content: payload.content,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
     return { success: true };
   } catch (e: any) {
     console.error(e);
@@ -1079,7 +1200,7 @@ export async function getCustomerPackageProgress(phone: string) {
       remaining_sessions,
       status,
       purchased_at,
-      treatment_packages(
+      treatment_packages!package_id(
         id,
         name,
         total_sessions,

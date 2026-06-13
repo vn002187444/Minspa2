@@ -26,7 +26,7 @@ export async function getAuditLogs() {
       date_formatted: format(new Date(l.created_at), 'dd/MM/yyyy HH:mm:ss')
     }));
   } catch (error) {
-    console.error("Failed to load audit logs", error);
+    console.error("Failed to load audit logs", error instanceof Object ? (error as any)?.message || JSON.stringify(error) : error);
     return [];
   }
 }

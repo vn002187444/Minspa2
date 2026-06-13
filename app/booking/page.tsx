@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion } from './actions';
+import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getBookingDiscountSettings } from './actions';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import { format, addDays } from 'date-fns';
@@ -36,6 +36,7 @@ export default function BookingPage() {
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedStaff, setSelectedStaff] = useState<string>('');
   
+  const [discountSettings, setDiscountSettings] = useState({ enabled: true, percent: 5 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('Tất cả');
@@ -76,6 +77,7 @@ export default function BookingPage() {
 
     loadServices();
     loadPackages();
+    getBookingDiscountSettings().then(setDiscountSettings);
   }, []);
 
   useEffect(() => {
@@ -206,7 +208,7 @@ export default function BookingPage() {
   });
 
   const rawDuration = selectedItemsData.reduce((sum, item) => sum + (item.duration || 30), 0);
-  const discountPercent = 0.05; // 5% Off for booking online
+  const discountPercent = discountSettings.enabled ? discountSettings.percent / 100 : 0;
   const discountAmount = Math.round(rawTotal * discountPercent);
   const finalTotal = rawTotal - discountAmount;
 
@@ -656,10 +658,12 @@ export default function BookingPage() {
                      <span>{(rawTotal).toLocaleString('vi')}đ</span>
                    </div>
                    
-                   <div className="flex justify-between text-xs text-emerald-600 font-semibold">
-                     <span className="flex items-center gap-1">🎁 Đặt lịch Online (-5%):</span>
-                     <span>- {(discountAmount).toLocaleString('vi')}đ</span>
-                   </div>
+                    {discountSettings.enabled && discountAmount > 0 && (
+                    <div className="flex justify-between text-xs text-emerald-600 font-semibold">
+                      <span className="flex items-center gap-1">🎁 Đặt lịch Online (-{discountSettings.percent}%):</span>
+                      <span>- {(discountAmount).toLocaleString('vi')}đ</span>
+                    </div>
+                    )}
 
                    <div className="h-px bg-[#EADDCD]/45 my-2"></div>
 

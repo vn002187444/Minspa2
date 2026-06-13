@@ -8,7 +8,7 @@ export async function getBlogPosts() {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('blogs')
-    .select('id, title, slug, summary, image_url, created_at')
+    .select('id, title, slug, summary, content, image_url, created_at')
     .order('created_at', { ascending: false });
 
   if (error) {

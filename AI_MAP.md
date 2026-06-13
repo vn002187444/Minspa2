@@ -9,13 +9,13 @@ Chào mừng bạn đến với tài liệu **AI-Map**. Đây là bản đồ ch
 Hệ thống sử dụng một bộ lưu trữ đồng nhất, liên kết thông suốt giữa Supabase Postgres thực tế và hệ thống Mock Database tại `/data/demo_db.json` & `/utils/supabase/server.ts` để tối ưu hóa preview lẫn môi trường live.
 
 ### 1. Bảng `users` (Quản lý Tài khoản & Phân Quyền)
-Lưu trữ thông tin Quản trị viên (ADMIN) và Kỹ thuật viên (STAFF).
 - `id` (UUID, Primary Key)
-- `role` (VARCHAR - `ADMIN` hoặc `STAFF`)
+- `role` (VARCHAR - `ADMIN`, `MANAGER`, hoặc `STAFF`)
 - `username` (VARCHAR, Unique - Tài khoản đăng nhập)
 - `password_hash` (VARCHAR - Mật khẩu đã băm hoặc lưu trữ an toàn)
 - `full_name` (VARCHAR - Tên đầy đủ hiển thị trên lịch hẹn)
 - `cccd` (VARCHAR, Nullable - Bắt buộc nhập đối với thợ STAFF)
+- `is_active` (BOOLEAN - Soft delete cho nhân viên)
 - `notification_token` (JSONB - Lưu thông tin mã thông báo push notification)
 - `created_at` (TIMESTAMP)
 
@@ -33,9 +33,11 @@ Lưu trữ thông tin Quản trị viên (ADMIN) và Kỹ thuật viên (STAFF).
 - `description` (TEXT - Mô tả chi tiết các bước dịch vụ)
 - `price` (DECIMAL - Đơn giá cơ sở)
 - `duration` (INT - Thời lượng thực hiện tính bằng phút)
-- `image_url` (VARCHAR, Nullable)
+- `image_url` (VARCHAR, Nullable - Ảnh quảng cáo, upload lên Supabase Storage bucket `seo-images`)
 - `is_active` (BOOLEAN - Thiết lập ẩn hiện cho Soft Delete)
 - `discount_percentage` (DECIMAL - Phần trăm ưu đãi)
+- `commission_percentage` (DECIMAL - Tỷ lệ hoa hồng cho nhân viên)
+- `commission_amount` (DECIMAL - Số tiền hoa hồng cố định, ưu tiên hơn commission_percentage nếu > 0)
 
 ### 4. Bảng `appointments` (Quản lý Lịch Hẹn)
 - `id` (UUID, Primary Key)
@@ -78,6 +80,8 @@ Lưu trữ thông tin Quản trị viên (ADMIN) và Kỹ thuật viên (STAFF).
 - `free_count` (INT - Số buổi tặng thêm)
 - `price` (DECIMAL - Đơn giá trọn gói)
 - `total_sessions` (INT - Tổng số buổi được hưởng = buy_count + free_count)
+- `commission_percentage` (DECIMAL - Tỷ lệ hoa hồng khi nhân viên bán gói)
+- `is_active` (BOOLEAN - Soft delete cho gói liệu trình)
 - `created_at` (TIMESTAMP)
 
 ### 9. Bảng `customer_packages` (Gói Sở Hữu Của Khách Hàng)
@@ -101,8 +105,14 @@ Lưu trữ thông tin Quản trị viên (ADMIN) và Kỹ thuật viên (STAFF).
 - `slug` (VARCHAR, Unique - Tên đường dẫn chuẩn SEO, không dấu, ngăn cách bằng dấu gạch ngang)
 - `summary` (TEXT - Chuỗi mô tả tóm tắt ngắn bài đăng)
 - `content` (TEXT - Nội dung bài viết dưới dạng Markdown)
-- `image_url` (VARCHAR - Ảnh minh họa bài viết)
+- `image_url` (VARCHAR - Ảnh minh họa bài viết, upload lên `seo-images` bucket)
 - `created_at` (TIMESTAMP)
+- `updated_at` (TIMESTAMP - Cập nhật khi sửa bài)
+
+### 12. Storage Bucket `seo-images`
+- Dùng để lưu ảnh bài viết SEO (blog) và ảnh dịch vụ (services)
+- Upload qua `uploadBase64ToStorage()`: tự động resize 1200px, chuyển WebP quality 80
+- Public URL được lưu vào cột `image_url` tương ứng
 
 ---
 
@@ -110,19 +120,21 @@ Lưu trữ thông tin Quản trị viên (ADMIN) và Kỹ thuật viên (STAFF).
 
 1. **Không sử dụng `SELECT *`**: Luôn định rõ các trường cần lấy thông tin để tiết kiệm băng thông và tăng tốc độ kết xuất dữ liệu của Postgres/Supabase.
 2. **Ưu tiên Client-side Filtering**: Đối với các màn hình quản trị và dashboard phức tạp, tải dữ liệu tổng quan một lần và phân loại lọc bằng cấu trúc React State thay vì liên tục gọi API lên server.
-3. **Quy tắc Soft Delete**: Không được xóa trực tiếp bản dịch vụ (`services`) hoặc nhân viên (`users`). Bắt buộc cập nhật trạng thái `is_active = false` để giữ vững tính toàn vẹn dữ liệu cho các bảng lịch hẹn cũ liên quan.
+3. **Quy tắc Soft Delete**: Không được xóa trực tiếp bản ghi (services, users, treatment_packages). Bắt buộc cập nhật trạng thái `is_active = false` để giữ vững tính toàn vẹn dữ liệu cho các bảng lịch hẹn cũ liên quan.
 4. **Mô-đun Web Push API & PWA**: Sử dụng cấu hình web push thông qua service worker thuần tích hợp trong thư mục `/public` để đảm bảo nhận thông báo ổn định nhất trên thiết bị di động của nhân viên mà không cần thư viện cồng kềnh.
-5. **Đào tạo bài viết bằng Gemini 3.5 Flash**: Mọi truy vấn viết bài AI bắt buộc phải chạy qua proxy của server-side `/api/*` để giữ bí mật khóa API, đồng thời tích hợp hướng dẫn tìm kiếm online để liên tục cập nhật thông tin chuẩn xác.
+5. **AI models**: Mọi truy vấn AI (viết bài, sinh mô tả, tìm kiếm từ khóa) đều chạy qua server-side `/api/*` để giữ bí mật khóa API. Model text: `gemini-2.5-flash-lite` (rẻ nhất). Model image: `gemini-2.5-flash-image`. Fallback về Unsplash stock images nếu API lỗi.
+6. **Tối ưu ảnh**: Base64 từ AI được upload lên Supabase Storage bucket `seo-images` qua `sharp` (resize 1200px, WebP quality 80) để lưu trữ gọn nhẹ.
+7. **Schedule Grid**: Lịch tổng chỉ hiển thị cột giờ có booking (tự động ẩn cột trống) để giao diện ngang gọn gàng hơn.
 
 ---
 
 ## 🗺️ BẢN ĐỒ ROUTES CHÍNH CỦA ỨNG DỤNG
 
-- **Trang chủ & Landing Page (`/`)**: Trình bày dịch vụ, feedback và nút đặt hẹn.
+- **Trang chủ & Landing Page (`/`)**: Trình bày dịch vụ (kèm ảnh), feedback, schedule tracker, gói liệu trình, nút đặt hẹn.
 - **Trang Đặt Lịch Trực Tuyến (`/booking`)**: Luồng đặt lịch hẹn, kiểm tra thẻ liệu trình tích hợp.
-- **Trang Đăng Nhập Hệ Thống (`/app/login`)**: Giao diện đăng nhập an toàn cho quản lý và nhân viên.
-- **Trang Quản Trị Admin (`/app/admin`)**: Quản lý lịch hẹn, CRM, doanh thu, chăm sóc khách hàng, quản trị Blog SEO AI.
-- **Trang Portal Nhân Viên (`/app/staff`)**: Điểm chấm công, xem lịch cá nhân, thực hiện trừ buổi liệu trình cho khách.
+- **Trang Đăng Nhập Hệ Thống (`/login`)**: Giao diện đăng nhập an toàn cho quản lý và nhân viên.
+- **Trang Quản Trị Admin (`/admin`)**: Dashboard, quản lý lịch hẹn, CRM, doanh thu, dịch vụ, gói liệu trình, nhân viên, Blog SEO AI, cấu hình SEO/bank/banner.
+- **Trang Portal Nhân Viên (`/staff`)**: Điểm chấm công, xem lịch cá nhân, thực hiện trừ buổi liệu trình cho khách.
 - **Trang Kiến Thức & Blog (`/blog/*`)**: Danh sách bài viết tin tức và chi tiết blog chuẩn SEO mượt mà.
 
 ---

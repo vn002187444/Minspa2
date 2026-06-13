@@ -96,6 +96,7 @@ CREATE TABLE treatment_packages (
   price DECIMAL(10, 2) NOT NULL,
   total_sessions INT,
   commission_percentage DECIMAL(5, 2) DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
@@ -136,7 +137,8 @@ CREATE TABLE blogs (
   summary TEXT,
   content TEXT,
   image_url VARCHAR(255),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
 -- Reminder Logs Tables
@@ -165,6 +167,61 @@ CREATE TABLE uncompleted_booking_reminders_log (
   sent_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
+-- SEO Settings Table (single-row config)
+CREATE TABLE seo_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  page_title VARCHAR(255) NOT NULL DEFAULT '',
+  meta_description TEXT DEFAULT '',
+  meta_keywords TEXT DEFAULT '',
+  og_image_url VARCHAR(500) DEFAULT '',
+  online_discount_enabled BOOLEAN DEFAULT TRUE,
+  online_discount_percent DECIMAL(5,2) DEFAULT 5.00,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  CHECK (id = 1)
+);
+
+INSERT INTO seo_settings (id, page_title, meta_description, meta_keywords, og_image_url)
+VALUES (1, 'Min Nail & Hair', 'Tiệm gội đầu dưỡng sinh thảo dược.', 'gội đầu, nail, hair', '/og-placeholder.jpg')
+ON CONFLICT (id) DO NOTHING;
+
+-- SEO Articles Table
+CREATE TABLE seo_articles (
+  id VARCHAR(50) PRIMARY KEY,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  topic VARCHAR(100) DEFAULT '',
+  keywords TEXT DEFAULT '',
+  article TEXT DEFAULT '',
+  image_url VARCHAR(500) DEFAULT ''
+);
+
+-- Banner Settings Table (single-row config)
+CREATE TABLE banner_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  is_enabled BOOLEAN DEFAULT TRUE,
+  content TEXT DEFAULT '',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  CHECK (id = 1)
+);
+
+INSERT INTO banner_settings (id, is_enabled, content)
+VALUES (1, TRUE, '✨ GIẢM NGAY 5% KHI ĐẶT LỊCH HẸN TRỰC TUYẾN ✨ HOTLINE: 0934 323 878')
+ON CONFLICT (id) DO NOTHING;
+
+-- Bank Settings Table (single-row config for VietQR payments)
+CREATE TABLE bank_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  bank_id VARCHAR(50) NOT NULL,
+  bank_name VARCHAR(100) NOT NULL,
+  account_number VARCHAR(50) NOT NULL,
+  account_owner VARCHAR(100) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  CHECK (id = 1)
+);
+
+INSERT INTO bank_settings (id, bank_id, bank_name, account_number, account_owner)
+VALUES (1, 'vcb', 'Vietcombank', '13441413', 'HANG')
+ON CONFLICT (id) DO NOTHING;
+
 -- Insert Seed Data for Services
 INSERT INTO services (name, category, description, price, duration, discount_percentage) VALUES
 ('Gội nhanh', 'Gội dưỡng sinh', 'Gội nhanh', 65000, 30, 0),
@@ -189,3 +246,18 @@ INSERT INTO services (name, category, description, price, duration, discount_per
 ('Combo Sơn Thạch + cắt da', 'Deal', 'Deal: Sơn thạch + cắt da', 119000, 45, 0),
 ('Combo Mắt mèo + cắt da', 'Deal', 'Deal: Mắt mèo + cắt da', 139000, 45, 0),
 ('Chà gót chân theo combo', 'Deal', 'Deal: Chà gót chân theo combo', 99000, 30, 0);
+
+-- ========================================
+-- Storage bucket cho ảnh SEO/Gemini
+-- ========================================
+INSERT INTO storage.buckets (id, name, public, avif_autodetection, file_size_limit, allowed_mime_types)
+VALUES ('seo-images', 'seo-images', true, false, 5242880, '{image/png,image/jpeg,image/webp}')
+ON CONFLICT (id) DO NOTHING;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public Access seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "Public Access seo-images" ON storage.objects
+      FOR SELECT USING (bucket_id = 'seo-images');
+  END IF;
+END $$;

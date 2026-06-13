@@ -88,6 +88,7 @@ export async function getStaffData() {
     const { data: treatmentPackages } = await supabase
       .from('treatment_packages')
       .select('*, services(name)')
+      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     return {
@@ -147,7 +148,7 @@ export async function getCustomerActivePackages(customerId: string) {
   const supabase = await createClient();
   const { data } = await supabase
     .from('customer_packages')
-    .select('id, remaining_sessions, treatment_packages(name, service_id)')
+    .select('id, remaining_sessions, treatment_packages!package_id(name, service_id)')
     .eq('customer_id', customerId)
     .eq('status', 'ACTIVE');
   return data || [];
@@ -345,7 +346,7 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
     // Fetch the package details to find the covered service
     const { data: customerPkg } = await supabase
       .from('customer_packages')
-      .select('id, remaining_sessions, treatment_packages(service_id, name)')
+      .select('id, remaining_sessions, treatment_packages!package_id(service_id, name)')
       .eq('id', usePackageId)
       .single();
 
@@ -507,7 +508,7 @@ export async function getStaffStats(startDateStr?: string, endDateStr?: string) 
         id,
         purchased_at,
         commission_amount,
-        treatment_packages ( id, name, price, commission_percentage )
+        treatment_packages!package_id ( id, name, price, commission_percentage )
       `)
       .eq('sold_by_staff_id', staffId)
       .gte('purchased_at', startRange)
@@ -671,7 +672,7 @@ export async function getCustomerPackagesDetailed(customerId: string) {
       status,
       purchased_at,
       commission_amount,
-      treatment_packages (
+      treatment_packages!package_id (
         id,
         name,
         price,

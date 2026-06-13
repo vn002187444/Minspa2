@@ -87,16 +87,19 @@ async function migrate() {
       const { is_package_session, use_package_id, buy_package_id, ...rest } = a;
       return {
         ...rest,
-        is_package_session: !!is_package_session,
-        use_package_id: use_package_id ? toUUID(use_package_id) : null,
-        buy_package_id: buy_package_id ? toUUID(buy_package_id) : null,
         id: toUUID(a.id),
         customer_id: toUUID(a.customer_id),
         staff_id: toUUID(a.staff_id)
       };
     });
     const { error } = await supabase.from('appointments').upsert(appointmentsToInsert);
-    if (error) console.error('Error inserting appointments:', error);
+    if (error) {
+      console.error('Error inserting appointments:', error);
+      console.log('You may need to add missing columns. Run in Supabase SQL Editor:');
+      console.log('ALTER TABLE appointments ADD COLUMN IF NOT EXISTS is_package_session BOOLEAN DEFAULT FALSE;');
+      console.log('ALTER TABLE appointments ADD COLUMN IF NOT EXISTS use_package_id UUID;');
+      console.log('ALTER TABLE appointments ADD COLUMN IF NOT EXISTS buy_package_id UUID;');
+    }
     else console.log('Appointments migrated successfully.');
   }
 

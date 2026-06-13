@@ -41,7 +41,7 @@ Yêu cầu đầu ra:
 Hãy viết ngắn gọn, súc tích (khoảng 150-200 từ) để người quản lý đọc nhanh lấy tư liệu viết bài. Trả về định dạng Markdown.`;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
       config: {
         tools: [{ googleSearch: {} }],

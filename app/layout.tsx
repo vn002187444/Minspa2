@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from 'next/font/google';
 import "./globals.css";
-import * as fs from 'fs';
-import * as path from 'path';
 import PwaSupport from "@/components/PwaSupport";
 
 const inter = Inter({
@@ -41,9 +39,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 
   try {
-    const filePath = path.join(process.cwd(), 'data/seo.json');
-    if (fs.existsSync(filePath)) {
-      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const { createClient } = await import('@/utils/supabase/server');
+    const supabase = await createClient();
+    const { data, error } = await supabase.from('seo_settings').select('*').eq('id', 1).single();
+    if (!error && data) {
       return {
         title: data.page_title || defaultMeta.title,
         description: data.meta_description || defaultMeta.description,

@@ -35,7 +35,7 @@ export default async function Home() {
   try {
     const { data, error } = await supabase
       .from('services')
-      .select('id, name, category, price, duration, description, is_active')
+      .select('id, name, category, price, duration, description, image_url, is_active')
       .eq('is_active', true)
       .order('price', { ascending: true });
       
@@ -51,6 +51,7 @@ export default async function Home() {
     const { data: tpData } = await supabase
       .from('treatment_packages')
       .select('id, name, buy_count, free_count, price, total_sessions, service_id, services(name, price)')
+      .eq('is_active', true)
       .order('price', { ascending: true });
     treatmentPackages = tpData || [];
   } catch (err) {
@@ -335,9 +336,14 @@ export default async function Home() {
                   return (
                     <div 
                       key={service.id} 
-                      className={`relative bg-white rounded-3xl p-6 border ${borderStyle} hover-magnetic hover:border-[#8D6E53]/40 transition-all flex flex-col justify-between`}
+                      className={`relative bg-white rounded-3xl border ${borderStyle} hover-magnetic hover:border-[#8D6E53]/40 transition-all flex flex-col justify-between overflow-hidden`}
                     >
-                      <div>
+                      {service.image_url && (
+                        <div className="w-full h-48 overflow-hidden bg-gray-50">
+                          <img src={service.image_url} alt={service.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                        </div>
+                      )}
+                      <div className="p-6">
                         {/* Upper Card Grid: Title and Price */}
                         <div className="flex justify-between items-start mb-4 gap-2">
                           <h3 id={`name-${service.id}`} className="font-display font-semibold text-lg text-[#3A2E2B] leading-tight hover:text-[#8D6E53] transition-colors">
@@ -372,7 +378,6 @@ export default async function Home() {
                             </div>
                           )}
                         </div>
-                      </div>
 
                       {/* Footer element of the card: Price / Duration and Book CTA */}
                       <div className="mt-6 pt-4 border-t border-[#FAF6F0] flex items-center justify-between">
@@ -392,6 +397,7 @@ export default async function Home() {
                           Book <ChevronRight className="w-3 h-3" />
                         </Link>
                       </div>
+                    </div>
 
                       {/* Visual top bar ribbons for special services */}
                       {isDeal && (

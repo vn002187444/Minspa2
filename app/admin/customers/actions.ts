@@ -1,28 +1,9 @@
 'use server';
 
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { createClient } from "@/utils/supabase/server";
 
 export async function getCustomers(page = 1, limit = 20, searchTerm = '') {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          } catch (error) {}
-        },
-      },
-    }
-  );
+  const supabase = await createClient();
 
   let query = supabase.from('customers').select('id, full_name, phone, created_at', { count: 'exact' });
 
@@ -65,25 +46,7 @@ export async function getCustomers(page = 1, limit = 20, searchTerm = '') {
 }
 
 export async function getCustomerStats(customerId: string) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              cookieStore.set(name, value, options);
-            });
-          } catch (error) {}
-        },
-      },
-    }
-  );
+  const supabase = await createClient();
 
   const { data: appointments, error } = await supabase
     .from('appointments')

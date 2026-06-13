@@ -6,15 +6,23 @@ import { sendPushNotification } from "@/utils/push";
 
 export async function getPublicServices() {
   const supabase = await createClient();
-  const { data } = await supabase.from('services').select('id, name, category, price, duration, description, is_active').eq('is_active', true);
+  const { data } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, is_active').eq('is_active', true);
   return data || [];
+}
+
+export async function getBookingDiscountSettings() {
+  const supabase = await createClient();
+  const { data } = await supabase.from('seo_settings').select('online_discount_enabled, online_discount_percent').eq('id', 1).single();
+  if (data) return { enabled: data.online_discount_enabled !== false, percent: Number(data.online_discount_percent) || 5 };
+  return { enabled: true, percent: 5 };
 }
 
 export async function getPublicPackages() {
   const supabase = await createClient();
   const { data } = await supabase
     .from('treatment_packages')
-    .select('id, name, buy_count, free_count, price, total_sessions, service_id, services(name, price)');
+    .select('id, name, buy_count, free_count, price, total_sessions, service_id, services(name, price)')
+    .eq('is_active', true);
   return data || [];
 }
 
@@ -150,8 +158,10 @@ export async function submitBooking(formData: any) {
           rawTotal += svcPrice;
         });
 
-        // apply 5% online booking discount
-        const discountAmount = Math.round(rawTotal * 0.05);
+        // apply online booking discount
+        const ds = await getBookingDiscountSettings();
+        const discountPercent = ds.enabled ? ds.percent / 100 : 0;
+        const discountAmount = Math.round(rawTotal * discountPercent);
         totalAmount = rawTotal - discountAmount;
         totalDuration = dbServices.reduce((sum: number, s: any) => sum + (s.duration || 30), 0);
       }
@@ -401,7 +411,7 @@ export async function getCustomerCareSuggestion(phone: string): Promise<string> 
       remaining_sessions,
       status,
       purchased_at,
-      treatment_packages ( id, name, service_id )
+      treatment_packages!package_id ( id, name, service_id )
     `)
     .eq('customer_id', customer.id)
     .order('purchased_at', { ascending: false });

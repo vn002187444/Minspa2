@@ -12,7 +12,8 @@ import {
 import { 
   BookOpen, Plus, Edit3, Trash2, ArrowLeft, ArrowRight, 
   Sparkles, Globe, Key, CheckCircle, AlertTriangle, Info, Image as ImageIcon,
-  Bold, Italic, Link2
+  Bold, Italic, Link2, Code,
+  WandSparkles, FileText
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -109,6 +110,81 @@ export default function AdminBlogPage() {
     }
   };
 
+  // AI Assist States
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiKeywords, setAiKeywords] = useState('');
+  const [isAiWriting, setIsAiWriting] = useState(false);
+  const [isAiSummarizing, setIsAiSummarizing] = useState(false);
+  const [isAiSuggestingImages, setIsAiSuggestingImages] = useState(false);
+
+  const handleAiWrite = async () => {
+    if (!aiTopic.trim()) { toast.error('Vui lòng nhập chủ đề bài viết!'); return; }
+    setIsAiWriting(true);
+    try {
+      const res = await fetch('/api/ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'writeArticle', title: aiTopic, keywords: aiKeywords })
+      });
+      const data = await res.json();
+      if (data.article) {
+        setTitle(data.title || aiTopic);
+        setContent(data.article);
+        setSummary(data.summary || '');
+        if (!editingId) setSlug(slugify(data.title || aiTopic));
+        toast.success('AI đã viết bài thành công!');
+      } else {
+        toast.error(data.error || 'Lỗi khi AI viết bài');
+      }
+    } catch { toast.error('Lỗi kết nối dịch vụ AI'); }
+    setIsAiWriting(false);
+  };
+
+  const handleAiSummarize = async () => {
+    if (!content.trim()) { toast.error('Không có nội dung để tóm tắt!'); return; }
+    setIsAiSummarizing(true);
+    try {
+      const textToSummarize = content.replace(/^#\s+.+\n*/m, '').replace(/[*#\[\]()>`\n-]/g, ' ').replace(/\s+/g, ' ').trim().substring(0, 2000);
+      const res = await fetch('/api/ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'summarize', content: textToSummarize })
+      });
+      const data = await res.json();
+      if (data.summary) {
+        setSummary(data.summary.substring(0, 250));
+        toast.success('Đã tạo tóm tắt!');
+      } else {
+        toast.error('Lỗi khi tóm tắt');
+      }
+    } catch { toast.error('Lỗi kết nối dịch vụ AI'); }
+    setIsAiSummarizing(false);
+  };
+
+  const handleAiSuggestImages = async () => {
+    const topic = title || aiTopic;
+    if (!topic.trim()) { toast.error('Vui lòng nhập tiêu đề hoặc chủ đề!'); return; }
+    setIsAiSuggestingImages(true);
+    try {
+      const res = await fetch('/api/ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'suggestImages', title: topic })
+      });
+      const data = await res.json();
+      if (data.images && data.images.length > 0) {
+        setImageUrl(data.images[0]);
+        setSuggestedImages(data.images);
+        toast.success('Đã gợi ý ảnh!');
+      } else {
+        toast.error('Không tìm thấy ảnh gợi ý');
+      }
+    } catch { toast.error('Lỗi kết nối dịch vụ AI'); }
+    setIsAiSuggestingImages(false);
+  };
+
+  const [suggestedImages, setSuggestedImages] = useState<string[]>([]);
+
   const resetForm = () => {
     setEditingId(null);
     setTitle('');
@@ -116,6 +192,7 @@ export default function AdminBlogPage() {
     setSummary('');
     setContent('');
     setImageUrl('');
+    setSuggestedImages([]);
     setError('');
   };
 
@@ -136,7 +213,7 @@ export default function AdminBlogPage() {
     }
   };
 
-  const applyFormat = (type: 'bold' | 'italic' | 'link' | 'h2' | 'h3') => {
+  const applyFormat = (type: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'link' | 'h2' | 'h3' | 'ol' | 'ul' | 'blockquote' | 'code' | 'hr') => {
     const textarea = contentRef.current;
     if (!textarea) return;
 
@@ -157,6 +234,14 @@ export default function AdminBlogPage() {
         replacement = `*${selectedText || 'chữ nghiêng'}*`;
         cursorOffset = selectedText ? replacement.length : 1;
         break;
+      case 'underline':
+        replacement = `<u>${selectedText || 'chữ gạch chân'}</u>`;
+        cursorOffset = selectedText ? replacement.length : 3;
+        break;
+      case 'strikethrough':
+        replacement = `~~${selectedText || 'chữ gạch ngang'}~~`;
+        cursorOffset = selectedText ? replacement.length : 2;
+        break;
       case 'link':
         replacement = `[${selectedText || 'tên liên kết'}](url)`;
         cursorOffset = selectedText ? replacement.length : 1;
@@ -169,12 +254,33 @@ export default function AdminBlogPage() {
         replacement = `\n### ${selectedText || 'Tiêu đề nhỏ'}\n`;
         cursorOffset = selectedText ? replacement.length : 5;
         break;
+      case 'ol':
+        replacement = `\n1. ${selectedText || 'Mục 1'}\n2. Mục 2\n3. Mục 3\n`;
+        cursorOffset = 3;
+        break;
+      case 'ul':
+        replacement = `\n- ${selectedText || 'Mục 1'}\n- Mục 2\n- Mục 3\n`;
+        cursorOffset = 3;
+        break;
+      case 'blockquote':
+        replacement = `\n> ${selectedText || 'Trích dẫn'}\n`;
+        cursorOffset = selectedText ? replacement.length : 2;
+        break;
+      case 'code':
+        replacement = selectedText
+          ? `\`\`\`\n${selectedText}\n\`\`\``
+          : '`code`';
+        cursorOffset = selectedText ? replacement.length : 1;
+        break;
+      case 'hr':
+        replacement = `\n---\n`;
+        cursorOffset = 4;
+        break;
     }
 
     const newValue = text.substring(0, start) + replacement + text.substring(end);
     setContent(newValue);
 
-    // Focus & set selection back
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
@@ -422,6 +528,20 @@ export default function AdminBlogPage() {
                     className="w-full bg-[#FAF6F0] border-2 border-[#EADDCD] rounded-2xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]/50 text-stone-800 font-semibold text-[11px]"
                   />
                 </div>
+                {suggestedImages.length > 0 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1 pt-1">
+                    {suggestedImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setImageUrl(img)}
+                        className={`shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${imageUrl === img ? 'border-purple-500 ring-2 ring-purple-300' : 'border-[#EADDCD] hover:border-[#8D6E53]'}`}
+                      >
+                        <img src={img} alt={`suggest ${idx}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Content Textarea */}
@@ -435,53 +555,50 @@ export default function AdminBlogPage() {
                   <p>Sử dụng dòng cách đôi <strong className="text-stone-800">&quot;\n\n&quot;</strong> để ngắt đoạn. Gõ <code className="bg-white/80 p-0.5 rounded">## Tên Tiêu Đề</code> hoặc <code className="bg-white/85 p-0.5 rounded">### Tiêu Đề Nhỏ hơn</code> để làm mục lục. Gõ liên kết dạng <code className="bg-white/80 p-0.5 rounded">[Booking](/booking)</code>.</p>
                 </div>
 
-                {/* Rich Formatting Toolbar - Sticky */}
-                <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-[#FAF6F0]/95 backdrop-blur-md rounded-2xl border-2 border-[#EADDCD] text-[11px] font-bold text-stone-700 sticky top-[75px] md:top-[83px] z-30 shadow-sm transition-all duration-300">
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('bold')}
-                    className="flex items-center gap-1 px-3 py-2 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl shadow-xs cursor-pointer transition-all"
-                    title="In đậm chữ (Ctrl+B)"
-                  >
-                    <Bold className="w-3.5 h-3.5 text-[#8D6E53]" />
-                    <span>In Đậm</span>
+                {/* Rich Formatting Toolbar */}
+                <div className="flex flex-wrap items-center gap-1 p-1.5 bg-[#FAF6F0]/95 backdrop-blur-md rounded-2xl border-2 border-[#EADDCD] text-[11px] font-bold text-stone-700 sticky top-[75px] md:top-[83px] z-30 shadow-sm">
+                  <button type="button" onClick={() => applyFormat('bold')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In đậm"><Bold className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('italic')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In nghiêng"><Italic className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('underline')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all underline text-sm" title="Gạch chân">U</button>
+                  <button type="button" onClick={() => applyFormat('strikethrough')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all line-through text-sm" title="Gạch ngang">S</button>
+                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
+                  <button type="button" onClick={() => applyFormat('h2')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H2">H2</button>
+                  <button type="button" onClick={() => applyFormat('h3')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H3">H3</button>
+                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
+                  <button type="button" onClick={() => applyFormat('ul')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Danh sách">☰</button>
+                  <button type="button" onClick={() => applyFormat('ol')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-xs font-bold" title="Danh sách số">#.</button>
+                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
+                  <button type="button" onClick={() => applyFormat('blockquote')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Trích dẫn">❝</button>
+                  <button type="button" onClick={() => applyFormat('code')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Code">&lt;/&gt;</button>
+                  <button type="button" onClick={() => applyFormat('hr')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Đường kẻ">—</button>
+                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
+                  <button type="button" onClick={() => applyFormat('link')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="Chèn link"><Link2 className="w-3.5 h-3.5 align-middle" /></button>
+                </div>
+
+                {/* AI Assist Toolbar */}
+                <div className="flex flex-wrap items-center gap-2 p-2.5 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border border-purple-200 text-[11px] font-bold">
+                  <WandSparkles className="w-4 h-4 text-purple-600 inline-block align-middle" />
+                  <span className="text-[10px] font-black uppercase text-purple-700 tracking-wider mr-1 align-middle">AI:</span>
+
+                  <div className="inline-flex items-center gap-1.5 bg-white rounded-xl px-2 py-1.5 border border-purple-200">
+                    <input type="text" value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} placeholder="Chủ đề bài viết..." className="w-28 md:w-40 bg-transparent outline-none text-[11px] font-semibold text-stone-800 placeholder-stone-400" />
+                    <input type="text" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} placeholder="Từ khóa phụ..." className="w-20 md:w-32 bg-transparent outline-none text-[11px] font-semibold text-stone-400 placeholder-stone-300 hidden md:inline-block" />
+                  </div>
+
+                  <button type="button" onClick={handleAiWrite} disabled={isAiWriting} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all">
+                    {isAiWriting ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span> : <WandSparkles className="w-3 h-3 inline-block" />} Viết Bài
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('italic')}
-                    className="flex items-center gap-1 px-3 py-2 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl shadow-xs cursor-pointer transition-all"
-                    title="In nghiêng chữ (Ctrl+I)"
-                  >
-                    <Italic className="w-3.5 h-3.5 text-[#8D6E53]" />
-                    <span>In Nghiêng</span>
+
+                  <button type="button" onClick={handleAiSummarize} disabled={isAiSummarizing} className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all">
+                    {isAiSummarizing ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span> : <FileText className="w-3 h-3 inline-block" />} Tóm Tắt
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('link')}
-                    className="flex items-center gap-1 px-3 py-2 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl shadow-xs cursor-pointer transition-all"
-                    title="Chèn liên kết"
-                  >
-                    <Link2 className="w-3.5 h-3.5 text-[#8D6E53]" />
-                    <span>Chèn Link</span>
+
+                  <button type="button" onClick={handleAiSuggestImages} disabled={isAiSuggestingImages} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all">
+                    {isAiSuggestingImages ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span> : <ImageIcon className="w-3 h-3 inline-block" />} Gợi Ý Ảnh
                   </button>
-                  <div className="w-[1px] h-5 bg-[#EADDCD] mx-1"></div>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('h2')}
-                    className="flex items-center gap-1 px-3 py-2 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl shadow-xs cursor-pointer transition-all"
-                    title="Tiêu đề to H2"
-                  >
-                    <span className="font-mono text-xs text-[#8D6E53]">H2</span>
-                    <span>Tiêu Đề H2</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => applyFormat('h3')}
-                    className="flex items-center gap-1 px-3 py-2 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl shadow-xs cursor-pointer transition-all"
-                    title="Tiêu đề vừa H3"
-                  >
-                    <span className="font-mono text-xs text-[#8D6E53]">H3</span>
-                    <span>Tiêu Đề H3</span>
+
+                  <button type="button" onClick={() => { if (title) { setSlug(slugify(title)); toast.success('Đã sinh slug từ tiêu đề!'); } else { toast.error('Chưa có tiêu đề!'); } }} className="px-3 py-1.5 bg-stone-600 hover:bg-stone-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition-all">
+                    <Link2 className="w-3 h-3 inline-block" /> Sinh Slug
                   </button>
                 </div>
 
