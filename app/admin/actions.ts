@@ -457,12 +457,14 @@ export async function getSeoSettings() {
         og_image_url: data.og_image_url,
         online_discount_enabled: data.online_discount_enabled !== false,
         online_discount_percent: data.online_discount_percent ?? 5,
+        default_commission_percent: data.default_commission_percent ?? 15,
+        hotline: data.hotline || '0934 323 878',
       };
     }
   } catch (e) {
     console.error(e);
   }
-  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5 };
+  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878' };
 }
 
 export async function saveSeoSettings(payload: any) {
@@ -477,6 +479,8 @@ export async function saveSeoSettings(payload: any) {
       og_image_url: payload.og_image_url,
       online_discount_enabled: payload.online_discount_enabled !== false,
       online_discount_percent: payload.online_discount_percent ?? 5,
+      default_commission_percent: payload.default_commission_percent ?? 15,
+      hotline: payload.hotline || '0934 323 878',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
     if (error) throw error;

@@ -170,3 +170,5 @@ END $$;
 -- ========================================
 ALTER TABLE public.seo_settings ADD COLUMN IF NOT EXISTS online_discount_enabled BOOLEAN DEFAULT TRUE;
 ALTER TABLE public.seo_settings ADD COLUMN IF NOT EXISTS online_discount_percent DECIMAL(5,2) DEFAULT 5.00;
+ALTER TABLE public.seo_settings ADD COLUMN IF NOT EXISTS default_commission_percent DECIMAL(5,2) DEFAULT 15.00;
+ALTER TABLE public.seo_settings ADD COLUMN IF NOT EXISTS hotline VARCHAR(20) DEFAULT '0934 323 878';

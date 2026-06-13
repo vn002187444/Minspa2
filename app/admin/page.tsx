@@ -2531,6 +2531,8 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
       og_image_url: "",
       online_discount_enabled: true,
       online_discount_percent: 5,
+      default_commission_percent: 15,
+      hotline: "0934 323 878",
     }
   );
   const [loading, setLoading] = useState(false);
@@ -3053,6 +3055,35 @@ function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onR
                   <span className="text-xs font-bold text-gray-500">%</span>
                 </div>
               )}
+            </div>
+
+            {/* Default Commission Rate */}
+            <div className="pt-4 border-t border-gray-100 space-y-4">
+              <h3 className="text-xs font-extrabold text-gray-700 uppercase tracking-widest">Hoa hồng & Liên hệ</h3>
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-semibold text-gray-600 shrink-0">Hoa hồng mặc định:</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={0.5}
+                  value={form.default_commission_percent ?? 15}
+                  onChange={(e) => setForm({ ...form, default_commission_percent: Math.min(100, Math.max(0, Number(e.target.value))) })}
+                  className="w-24 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-xs font-semibold text-gray-800 text-center"
+                />
+                <span className="text-xs font-bold text-gray-500">%</span>
+                <p className="text-[10px] text-gray-400 ml-2">Áp dụng khi dịch vụ/gói không có tỷ lệ riêng</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-semibold text-gray-600 shrink-0">Số hotline:</label>
+                <input
+                  type="text"
+                  value={form.hotline || ""}
+                  onChange={(e) => setForm({ ...form, hotline: e.target.value })}
+                  placeholder="VD: 0934 323 878"
+                  className="w-56 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-xs font-semibold text-gray-800"
+                />
+              </div>
             </div>
 
             <div className="pt-4 border-t border-gray-100 flex justify-end">

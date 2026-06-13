@@ -10,11 +10,16 @@ export async function getPublicServices() {
   return data || [];
 }
 
-export async function getBookingDiscountSettings() {
+export async function getPublicSeoSettings() {
   const supabase = await createClient();
-  const { data } = await supabase.from('seo_settings').select('online_discount_enabled, online_discount_percent').eq('id', 1).single();
-  if (data) return { enabled: data.online_discount_enabled !== false, percent: Number(data.online_discount_percent) || 5 };
-  return { enabled: true, percent: 5 };
+  const { data } = await supabase.from('seo_settings').select('online_discount_enabled, online_discount_percent, default_commission_percent, hotline').eq('id', 1).single();
+  if (data) return {
+    discountEnabled: data.online_discount_enabled !== false,
+    discountPercent: Number(data.online_discount_percent) || 5,
+    defaultCommissionPercent: Number(data.default_commission_percent) || 15,
+    hotline: data.hotline || '0934 323 878',
+  };
+  return { discountEnabled: true, discountPercent: 5, defaultCommissionPercent: 15, hotline: '0934 323 878' };
 }
 
 export async function getPublicPackages() {
@@ -159,8 +164,8 @@ export async function submitBooking(formData: any) {
         });
 
         // apply online booking discount
-        const ds = await getBookingDiscountSettings();
-        const discountPercent = ds.enabled ? ds.percent / 100 : 0;
+        const ds = await getPublicSeoSettings();
+        const discountPercent = ds.discountEnabled ? ds.discountPercent / 100 : 0;
         const discountAmount = Math.round(rawTotal * discountPercent);
         totalAmount = rawTotal - discountAmount;
         totalDuration = dbServices.reduce((sum: number, s: any) => sum + (s.duration || 30), 0);
@@ -186,7 +191,7 @@ export async function submitBooking(formData: any) {
             end_time: endDateTime,
             status: statusToUse,
             total_amount: totalAmount,
-            commission_amount: Math.round(totalAmount * 0.15),
+            commission_amount: Math.round(totalAmount * (ds?.defaultCommissionPercent || 15) / 100),
             tip_amount: 0,
             is_package_session: !!formData.usePackageId,
             use_package_id: formData.usePackageId || null,

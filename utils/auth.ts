@@ -1,8 +1,12 @@
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.JWT_SECRET || 'min-nail-hair-super-secret-key-24h';
-const key = new TextEncoder().encode(secretKey);
+const secretKey = process.env.JWT_SECRET;
+if (!secretKey && process.env.NODE_ENV === 'production') {
+  console.warn('[AUTH] JWT_SECRET not set — using fallback key (insecure in production)');
+}
+const safeKey = secretKey || 'min-nail-hair-super-secret-key-24h';
+const key = new TextEncoder().encode(safeKey);
 
 export async function encrypt(payload: any) {
   return await new SignJWT(payload)
