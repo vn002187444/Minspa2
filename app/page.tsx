@@ -31,6 +31,9 @@ export default async function Home() {
   const supabase = await createClient();
   const bannerSettings = await getBannerSettings();
   
+  const { data: seoRow } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
+  const hotline = seoRow?.hotline || '0934 323 878';
+  
   let services: any[] = [];
   try {
     const { data, error } = await supabase
@@ -143,13 +146,13 @@ export default async function Home() {
               </div>
             </div>
             
-            <a href="tel:0934323878" className="flex items-center gap-3 bg-white/70 p-4 rounded-2xl border border-[#EADDCD] backdrop-blur-sm hover:border-[#8D6E53] hover-magnetic transition-all">
+            <a href={`tel:${hotline.replace(/\s/g, '')}`} className="flex items-center gap-3 bg-white/70 p-4 rounded-2xl border border-[#EADDCD] backdrop-blur-sm hover:border-[#8D6E53] hover-magnetic transition-all">
               <div className="w-10 h-10 rounded-full bg-[#FAF0E6] flex items-center justify-center shrink-0 shadow-sm">
                 <Phone className="w-5 h-5 text-[#8D6E53]" />
               </div>
               <div className="text-left">
                 <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Hotline đặt lịch</p>
-                <p className="text-xs font-semibold text-[#3A2E2B]">0934 323 878</p>
+                <p className="text-xs font-semibold text-[#3A2E2B]">{hotline}</p>
               </div>
             </a>
 
