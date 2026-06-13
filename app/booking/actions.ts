@@ -133,7 +133,7 @@ export async function submitBooking(formData: any) {
     if (formData.usePackageId) {
       const { data } = await supabase
         .from('customer_packages')
-        .select('id, customer_id, package_id, total_sessions, remaining_sessions, status')
+        .select('id, customer_id, package_id, total_sessions, remaining_sessions, status, treatment_packages!package_id(service_id, name)')
         .eq('id', formData.usePackageId)
         .single();
       custPkg = data;

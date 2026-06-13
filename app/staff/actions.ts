@@ -268,7 +268,7 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
         .eq('id', appointmentId);
       if (updateErr) throw updateErr;
 
-      if (payload.status !== undefined && session.user.role === 'ADMIN' || session.user.role === 'MANAGER') {
+      if (payload.status !== undefined && (session.user.role === 'ADMIN' || session.user.role === 'MANAGER')) {
          import('@/utils/audit').then(({ logAuditAction }) => {
             logAuditAction(session.user.id, "STATUS_CHANGE", `Admin cập nhật đơn '${appointmentId}' sang ${payload.status}`);
          });
