@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getBookingDiscountSettings } from './actions';
+import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getPublicSeoSettings } from './actions';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import { format, addDays } from 'date-fns';
@@ -77,7 +77,7 @@ export default function BookingPage() {
 
     loadServices();
     loadPackages();
-    getBookingDiscountSettings().then(setDiscountSettings);
+    getPublicSeoSettings().then((s) => setDiscountSettings({ enabled: s.discountEnabled, percent: s.discountPercent }));
   }, []);
 
   useEffect(() => {
