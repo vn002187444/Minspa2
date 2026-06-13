@@ -147,6 +147,7 @@ export async function submitBooking(formData: any) {
     // Fetch service prices and durations to calculate total_amount and end_time
     let totalAmount = 0;
     let totalDuration = 60; // default to 60m
+    const seoSettings = await getPublicSeoSettings();
     if (formData.serviceIds && formData.serviceIds.length > 0) {
       const { data: dbServices } = await supabase
         .from('services')
@@ -164,8 +165,7 @@ export async function submitBooking(formData: any) {
         });
 
         // apply online booking discount
-        const ds = await getPublicSeoSettings();
-        const discountPercent = ds.discountEnabled ? ds.discountPercent / 100 : 0;
+        const discountPercent = seoSettings.discountEnabled ? seoSettings.discountPercent / 100 : 0;
         const discountAmount = Math.round(rawTotal * discountPercent);
         totalAmount = rawTotal - discountAmount;
         totalDuration = dbServices.reduce((sum: number, s: any) => sum + (s.duration || 30), 0);
@@ -191,7 +191,7 @@ export async function submitBooking(formData: any) {
             end_time: endDateTime,
             status: statusToUse,
             total_amount: totalAmount,
-            commission_amount: Math.round(totalAmount * (ds?.defaultCommissionPercent || 15) / 100),
+            commission_amount: Math.round(totalAmount * (seoSettings.defaultCommissionPercent) / 100),
             tip_amount: 0,
             is_package_session: !!formData.usePackageId,
             use_package_id: formData.usePackageId || null,
