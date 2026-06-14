@@ -2423,7 +2423,7 @@ function ManagementTab() {
 
   // Service States
   const [services, setServices] = useState<any[]>([]);
-  const [newService, setNewService] = useState({ name: "", price: 100000, duration: 30, category: "Combo Tiết Kiệm", description: "" });
+  const [newService, setNewService] = useState({ name: "", price: 100000, duration: 30, category: "Móng", description: "" });
   const [serviceMsg, setServiceMsg] = useState({ type: "", text: "" });
 
   // Reports States
@@ -2501,7 +2501,7 @@ function ManagementTab() {
 
     if (res.success) {
       setServiceMsg({ type: "success", text: "Thêm dịch vụ mới thành công!" });
-      setNewService({ name: "", price: 100000, duration: 30, category: "Combo Tiết Kiệm", description: "" });
+      setNewService({ name: "", price: 100000, duration: 30, category: "Móng", description: "" });
       const sv = await getServices();
       setServices(sv);
     } else {
@@ -3007,11 +3007,10 @@ function ManagementTab() {
                 onChange={(e) => setNewService({ ...newService, category: e.target.value })}
                 className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none"
               >
-                <option value="Combo Tiết Kiệm">Combo Tiết Kiệm</option>
-                <option value="Chăm Sóc & Trang Trí Móng">Chăm Sóc & Trang Trí Móng</option>
-                <option value="Gội dưỡng sinh">Gội dưỡng sinh</option>
-                <option value="Chà Gót Chân">Chà Gót Chân</option>
-                <option value="Deal Chấn Động">Deal Chấn Động</option>
+                <option value="Móng">Móng (Nail)</option>
+                <option value="Gội dưỡng sinh">Gội dưỡng sinh (Hair)</option>
+                <option value="Massage">Massage</option>
+                <option value="Deal">Deal Khuyến Mãi</option>
               </select>
             </div>
 

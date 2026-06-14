@@ -329,7 +329,7 @@ export async function getServices() {
   await checkAdminOrManager();
   const supabase = await createClient();
   try {
-    const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, is_active').order('category', { ascending: true });
+    const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, commission_percentage, commission_amount, is_active').order('category', { ascending: true });
     if (error) throw error;
     return data || [];
   } catch (error) {
