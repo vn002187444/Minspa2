@@ -119,8 +119,9 @@ async function fetchSiteContext(): Promise<string> {
     const sections: string[] = [];
 
     const { data: seo } = await supabase.from('seo_settings').select('*').eq('id', 1).single();
+    const phone = seo?.hotline || BRAND_INFO.phone;
     if (seo) {
-      sections.push(`=== THÔNG TIN THƯƠNG HIỆU ===\nTên: ${BRAND_INFO.name}\nĐịa chỉ: ${BRAND_INFO.location}\nSĐT: ${BRAND_INFO.phone}\nTrang chủ: ${seo.page_title || 'Min Nail & Hair - Lavita Charm Thủ Đức'}\nMô tả: ${seo.meta_description || ''}\nTừ khóa: ${seo.meta_keywords || ''}`);
+      sections.push(`=== THÔNG TIN THƯƠNG HIỆU ===\nTên: ${BRAND_INFO.name}\nĐịa chỉ: ${BRAND_INFO.location}\nSĐT: ${phone}\nTrang chủ: ${seo.page_title || 'Min Nail & Hair - Lavita Charm Thủ Đức'}\nMô tả: ${seo.meta_description || ''}\nTừ khóa: ${seo.meta_keywords || ''}`);
     }
 
     const { data: services } = await supabase.from('services').select('name, category, description').order('category');

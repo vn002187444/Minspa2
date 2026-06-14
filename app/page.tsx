@@ -484,7 +484,7 @@ export default async function Home() {
                 ĐẶT LỊCH GỒI & LÀM MÓNG
               </Link>
               <a 
-                href="tel:0934323878" 
+                href={`tel:${hotline.replace(/\s/g, '')}`} 
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/40 hover:border-white text-white px-8 py-4 rounded-full font-bold text-sm tracking-wider uppercase transition-all"
               >
                 <Phone className="w-4 h-4 text-white" />

@@ -1156,7 +1156,14 @@ export async function getBannerSettings() {
   } catch (e) {
     console.error(e);
   }
-  return { is_enabled: true, content: '✨ GIẢM NGAY 5% KHI ĐẶT LỊCH HẸN TRỰC TUYẾN ✨ HOTLINE: 0934 323 878' };
+  // fallback: fetch hotline from seo_settings
+  let hotline = '0934 323 878';
+  try {
+    const supabase = await createClient();
+    const { data: seo } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
+    if (seo?.hotline) hotline = seo.hotline;
+  } catch {}
+  return { is_enabled: true, content: `✨ GIẢM NGAY 5% KHI ĐẶT LỊCH HẸN TRỰC TUYẾN ✨ HOTLINE: ${hotline}` };
 }
 
 export async function saveBannerSettings(payload: any) {
