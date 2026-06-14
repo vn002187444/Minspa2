@@ -1947,7 +1947,7 @@ function TabServices({
               description: "",
               price: 0,
               category: "Móng",
-              duration_minutes: 60,
+              duration: 60,
               is_active: true,
               commission_percentage: 15,
               commission_amount: 0,
@@ -2046,17 +2046,18 @@ function TabServices({
 
 function ServiceModal({ service, onClose, onReload }: any) {
   const [form, setForm] = useState({
-    ...service,
+    id: service.id || null,
+    name: service.name || "",
+    description: service.description || "",
+    price: service.price ?? 0,
+    duration: service.duration ?? 0,
+    category: service.category || "Móng",
+    image_url: service.image_url || "",
+    is_active: service.is_active ?? true,
     commission_percentage:
-      service.commission_percentage !== undefined &&
-      service.commission_percentage !== null
-        ? service.commission_percentage
-        : 15,
+      service.commission_percentage ?? 15,
     commission_amount:
-      service.commission_amount !== undefined &&
-      service.commission_amount !== null
-        ? service.commission_amount
-        : 0,
+      service.commission_amount ?? 0,
   });
   const [loading, setLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -2173,9 +2174,9 @@ function ServiceModal({ service, onClose, onReload }: any) {
               <input
                 required
                 type="number"
-                value={form.duration_minutes}
+                value={form.duration}
                 onChange={(e) =>
-                  setForm({ ...form, duration_minutes: Number(e.target.value) })
+                  setForm({ ...form, duration: Number(e.target.value) })
                 }
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
               />
