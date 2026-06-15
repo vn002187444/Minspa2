@@ -1,89 +1,128 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 
+const FALLBACK_IMAGES: Record<string, string[]> = {
+  nails: [
+    "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1607779097040-26e80b779eef?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1522337360788-6b1dfde2c4fb?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1596464716127-f2b0b2f1b7a2?w=800&auto=format&fit=crop",
+  ],
+  haircare: [
+    "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1522337661159-0a0b4a2a4b4f?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1560752059-53a9b7c0c6b8?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=800&auto=format&fit=crop",
+  ],
+  spa: [
+    "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1560752059-53a9b7c0c6b8?w=800&auto=format&fit=crop",
+  ],
+  general: [
+    "https://images.unsplash.com/photo-1560066984-58dadb2e71c4?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1522337360788-6b1dfde2c4fb?w=800&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1522337661159-0a0b4a2a4b4f?w=800&auto=format&fit=crop",
+  ],
+};
+
+function getTheme(prompt: string): string {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("nail") || lower.includes("móng")) return "nails";
+  if (lower.includes("hair") || lower.includes("tóc") || lower.includes("gội")) return "haircare";
+  if (lower.includes("spa") || lower.includes("massage")) return "spa";
+  return "general";
+}
+
+function getSearchQuery(prompt: string): string {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("nail") || lower.includes("móng")) return "nail salon beauty";
+  if (lower.includes("hair") || lower.includes("tóc") || lower.includes("gội")) return "hair salon haircut";
+  if (lower.includes("spa") || lower.includes("massage")) return "spa massage relaxation";
+  return "beauty salon spa";
+}
+
+function pickRandom(arr: string[]): string {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+async function searchUnsplash(query: string): Promise<string | null> {
+  const key = process.env.UNSPLASH_ACCESS_KEY;
+  if (!key) return null;
+  try {
+    const resp = await fetch(
+      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
+      { headers: { Authorization: `Client-ID ${key}` } }
+    );
+    const data: { results?: { urls: { regular: string } }[] } = await resp.json();
+    if (data.results?.length) {
+      const result = data.results[Math.floor(Math.random() * data.results.length)];
+      return result.urls.regular + "?w=800&auto=format&fit=crop";
+    }
+  } catch {}
+  return null;
+}
+
+async function tryGeminiImage(prompt: string, ai: GoogleGenAI): Promise<string | null> {
+  console.log(`[IMAGE GENERATION] Trying Gemini for prompt: "${prompt}"`);
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp-image-generation",
+      contents: prompt,
+      config: {
+        responseModalities: ["Text", "Image"],
+      },
+    });
+    const part = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData?.data);
+    if (part?.inlineData?.data) {
+      const mimeType = part.inlineData.mimeType || "image/png";
+      return `data:${mimeType};base64,${part.inlineData.data}`;
+    }
+  } catch (err: any) {
+    console.warn("[GEMINI IMAGE] Failed:", err.message);
+  }
+  return null;
+}
+
 export async function POST(req: NextRequest) {
-  let prompt = "";
   try {
     const body = await req.json();
-    prompt = body.prompt || "";
-
+    const prompt = (body.prompt || "").trim();
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
 
+    // Try Gemini AI image generation
     const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error("GEMINI_API_KEY is not defined");
-    }
-    const ai = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-    
-    try {
-      console.log(`[IMAGE GENERATION] Querying gemini-2.5-flash-image for prompt: "${prompt}"`);
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image",
-        contents: prompt,
+    if (key) {
+      const ai = new GoogleGenAI({
+        apiKey: key,
+        httpOptions: { headers: { "User-Agent": "aistudio-build" } },
       });
-
-      const part = response.candidates?.[0]?.content?.parts?.[0];
-      if (part?.inlineData?.data) {
-        const mimeType = part.inlineData.mimeType || "image/png";
-        const base64Url = `data:${mimeType};base64,${part.inlineData.data}`;
-        return NextResponse.json({ image: base64Url, method: "AI" });
+      const geminiImage = await tryGeminiImage(prompt, ai);
+      if (geminiImage) {
+        return NextResponse.json({ image: geminiImage, method: "AI" });
       }
-    } catch (imageErr: any) {
-      console.warn("[IMAGE ERR] Gemini image generation failed or unsupported, using fallback.", imageErr);
     }
 
-    // Elegant fallbacks for nail, hair, spa, massage
-    const lowerPrompt = prompt.toLowerCase();
-    let theme = "vibrant";
-    if (lowerPrompt.includes("nail") || lowerPrompt.includes("móng")) {
-      theme = "nails";
-    } else if (lowerPrompt.includes("hair") || lowerPrompt.includes("tóc") || lowerPrompt.includes("gội")) {
-      theme = "haircare";
-    } else if (lowerPrompt.includes("spa") || lowerPrompt.includes("massage")) {
-      theme = "spa";
+    // Fallback: search Unsplash API for a random relevant image
+    const searchQuery = getSearchQuery(prompt);
+    const unsplashImage = await searchUnsplash(searchQuery);
+    if (unsplashImage) {
+      return NextResponse.json({ image: unsplashImage, method: "UNSPLASH" });
     }
 
-    // Return a beautiful dynamic unsplash image based on query
-    const unsplashUrl = `https://images.unsplash.com/photo-1607779097040-26e80b779eef?auto=format&fit=crop&q=80&w=600`; // general nice beauty salon
-    const specificUrls: Record<string, string> = {
-      nails: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=600", // Nail salon
-      haircare: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600", // Hair salon
-      spa: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=600", // Massage / Spa
-    };
-
-    const imageUrl = specificUrls[theme] || unsplashUrl;
-    return NextResponse.json({ image: imageUrl, method: "STOCK" });
+    // Final fallback: pick a random image from the local pool
+    const theme = getTheme(prompt);
+    const pool = FALLBACK_IMAGES[theme] || FALLBACK_IMAGES.general;
+    return NextResponse.json({ image: pickRandom(pool), method: "STOCK" });
   } catch (error: any) {
-    console.warn("[GEMINI IMAGE ENGINE CRITICAL FALLBACK]", error);
-    
-    // Prevent 500 error on any uncaught initialization error
-    const lowerPrompt = prompt ? prompt.toLowerCase() : "";
-    let theme = "vibrant";
-    if (lowerPrompt.includes("nail") || lowerPrompt.includes("móng")) {
-      theme = "nails";
-    } else if (lowerPrompt.includes("hair") || lowerPrompt.includes("tóc") || lowerPrompt.includes("gội")) {
-      theme = "haircare";
-    } else if (lowerPrompt.includes("spa") || lowerPrompt.includes("massage")) {
-      theme = "spa";
-    }
-
-    const unsplashUrl = `https://images.unsplash.com/photo-1607779097040-26e80b779eef?auto=format&fit=crop&q=80&w=600`;
-    const specificUrls: Record<string, string> = {
-      nails: "https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&q=80&w=600",
-      haircare: "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&q=80&w=600",
-      spa: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=600",
-    };
-
-    const imageUrl = specificUrls[theme] || unsplashUrl;
-    return NextResponse.json({ image: imageUrl, method: "STOCK", isFallback: true });
+    console.warn("[IMAGE GENERATION CRITICAL ERROR]", error);
+    const prompt = "";
+    const theme = getTheme(prompt);
+    const pool = FALLBACK_IMAGES[theme] || FALLBACK_IMAGES.general;
+    return NextResponse.json({ image: pickRandom(pool), method: "STOCK", isFallback: true });
   }
 }
