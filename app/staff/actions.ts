@@ -25,94 +25,81 @@ export async function getStaffData() {
   const startOfTodayISO = new Date(`${todayStr}T00:00:00+07:00`).toISOString();
   const endOfTodayISO = new Date(`${todayStr}T23:59:59.999+07:00`).toISOString();
 
-  try {
-    // Get profile details
-    const { data: profile } = await supabase
-      .from('users')
-      .select('id, full_name, role, username')
-      .eq('id', staffId)
-      .single();
+  // Get profile details — use maybeSingle to avoid throw if user not found
+  const { data: profile } = await supabase
+    .from('users')
+    .select('id, full_name, role, username')
+    .eq('id', staffId)
+    .maybeSingle();
 
-    // Check attendance
-    const { data: attendance } = await supabase
-      .from('attendance')
-      .select('id, staff_id, date, status, check_in_time')
-      .eq('staff_id', staffId)
-      .eq('date', todayStr)
-      .single();
+  // Check attendance — use maybeSingle to avoid throw if no record
+  const { data: attendance } = await supabase
+    .from('attendance')
+    .select('id, staff_id, date, status, check_in_time')
+    .eq('staff_id', staffId)
+    .eq('date', todayStr)
+    .maybeSingle();
 
-    // Assigned appointments (today)
-    const { data: myAppointments } = await supabase
-      .from('appointments')
-      .select(`
-        id, start_time, end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
-        customers (id, full_name, phone),
-        appointment_services (
-          services (id, name, price)
-        )
-      `)
-      .eq('staff_id', staffId)
-      .gte('start_time', startOfTodayISO)
-      .lte('start_time', endOfTodayISO)
-      .order('start_time', { ascending: true });
+  // Assigned appointments (today)
+  const { data: myAppointments } = await supabase
+    .from('appointments')
+    .select(`
+      id, start_time, end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
+      customers (id, full_name, phone),
+      appointment_services (
+        services (id, name, price)
+      )
+    `)
+    .eq('staff_id', staffId)
+    .gte('start_time', startOfTodayISO)
+    .lte('start_time', endOfTodayISO)
+    .order('start_time', { ascending: true });
 
-    // Random appointments (all unclaimed pending random or confirmed bookings so staff can claim them immediately)
-    const { data: randomAppointments } = await supabase
-      .from('appointments')
-      .select(`
-        id, start_time, end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
-        customers (id, full_name, phone),
-        appointment_services (
-          services (id, name, price)
-        )
-      `)
-      .is('staff_id', null)
-      .in('status', ['PENDING_RANDOM', 'CONFIRMED'])
-      .order('start_time', { ascending: true });
+  // Random appointments (all unclaimed pending random or confirmed bookings so staff can claim them immediately)
+  const { data: randomAppointments } = await supabase
+    .from('appointments')
+    .select(`
+      id, start_time, end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
+      customers (id, full_name, phone),
+      appointment_services (
+        services (id, name, price)
+      )
+    `)
+    .is('staff_id', null)
+    .in('status', ['PENDING_RANDOM', 'CONFIRMED'])
+    .order('start_time', { ascending: true });
 
-    // Other staff & managers for swap
-    const { data: otherStaff } = await supabase
-      .from('users')
-      .select('id, full_name')
-      .in('role', ['STAFF', 'MANAGER'])
-      .neq('id', staffId)
-      .eq('is_active', true);
+  // Other staff & managers for swap
+  const { data: otherStaff } = await supabase
+    .from('users')
+    .select('id, full_name')
+    .in('role', ['STAFF', 'MANAGER'])
+    .neq('id', staffId)
+    .eq('is_active', true);
 
-    // All active services for upsell
-    const { data: allServices } = await supabase
-      .from('services')
-      .select('id, name, category, price, duration, description, is_active')
-      .eq('is_active', true);
+  // All active services for upsell
+  const { data: allServices } = await supabase
+    .from('services')
+    .select('id, name, category, price, duration, description, is_active')
+    .eq('is_active', true);
 
-    // Active treatment packages
-    const { data: treatmentPackages } = await supabase
-      .from('treatment_packages')
-      .select('*, services(name)')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
+  // Active treatment packages
+  const { data: treatmentPackages } = await supabase
+    .from('treatment_packages')
+    .select('*, services(name)')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
 
-    return {
-      staffId,
-      profile: profile || { id: staffId, full_name: session.user.name || "Kỹ thuật viên", role: session.user.role },
-      attendance,
-      myAppointments: myAppointments || [],
-      randomAppointments: randomAppointments || [],
-      otherStaff: otherStaff || [],
-      allServices: allServices || [],
-      treatmentPackages: treatmentPackages || []
-    };
-  } catch(error) {
-    return {
-      staffId,
-      profile: { id: staffId, full_name: session.user.name || "Kỹ thuật viên", role: session.user.role },
-      attendance: null,
-      myAppointments: [],
-      randomAppointments: [],
-      otherStaff: [],
-      allServices: [],
-      treatmentPackages: []
-    }
-  }
+  return {
+    staffId,
+    profile: profile || { id: staffId, full_name: session.user.name || "Kỹ thuật viên", role: session.user.role },
+    attendance,
+    myAppointments: myAppointments || [],
+    randomAppointments: randomAppointments || [],
+    otherStaff: otherStaff || [],
+    allServices: allServices || [],
+    treatmentPackages: treatmentPackages || []
+  };
 }
 
 export async function checkIn() {
@@ -178,12 +165,16 @@ export async function takeRandomAppointment(appointmentId: string) {
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   
   const supabase = await createClient();
-  const { error } = await supabase
+  const { error, data } = await supabase
     .from('appointments')
     .update({ staff_id: session.user.id, status: 'CONFIRMED' })
-    .eq('id', appointmentId);
+    .eq('id', appointmentId)
+    .is('staff_id', null)
+    .in('status', ['PENDING_RANDOM'])
+    .select('id');
     
   if (error) return { success: false, error: error.message };
+  if (!data || data.length === 0) return { success: false, error: 'Đơn đã có thợ nhận trước đó, vui lòng chọn đơn khác.' };
   return { success: true };
 }
 

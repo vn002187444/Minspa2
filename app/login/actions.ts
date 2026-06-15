@@ -19,20 +19,18 @@ export async function loginUser(prevState: any, formData: FormData) {
     if (normUsername === 'admin' && (normPassword === 'Admin' || normPassword === 'admin')) {
       const adminId = '00000000-0000-0000-0000-000000000000';
       
-      // Background run of DB seeding, completely silent and non-blocking
-      (async () => {
-        try {
-          const supabase = await createClient();
-          const { data } = await supabase.from('users').select('id').eq('username', 'admin').single();
-          if (!data) {
-            await supabase.from('users').insert({
-              id: adminId, role: 'ADMIN', username: 'admin', password_hash: 'Admin', full_name: 'Admin'
-            });
-          }
-        } catch (e) {
-          console.error("Silent background seeding warning:", e);
+      // Ensure the user exists in DB before creating session
+      try {
+        const supabase = await createClient();
+        const { data } = await supabase.from('users').select('id').eq('username', 'admin').maybeSingle();
+        if (!data) {
+          await supabase.from('users').insert({
+            id: adminId, role: 'ADMIN', username: 'admin', password_hash: 'Admin', full_name: 'Admin'
+          });
         }
-      })();
+      } catch (e) {
+        console.error("Admin seeding warning:", e);
+      }
 
       await createSession({ id: adminId, role: 'ADMIN', username: 'admin' });
       return { success: true, redirectTo: '/admin' };
@@ -41,22 +39,19 @@ export async function loginUser(prevState: any, formData: FormData) {
     if (normUsername === 'staff1' && (normPassword === 'Staff@1' || normPassword === 'staff1')) {
       const staffId = '00000000-0000-0000-0000-000000000001';
       
-      // Background run of DB seeding, completely silent and non-blocking
-      (async () => {
-        try {
-          const supabase = await createClient();
-          const { data } = await supabase.from('users').select('id').eq('username', 'staff1').single();
-          if (!data) {
-            await supabase.from('users').insert({
-              id: staffId, role: 'STAFF', username: 'staff1', password_hash: 'Staff@1', full_name: 'Thợ Makeup 1', cccd: '000000000000'
-            });
-          }
-        } catch (e) {
-          console.error("Silent background seeding warning:", e);
+      // Ensure the user exists in DB before creating session
+      try {
+        const supabase = await createClient();
+        const { data } = await supabase.from('users').select('id').eq('username', 'staff1').maybeSingle();
+        if (!data) {
+          await supabase.from('users').insert({
+            id: staffId, role: 'STAFF', username: 'staff1', password_hash: 'Staff@1', full_name: 'Thợ Makeup 1', cccd: '000000000000'
+          });
         }
-      })();
+      } catch (e) {
+        console.error("Staff1 seeding warning:", e);
+      }
 
-      console.log(`[AUTH] Hardcoded bypass active for staff1. Creating session with role: STAFF`);
       await createSession({ id: staffId, role: 'STAFF', username: 'staff1' });
       return { success: true, redirectTo: '/staff' };
     }
