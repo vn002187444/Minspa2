@@ -51,7 +51,7 @@ export async function getScheduleData(dateStr?: string) {
     const { data: appointments } = await supabase
       .from('appointments')
       .select(`
-        id, staff_id, status, start_time, end_time, total_amount,
+        id, staff_id, status, start_time, end_time, actual_start_time, actual_end_time, total_amount,
         customers ( full_name, phone ),
         appointment_services (
           service_id,
@@ -89,10 +89,18 @@ export async function getScheduleData(dateStr?: string) {
       .select('id, name, price')
       .eq('is_active', true);
 
+    // 6. Get explicit time slot locks for the day
+    const { data: timeSlotLocks } = await supabase
+      .from('time_slot_locks')
+      .select('id, staff_id, appointment_id, start_time, end_time')
+      .eq('lock_date', formattedDateStr)
+      .eq('is_active', true);
+
     return { 
       staffList: finalStaffList, 
       appointments: processedAppointments,
-      allServices: services || []
+      allServices: services || [],
+      timeSlotLocks: timeSlotLocks || []
     };
   } catch (error) {
     console.error('getScheduleData Error:', error);

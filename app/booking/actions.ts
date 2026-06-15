@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { format } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
+import { lockTimeSlots, unlockTimeSlots } from "@/lib/booking-engine";
 
 export async function getPublicServices() {
   const supabase = await createClient();
@@ -76,40 +77,191 @@ export async function checkCustomerHistory(phone: string) {
   return { found: true, name: customer.full_name, id: customer.id, history, activePackages };
 }
 
-export async function getAvailableStaff(date: string, time: string) {
+function getEffectiveTimeRange(appt: any): { start: Date; end: Date } {
+  const expectedStart = new Date(appt.start_time);
+  const expectedEnd = new Date(appt.end_time);
+  const actualStart = appt.actual_start_time ? new Date(appt.actual_start_time) : null;
+  const actualEnd = appt.actual_end_time ? new Date(appt.actual_end_time) : null;
+
+  if (actualEnd) {
+    return { start: actualStart || expectedStart, end: actualEnd };
+  }
+  if (actualStart) {
+    const duration = expectedEnd.getTime() - expectedStart.getTime();
+    return { start: actualStart, end: new Date(actualStart.getTime() + duration) };
+  }
+  return { start: expectedStart, end: expectedEnd };
+}
+
+function doRangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+  return aStart < bEnd && aEnd > bStart;
+}
+
+export async function getAvailableStaff(date: string, time: string, durationMinutes: number = 60) {
   const supabase = await createClient();
-  
+
   // 1. Get all active staff & managers
   const { data: allStaff } = await supabase
     .from('users')
     .select('id, full_name')
     .in('role', ['STAFF', 'MANAGER'])
     .eq('is_active', true);
-    
+
   if (!allStaff || allStaff.length === 0) {
     return [];
   }
-  
-  // 2. Compute slot start and end
+
+  // 2. Get staff PRESENT today (attendance check)
+  const { data: attendance } = await supabase
+    .from('attendance')
+    .select('staff_id')
+    .eq('date', date)
+    .eq('status', 'PRESENT');
+  const presentStaffIds = new Set((attendance || []).map((a: any) => a.staff_id));
+
+  // 3. Compute slot start and end based on real total duration
   const slotStart = new Date(`${date}T${time}:00+07:00`);
-  const slotEnd = new Date(slotStart.getTime() + 60 * 60000);
-  const startISO = slotStart.toISOString();
-  const endISO = slotEnd.toISOString();
-  
-  // 3. Get busy appointments overlapping this slot
+  const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
+
+  // 4. Get all active appointments for the day (fetch actual_start/end for effective range)
+  const dayStart = new Date(`${date}T00:00:00+07:00`).toISOString();
+  const dayEnd = new Date(`${date}T23:59:59.999+07:00`).toISOString();
   const { data: busyAppointments } = await supabase
     .from('appointments')
-    .select('staff_id')
+    .select('staff_id, start_time, end_time, actual_start_time, actual_end_time')
     .in('status', ['CONFIRMED', 'IN_PROGRESS', 'PENDING_RANDOM'])
     .not('staff_id', 'is', null)
-    .lt('start_time', endISO)
-    .gt('end_time', startISO);
-    
-  const busyStaffIds = new Set((busyAppointments || []).map((app: any) => app.staff_id));
-  
-  // 4. Return staff holding no overlapping appointments
-  const freeStaff = allStaff.filter((staff: any) => !busyStaffIds.has(staff.id));
+    .gte('start_time', dayStart)
+    .lte('start_time', dayEnd);
+
+  // 5. Compute which staff are busy using effective time ranges (accounts for cascade shifts)
+  const busyStaffIds = new Set<string>();
+  for (const appt of (busyAppointments || [])) {
+    const { start, end } = getEffectiveTimeRange(appt);
+    if (doRangesOverlap(slotStart, slotEnd, start, end)) {
+      busyStaffIds.add(appt.staff_id);
+    }
+  }
+
+  // 6. Return staff who are PRESENT today AND have no overlapping appointments
+  const freeStaff = allStaff.filter((staff: any) =>
+    presentStaffIds.has(staff.id) && !busyStaffIds.has(staff.id)
+  );
   return freeStaff;
+}
+
+export type SlotStatus = 'past' | 'no_staff_present' | 'fully_booked' | 'some_available' | 'all_available';
+
+export interface SlotInfo {
+  time: string;
+  status: SlotStatus;
+  availableStaff: number;
+  totalStaff: number;
+  availableStaffNames: string[];
+  isRecommended: boolean;
+}
+
+export async function getSlotAvailability(date: string): Promise<SlotInfo[]> {
+  const supabase = await createClient();
+
+  const { data: allStaff } = await supabase
+    .from('users')
+    .select('id, full_name')
+    .in('role', ['STAFF', 'MANAGER'])
+    .eq('is_active', true);
+
+  if (!allStaff || allStaff.length === 0) {
+    return [];
+  }
+
+  const { data: attendance } = await supabase
+    .from('attendance')
+    .select('staff_id')
+    .eq('date', date)
+    .eq('status', 'PRESENT');
+  const presentStaffIds = new Set((attendance || []).map((a: any) => a.staff_id));
+  const presentStaff = allStaff.filter((s: any) => presentStaffIds.has(s.id));
+  const totalStaff = presentStaff.length;
+
+  const dayStart = new Date(`${date}T00:00:00+07:00`).toISOString();
+  const dayEnd = new Date(`${date}T23:59:59.999+07:00`).toISOString();
+  const { data: busyAppointments } = await supabase
+    .from('appointments')
+    .select('staff_id, start_time, end_time, actual_start_time, actual_end_time')
+    .in('status', ['CONFIRMED', 'IN_PROGRESS', 'PENDING_RANDOM'])
+    .not('staff_id', 'is', null)
+    .gte('start_time', dayStart)
+    .lte('start_time', dayEnd);
+
+  const { data: activeLocks } = await supabase
+    .from('time_slot_locks')
+    .select('staff_id, start_time, end_time')
+    .eq('lock_date', date)
+    .eq('is_active', true);
+
+  const nowVN = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+  const currentMinutes = nowVN.getHours() * 60 + nowVN.getMinutes();
+
+  const slots: SlotInfo[] = [];
+  for (let h = 9; h <= 19; h++) {
+    for (let m = 0; m <= 30; m += 30) {
+      const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const slotMinutes = h * 60 + m;
+
+      if (slotMinutes < currentMinutes) {
+        slots.push({ time, status: 'past', availableStaff: 0, totalStaff, availableStaffNames: [], isRecommended: false });
+        continue;
+      }
+
+      if (totalStaff === 0) {
+        slots.push({ time, status: 'no_staff_present', availableStaff: 0, totalStaff: 0, availableStaffNames: [], isRecommended: false });
+        continue;
+      }
+
+      const slotStart = new Date(`${date}T${time}:00+07:00`);
+      const slotEnd30 = new Date(slotStart.getTime() + 30 * 60000);
+
+      const busyStaffIdsForSlot = new Set<string>();
+      for (const appt of (busyAppointments || [])) {
+        const { start, end } = getEffectiveTimeRange(appt);
+        if (doRangesOverlap(slotStart, slotEnd30, start, end)) {
+          busyStaffIdsForSlot.add(appt.staff_id);
+        }
+      }
+      for (const lock of (activeLocks || [])) {
+        const lockStart = new Date(lock.start_time);
+        const lockEnd = new Date(lock.end_time);
+        if (doRangesOverlap(slotStart, slotEnd30, lockStart, lockEnd)) {
+          busyStaffIdsForSlot.add(lock.staff_id);
+        }
+      }
+
+      const availableStaff = presentStaff.filter((s: any) => !busyStaffIdsForSlot.has(s.id));
+      const availableCount = availableStaff.length;
+
+      let status: SlotStatus;
+      if (availableCount === 0) {
+        status = 'fully_booked';
+      } else if (availableCount === totalStaff) {
+        status = 'all_available';
+      } else {
+        status = 'some_available';
+      }
+
+      const isRecommended = availableCount > 0 && availableCount >= Math.ceil(totalStaff / 2);
+
+      slots.push({
+        time,
+        status,
+        availableStaff: availableCount,
+        totalStaff,
+        availableStaffNames: availableStaff.map((s: any) => s.full_name),
+        isRecommended,
+      });
+    }
+  }
+
+  return slots;
 }
 
 export async function submitBooking(formData: any) {
@@ -201,6 +353,11 @@ export async function submitBooking(formData: any) {
         .single();
         
     if (apptErr) throw new Error("Không thể tạo lịch hẹn: " + apptErr.message);
+    
+    // Lock time slots immediately if staff is assigned
+    if (staffIdToUse) {
+      await lockTimeSlots(appt.id, staffIdToUse, startTimeISO, endDateTime);
+    }
     
     // Insert services
     if (formData.serviceIds && formData.serviceIds.length > 0) {
@@ -374,6 +531,9 @@ export async function cancelAppointmentByCustomer(appointmentId: string) {
   if (updateErr) {
     return { success: false, error: 'Có lỗi xảy ra: ' + updateErr.message };
   }
+
+  // Unlock time slots immediately
+  await unlockTimeSlots(appointmentId);
 
   // Notify Admins/Managers
   const { data: admins } = await supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']);

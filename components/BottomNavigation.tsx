@@ -114,9 +114,9 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
             )}
             {renderLinkItem(
               <User className="w-5 h-5" />,
-              'Nhân Viên',
-              '/staff',
-              pathname?.startsWith('/staff') || false
+              'Đăng Nhập',
+              '/login',
+              pathname === '/login'
             )}
           </>
         )}

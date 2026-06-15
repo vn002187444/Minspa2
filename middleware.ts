@@ -6,9 +6,19 @@ export async function middleware(request: NextRequest) {
   // 1. First, refresh supabase auth session as requested
   let response = await updateSession(request);
 
-  // 2. Next, apply our custom cookie-based authorization
+  // 2. Forward session cookie explicitly to prevent loss on new response objects
   const session = request.cookies.get("session")?.value;
+  if (session) {
+    response.cookies.set('session', session, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60,
+    });
+  }
   
+  // 3. Next, apply our custom cookie-based authorization
   if (request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/staff")) {
     console.log(`[MIDDLEWARE] Checking authorization for path: ${request.nextUrl.pathname}`);
     if (!session) {

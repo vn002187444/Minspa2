@@ -35,6 +35,19 @@ function getVNTimeStr(dateStr: string) {
   }
 }
 
+function getEffectiveStart(appt: any): string {
+  return appt.actual_start_time || appt.start_time;
+}
+
+function getEffectiveEnd(appt: any): string {
+  return appt.actual_end_time || appt.end_time;
+}
+
+function isCascadeShifted(appt: any): boolean {
+  return !!(appt.actual_start_time || appt.actual_end_time) &&
+    (appt.actual_start_time !== appt.start_time || appt.actual_end_time !== appt.end_time);
+}
+
 import { DndContext, useDraggable, useDroppable, DragOverlay, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 
 // Drag & Drop wrapper components
@@ -124,7 +137,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       setSelectedDate(dateOverride);
     }
   }, [dateOverride]);
-  const [data, setData] = useState<any>({ staffList: [], appointments: [], allServices: [] });
+  const [data, setData] = useState<any>({ staffList: [], appointments: [], allServices: [], timeSlotLocks: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAppt, setSelectedAppt] = useState<any>(null);
   const [isSwapping, setIsSwapping] = useState(false);
@@ -244,12 +257,14 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
   timeSlots.push(`${END_HOUR}:00`);
   timeSlots.push(`${END_HOUR}:30`);
 
-  // Pre-parse the start/end minutes for optimization to avoid redundant parsing inside high-density slots
+  // Pre-parse the start/end minutes for optimization — use effective times (actual where available)
   const parsedAppointments = useMemo(() => {
     if (!data.appointments) return [];
     return data.appointments.map((appt: any) => {
-      const vnStart = getVNTimeComponents(appt.start_time);
-      const vnEnd = getVNTimeComponents(appt.end_time);
+      const effStart = getEffectiveStart(appt);
+      const effEnd = getEffectiveEnd(appt);
+      const vnStart = getVNTimeComponents(effStart);
+      const vnEnd = getVNTimeComponents(effEnd);
       
       const startMins = vnStart.hour * 60 + vnStart.minute;
       let endMins = vnEnd.hour * 60 + vnEnd.minute;
@@ -265,19 +280,40 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     });
   }, [data.appointments]);
 
-  // Only show time slots that have at least one appointment (grid optimization)
+  // Parse locks for grid display
+  const parsedLocks = useMemo(() => {
+    if (!data.timeSlotLocks) return [];
+    return data.timeSlotLocks.map((lock: any) => {
+      const start = new Date(lock.start_time);
+      const end = new Date(lock.end_time);
+      const vnStart = { hour: start.getHours(), minute: start.getMinutes() };
+      const vnEnd = { hour: end.getHours(), minute: end.getMinutes() };
+      return {
+        ...lock,
+        _startMins: vnStart.hour * 60 + vnStart.minute,
+        _endMins: (vnEnd.hour * 60 + vnEnd.minute) || (vnStart.hour * 60 + vnStart.minute + 60),
+      };
+    });
+  }, [data.timeSlotLocks]);
+
+  // Only show time slots that have at least one appointment or lock (grid optimization)
   const activeTimeSlots = useMemo(() => {
     const staffIds = displayStaffList.map((s: any) => s.id);
     return timeSlots.filter((slot) => {
       const [sh, sm] = slot.split(':').map(Number);
       const slotMinutes = sh * 60 + sm;
-      return parsedAppointments.some((appt: any) => {
+      const hasAppt = parsedAppointments.some((appt: any) => {
         const apptStaffId = appt.staff_id || '_unassigned';
         if (!staffIds.includes(apptStaffId)) return false;
         return slotMinutes >= appt._startMins && slotMinutes < appt._endMins;
       });
+      const hasLock = parsedLocks.some((lock: any) => {
+        if (!staffIds.includes(lock.staff_id)) return false;
+        return slotMinutes >= lock._startMins && slotMinutes < lock._endMins;
+      });
+      return hasAppt || hasLock;
     });
-  }, [timeSlots, parsedAppointments, displayStaffList]);
+  }, [timeSlots, parsedAppointments, parsedLocks, displayStaffList]);
 
   // Helper to check if an appointment covers a specific 30-min slot
   function getSlotAppointment(staffId: string, slotStr: string) {
@@ -288,6 +324,20 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       const apptStaffId = appt.staff_id || '_unassigned';
       if (apptStaffId !== staffId) return false;
       return slotMinutes >= appt._startMins && slotMinutes < appt._endMins;
+    });
+  }
+
+  // Helper to check if a slot has an active lock (without an appointment)
+  function getSlotLock(staffId: string, slotStr: string) {
+    const [sh, sm] = slotStr.split(':').map(Number);
+    const slotMinutes = sh * 60 + sm;
+
+    const apptAtSlot = getSlotAppointment(staffId, slotStr);
+    if (apptAtSlot) return null;
+
+    return parsedLocks.find((lock: any) => {
+      if (lock.staff_id !== staffId) return false;
+      return slotMinutes >= lock._startMins && slotMinutes < lock._endMins;
     });
   }
 
@@ -490,6 +540,10 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
               <div className="w-3 h-3 rounded bg-emerald-600 shrink-0"></div>
               <span>Đã xong (COMPLETED)</span>
             </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-gray-300 border border-dashed border-gray-400 shrink-0"></div>
+              <span>🔒 Khóa (đã dời)</span>
+            </div>
           </div>
         ) : (
           <div className="text-xs text-gray-500 italic">Nhấn vào lịch để xem chi tiết ca làm</div>
@@ -554,6 +608,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                       {/* Time slots columns - only show active (busy) slots */}
                       {activeTimeSlots.map((slot) => {
                         const appt = getSlotAppointment(staff.id, slot);
+                        const lock = getSlotLock(staff.id, slot);
                         return (
                           <DroppableSlotCell 
                             key={slot}
@@ -568,7 +623,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                                 onClick={() => handleSelectAppt(appt)}
                                 className={`w-full h-full rounded-xl border flex flex-col items-center justify-center p-1 cursor-pointer transition-all ${
                                   mode === 'ADMIN' ? 'cursor-grab hover:scale-[1.02] active:scale-95' : ''
-                                } ${getStatusStyle(appt)}`}
+                                } ${getStatusStyle(appt)} ${isCascadeShifted(appt) ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
                               >
                                 <span className="text-[10px] font-bold truncate max-w-full block leading-snug">
                                   {mode === 'READ_ONLY' ? 'Lịch bận' : appt.customers?.full_name || 'Khách lẻ'}
@@ -578,7 +633,14 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                                     {appt.appointment_services?.[0]?.services?.name || 'Chi tiết'}
                                   </span>
                                 )}
+                                {isCascadeShifted(appt) && (
+                                  <span className="text-[7px] font-bold text-amber-700 mt-0.5">⬆ Đã dời</span>
+                                )}
                               </DraggableApptCard>
+                            ) : lock ? (
+                              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-100/60 rounded-xl border border-dashed border-gray-300 cursor-not-allowed">
+                                <span>🔒 Khóa</span>
+                              </div>
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-emerald-600/80 bg-emerald-50/10 rounded-xl hover:bg-emerald-50/40 transition-colors">
                                 Rảnh
@@ -719,8 +781,9 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                                     {slotAppointments.map(({ staff, appt }) => {
                                       const servicesText =
                                         appt.appointment_services?.map((as: any) => as.services?.name).join(', ') || 'Chi tiết';
-                                      const start = getVNTimeStr(appt.start_time);
-                                      const end = getVNTimeStr(appt.end_time);
+                                      const start = getVNTimeStr(getEffectiveStart(appt));
+                                      const end = getVNTimeStr(getEffectiveEnd(appt));
+                                      const shifted = isCascadeShifted(appt);
 
                                       return (
                                         <DraggableApptCard
@@ -759,6 +822,11 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                                               <span className="text-[10px] text-gray-400 font-bold font-mono">
                                                 ({start} - {end})
                                               </span>
+                                              {shifted && (
+                                                <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
+                                                  ⬆ Đã dời lên sớm
+                                                </span>
+                                              )}
                                             </div>
 
                                             <p className="text-sm font-bold text-gray-900 mt-1">
@@ -848,8 +916,9 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                         ) : (
                           <div className="relative border-l-2 border-[#EADDCD]/60 ml-2.5 pl-4 py-1 space-y-4">
                             {staffAppts.map((appt: any) => {
-                              const start = getVNTimeStr(appt.start_time);
-                              const end = getVNTimeStr(appt.end_time);
+                              const start = getVNTimeStr(getEffectiveStart(appt));
+                              const end = getVNTimeStr(getEffectiveEnd(appt));
+                              const shiftedStaffView = isCascadeShifted(appt);
                               const servicesText =
                                 appt.appointment_services?.map((as: any) => as.services?.name).join(', ') || 'Chi tiết';
 
@@ -882,6 +951,11 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                                         <span className="text-[10px] font-extrabold text-[#5C4033] bg-[#FAF0E6] px-2 py-0.5 rounded-md font-mono shrink-0">
                                           {start} - {end}
                                         </span>
+                                        {shiftedStaffView && (
+                                          <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded shrink-0">
+                                            ⬆ Sớm
+                                          </span>
+                                        )}
                                         <span className="text-xs font-bold text-gray-900 truncate">
                                           {mode === 'READ_ONLY' ? 'Lịch bận' : appt.customers?.full_name || 'Khách lẻ'}
                                         </span>

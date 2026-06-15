@@ -5,6 +5,7 @@ import { getSession } from "@/utils/auth";
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { runRemindersCheck } from "@/utils/reminders";
+import { lockTimeSlots, unlockTimeSlots, cascadeShiftForward, handleCancelAndUnlock } from "@/lib/booking-engine";
 
 export async function getStaffData() {
   const session = await getSession();
@@ -44,7 +45,7 @@ export async function getStaffData() {
   const { data: myAppointments } = await supabase
     .from('appointments')
     .select(`
-      id, start_time, end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
+      id, start_time, end_time, actual_start_time, actual_end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
       customers (id, full_name, phone),
       appointment_services (
         services (id, name, price)
@@ -212,7 +213,7 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
   try {
     const { data: appt, error: apptErr } = await supabase
       .from('appointments')
-      .select('customer_id')
+      .select('customer_id, staff_id, start_time, end_time')
       .eq('id', appointmentId)
       .single();
 
@@ -232,6 +233,7 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
     }
 
     const updateObj: any = {};
+    const isCancelling = payload.status === 'CANCELLED';
     if (payload.staffId !== undefined) {
       const isUn = payload.staffId === '_unassigned' || !payload.staffId;
       updateObj.staff_id = isUn ? null : payload.staffId;
@@ -250,6 +252,12 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
     }
     if (payload.status !== undefined) {
       updateObj.status = payload.status;
+      const now = new Date().toISOString();
+      if (payload.status === 'IN_PROGRESS') {
+        updateObj.actual_start_time = now;
+      } else if (payload.status === 'COMPLETED') {
+        updateObj.actual_end_time = now;
+      }
     }
 
     if (Object.keys(updateObj).length > 0) {
@@ -258,6 +266,25 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
         .update(updateObj)
         .eq('id', appointmentId);
       if (updateErr) throw updateErr;
+
+      // Lock/unlock time slots based on status change
+      if (payload.status === 'IN_PROGRESS' && appt?.staff_id) {
+        await lockTimeSlots(appointmentId, appt.staff_id, appt.start_time, appt.end_time);
+      }
+
+      if (isCancelling) {
+        await unlockTimeSlots(appointmentId);
+      }
+
+      // Cascade shift when completed early
+      if (payload.status === 'COMPLETED' && appt?.staff_id && appt?.end_time) {
+        const now = new Date();
+        const originalEnd = new Date(appt.end_time);
+        await lockTimeSlots(appointmentId, appt.staff_id, appt.start_time, appt.end_time);
+        if (now < originalEnd) {
+          await cascadeShiftForward(appt.staff_id, appointmentId, now.toISOString());
+        }
+      }
 
       if (payload.status !== undefined && (session.user.role === 'ADMIN' || session.user.role === 'MANAGER')) {
          import('@/utils/audit').then(({ logAuditAction }) => {
@@ -290,14 +317,41 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
 export async function updateAppointmentStatus(appointmentId: string, status: string) {
   const session = await getSession();
   const supabase = await createClient();
-  const { data: oldAppt } = await supabase.from('appointments').select('status').eq('id', appointmentId).single();
+  const { data: oldAppt } = await supabase.from('appointments').select('status, staff_id, start_time, end_time, actual_start_time, actual_end_time').eq('id', appointmentId).single();
+
+  const now = new Date().toISOString();
+  const updateData: any = { status };
+
+  if (status === 'IN_PROGRESS') {
+    updateData.actual_start_time = now;
+  } else if (status === 'COMPLETED') {
+    updateData.actual_end_time = now;
+  }
 
   const { error } = await supabase
     .from('appointments')
-    .update({ status })
+    .update(updateData)
     .eq('id', appointmentId);
     
   if (error) return { success: false, error: error.message };
+
+  if (status === 'IN_PROGRESS' && oldAppt && oldAppt.staff_id) {
+    await lockTimeSlots(appointmentId, oldAppt.staff_id, oldAppt.start_time, oldAppt.end_time);
+  }
+
+  if (status === 'CANCELLED' && oldAppt) {
+    await unlockTimeSlots(appointmentId);
+  }
+
+  // Cascade shift: when completed early, shift subsequent appointments forward
+  if (status === 'COMPLETED' && oldAppt && oldAppt.staff_id) {
+    const completedAt = new Date(now);
+    const originalEnd = new Date(oldAppt.end_time);
+    await lockTimeSlots(appointmentId, oldAppt.staff_id, oldAppt.start_time, oldAppt.end_time);
+    if (completedAt < originalEnd) {
+      await cascadeShiftForward(oldAppt.staff_id, appointmentId, now);
+    }
+  }
 
   if (session && oldAppt && oldAppt.status !== status) {
     if (session.user.role === 'ADMIN' || session.user.role === 'MANAGER') {
@@ -322,10 +376,10 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
     await supabase.from('appointment_services').insert(records);
   }
 
-  // 1b. Fetch appointment details to check package session status
+  // 1b. Fetch appointment details to check package session status and for cascade shift
   const { data: dbAppt } = await supabase
     .from('appointments')
-    .select('is_package_session, use_package_id, customer_id, staff_id')
+    .select('is_package_session, use_package_id, customer_id, staff_id, start_time, end_time')
     .eq('id', appointmentId)
     .single();
 
@@ -408,11 +462,13 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
   const discountAmount = Math.round(total * (discountPercent / 100));
   const discountedTotal = Math.max(0, total - discountAmount);
   
-  // 3. Update appointment
+  // 3. Update appointment — set actual_end_time (keep end_time as expected), trigger cascade
+  const completedAt = new Date().toISOString();
   const { error } = await supabase
     .from('appointments')
     .update({ 
       status: 'COMPLETED',
+      actual_end_time: completedAt,
       total_amount: discountedTotal,
       commission_amount: commission,
       tip_amount: tipAmount
@@ -420,6 +476,15 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
     .eq('id', appointmentId);
     
   if (error) return { success: false, error: error.message };
+
+  // Cascade shift: if completed early, shift subsequent appointments forward → unlocks remaining slots
+  if (dbAppt?.staff_id && dbAppt?.end_time) {
+    const completedAtDate = new Date(completedAt);
+    const originalEnd = new Date(dbAppt.end_time);
+    if (completedAtDate < originalEnd) {
+      await cascadeShiftForward(dbAppt.staff_id, appointmentId, completedAt);
+    }
+  }
 
   // Trigger real-time notifications to customer and active staff of the completed appointment
   if (dbAppt) {

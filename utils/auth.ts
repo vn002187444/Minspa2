@@ -32,8 +32,8 @@ export async function createSession(user: { id: string; role: string; username: 
   cookieStore.set('session', session, {
     expires,
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
     path: '/',
   });
   console.log(`[AUTH] createSession successfully set cookie for: ${user.username}`);
@@ -61,8 +61,8 @@ export async function logout() {
   cookieStore.set('session', '', {
     expires: new Date(0),
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
     path: '/',
   });
 }

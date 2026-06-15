@@ -150,6 +150,22 @@ CREATE TABLE blogs (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
+-- Time Slot Locks Table (Dynamic Locking for Booking System)
+CREATE TABLE time_slot_locks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  staff_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  appointment_id UUID REFERENCES appointments(id) ON DELETE CASCADE,
+  lock_date DATE NOT NULL,
+  start_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+CREATE INDEX idx_time_slot_locks_staff_date ON time_slot_locks(staff_id, lock_date);
+CREATE INDEX idx_time_slot_locks_appointment ON time_slot_locks(appointment_id);
+CREATE INDEX idx_time_slot_locks_active ON time_slot_locks(is_active);
+
 -- Reminder Logs Tables
 CREATE TABLE attendance_reminders_log (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

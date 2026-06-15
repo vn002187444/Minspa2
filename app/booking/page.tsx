@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getPublicSeoSettings } from './actions';
+import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getPublicSeoSettings, getSlotAvailability } from './actions';
+import type { SlotInfo } from './actions';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
+import BookingCalendar from '@/components/BookingCalendar';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -35,6 +37,7 @@ export default function BookingPage() {
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedStaff, setSelectedStaff] = useState<string>('');
+  const [slotAvailability, setSlotAvailability] = useState<SlotInfo[]>([]);
   
   const [discountSettings, setDiscountSettings] = useState({ enabled: true, percent: 5 });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,13 +100,6 @@ export default function BookingPage() {
     }
   }, [allPackages]);
 
-  // Time slots generation (09:00 - 20:00 every 30 mins)
-  const timeSlots = [];
-  for (let i = 9; i <= 19; i++) {
-    timeSlots.push(`${i.toString().padStart(2, '0')}:00`);
-    timeSlots.push(`${i.toString().padStart(2, '0')}:30`);
-  }
-
   const handlePhoneBlur = async () => {
     if (phone.length < 10) return;
     setIsCheckingPhone(true);
@@ -141,15 +137,30 @@ export default function BookingPage() {
     }
   }, [phone]);
 
+  // Derived data (hoisted before effects that depend on them)
+  const selectedItemsData = services.filter(s => selectedServices.includes(s.id));
+  const rawDuration = selectedItemsData.reduce((sum, item) => sum + (item.duration || 30), 0);
+
+  useEffect(() => {
+    async function fetchSlotAvail() {
+      if (selectedDate) {
+        const slots = await getSlotAvailability(selectedDate);
+        setSlotAvailability(slots || []);
+      }
+    }
+    fetchSlotAvail();
+  }, [selectedDate]);
+
   useEffect(() => {
     async function fetchStaff() {
       if (selectedDate && selectedTime) {
-        const freeStaff = await getAvailableStaff(selectedDate, selectedTime);
+        const duration = rawDuration > 0 ? rawDuration : 60;
+        const freeStaff = await getAvailableStaff(selectedDate, selectedTime, duration);
         setAvailableStaff(freeStaff || []);
       }
     }
     fetchStaff();
-  }, [selectedDate, selectedTime]);
+  }, [selectedDate, selectedTime, rawDuration]);
 
   const handleNext = () => {
     setErrorMsg('');
@@ -164,6 +175,11 @@ export default function BookingPage() {
   const handleSubmit = async () => {
     setErrorMsg('');
     if (!selectedTime) return setErrorMsg('Vui lòng chọn giờ hẹn');
+
+    const selSlot = slotAvailability.find(s => s.time === selectedTime);
+    if (selSlot && (selSlot.status === 'past' || selSlot.status === 'fully_booked' || selSlot.status === 'no_staff_present')) {
+      return setErrorMsg('Khung giờ này không khả dụng, vui lòng chọn khung giờ khác.');
+    }
     
     setIsSubmitting(true);
     const res = await submitBooking({
@@ -194,7 +210,6 @@ export default function BookingPage() {
   const selectedStaffName = availableStaff.find(s => s.id === selectedStaff)?.full_name || '';
 
   // Get selected services details
-  const selectedItemsData = services.filter(s => selectedServices.includes(s.id));
   const selectedPkg = activePackages.find(p => p.id === selectedPackageId);
   const coveredServiceId = selectedPkg?.treatment_packages?.service_id;
 
@@ -206,8 +221,6 @@ export default function BookingPage() {
       rawTotal += item.price;
     }
   });
-
-  const rawDuration = selectedItemsData.reduce((sum, item) => sum + (item.duration || 30), 0);
   const discountPercent = discountSettings.enabled ? discountSettings.percent / 100 : 0;
   const discountAmount = Math.round(rawTotal * discountPercent);
   const finalTotal = rawTotal - discountAmount;
@@ -497,42 +510,39 @@ export default function BookingPage() {
                    </div>
                  </div>
 
-                 <div>
-                   <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn khung giờ vàng</label>
-                   <div className="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto pr-1 pb-1">
-                      {timeSlots.map(time => (
-                        <button
-                          key={time}
-                          type="button"
-                          onClick={() => setSelectedTime(time)}
-                          className={`py-2 px-1 text-xs font-bold rounded-xl border transition-all ${
-                            selectedTime === time 
-                              ? 'bg-amber-500 border-amber-500 text-white shadow-sm' 
-                              : 'bg-white border-[#EADDCD] text-gray-600 hover:border-[#8D6E53]'
-                          }`}
-                        >
-                          {time}
-                        </button>
-                      ))}
-                   </div>
-                 </div>
+                  <div>
+                    <BookingCalendar
+                      slotAvailability={slotAvailability}
+                      selectedDate={selectedDate}
+                      selectedTime={selectedTime}
+                      onSelectDate={setSelectedDate}
+                      onSelectTime={setSelectedTime}
+                      totalDuration={rawDuration}
+                    />
+                  </div>
 
                  <div>
-                   <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn kỹ thuật viên yêu thích (Nếu có)</label>
-                   <select 
-                     value={selectedStaff} 
-                     onChange={(e) => setSelectedStaff(e.target.value)}
-                     className="w-full text-xs p-3 bg-white border border-[#EADDCD] rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent outline-none transition-all font-semibold text-[#3A2E2B]"
-                   >
-                     {availableStaff.length === 0 ? (
-                       <option value="">🕒 Đặt lịch chờ (Hệ thống tự động sắp xếp thợ sau)</option>
-                     ) : (
-                       <option value="">✨ Sắp xếp ngẫu nhiên (Ưu tiên KTV rảnh trực tuyến)</option>
-                     )}
-                     {availableStaff.map(staff => (
-                       <option key={staff.id} value={staff.id}>🌟 Nhân viên: {staff.full_name}</option>
-                     ))}
-                   </select>
+                    <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn kỹ thuật viên yêu thích (Nếu có)</label>
+                    <select 
+                      value={selectedStaff} 
+                      onChange={(e) => setSelectedStaff(e.target.value)}
+                      disabled={availableStaff.length === 0}
+                      className={`w-full text-xs p-3 bg-white border border-[#EADDCD] rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent outline-none transition-all font-semibold text-[#3A2E2B] ${availableStaff.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      {availableStaff.length === 0 ? (
+                        <option value="">⛔ Đã hết nhân viên trống trong khung giờ này</option>
+                      ) : (
+                        <option value="">✨ Sắp xếp ngẫu nhiên (Ưu tiên KTV rảnh trực tuyến)</option>
+                      )}
+                      {availableStaff.map(staff => (
+                        <option key={staff.id} value={staff.id}>🌟 Nhân viên: {staff.full_name}</option>
+                      ))}
+                    </select>
+                    {availableStaff.length === 0 && selectedTime && (
+                      <p className="text-xs text-amber-600 font-semibold mt-1 flex items-center gap-1">
+                        ⏳ Khung giờ này đã hết nhân viên trực. Vui lòng chọn khung giờ khác hoặc quay lại sau.
+                      </p>
+                    )}
                  </div>
 
                  <div className="pt-4">

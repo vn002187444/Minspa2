@@ -994,6 +994,7 @@
   ],
   "customer_packages": [],
   "package_usage_logs": [],
+  "time_slot_locks": [],
   "blogs": [
     {
       "id": "blog-1",
