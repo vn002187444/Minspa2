@@ -1,6 +1,6 @@
 # KẾ HOẠCH NÂNG CẤP HỆ THỐNG — MIN NAIL & HAIR
 
-> Ngày tạo: 17/06/2026 | Cập nhật: 18/06/2026
+> Ngày tạo: 17/06/2026 | Cập nhật: 18/06/2026 (Phase 4 complete)
 > Mục tiêu: Fix bug, cải thiện UI/UX, tối ưu performance cho 7 vấn đề lớn
 
 ---
@@ -576,23 +576,32 @@ const nextConfig: NextConfig = {
 
 ---
 
-#### 🟡 P4.4 — Tách admin page (4.717 dòng)
+#### ✅ P4.4 — Tách admin page (4.956 → 424 dòng)
 
-**File:** `app/admin/page.tsx`
+**File:** `app/admin/page.tsx` → 16 files in `app/admin/components/`
 
-**Vấn đề:** Component lớn nhất project chứa: charts, staff table, services, packages, blog SEO AI, settings — tất cả trong 1 file.
+**Kết quả:** Admin page giảm từ 4.956 dòng xuống còn 424 dòng. Tách thành 16 component files:
 
-| File mới | Nội dung |
-|----------|----------|
-| `app/admin/components/DashboardCharts.tsx` | Biểu đồ doanh thu (recharts), booking stats, attendance pie |
-| `app/admin/components/StaffSection.tsx` | Bảng nhân viên + toggle status + filter |
-| `app/admin/components/ServicesSection.tsx` | CRUD services |
-| `app/admin/components/PackagesSection.tsx` | CRUD treatment packages + dashboard progress |
-| `app/admin/components/SeoSettingsForm.tsx` | SEO settings + banner + bank settings |
-| `app/admin/components/BlogSection.tsx` | Blog/SEO articles list + AI generate |
-| `app/admin/hooks/useAdminData.ts` | Gom server actions + state management |
+| File mới | Dòng | Nội dung |
+|----------|------|----------|
+| `TodayMonitoringWidget.tsx` | ~290 | Widget giám sát đơn hàng real-time |
+| `TabDashboard.tsx` | ~510 | Dashboard: biểu đồ doanh thu, thống kê, attendance |
+| `TabStaff.tsx` | ~350 | Bảng nhân viên + filter/tìm kiếm |
+| `AddStaffModal.tsx` | ~120 | Modal thêm nhân viên |
+| `EditStaffModal.tsx` | ~175 | Modal sửa/xóa/reset pass nhân viên |
+| `StaffDetailModal.tsx` | ~110 | Modal chi tiết doanh thu nhân viên |
+| `TabServices.tsx` | ~140 | CRUD dịch vụ |
+| `ServiceModal.tsx` | ~295 | Modal thêm/sửa dịch vụ + AI generate |
+| `TabReviews.tsx` | ~90 | Bảng đánh giá khách hàng |
+| `TabSEO.tsx` | ~1.110 | SEO Hub: metadata, AI writer, articles, banner |
+| `TabBank.tsx` | ~90 | Cấu hình tài khoản ngân hàng |
+| `TabPassword.tsx` | ~140 | Đổi mật khẩu + push notification |
+| `TabCommission.tsx` | ~305 | Báo cáo hoa hồng + xuất CSV |
+| `TabPackages.tsx` | ~140 | CRUD gói liệu trình |
+| `EditPackageModal.tsx` | ~205 | Modal thêm/sửa gói liệu trình |
+| `TabSellAndProgress.tsx` | ~365 | Bán gói + tra cứu tiến độ |
 
-**Tác động Vercel:** Khi tách components, có thể dùng `next/dynamic` lazy-load cho từng tab → giảm initial bundle size cho admin page (~200KB+ từ recharts + lucide icons).
+**Tác động:** Giảm bundle size, cải thiện maintainability, cho phép lazy-load từng tab sau này.
 
 ---
 
@@ -746,18 +755,18 @@ Hoặc xóa file (đã có `seed_blogs.mjs` chạy được).
 
 ### Tiến độ Phase 4
 
-- [ ] **P4.1** — Tailwind content paths
-- [ ] **P4.2** — TypeScript target
-- [ ] **P4.3** — next.config.ts images + logging
-- [ ] **P4.4** — Tách admin page (7 files)
-- [ ] **P4.5** — Tách MasterSchedule (4 files)
-- [ ] **P4.6** — Xóa `lib/push.ts`
-- [ ] **P4.7** — Xóa `utils/supabase/middleware.ts`
-- [ ] **P4.8** — Tách booking actions
-- [ ] **P4.9** — Tạo hooks/ + types/
-- [ ] **P4.10** — Thêm error/not-found pages
-- [ ] **P4.11** — Login bypass → env vars
-- [ ] **P4.12** — ESLint rules
+- [x] **P4.1** — Tailwind content paths
+- [x] **P4.2** — TypeScript target
+- [x] **P4.3** — next.config.ts images + logging
+- [x] **P4.4** — Tách admin page (16 files)
+- [ ] **P4.5** — Tách MasterSchedule (4 files) ⏳
+- [x] **P4.6** — Xóa `lib/push.ts`
+- [x] **P4.7** — Xóa `utils/supabase/middleware.ts`
+- [ ] **P4.8** — Tách booking actions ⏳
+- [x] **P4.9** — Tạo hooks/ + types/
+- [x] **P4.10** — Thêm error/not-found pages
+- [x] **P4.11** — Login bypass → env vars
+- [x] **P4.12** — ESLint rules
 - [ ] **P4.13** — CSS animation consolidation
 - [ ] **P4.14** — Fix seed_blogs.sql
 

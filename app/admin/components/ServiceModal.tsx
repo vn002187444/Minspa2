@@ -1,0 +1,298 @@
+'use client'
+
+import { useState } from "react";
+import { RefreshCw, Sparkles, ImageIcon, CheckCircle2, XIcon } from "lucide-react";
+import { saveService } from "../actions";
+
+export default function ServiceModal({ service, onClose, onReload }: any) {
+  const [form, setForm] = useState({
+    id: service.id || null,
+    name: service.name || "",
+    description: service.description || "",
+    price: service.price ?? 0,
+    duration: service.duration ?? 0,
+    category: service.category || "Móng",
+    image_url: service.image_url || "",
+    is_active: service.is_active ?? true,
+    commission_percentage:
+      service.commission_percentage ?? 15,
+    commission_amount:
+      service.commission_amount ?? 0,
+  });
+  const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleGenerateDescription = async () => {
+    setErrorMsg("");
+    if (!form.name || !form.category) {
+      setErrorMsg("Vui lòng nhập Tên dịch vụ và Chọn danh mục trước khi tạo mô tả tự động!");
+      return;
+    }
+    setIsGenerating(true);
+    try {
+      const res = await fetch('/api/generate-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ serviceName: form.name, category: form.category })
+      });
+      const data = await res.json();
+      if (data.description) {
+        setForm({ ...form, description: data.description });
+      } else if (data.error) {
+        setErrorMsg(data.error);
+      }
+    } catch (error) {
+      setErrorMsg("Lỗi khi tạo mô tả bằng AI. Vui lòng thử lại sau.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+    const res = await saveService(form);
+    if (res.success) {
+      onReload();
+      onClose();
+    } else {
+      setErrorMsg("Lỗi: " + res.error);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto scrollbar-none">
+        <h3 className="font-display font-bold text-lg text-gray-900 mb-6">
+          {form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}
+        </h3>
+        
+        {errorMsg && (
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold">
+            {errorMsg}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tên dịch vụ
+            </label>
+            <input
+              required
+              type="text"
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
+            />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <label className="block text-sm font-medium text-gray-700">
+                Mô tả dịch vụ
+              </label>
+              <button
+                type="button"
+                onClick={handleGenerateDescription}
+                disabled={isGenerating}
+                className="text-xs font-semibold text-pink-600 hover:text-pink-700 flex items-center gap-1 bg-pink-50 hover:bg-pink-100 px-2 py-1 rounded-md transition-colors disabled:opacity-50"
+              >
+                {isGenerating ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                Tạo bằng AI
+              </button>
+            </div>
+            <textarea
+              value={form.description || ""}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="Nhập mô tả chi tiết cho dịch vụ này..."
+              rows={3}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none resize-none"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Giá (VNĐ)
+              </label>
+              <input
+                required
+                type="number"
+                value={form.price}
+                onChange={(e) =>
+                  setForm({ ...form, price: Number(e.target.value) })
+                }
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Thời gian (Phút)
+              </label>
+              <input
+                required
+                type="number"
+                value={form.duration}
+                onChange={(e) =>
+                  setForm({ ...form, duration: Number(e.target.value) })
+                }
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="flex justify-between">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tỷ lệ hoa hồng (%)
+                </label>
+              </div>
+              <input
+                type="number"
+                value={form.commission_percentage}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    commission_percentage: Number(e.target.value),
+                  })
+                }
+                placeholder="15"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
+              />
+              <span className="text-[10px] text-gray-400">
+                Tính theo % giá dịch vụ
+              </span>
+            </div>
+            <div>
+              <div className="flex justify-between">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Số tiền cố định (VNĐ)
+                </label>
+              </div>
+              <input
+                type="number"
+                value={form.commission_amount}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    commission_amount: Number(e.target.value),
+                  })
+                }
+                placeholder="0"
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
+              />
+              <span className="text-[10px] text-gray-400">
+                Nếu đặt &gt; 0, sẽ ưu tiên dùng số tiền này
+              </span>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Danh mục
+            </label>
+            <select
+              value={form.category}
+              onChange={(e) => setForm({ ...form, category: e.target.value })}
+              className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
+            >
+              <option value="Móng">Móng (Nail)</option>
+              <option value="Gội dưỡng sinh">Gội dưỡng sinh (Hair)</option>
+              <option value="Massage">Massage</option>
+              <option value="Deal">Deal Khuyến Mãi</option>
+            </select>
+          </div>
+
+          {/* Service Image */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Ảnh dịch vụ
+            </label>
+            <div className="space-y-3">
+              {form.image_url && (
+                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <img src={form.image_url} alt={form.name} className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setForm({ ...form, image_url: '' })}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow-md cursor-pointer"
+                  >&times;</button>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-sm font-medium text-gray-600">
+                  <ImageIcon className="w-4 h-4" />
+                  Tải ảnh lên
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => setForm({ ...form, image_url: reader.result as string });
+                    reader.readAsDataURL(file);
+                  }} />
+                </label>
+                <button type="button" onClick={async () => {
+                  if (!form.name) { setErrorMsg("Vui lòng nhập tên dịch vụ trước!"); return; }
+                  setIsGenerating(true);
+                  setErrorMsg("");
+                  try {
+                    const res = await fetch('/api/generate-seo-image', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ prompt: `Dịch vụ ${form.name} tại spa, ${form.category || 'spa'}, phong cách chuyên nghiệp, sang trọng, ảnh chụp quảng cáo` })
+                    });
+                    const data = await res.json();
+                    if (data.image) setForm({ ...form, image_url: data.image });
+                    else if (data.error) setErrorMsg(data.error);
+                  } catch { setErrorMsg("Lỗi kết nối khi tạo ảnh AI"); }
+                  finally { setIsGenerating(false); }
+                }} disabled={isGenerating}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-xl hover:bg-pink-100 transition-colors cursor-pointer text-sm font-medium text-pink-700 disabled:opacity-50"
+                >
+                  {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  AI tạo ảnh
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Trạng thái hiển thị
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={form.is_active}
+                onChange={(e) =>
+                  setForm({ ...form, is_active: e.target.checked })
+                }
+                className="w-5 h-5 rounded text-pink-500 focus:ring-pink-500"
+              />
+              <span className="font-medium text-gray-900">
+                {form.is_active
+                  ? "Đang bật (Hiển thị cho khách)"
+                  : "Đang tắt (Tạm ẩn)"}
+              </span>
+            </label>
+          </div>
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50"
+            >
+              Lưu
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
