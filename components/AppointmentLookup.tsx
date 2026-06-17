@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, Calendar, Clock, User, Sparkles, Check, ChevronDown, CheckCircle, ShieldAlert, BadgeInfo, X, Star, AlertTriangle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { lookupAppointmentsByPhone, submitAppointmentReview, cancelAppointmentByCustomer } from '@/app/booking/actions';
+import { lookupAppointmentsByPhone, submitAppointmentReview, cancelAppointmentByCustomer } from '@/app/booking/actions/customer';
 
 // Status styling configuration
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; border: string; step: number; desc: string }> = {

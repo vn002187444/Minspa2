@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { Clock, Users, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
-import type { SlotInfo } from '@/app/booking/actions';
+import type { SlotInfo } from '@/app/booking/actions/slots';
 import { addDays, format, subDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 

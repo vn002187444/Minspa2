@@ -1,6 +1,6 @@
 # KẾ HOẠCH NÂNG CẤP HỆ THỐNG — MIN NAIL & HAIR
 
-> Ngày tạo: 17/06/2026 | Cập nhật: 18/06/2026 (Phase 4 complete)
+> Ngày tạo: 17/06/2026 | Cập nhật: 18/06/2026 (Phase 4 — ✅ All complete)
 > Mục tiêu: Fix bug, cải thiện UI/UX, tối ưu performance cho 7 vấn đề lớn
 
 ---
@@ -441,20 +441,29 @@ Supabase Realtime dùng WebSocket, phù hợp thay polling. Cần chọn lọc v
 
 ---
 
-## Tổng kết files đã sửa (19 files)
+## Tổng kết files đã sửa (25 files)
 
 | File | Issues | Phase | Trạng thái |
 |------|--------|-------|-----------|
 | `app/admin/page.tsx` | 1, 3, 6 | P2, P3 | ✅ Status column, filter dropdown, toggle button, bell layout |
 | `app/admin/actions.ts` | 1, 6 | P2 | ✅ `toggleStaffActive()`, filter `is_active` trong commission |
 | `app/admin/schedule/actions.ts` | 2, 6 | P1, P2 | ✅ `is_present` flag, `.eq('is_active', true)`, N+1 đã fix |
-| `components/MasterSchedule.tsx` | 2 | P1 | ✅ Badge "Chưa điểm danh" / "Đã trực" |
+| `components/MasterSchedule.tsx` | 2 | P1 | ✅ Badge "Chưa điểm danh" / "Đã trực" (refactor: 1,277→430 dòng) |
+| `components/ScheduleDndComponents.tsx` | 4.5 | P1 | ✅ New — DraggableApptCard, DroppableSlotCell, DroppableStaffCard |
+| `components/MasterScheduleGrid.tsx` | 4.5 | P1 | ✅ New — Grid view extracted |
+| `components/MasterScheduleList.tsx` | 4.5 | P1 | ✅ New — List view extracted |
+| `components/AppointmentDetailModal.tsx` | 4.5 | P1 | ✅ New — Modal extracted |
 | `middleware.ts` | 4 | P1 | ✅ Re-encrypt JWT với fresh exp |
 | `utils/supabase/middleware.ts` | 4 | P1 | ✅ Bỏ `updateSession()` gây mất cookie |
 | `utils/auth.ts` | 4 | P1 | ✅ Thêm `maxAge: 0` khi logout |
 | `app/api/logout/route.ts` | 4 | P1 | 🟢 Không cần sửa (auth.ts đã xử lý) |
 | `lib/booking-engine.ts` | 5 | P2 | ✅ `getSlotAvailabilityWithNames` dùng `durationMinutes` động |
-| `app/booking/actions.ts` | 5, 6 | P2 | ✅ `getSlotAvailability` → delegation, filter `is_active` notif |
+| `app/booking/actions/public.ts` | 4.8 | P1 | ✅ New — public queries |
+| `app/booking/actions/slots.ts` | 4.8 | P1 | ✅ New — slot availability |
+| `app/booking/actions/booking.ts` | 4.8 | P1 | ✅ New — submitBooking |
+| `app/booking/actions/customer.ts` | 4.8 | P1 | ✅ New — customer operations |
+| `app/booking/actions/suggestions.ts` | 4.8 | P1 | ✅ New — suggestions AI |
+| `app/booking/actions/notifications.ts` | 4.8 | P1 | ✅ New — notification CRUD |
 | `components/BookingCalendar.tsx` | 5 | P2 | ✅ Ẩn past slot, badge "⭐ Gợi ý" |
 | `app/booking/page.tsx` | 5 | P2 | ✅ Date 14 ngày, cache localStorage, pass services vào getSlotAvailability |
 | `app/login/actions.ts` | 4, 6 | P1 | ✅ Hardcoded bypass, check `is_active === false` |
@@ -496,6 +505,7 @@ Supabase Realtime dùng WebSocket, phù hợp thay polling. Cần chọn lọc v
 ### Kết quả
 - **19 files** sửa / tạo mới (theo danh sách ở trên)
 - **1 file** bỏ qua có chủ đích (P3.2)
+- **Phase 4 bổ sung: +10 files** (MasterSchedule: 4, Booking actions: 6)
 
 ---
 
@@ -605,16 +615,16 @@ const nextConfig: NextConfig = {
 
 ---
 
-#### 🟡 P4.5 — Tách MasterSchedule (1.277 dòng)
+#### ✅ P4.5 — Tách MasterSchedule (1.277 → ~430 dòng)
 
-**File:** `components/MasterSchedule.tsx`
+**File:** `components/MasterSchedule.tsx` → 4 files:
 
-| File mới | Nội dung |
-|----------|----------|
-| `components/MasterScheduleGrid.tsx` | Desktop grid view (bảng) |
-| `components/MasterScheduleList.tsx` | Mobile list view |
-| `components/AppointmentDetailModal.tsx` | Modal sửa/swap appointment |
-| `components/ScheduleDragContext.tsx` | DnD context (dnd-kit) |
+| File mới | Dòng | Nội dung |
+|----------|------|----------|
+| `components/MasterScheduleGrid.tsx` | ~180 | Desktop grid view (bảng) |
+| `components/MasterScheduleList.tsx` | ~450 | Mobile list view (theo giờ + theo thợ) |
+| `components/AppointmentDetailModal.tsx` | ~260 | Modal sửa/swap appointment |
+| `components/ScheduleDndComponents.tsx` | ~100 | DraggableApptCard, DroppableSlotCell, DroppableStaffCard |
 
 ---
 
@@ -743,7 +753,7 @@ Hoặc xóa file (đã có `seed_blogs.mjs` chạy được).
 | `components/MasterSchedule.tsx` → 4 files mới | 4.5 | P1 | Refactor |
 | `lib/push.ts` (xóa) | 4.6 | P1 | Xóa |
 | `utils/supabase/middleware.ts` (xóa) | 4.7 | P1 | Xóa |
-| `app/booking/actions.ts` → 3-4 files | 4.8 | P1 | Refactor |
+| `app/booking/actions.ts` → `app/booking/actions/*.ts` (6 files) | 4.8 | P1 | Refactor |
 | Tạo `hooks/` + `types/` | 4.9 | P2 | New |
 | Tạo 5 `error.tsx` / `not-found.tsx` | 4.10 | P2 | New |
 | `app/login/actions.ts`, `app/api/login/route.ts` | 4.11 | P1 | Fix |
@@ -753,22 +763,170 @@ Hoặc xóa file (đã có `seed_blogs.mjs` chạy được).
 
 ---
 
-### Tiến độ Phase 4
+### Tiến độ Phase 4 ✅
 
 - [x] **P4.1** — Tailwind content paths
 - [x] **P4.2** — TypeScript target
 - [x] **P4.3** — next.config.ts images + logging
 - [x] **P4.4** — Tách admin page (16 files)
-- [ ] **P4.5** — Tách MasterSchedule (4 files) ⏳
+- [x] **P4.5** — Tách MasterSchedule (4 files)
 - [x] **P4.6** — Xóa `lib/push.ts`
 - [x] **P4.7** — Xóa `utils/supabase/middleware.ts`
-- [ ] **P4.8** — Tách booking actions ⏳
+- [x] **P4.8** — Tách booking actions (6 files)
 - [x] **P4.9** — Tạo hooks/ + types/
 - [x] **P4.10** — Thêm error/not-found pages
 - [x] **P4.11** — Login bypass → env vars
 - [x] **P4.12** — ESLint rules
 - [x] **P4.13** — CSS animation consolidation
 - [x] **P4.14** — Fix seed_blogs.sql
+
+**Tổng Phase 4: 14/14 items — ✅ Hoàn thành**
+
+---
+
+## Phase 5 — P2: Cron Job (Thay polling client bằng Supabase Edge Function)
+
+> Mục tiêu: Loại bỏ polling client-side 30 giây từ `PwaSupport.tsx`, thay bằng Supabase Edge Function chạy theo lịch. Logic reminders giữ nguyên trong `utils/reminders.ts` — Edge Function chỉ là HTTP trigger.
+
+### Hiện trạng
+
+**Polling tạm bợ:** `components/PwaSupport.tsx` gọi `POST /api/cron-check` mỗi **30 giây** từ trình duyệt.
+
+```typescript
+// PwaSupport.tsx — sẽ xoá
+useEffect(() => {
+  const triggerRemindersCheck = () => {
+    fetch('/api/cron-check', { method: 'POST' })
+  };
+  const initTimer = setTimeout(triggerRemindersCheck, 2000);
+  const pollInterval = setInterval(triggerRemindersCheck, 30000);
+  return () => { clearTimeout(initTimer); clearInterval(pollInterval); };
+}, []);
+```
+
+**Vấn đề:**
+- Chạy trên mọi tab trình duyệt đang mở → request nhân bản
+- Chạy cả khi không có ai cần reminder (không staff login)
+- Tốn Vercel function invocation (2 request/phút/tab)
+- Không chạy nếu user đóng tab — reminder không gửi được
+
+### Phân tích giải pháp
+
+| Giải pháp | Mô tả | Chi phí | Phức tạp |
+|-----------|-------|---------|----------|
+| **A. Edge Function Cron → gọi HTTP API** | EF nhẹ, fetch `POST /api/cron-check` | ✅ Free (cron cần Supabase Pro $25/th) | Thấp |
+| **B. Edge Function Cron → tự xử lý logic** | Copy `reminders.ts` + `push.ts` vào EF | ✅ Free (cron cần Supabase Pro $25/th) | Cao (web-push trên Deno) |
+| **C. cron-job.org → gọi HTTP API** | Dùng cron-job.org free gọi API | ✅ Free | Thấp nhất |
+
+**Khuyến nghị: A hoặc C** — tuỳ budget. A nếu đã có Supabase Pro, C nếu đang Free.
+
+### Kiến trúc (Phương án A)
+
+```
+┌──────────────────────┐     ┌───────────────────────────┐
+│  Supabase Dashboard   │     │  Vercel (Next.js)         │
+│  Cron: */5 * * * *   │     │                           │
+│       │              │     │                           │
+│       ▼              │     │                           │
+│  Edge Function       │────▶│  POST /api/cron-check    │
+│  cron-trigger        │     │         │                 │
+│  (3 dòng code)       │     │         ▼                 │
+└──────────────────────┘     │  runRemindersCheck()      │
+                             │         │                 │
+                             │         ▼                 │
+                             │  sendPushNotification()   │
+                             │  upsert logs → DB         │
+                             └───────────────────────────┘
+```
+
+### Các bước triển khai
+
+#### Bước 1: Cài Supabase CLI
+```bash
+npm install -g supabase
+supabase login
+supabase link --project-ref dpviknfsfgvkfyurhtpm
+```
+
+#### Bước 2: Tạo Edge Function `cron-trigger`
+```bash
+supabase functions new cron-trigger
+```
+
+**File:** `supabase/functions/cron-trigger/index.ts`
+```typescript
+const DEPLOYMENT_URL = Deno.env.get('VERCEL_DEPLOYMENT_URL')!;
+const CRON_SECRET = Deno.env.get('CRON_SECRET')!;
+
+Deno.serve(async () => {
+  const res = await fetch(`${DEPLOYMENT_URL}/api/cron-check`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-cron-secret': CRON_SECRET,
+    },
+  });
+  const body = await res.json();
+  return new Response(JSON.stringify(body), { status: res.status });
+});
+```
+
+#### Bước 3: Set secrets
+```bash
+supabase secrets set VERCEL_DEPLOYMENT_URL=https://min-nail-hair.vercel.app
+supabase secrets set CRON_SECRET=<your_cron_secret>
+```
+
+#### Bước 4: Deploy
+```bash
+supabase functions deploy cron-trigger
+```
+
+#### Bước 5: Cấu hình Cron trên Supabase Dashboard
+1. **Edge Functions** → **Cron Jobs**
+2. Add:
+   - Name: `reminders-check`
+   - Function: `cron-trigger`
+   - Schedule: `*/5 * * * *`
+   - Method: `POST`
+
+> ⚠️ Cron Jobs yêu cầu **Supabase Pro plan** ($25/th). Nếu đang Free → dùng **cron-job.org** (free) gọi `POST https://min-nail-hair.vercel.app/api/cron-check` thay thế.
+
+#### Bước 6: Xoá polling trong `PwaSupport.tsx`
+Xoá toàn bộ section 3 (dòng 52-82):
+```typescript
+// Xoá useEffect chứa triggerRemindersCheck, initTimer, pollInterval
+```
+
+#### Bước 7: (Optional) Bảo vệ `/api/cron-check`
+Thêm check `x-cron-secret` trong `app/api/cron-check/route.ts`:
+```typescript
+// if (request.headers.get('x-cron-secret') !== process.env.CRON_SECRET) {
+//   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+// }
+```
+
+### Files thay đổi
+
+| File | Hành động | Mô tả |
+|------|-----------|-------|
+| `components/PwaSupport.tsx` | 🔨 Sửa | Xoá polling useEffect (dòng 52-82) |
+| `supabase/functions/cron-trigger/index.ts` | ✨ Mới | Edge Function 3 dòng |
+| `app/api/cron-check/route.ts` | 🔨 Sửa (optional) | Thêm x-cron-secret check |
+
+**Giữ nguyên:**
+- `utils/reminders.ts` — logic reminders tập trung
+- `utils/push.ts` — gửi push notification
+- `app/api/cron-check/route.ts` — vẫn là entry point
+
+### Rủi ro & xử lý
+
+| Rủi ro | Xử lý |
+|--------|-------|
+| Edge Function cold start (~200ms) | Cron 5 phút → không đáng kể |
+| cron-job.org downtime | Có retry, alert nếu fail liên tục |
+| web-push không tương thích Deno | Giải pháp A không gặp vấn đề này |
+| Chi phí Supabase Pro | Có cron-job.org thay thế free |
 
 ---
 

@@ -215,11 +215,11 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 |-------|------|-------|
 | `/` | `app/page.tsx` | Landing page: services, feedback, schedule tracker, packages, booking CTA |
 | `/booking` | `app/booking/page.tsx` | Đặt lịch 3 bước: (1) chọn ngày-giờ-dịch vụ, (2) nhập thông tin KH, (3) xác nhận |
-| `/booking/actions.ts` | Server actions | `checkCustomerHistory`, `submitBooking`, `getAvailableStaff`, `getPublicServices`, `getSlotAvailability`, `getCustomerCareSuggestion` ... |
+| `/booking/actions/` | 6 server action files | `public.ts` (services/SEO/packages), `slots.ts` (availability), `booking.ts` (submit), `customer.ts` (history/review/cancel), `suggestions.ts` (AI care), `notifications.ts` (CRUD) |
 | `/login` | `app/login/page.tsx` | Đăng nhập admin/staff với auto-fill buttons |
 | `/login/actions.ts` | Server action | `loginUser(prevState, formData)` — bypass + DB path |
-| `/admin` | `app/admin/page.tsx` | Dashboard: charts, staff table, services, packages, blog SEO AI, settings (4956 dòng) |
-| `/admin/schedule` | `app/admin/schedule/page.tsx` + `actions.ts` | MasterSchedule lịch ngang |
+| `/admin` | `app/admin/page.tsx` | Dashboard: charts, staff table, services, packages, blog SEO AI, settings (424 dòng — đã tách ra 16 component files) |
+| `/admin/schedule` | `app/admin/schedule/page.tsx` + `actions.ts` | MasterSchedule lịch ngang (grid: `MasterScheduleGrid.tsx`, list: `MasterScheduleList.tsx`, DnD: `ScheduleDndComponents.tsx`, modal: `AppointmentDetailModal.tsx`) |
 | `/admin/customers` | `app/admin/customers/page.tsx` + `actions.ts` + `CustomerCRM.tsx` | CRM khách hàng |
 | `/admin/blog` | `app/admin/blog/page.tsx` | Quản lý bài viết SEO |
 | `/admin/orders` | `app/admin/orders/page.tsx` | Đơn hàng / packages đã bán |
@@ -302,10 +302,7 @@ createClient() → nếu có env vars → real client
               → nếu không → mock client (trả data rỗng)
 ```
 
-### `utils/supabase/middleware.ts`
-```typescript
-updateSession() = no-op (chỉ return NextResponse.next())
-```
+### ~~`utils/supabase/middleware.ts`~~ (Đã xóa — P4.7)
 
 ### Login bypass (app/login/actions.ts)
 ```
@@ -390,7 +387,7 @@ api/cron/reminders → utils/reminders.ts → runRemindersCheck()
 | `database.sql` | **Source of truth** cho DB schema. Chạy 1 phát trên Supabase SQL Editor |
 | `.env.local` | Chứa: SUPABASE_*, JWT_SECRET, GEMINI_API_KEY, VAPID_*, CRON_SECRET, UNSPLASH_ACCESS_KEY |
 | `.env.example` | Mẫu các biến môi trường |
-| `next.config.ts` | Default (trống) |
+| `next.config.ts` | images.remotePatterns + logging.fetches (P4.3) |
 | `middleware.ts` | Session refresh + route protection |
 | `scripts/migrate_schema.sql` | Upgrade script (ALTER ADD COLUMN IF NOT EXISTS) |
 

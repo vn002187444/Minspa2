@@ -2,8 +2,13 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getPublicSeoSettings, getSlotAvailability, getCustomerNotifications, markCustomerNotificationRead, markAllCustomerNotificationsRead } from './actions';
-import type { SlotInfo } from './actions';
+import { getPublicServices, getPublicSeoSettings } from './actions/public';
+import { checkCustomerHistory } from './actions/customer';
+import { getCustomerNotifications, markCustomerNotificationRead, markAllCustomerNotificationsRead } from './actions/notifications';
+import { getCustomerCareSuggestion } from './actions/suggestions';
+import { getAvailableStaff, getSlotAvailability } from './actions/slots';
+import type { SlotInfo } from './actions/slots';
+import { submitBooking } from './actions/booking';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import LoadingButton from '@/components/LoadingButton';
@@ -127,8 +132,8 @@ export default function BookingPage() {
     }
 
     async function loadPackages() {
-      const { getPublicPackages } = await import('./actions');
-      const pkgs = await getPublicPackages();
+      const { getPublicPackages: getPkgs } = await import('./actions/public');
+      const pkgs = await getPkgs();
       setAllPackages(pkgs || []);
     }
 

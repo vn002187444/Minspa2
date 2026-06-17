@@ -101,4 +101,21 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 
 ---
 
+### 🟢 Phase 4 — Code & Deployment Optimization (18/06/2026 ✅)
+- [x] **P4.1** Tailwind content paths — fix missing classes in production
+- [x] **P4.2** TypeScript target ES5 → ES2017 — giảm bundle size
+- [x] **P4.3** next.config.ts — images remotePatterns + logging
+- [x] **P4.4** Admin page: 4.956 → 424 dòng (16 component files)
+- [x] **P4.5** MasterSchedule: 1.277 → ~430 dòng (4 component files)
+- [x] **P4.6** Xoá `lib/push.ts` duplicate
+- [x] **P4.7** Xoá `utils/supabase/middleware.ts` stub
+- [x] **P4.8** Booking actions: 699 dòng → 6 file domain
+- [x] **P4.9** Tạo `hooks/` + `types/` directories
+- [x] **P4.10** Error boundaries cho 4 routes
+- [x] **P4.11** Login bypass hardcoded → env vars
+- [x] **P4.12** ESLint no-unused-vars + exhaustive-deps
+- [x] **P4.13** CSS keyframes → tailwind.config.ts
+- [x] **P4.14** Fix seed_blogs.sql syntax
+
+---
 *Tài liệu này sẽ liên tục được cập nhật song hành cùng sự tiến bộ của dự án!*
