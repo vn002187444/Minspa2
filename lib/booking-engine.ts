@@ -1,4 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
+import { insertNotification } from "@/utils/notifications";
+import { format } from "date-fns";
 
 export interface TimeLock {
   id: string;
@@ -142,6 +144,25 @@ export async function cascadeShiftForward(
       lockTimeSlots(appt.id, staffId, newStart.toISOString(), newEnd.toISOString()),
     ]);
 
+    const minutesShifted = Math.round((newStart.getTime() - originalStart.getTime()) / 60000);
+    const apptCustomerId = (appt as any).customer_id;
+    if (apptCustomerId) {
+      insertNotification(
+        'customer',
+        apptCustomerId,
+        'Lịch hẹn đã được dời',
+        `Lịch hẹn của bạn đã được đẩy lên sớm hơn ${minutesShifted} phút do ca trước hoàn thành sớm.`,
+        '/booking'
+      ).catch(() => {});
+    }
+    insertNotification(
+      'user',
+      staffId,
+      'Lịch hẹn dời lịch',
+      `Lịch hẹn lúc ${format(new Date(originalStart), 'HH:mm')} được dời lên ${format(newStart, 'HH:mm')} (sớm hơn ${minutesShifted} phút).`,
+      '/staff?tab=SCHEDULE'
+    ).catch(() => {});
+
     cursor = newEnd;
   }
 
@@ -171,7 +192,7 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
 
   const { data: appt } = await supabase
     .from('appointments')
-    .select('id, staff_id, start_time, end_time, actual_start_time, actual_end_time, status')
+    .select('id, staff_id, customer_id, start_time, end_time, actual_start_time, actual_end_time, status')
     .eq('id', appointmentId)
     .single();
 
@@ -183,6 +204,26 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
     .eq('id', appointmentId);
 
   await unlockTimeSlots(appointmentId);
+
+  // Notify staff and customer
+  if (appt.staff_id) {
+    insertNotification(
+      'user',
+      appt.staff_id,
+      'Lịch hẹn đã hủy',
+      `Lịch hẹn lúc ${format(new Date(appt.start_time), 'HH:mm')} đã bị hủy.`,
+      '/staff?tab=SCHEDULE'
+    ).catch(() => {});
+  }
+  if (appt.customer_id) {
+    insertNotification(
+      'customer',
+      appt.customer_id,
+      'Lịch hẹn đã hủy',
+      'Lịch hẹn của bạn tại Min Nail & Hair đã được hủy.',
+      '/booking'
+    ).catch(() => {});
+  }
 
   if (appt.staff_id) {
     const actualEnd = appt.actual_end_time || appt.end_time;
@@ -275,7 +316,7 @@ export async function getSlotAvailabilityWithNames(
 
   const slots: SlotAvailability[] = [];
 
-  for (let h = 9; h <= 19; h++) {
+  for (let h = 9; h <= 20; h++) {
     for (let m = 0; m <= 30; m += 30) {
       const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
       const slotMinutes = h * 60 + m;
@@ -285,7 +326,7 @@ export async function getSlotAvailabilityWithNames(
         continue;
       }
 
-      if (slotMinutes + durationMinutes > 20 * 60) {
+      if (slotMinutes + durationMinutes > 21 * 60) {
         slots.push({ time, status: 'past', availableStaff: 0, totalStaff, availableStaffNames: [], isRecommended: false });
         continue;
       }

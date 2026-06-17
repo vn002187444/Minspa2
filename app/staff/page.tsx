@@ -63,6 +63,7 @@ import BottomNavigation from "@/components/BottomNavigation";
 import PushNotificationManager from "@/components/PushNotificationManager";
 import LoadingButton from "@/components/LoadingButton";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function StaffDashboard() {
   const router = useRouter();
@@ -376,7 +377,8 @@ export default function StaffDashboard() {
               Staff Portal
             </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <NotificationBell />
             <Link
               href="/"
               title="Quay lại Trang Chủ"

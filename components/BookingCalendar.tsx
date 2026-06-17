@@ -37,14 +37,18 @@ export default function BookingCalendar({
     return days;
   }, []);
 
+  const visibleSlots = useMemo(() =>
+    slotAvailability.filter(s => s.status !== 'past'),
+    [slotAvailability]
+  );
+
   const stats = useMemo(() => {
-    const total = slotAvailability.length;
-    const past = slotAvailability.filter(s => s.status === 'past').length;
-    const full = slotAvailability.filter(s => s.status === 'fully_booked' || s.status === 'no_staff_present').length;
-    const available = slotAvailability.filter(s => s.status === 'all_available' || s.status === 'some_available').length;
-    const recommended = slotAvailability.filter(s => s.isRecommended).length;
-    return { total, past, full, available, recommended };
-  }, [slotAvailability]);
+    const total = visibleSlots.length;
+    const full = visibleSlots.filter(s => s.status === 'fully_booked' || s.status === 'no_staff_present').length;
+    const available = visibleSlots.filter(s => s.status === 'all_available' || s.status === 'some_available').length;
+    const recommended = visibleSlots.filter(s => s.isRecommended).length;
+    return { total, full, available, recommended };
+  }, [visibleSlots]);
 
   if (slotAvailability.length === 0) {
     return (
@@ -59,7 +63,7 @@ export default function BookingCalendar({
 
   return (
     <div className="space-y-4">
-      {stats.available === 0 && stats.total > 0 && (
+      {stats.available === 0 && visibleSlots.length > 0 && (
         <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold">
           <AlertCircle className="w-4 h-4 shrink-0" />
           Hôm nay đã hết khung giờ trống. Vui lòng chọn ngày khác.
@@ -89,18 +93,15 @@ export default function BookingCalendar({
         </div>
 
         <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 p-3 max-h-48 overflow-y-auto">
-          {slotAvailability.map((slot) => {
-            const isPast = slot.status === 'past';
+          {visibleSlots.map((slot) => {
             const isFull = slot.status === 'fully_booked' || slot.status === 'no_staff_present';
             const isSelected = selectedTime === slot.time;
-            const isRecommended = slot.isRecommended && !isPast && !isFull;
+            const isRecommended = slot.isRecommended && !isFull;
 
             let cellStyle = 'bg-white border-[#EADDCD] text-gray-600';
             let label = slot.time;
 
-            if (isPast) {
-              cellStyle = 'bg-gray-100 border-gray-200 text-gray-300 line-through cursor-not-allowed';
-            } else if (isFull) {
+            if (isFull) {
               cellStyle = 'bg-red-50/80 border-red-200 text-red-400 cursor-not-allowed';
             } else if (isSelected) {
               cellStyle = 'bg-amber-500 border-amber-500 text-white shadow-md scale-105 ring-2 ring-amber-300';
@@ -119,13 +120,12 @@ export default function BookingCalendar({
               <button
                 key={slot.time}
                 type="button"
-                disabled={isPast || isFull}
-                onClick={() => !isPast && !isFull && onSelectTime(slot.time)}
+                disabled={isFull}
+                onClick={() => !isFull && onSelectTime(slot.time)}
                 className={`relative py-2.5 px-1 text-xs font-bold rounded-xl border transition-all duration-150 ${cellStyle} ${
-                  !isPast && !isFull ? 'hover:shadow-sm active:scale-95 cursor-pointer' : 'cursor-not-allowed'
+                  !isFull ? 'hover:shadow-sm active:scale-95 cursor-pointer' : 'cursor-not-allowed'
                 }`}
                 title={
-                  isPast ? 'Đã qua' :
                   isFull ? 'Không còn nhân viên trống' :
                   slot.availableStaffNames.length > 0
                     ? `Còn ${slot.availableStaff}/${slot.totalStaff} nhân viên: ${slot.availableStaffNames.join(', ')}`
@@ -133,10 +133,18 @@ export default function BookingCalendar({
                 }
               >
                 {label}
-                {slot.availableStaff > 0 && !isPast && !isFull && (
-                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 text-white text-[7px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                {isRecommended && (
+                  <span className="absolute -top-2 -right-2 text-[10px] drop-shadow-sm">⭐</span>
+                )}
+                {slot.availableStaff > 0 && !isFull && (
+                  <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 text-[7px] font-bold rounded-full flex items-center justify-center shadow-xs ${
+                    isRecommended ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'
+                  }`}>
                     {slot.availableStaff}
                   </span>
+                )}
+                {isRecommended && (
+                  <span className="block text-[8px] text-amber-600 font-extrabold mt-0.5 leading-none">⭐ Gợi ý</span>
                 )}
               </button>
             );

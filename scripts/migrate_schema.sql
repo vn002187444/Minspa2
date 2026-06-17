@@ -85,6 +85,12 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE
 -- (Lỗi "new row... violates check constraint 'users_check'" khi đổi role)
 DO $$
 BEGIN
+  -- Drop auto-generated column constraint (users_role_check) if it exists,
+  -- because it was created before MANAGER was added to the allowed roles.
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_role_check' AND conrelid = 'users'::regclass) THEN
+    ALTER TABLE public.users DROP CONSTRAINT users_role_check;
+  END IF;
+  -- Also try the old name in case someone renamed it
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_check' AND conrelid = 'users'::regclass) THEN
     ALTER TABLE public.users DROP CONSTRAINT users_check;
   END IF;
@@ -195,3 +201,38 @@ ALTER TABLE public.seo_settings ADD COLUMN IF NOT EXISTS hotline VARCHAR(20) DEF
 -- ========================================
 ALTER TABLE public.appointments ADD COLUMN IF NOT EXISTS actual_start_time TIMESTAMP WITH TIME ZONE;
 ALTER TABLE public.appointments ADD COLUMN IF NOT EXISTS actual_end_time TIMESTAMP WITH TIME ZONE;
+
+-- ========================================
+-- 13. notifications table (in-app notification system)
+-- ========================================
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  recipient_type VARCHAR(20) NOT NULL CHECK (recipient_type IN ('user', 'customer')),
+  recipient_id UUID NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  link VARCHAR(500),
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(recipient_type, recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON public.notifications(recipient_type, recipient_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON public.notifications(created_at DESC);
+
+-- ========================================
+-- 14. is_active indexes + NOT NULL constraints
+-- ========================================
+CREATE INDEX IF NOT EXISTS idx_users_is_active ON public.users(is_active);
+CREATE INDEX IF NOT EXISTS idx_services_is_active ON public.services(is_active);
+CREATE INDEX IF NOT EXISTS idx_treatment_packages_is_active ON public.treatment_packages(is_active);
+
+ALTER TABLE public.users ALTER COLUMN is_active SET NOT NULL;
+ALTER TABLE public.services ALTER COLUMN is_active SET NOT NULL;
+ALTER TABLE public.treatment_packages ALTER COLUMN is_active SET NOT NULL;
+
+-- ========================================
+-- 15. Composite indexes for booking queries
+-- ========================================
+CREATE INDEX IF NOT EXISTS idx_attendance_date_status ON public.attendance(date, status);
+CREATE INDEX IF NOT EXISTS idx_appointments_start_time_status ON public.appointments(start_time, status);

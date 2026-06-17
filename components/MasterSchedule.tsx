@@ -597,10 +597,15 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                             <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
                             Chờ gán thợ
                           </span>
-                        ) : (
+                        ) : staff.is_present ? (
                           <span className="text-[9px] font-medium text-emerald-600 flex items-center gap-1 mt-0.5 bg-emerald-50 w-max px-1.5 py-0.5 rounded">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                             Đã trực
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-medium text-gray-400 flex items-center gap-1 mt-0.5 bg-gray-50 w-max px-1.5 py-0.5 rounded">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                            Chưa điểm danh
                           </span>
                         )}
                       </td>

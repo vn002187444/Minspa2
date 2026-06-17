@@ -1,27 +1,27 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Audit Logs Table
+-- Users Table (created first because other tables reference it)
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  role VARCHAR(50) NOT NULL,
+  username VARCHAR(100) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  full_name VARCHAR(255) NOT NULL,
+  cccd VARCHAR(20),
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  notification_token JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  CONSTRAINT users_role_cccd_check CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
+);
+
+-- Audit Logs Table (references users, so created after users)
 CREATE TABLE audit_logs (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   action VARCHAR(255) NOT NULL,
   details TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
-);
-
--- Users Table
-CREATE TABLE users (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  role VARCHAR(50) NOT NULL CHECK (role IN ('ADMIN', 'MANAGER', 'STAFF')),
-  username VARCHAR(100) UNIQUE NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  full_name VARCHAR(255) NOT NULL,
-  cccd VARCHAR(20),
-  is_active BOOLEAN DEFAULT TRUE,
-  notification_token JSONB,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
-  CONSTRAINT users_role_cccd_check CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
 );
 
 -- Customers Table
@@ -42,12 +42,10 @@ CREATE TABLE services (
   price DECIMAL(10, 2) NOT NULL,
   duration INT NOT NULL, -- minutes
   image_url VARCHAR(255),
-  is_active BOOLEAN DEFAULT TRUE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   discount_percentage DECIMAL(5, 2) DEFAULT 0,
   commission_percentage DECIMAL(5,2) DEFAULT 0,
-  commission_amount DECIMAL(10,2) DEFAULT 0,
-
-
+  commission_amount DECIMAL(10,2) DEFAULT 0
 );
 
 -- Appointments Table
@@ -57,6 +55,8 @@ CREATE TABLE appointments (
   staff_id UUID REFERENCES users(id) ON DELETE SET NULL,
   start_time TIMESTAMP WITH TIME ZONE NOT NULL,
   end_time TIMESTAMP WITH TIME ZONE,
+  actual_start_time TIMESTAMP WITH TIME ZONE,
+  actual_end_time TIMESTAMP WITH TIME ZONE,
   status VARCHAR(50) NOT NULL CHECK (status IN ('PENDING_RANDOM', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
   tip_amount DECIMAL(10, 2) DEFAULT 0,
   total_amount DECIMAL(10, 2) DEFAULT 0,
@@ -105,7 +105,7 @@ CREATE TABLE treatment_packages (
   price DECIMAL(10, 2) NOT NULL,
   total_sessions INT,
   commission_percentage DECIMAL(5, 2) DEFAULT 0,
-  is_active BOOLEAN DEFAULT TRUE,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
@@ -275,6 +275,29 @@ INSERT INTO services (name, category, description, price, duration, discount_per
 ('Chà gót chân theo combo', 'Deal', 'Deal: Chà gót chân theo combo', 99000, 30, 0);
 
 -- ========================================
+-- Notifications Table (In-app notification system)
+CREATE TABLE IF NOT EXISTS notifications (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  recipient_type VARCHAR(20) NOT NULL CHECK (recipient_type IN ('user', 'customer')),
+  recipient_id UUID NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content TEXT NOT NULL,
+  link VARCHAR(500),
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_type, recipient_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(recipient_type, recipient_id, is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
+
+-- Performance indexes
+CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_services_is_active ON services(is_active);
+CREATE INDEX IF NOT EXISTS idx_treatment_packages_is_active ON treatment_packages(is_active);
+CREATE INDEX IF NOT EXISTS idx_attendance_date_status ON attendance(date, status);
+CREATE INDEX IF NOT EXISTS idx_appointments_start_time_status ON appointments(start_time, status);
+
 -- Storage bucket cho ảnh SEO/Gemini
 -- ========================================
 INSERT INTO storage.buckets (id, name, public, avif_autodetection, file_size_limit, allowed_mime_types)
@@ -288,3 +311,16 @@ BEGIN
       FOR SELECT USING (bucket_id = 'seo-images');
   END IF;
 END $$;
+
+-- Seed users
+INSERT INTO users (id, role, username, password_hash, full_name, is_active)
+VALUES ('00000000-0000-0000-0000-000000000000', 'ADMIN', 'admin', 'Admin', 'Admin', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO users (id, role, username, password_hash, full_name, cccd, is_active)
+VALUES ('00000000-0000-0000-0000-000000000001', 'STAFF', 'staff1', 'Staff@1', N'Thợ Makeup 1', '000000000000', TRUE)
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO users (id, role, username, password_hash, full_name, is_active)
+VALUES ('00000000-0000-0000-0000-000000000002', 'MANAGER', 'manager', 'Manager@1', N'Quản lý', TRUE)
+ON CONFLICT (id) DO NOTHING;

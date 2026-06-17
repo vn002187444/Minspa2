@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BottomNavigation from "@/components/BottomNavigation";
 import PushNotificationManager from "@/components/PushNotificationManager";
+import NotificationBell from "@/components/NotificationBell";
 import {
   BarChart,
   Users,
@@ -58,6 +59,7 @@ import {
   updateStaff,
   resetStaffPassword,
   deleteStaffSafely,
+  toggleStaffActive,
   getServices,
   saveService,
   deleteServiceSafely,
@@ -155,7 +157,8 @@ export default function AdminDashboard() {
         <span className="font-display font-extrabold text-base tracking-wider">
           ADMIN PORTAL
         </span>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <NotificationBell />
           <Link
             href="/"
             title="Quay lại Trang Chủ"
@@ -355,7 +358,10 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 max-h-[100vh] overflow-y-auto">
+      <main className="flex-1 p-4 md:p-8 max-h-[100vh] overflow-y-auto relative">
+        <div className="hidden md:flex absolute top-4 right-4 z-20">
+          <NotificationBell />
+        </div>
         {isLoading ? (
           <div className="flex justify-center items-center h-full">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8D6E53]"></div>
@@ -1223,6 +1229,7 @@ function TabStaff({
   const [staffStats, setStaffStats] = useState<Record<string, any>>({});
   const [loadingStats, setLoadingStats] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   
   const [rangeType, setRangeType] = useState<"week" | "month" | "last_month" | "custom">("month");
   
@@ -1267,7 +1274,11 @@ function TabStaff({
     const term = searchTerm.toLowerCase();
     const name = (staff.full_name || "").toLowerCase();
     const cccd = (staff.cccd || "").toLowerCase();
-    return name.includes(term) || cccd.includes(term);
+    const matchesSearch = name.includes(term) || cccd.includes(term);
+    const isStaffActive = staff.is_active !== false;
+    if (statusFilter === "active") return matchesSearch && isStaffActive;
+    if (statusFilter === "inactive") return matchesSearch && !isStaffActive;
+    return matchesSearch;
   });
 
   useEffect(() => {
@@ -1350,7 +1361,7 @@ function TabStaff({
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-          <div className="relative w-full sm:w-64 focus-within:w-full sm:focus-within:w-72 transition-all">
+          <div className="relative w-full sm:w-48 focus-within:w-full sm:focus-within:w-56 transition-all">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -1360,6 +1371,15 @@ function TabStaff({
               className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all shadow-inner"
             />
           </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer"
+          >
+            <option value="all">Tất cả</option>
+            <option value="active">Hoạt động</option>
+            <option value="inactive">Đã vô hiệu hóa</option>
+          </select>
           <button
             onClick={() => setIsAddOpen(true)}
             className="bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-black flex items-center justify-center gap-2 cursor-pointer transition-transform active:scale-95 whitespace-nowrap"
@@ -1398,6 +1418,7 @@ function TabStaff({
                 <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
                   <tr>
                     <th className="p-4 pl-6">Nhân viên</th>
+                    <th className="p-4 text-center">Trạng thái</th>
                     <th className="p-4 hidden md:table-cell">Số CCCD</th>
                     <th className="p-4 text-right hidden sm:table-cell">Doanh thu</th>
                     <th className="p-4 text-right hidden lg:table-cell">Hoa hồng</th>
@@ -1409,7 +1430,7 @@ function TabStaff({
                 <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
                   {filteredStaffs.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-gray-500 font-medium">
+                      <td colSpan={8} className="p-8 text-center text-gray-500 font-medium">
                         Không tìm thấy nhân viên nào
                       </td>
                     </tr>
@@ -1437,6 +1458,19 @@ function TabStaff({
                             </div>
                           </div>
                         </td>
+                        <td className="p-4 text-center">
+                          {staff.is_active !== false ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                              Hoạt động
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                              <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                              Đã vô hiệu hóa
+                            </span>
+                          )}
+                        </td>
                         <td className="p-4 font-mono text-gray-500 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)}>
                           {staff.cccd || "N/A"}
                         </td>
@@ -1452,7 +1486,28 @@ function TabStaff({
                         <td className="p-4 text-center font-bold text-gray-800 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)}>
                           {stats.totalCompleted || 0}
                         </td>
-                        <td className="p-4 pr-6 text-right flex items-center justify-end gap-3">
+                        <td className="p-4 pr-6 text-right flex items-center justify-end gap-1.5">
+                          {userRole === 'ADMIN' && (
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (!confirm(staff.is_active !== false
+                                  ? `Vô hiệu hóa nhân viên "${staff.full_name}"?`
+                                  : `Kích hoạt lại nhân viên "${staff.full_name}"?`
+                                )) return;
+                                const res = await toggleStaffActive(staff.id, staff.is_active === false);
+                                if (res.success) onReload();
+                                else alert(res.error);
+                              }}
+                              className={`text-[11px] font-semibold px-2 py-1 rounded-lg cursor-pointer transition-all ${
+                                staff.is_active !== false
+                                  ? 'text-red-500 hover:bg-red-50'
+                                  : 'text-emerald-600 hover:bg-emerald-50'
+                              }`}
+                            >
+                              {staff.is_active !== false ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => setEditStaff(staff)}

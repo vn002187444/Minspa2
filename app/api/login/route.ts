@@ -29,12 +29,16 @@ export async function POST(req: NextRequest) {
       const supabase = await createClient();
       const { data: user, error } = await supabase
         .from('users')
-        .select('id, role, username, password_hash')
+        .select('id, role, username, password_hash, is_active')
         .ilike('username', normUsername)
         .single();
 
       if (error || !user) {
         return NextResponse.json({ success: false, error: 'Sai tên đăng nhập hoặc mật khẩu' });
+      }
+
+      if (user.is_active === false) {
+        return NextResponse.json({ success: false, error: 'Tài khoản đã bị vô hiệu hóa' });
       }
 
       if (user.password_hash !== normPassword) {

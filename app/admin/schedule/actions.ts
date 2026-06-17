@@ -39,13 +39,17 @@ export async function getScheduleData(dateStr?: string) {
 
     const presentStaffIds = attendance?.map((a: any) => a.staff_id) || [];
 
-    // 2. Get all staff & managers
+    // 2. Get all active staff & managers
     const { data: staffList } = await supabase
       .from('users')
       .select('id, full_name, username')
-      .in('role', ['STAFF', 'MANAGER']);
+      .in('role', ['STAFF', 'MANAGER'])
+      .eq('is_active', true);
 
-    const finalStaffList = staffList || [];
+    const finalStaffList = (staffList || []).map(staff => ({
+      ...staff,
+      is_present: presentStaffIds.includes(staff.id),
+    }));
 
     // 3. Get today's appointments
     const { data: appointments } = await supabase

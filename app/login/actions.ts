@@ -77,6 +77,11 @@ export async function loginUser(prevState: any, formData: FormData) {
       return { success: false, error: 'Sai tên đăng nhập hoặc mật khẩu' };
     }
 
+    if (user.is_active === false) {
+      console.warn(`[AUTH WARNING] Account is disabled: "${normUsername}"`);
+      return { success: false, error: 'Tài khoản đã bị vô hiệu hóa' };
+    }
+
     console.log(`[AUTH] DB match found for user: "${user.username}". Registered Role: "${user.role}"`);
 
     // Ensure we handle both upper/lower case comparisons if database has different casing

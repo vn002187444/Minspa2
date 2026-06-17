@@ -9,14 +9,8 @@ export const createClient = () => {
   }
 
   return {
-    from: () => {
-      return {
-        select: () => {
-          return {
-            eq: () => Promise.resolve({ data: [], error: null })
-          };
-        }
-      };
-    }
-  };
+    from: () => ({ select: () => ({ eq: () => Promise.resolve({ data: [], error: null }) }) }),
+    channel: () => ({} as any),
+    removeChannel: () => {},
+  } as any;
 };

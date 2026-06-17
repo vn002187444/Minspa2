@@ -2,9 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getPublicSeoSettings, getSlotAvailability } from './actions';
+import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getPublicSeoSettings, getSlotAvailability, getCustomerNotifications, markCustomerNotificationRead, markAllCustomerNotificationsRead } from './actions';
 import type { SlotInfo } from './actions';
-import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -23,6 +23,8 @@ export default function BookingPage() {
   const [isCheckingPhone, setIsCheckingPhone] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [customerNotifs, setCustomerNotifs] = useState<any[]>([]);
+  const [showNotifBanner, setShowNotifBanner] = useState(false);
   
   // Treatment package options
   const [activePackages, setActivePackages] = useState<any[]>([]);
@@ -45,6 +47,56 @@ export default function BookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('Tất cả');
+
+  const CACHE_HISTORY_PREFIX = 'min_salon_cust_';
+  const CACHE_PACKAGES_PREFIX = 'min_salon_pkg_';
+  const CACHE_TTL = 24 * 60 * 60 * 1000;
+  const CACHE_PACKAGES_TTL = 5 * 60 * 1000;
+
+  function getCachedHistory(phone: string): any | null {
+    try {
+      const raw = localStorage.getItem(CACHE_HISTORY_PREFIX + phone);
+      if (!raw) return null;
+      const { data, timestamp } = JSON.parse(raw);
+      if (Date.now() - timestamp > CACHE_TTL) {
+        localStorage.removeItem(CACHE_HISTORY_PREFIX + phone);
+        return null;
+      }
+      return data;
+    } catch { return null; }
+  }
+
+  function setCachedHistory(phone: string, data: any) {
+    try {
+      localStorage.setItem(CACHE_HISTORY_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch { /* quota exceeded */ }
+  }
+
+  function getCachedPackages(phone: string): any | null {
+    try {
+      const raw = localStorage.getItem(CACHE_PACKAGES_PREFIX + phone);
+      if (!raw) return null;
+      const { data, timestamp } = JSON.parse(raw);
+      if (Date.now() - timestamp > CACHE_PACKAGES_TTL) {
+        localStorage.removeItem(CACHE_PACKAGES_PREFIX + phone);
+        return null;
+      }
+      return data;
+    } catch { return null; }
+  }
+
+  function setCachedPackages(phone: string, data: any) {
+    try {
+      localStorage.setItem(CACHE_PACKAGES_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
+    } catch { /* quota exceeded */ }
+  }
+
+  function invalidateCustomerCache(phone: string) {
+    try {
+      localStorage.removeItem(CACHE_HISTORY_PREFIX + phone);
+      localStorage.removeItem(CACHE_PACKAGES_PREFIX + phone);
+    } catch { /* ignore */ }
+  }
 
   useEffect(() => {
     async function loadServices() {
@@ -112,7 +164,11 @@ export default function BookingPage() {
         setPhone(savedPhone);
         setTimeout(async () => {
           try {
-            const result = await checkCustomerHistory(savedPhone);
+            let result = getCachedHistory(savedPhone);
+            if (!result) {
+              result = await checkCustomerHistory(savedPhone);
+              if (result.found) setCachedHistory(savedPhone, result);
+            }
             if (result.found) {
               setName(result.name);
               setCustomerId(result.id);
@@ -134,7 +190,12 @@ export default function BookingPage() {
     setIsCheckingPhone(true);
     
     try {
-      const { found, name: foundName, id, history, activePackages: foundPackages } = await checkCustomerHistory(phone);
+      let cached = getCachedHistory(phone);
+      if (!cached) {
+        cached = await checkCustomerHistory(phone);
+        if (cached.found) setCachedHistory(phone, cached);
+      }
+      const { found, name: foundName, id, history, activePackages: foundPackages } = cached;
       if (found) {
         setName(foundName);
         setCustomerId(id);
@@ -143,10 +204,20 @@ export default function BookingPage() {
           localStorage.setItem('min_salon_customer_phone', phone);
         }
         setActivePackages(foundPackages || []);
+
+        // Fetch customer notifications
+        const notifs = await getCustomerNotifications(id);
+        setCustomerNotifs(notifs);
+        const unreadNotifs = notifs.filter((n: any) => !n.is_read);
+        if (unreadNotifs.length > 0) {
+          setShowNotifBanner(true);
+        }
       } else {
         setCustomerId(null);
         setActivePackages([]);
         setSelectedPackageId(null);
+        setCustomerNotifs([]);
+        setShowNotifBanner(false);
       }
 
       setIsAiLoading(true);
@@ -174,7 +245,7 @@ export default function BookingPage() {
   useEffect(() => {
     async function fetchSlotAvail() {
       if (selectedDate) {
-        const slots = await getSlotAvailability(selectedDate);
+        const slots = await getSlotAvailability(selectedDate, selectedServices, services);
         setSlotAvailability(slots || []);
       }
     }
@@ -228,6 +299,7 @@ export default function BookingPage() {
     
     if (res.success) {
       if (typeof window !== 'undefined') {
+        invalidateCustomerCache(phone);
         localStorage.setItem('min_salon_customer_phone', phone);
         if (res.customerId) {
           localStorage.setItem('min_salon_customer_id', res.customerId);
@@ -317,6 +389,56 @@ export default function BookingPage() {
             {step === 1 && (
               <div className="space-y-6 flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
                  <div>
+                   {showNotifBanner && customerNotifs.some((n: any) => !n.is_read) && (
+                     <div className="mb-4 p-4 bg-[#FAF0E6] border border-[#EADDCD] rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+                       <div className="flex items-start gap-3">
+                         <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                           <Bell className="w-4 h-4 text-amber-700" />
+                         </div>
+                         <div className="flex-1 min-w-0">
+                           <p className="text-xs font-bold text-[#5C4033] uppercase tracking-wider mb-1.5">
+                             Thông báo mới ({customerNotifs.filter((n: any) => !n.is_read).length})
+                           </p>
+                           <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                             {customerNotifs.filter((n: any) => !n.is_read).map((n: any) => (
+                               <button
+                                 key={n.id}
+                                 onClick={async () => {
+                                   await markCustomerNotificationRead(n.id, customerId!);
+                                   setCustomerNotifs((prev) =>
+                                     prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x))
+                                   );
+                                   if (customerNotifs.filter((x: any) => !x.is_read).length <= 1) {
+                                     setShowNotifBanner(false);
+                                   }
+                                 }}
+                                 className="w-full text-left bg-white/80 hover:bg-white rounded-lg p-2.5 transition-colors border border-[#EADDCD]/50"
+                               >
+                                 <p className="text-xs font-semibold text-[#3A2E2B]">{n.title}</p>
+                                 <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{n.content}</p>
+                               </button>
+                             ))}
+                           </div>
+                           <button
+                             onClick={async () => {
+                               await markAllCustomerNotificationsRead(customerId!);
+                               setCustomerNotifs((prev) => prev.map((x) => ({ ...x, is_read: true })));
+                               setShowNotifBanner(false);
+                             }}
+                             className="mt-2 text-[11px] font-semibold text-[#8D6E53] hover:text-[#5C4033] transition-colors"
+                           >
+                             Đánh dấu tất cả đã đọc
+                           </button>
+                         </div>
+                         <button
+                           onClick={() => setShowNotifBanner(false)}
+                           className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0"
+                         >
+                           ×
+                         </button>
+                       </div>
+                     </div>
+                   )}
                    {activePackages && activePackages.length > 0 && (
                      <div className="p-5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-4 mb-6 animate-in fade-in zoom-in-95 duration-300">
                        <div className="flex gap-2">
@@ -512,7 +634,7 @@ export default function BookingPage() {
                  <div>
                    <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn ngày hẹn đẹp nhất</label>
                    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
-                      {[0, 1, 2, 3, 4, 5, 6].map(offset => {
+                       {Array.from({ length: 14 }, (_, i) => i).map(offset => {
                         const d = addDays(new Date(), offset);
                         const dateStr = format(d, 'yyyy-MM-dd');
                         const isSelected = selectedDate === dateStr;

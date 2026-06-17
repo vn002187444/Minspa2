@@ -437,6 +437,35 @@ export async function deleteStaffSafely(staffId: string, staffName: string) {
   }
 }
 
+export async function toggleStaffActive(staffId: string, newStatus: boolean) {
+  const session = await getSession();
+  if (!session || session.user.role !== 'ADMIN') {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+
+  try {
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({ is_active: newStatus })
+      .eq('id', staffId);
+
+    if (updateErr) throw updateErr;
+
+    await logAuditAction(
+      session.user.id,
+      newStatus ? "RESTORE_STAFF" : "SOFT_DELETE_STAFF",
+      `${newStatus ? 'Kích hoạt lại' : 'Vô hiệu hóa'} nhân viên ID: '${staffId}'`
+    );
+
+    revalidatePath('/');
+    revalidatePath('/admin');
+    return { success: true, message: newStatus ? 'Đã kích hoạt lại nhân viên.' : 'Đã vô hiệu hóa nhân viên.' };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
 export async function getReviews() {
   await checkAdminOrManager();
   const supabase = await createClient();
@@ -739,11 +768,12 @@ export async function getCommissionReport(startDateStr: string, endDateStr: stri
       .gte('purchased_at', startDateStr)
       .lte('purchased_at', endDateStr);
 
-    // Get all staff to ensure we list everyone even if they have 0 appointments
+    // Get all active staff to ensure we list everyone even if they have 0 appointments
     const { data: staffList } = await supabase
       .from('users')
       .select('id, full_name, username')
-      .eq('role', 'STAFF');
+      .eq('role', 'STAFF')
+      .eq('is_active', true);
 
     const staffMap: Record<string, any> = {};
     if (staffList) {

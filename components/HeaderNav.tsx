@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 const NAV_ITEMS = [
   { id: 'Deal-Chan-Dong', label: 'Góc Deal', href: '#category-Deal-Chan-Dong' },
@@ -111,6 +112,7 @@ export default function HeaderNav() {
 
         {/* CTAs */}
         <div className="flex items-center gap-3">
+          <NotificationBell />
           <Link 
             href="/booking" 
             className="text-xs font-bold tracking-widest text-[#FFF] bg-[#8D6E53] hover:bg-[#3A2E2B] px-5 py-3 rounded-full transition-all flex items-center gap-2 shadow-md hover:shadow-lg uppercase"

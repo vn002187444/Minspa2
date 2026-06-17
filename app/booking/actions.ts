@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { format } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
-import { lockTimeSlots, unlockTimeSlots } from "@/lib/booking-engine";
+import { getSlotAvailabilityWithNames, lockTimeSlots, unlockTimeSlots } from "@/lib/booking-engine";
 
 export async function getPublicServices() {
   const supabase = await createClient();
@@ -161,107 +161,12 @@ export interface SlotInfo {
   isRecommended: boolean;
 }
 
-export async function getSlotAvailability(date: string): Promise<SlotInfo[]> {
-  const supabase = await createClient();
-
-  const { data: allStaff } = await supabase
-    .from('users')
-    .select('id, full_name')
-    .in('role', ['STAFF', 'MANAGER'])
-    .eq('is_active', true);
-
-  if (!allStaff || allStaff.length === 0) {
-    return [];
-  }
-
-  const { data: attendance } = await supabase
-    .from('attendance')
-    .select('staff_id')
-    .eq('date', date)
-    .eq('status', 'PRESENT');
-  const presentStaffIds = new Set((attendance || []).map((a: any) => a.staff_id));
-  const presentStaff = allStaff.filter((s: any) => presentStaffIds.has(s.id));
-  const totalStaff = presentStaff.length;
-
-  const dayStart = new Date(`${date}T00:00:00+07:00`).toISOString();
-  const dayEnd = new Date(`${date}T23:59:59.999+07:00`).toISOString();
-  const { data: busyAppointments } = await supabase
-    .from('appointments')
-    .select('staff_id, start_time, end_time, actual_start_time, actual_end_time')
-    .in('status', ['CONFIRMED', 'IN_PROGRESS', 'PENDING_RANDOM'])
-    .not('staff_id', 'is', null)
-    .gte('start_time', dayStart)
-    .lte('start_time', dayEnd);
-
-  const { data: activeLocks } = await supabase
-    .from('time_slot_locks')
-    .select('staff_id, start_time, end_time')
-    .eq('lock_date', date)
-    .eq('is_active', true);
-
-  const nowVN = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-  const currentMinutes = nowVN.getHours() * 60 + nowVN.getMinutes();
-
-  const slots: SlotInfo[] = [];
-  for (let h = 9; h <= 19; h++) {
-    for (let m = 0; m <= 30; m += 30) {
-      const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-      const slotMinutes = h * 60 + m;
-
-      if (slotMinutes < currentMinutes) {
-        slots.push({ time, status: 'past', availableStaff: 0, totalStaff, availableStaffNames: [], isRecommended: false });
-        continue;
-      }
-
-      if (totalStaff === 0) {
-        slots.push({ time, status: 'no_staff_present', availableStaff: 0, totalStaff: 0, availableStaffNames: [], isRecommended: false });
-        continue;
-      }
-
-      const slotStart = new Date(`${date}T${time}:00+07:00`);
-      const slotEnd30 = new Date(slotStart.getTime() + 30 * 60000);
-
-      const busyStaffIdsForSlot = new Set<string>();
-      for (const appt of (busyAppointments || [])) {
-        const { start, end } = getEffectiveTimeRange(appt);
-        if (doRangesOverlap(slotStart, slotEnd30, start, end)) {
-          busyStaffIdsForSlot.add(appt.staff_id);
-        }
-      }
-      for (const lock of (activeLocks || [])) {
-        const lockStart = new Date(lock.start_time);
-        const lockEnd = new Date(lock.end_time);
-        if (doRangesOverlap(slotStart, slotEnd30, lockStart, lockEnd)) {
-          busyStaffIdsForSlot.add(lock.staff_id);
-        }
-      }
-
-      const availableStaff = presentStaff.filter((s: any) => !busyStaffIdsForSlot.has(s.id));
-      const availableCount = availableStaff.length;
-
-      let status: SlotStatus;
-      if (availableCount === 0) {
-        status = 'fully_booked';
-      } else if (availableCount === totalStaff) {
-        status = 'all_available';
-      } else {
-        status = 'some_available';
-      }
-
-      const isRecommended = availableCount > 0 && availableCount >= Math.ceil(totalStaff / 2);
-
-      slots.push({
-        time,
-        status,
-        availableStaff: availableCount,
-        totalStaff,
-        availableStaffNames: availableStaff.map((s: any) => s.full_name),
-        isRecommended,
-      });
-    }
-  }
-
-  return slots;
+export async function getSlotAvailability(
+  date: string,
+  selectedServiceIds: string[] = [],
+  services: { id: string; duration: number }[] = []
+): Promise<SlotInfo[]> {
+  return getSlotAvailabilityWithNames(date, selectedServiceIds, services);
 }
 
 export async function submitBooking(formData: any) {
@@ -388,8 +293,8 @@ export async function submitBooking(formData: any) {
         ).catch(() => {})
       );
     }
-    // Notify all admins/managers in parallel (fire-and-forget)
-    void supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).then(({ data: admins }) => {
+    // Notify all active admins/managers in parallel (fire-and-forget)
+    void supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true).then(({ data: admins }) => {
       if (admins) {
         Promise.all(admins.map(admin =>
           sendPushNotification(
@@ -539,8 +444,8 @@ export async function cancelAppointmentByCustomer(appointmentId: string) {
   // Unlock time slots immediately
   await unlockTimeSlots(appointmentId);
 
-  // Fire-and-forget: notify admins/managers
-  void supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).then(({ data: admins }) => {
+  // Fire-and-forget: notify active admins/managers
+  void supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true).then(({ data: admins }) => {
     if (admins) {
       Promise.all(admins.map(admin =>
         sendPushNotification(
@@ -745,4 +650,50 @@ export async function getCustomerCareSuggestion(phone: string): Promise<string> 
 
   // Fallback default message
   return "Chào mừng chị quay lại với Min Nail & Hair! Chúc chị có một buổi làm đẹp thư giãn và ưng ý nhất hôm nay ạ!";
+}
+
+export async function getCustomerNotifications(customerId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, title, content, link, is_read, created_at')
+    .eq('recipient_type', 'customer')
+    .eq('recipient_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  if (error) {
+    console.error('[NOTIFICATIONS] Failed to fetch customer notifications:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function markCustomerNotificationRead(notificationId: string, customerId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('id', notificationId)
+    .eq('recipient_type', 'customer')
+    .eq('recipient_id', customerId);
+
+  if (error) {
+    console.error('[NOTIFICATIONS] Failed to mark customer notification as read:', error);
+  }
+}
+
+export async function markAllCustomerNotificationsRead(customerId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .eq('recipient_type', 'customer')
+    .eq('recipient_id', customerId)
+    .eq('is_read', false);
+
+  if (error) {
+    console.error('[NOTIFICATIONS] Failed to mark all customer notifications as read:', error);
+  }
 }
