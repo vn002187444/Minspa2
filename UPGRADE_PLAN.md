@@ -499,4 +499,268 @@ Supabase Realtime dùng WebSocket, phù hợp thay polling. Cần chọn lọc v
 
 ---
 
+---
+
+## Phase 4 — P0/P1: Code & Deployment Optimization (18/06/2026)
+
+> Mục tiêu: Fix config lỗi tiềm ẩn ảnh hưởng Vercel build/Supabase query, tái cấu trúc monolithic components, xóa code chết, tối ưu maintainability.
+
+### Tổng quan tác động đến Vercel & Supabase
+
+| Mục | Tác động Vercel | Tác động Supabase |
+|-----|----------------|-------------------|
+| ✂️ Bundle nhỏ hơn | Giảm cold start, giảm function size | — |
+| ⚡ Target ES2017 | Giảm polyfill, tăng tốc execution | — |
+| 🖼️ Image optimization | Giảm bandwidth, cache qua Vercel CDN | — |
+| 📦 Tách components | Code splitting dễ hơn, lazy-load từng phần | — |
+| 🗑️ Xóa code chết | Giảm deployment size, tree-shake tốt hơn | — |
+| 🔍 ESLint rules | Phát hiện lỗi sớm trước deploy | — |
+| 🔐 Login security | — | Giảm nguy cơ leak DB |
+
+### Detail & giải pháp
+
+#### 🔴 P4.1 — Tailwind content paths thiếu folder
+
+**File:** `tailwind.config.ts`
+
+```diff
+ content: [
+   "./app/**/*.{js,ts,jsx,tsx,mdx}",
++  "./components/**/*.{js,ts,jsx,tsx,mdx}",
++  "./lib/**/*.{js,ts,jsx,tsx,mdx}",
++  "./utils/**/*.{js,ts,jsx,tsx,mdx}",
+ ],
+```
+
+**Hậu quả nếu không sửa:** Class Tailwind dùng trong `components/`, `lib/`, `utils/` có thể bị missing trong production build do JIT scanner không quét tới — gây lỗi UI khó debug trên production.
+
+---
+
+#### 🔴 P4.2 — TypeScript target es5 → outdated
+
+**File:** `tsconfig.json`
+
+```diff
+- "target": "es5",
++ "target": "es2017",
+```
+
+**Tác động Vercel:** Next.js 16 chạy Node 18+ (Vercel uses Node 20). ES5 polyfill hoàn toàn không cần thiết.
+- ✅ Giảm bundle size ~5-10%
+- ✅ Tăng tốc compile
+- ✅ Cho phép dùng `async/await`, `Object.entries`, `String.prototype.padStart` native (không polyfill)
+
+---
+
+#### 🔴 P4.3 — next.config.ts trống
+
+**File:** `next.config.ts`
+
+```ts
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: '**.supabase.co' },
+    ],
+  },
+  logging: {
+    fetches: { fullUrl: process.env.NODE_ENV === 'development' },
+  },
+};
+```
+
+**Tác động Vercel:**
+- 🖼️ `images.remotePatterns` — cho phép Next.js Image Optimization cache ảnh từ Unsplash + Supabase Storage qua Vercel CDN (giảm bandwidth, tăng tốc load)
+- 📝 `logging.fetches` — debug fetch caching khi dev, dễ phát hiện N+1
+
+---
+
+#### 🟡 P4.4 — Tách admin page (4.717 dòng)
+
+**File:** `app/admin/page.tsx`
+
+**Vấn đề:** Component lớn nhất project chứa: charts, staff table, services, packages, blog SEO AI, settings — tất cả trong 1 file.
+
+| File mới | Nội dung |
+|----------|----------|
+| `app/admin/components/DashboardCharts.tsx` | Biểu đồ doanh thu (recharts), booking stats, attendance pie |
+| `app/admin/components/StaffSection.tsx` | Bảng nhân viên + toggle status + filter |
+| `app/admin/components/ServicesSection.tsx` | CRUD services |
+| `app/admin/components/PackagesSection.tsx` | CRUD treatment packages + dashboard progress |
+| `app/admin/components/SeoSettingsForm.tsx` | SEO settings + banner + bank settings |
+| `app/admin/components/BlogSection.tsx` | Blog/SEO articles list + AI generate |
+| `app/admin/hooks/useAdminData.ts` | Gom server actions + state management |
+
+**Tác động Vercel:** Khi tách components, có thể dùng `next/dynamic` lazy-load cho từng tab → giảm initial bundle size cho admin page (~200KB+ từ recharts + lucide icons).
+
+---
+
+#### 🟡 P4.5 — Tách MasterSchedule (1.277 dòng)
+
+**File:** `components/MasterSchedule.tsx`
+
+| File mới | Nội dung |
+|----------|----------|
+| `components/MasterScheduleGrid.tsx` | Desktop grid view (bảng) |
+| `components/MasterScheduleList.tsx` | Mobile list view |
+| `components/AppointmentDetailModal.tsx` | Modal sửa/swap appointment |
+| `components/ScheduleDragContext.tsx` | DnD context (dnd-kit) |
+
+---
+
+#### 🟡 P4.6 — Xóa duplicate push notification
+
+| File | Hành động |
+|------|-----------|
+| `utils/push.ts` | ✅ Giữ lại (có DB lookup + cleanup token) |
+| `lib/push.ts` | ❌ Xóa |
+
+Kiểm tra import cần update:
+```bash
+grep -r "from '@/lib/push'" --include="*.ts" --include="*.tsx" .
+```
+
+---
+
+#### 🟡 P4.7 — Xóa stub middleware
+
+**File:** `utils/supabase/middleware.ts` (5 dòng, no-op)
+
+```diff
+- Xóa toàn bộ file
+```
+
+Root `middleware.ts` đã tự xử lý session riêng, không import Supabase middleware. File này không được dùng.
+
+---
+
+#### 🟡 P4.11 — Hardcoded login bypass → dùng env vars
+
+**File:** `app/login/actions.ts`, `app/api/login/route.ts`
+
+```diff
+- if (username === 'admin' && password === '123456')
++ if (username === process.env.BYPASS_ADMIN_USER && password === process.env.BYPASS_ADMIN_PASS)
+```
+
+Thêm vào `.env.example`:
+```
+BYPASS_ADMIN_USER=admin
+BYPASS_ADMIN_PASS=123456
+```
+
+**Tác động Supabase:** Giảm nguy cơ leak credentials nếu code bị lộ (dù bypass chỉ là fallback).
+
+---
+
+#### 🟢 P4.9 — Tạo `hooks/` + `types/` directories
+
+**File mới:**
+- `hooks/useSession.ts` — custom hook đọc session từ `/api/auth/me`
+- `hooks/useNotifications.ts` — Realtime subscription hook
+- `types/database.ts` — DB row types (generated from Supabase)
+- `types/booking.ts` — `SlotAvailability`, `TimeLock`, etc.
+
+**Lợi ích:** DRY types, dễ maintain khi schema thay đổi.
+
+---
+
+#### 🟢 P4.10 — Thêm error boundaries
+
+| Route | File | Ghi chú |
+|-------|------|---------|
+| `/booking` | `app/booking/error.tsx` + `not-found.tsx` | Booking có thể fail do slot conflict |
+| `/admin` | `app/admin/error.tsx` | Admin data fetch error |
+| `/staff` | `app/staff/error.tsx` + `not-found.tsx` | Staff page error |
+| `/blog/[slug]` | `app/blog/[slug]/not-found.tsx` | Slug không tồn tại → 404 đẹp |
+
+---
+
+#### 🟢 P4.12 — ESLint rules
+
+**File:** `.eslintrc.json`
+
+```json
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "react-hooks/exhaustive-deps": "warn"
+  }
+}
+```
+
+**Tác động Vercel:** Bắt lỗi sớm → giảm nguy cơ build fail trên CI/CD.
+
+---
+
+#### 🟢 P4.13 — CSS animation consolidation
+
+```diff
+- globals.css: giữ @keyframes fadeIn, slideUp, float, shimmer
+- tailwind.config.ts: có keyframes.blob
+=> Chuyển hết keyframes vào tailwind.config.ts
+```
+
+Để dùng className thuần Tailwind, tránh CSS không tree-shake được.
+
+---
+
+#### 🟢 P4.14 — Fix seed_blogs.sql syntax error
+
+**File:** `scripts/seed_blogs.sql:10` — dư `);` giữa câu.
+
+```diff
+-   'https://images.unsplash.com/...');
+-   'https://images.unsplash.com/...')
+- ON CONFLICT (slug) DO NOTHING;
++   'https://images.unsplash.com/...')
++ ON CONFLICT (slug) DO NOTHING;
+```
+
+Hoặc xóa file (đã có `seed_blogs.mjs` chạy được).
+
+---
+
+### Files cần sửa (Phase 4) — Tổng kết
+
+| File | P4 | Mức | Loại |
+|------|----|-----|------|
+| `tailwind.config.ts` | 4.1 | P0 | Config |
+| `tsconfig.json` | 4.2 | P0 | Config |
+| `next.config.ts` | 4.3 | P0 | Config |
+| `app/admin/page.tsx` → 7 files mới | 4.4 | P1 | Refactor |
+| `components/MasterSchedule.tsx` → 4 files mới | 4.5 | P1 | Refactor |
+| `lib/push.ts` (xóa) | 4.6 | P1 | Xóa |
+| `utils/supabase/middleware.ts` (xóa) | 4.7 | P1 | Xóa |
+| `app/booking/actions.ts` → 3-4 files | 4.8 | P1 | Refactor |
+| Tạo `hooks/` + `types/` | 4.9 | P2 | New |
+| Tạo 5 `error.tsx` / `not-found.tsx` | 4.10 | P2 | New |
+| `app/login/actions.ts`, `app/api/login/route.ts` | 4.11 | P1 | Fix |
+| `.eslintrc.json` | 4.12 | P2 | Config |
+| `globals.css` + `tailwind.config.ts` | 4.13 | P2 | Refactor |
+| `scripts/seed_blogs.sql` | 4.14 | P2 | Fix |
+
+---
+
+### Tiến độ Phase 4
+
+- [ ] **P4.1** — Tailwind content paths
+- [ ] **P4.2** — TypeScript target
+- [ ] **P4.3** — next.config.ts images + logging
+- [ ] **P4.4** — Tách admin page (7 files)
+- [ ] **P4.5** — Tách MasterSchedule (4 files)
+- [ ] **P4.6** — Xóa `lib/push.ts`
+- [ ] **P4.7** — Xóa `utils/supabase/middleware.ts`
+- [ ] **P4.8** — Tách booking actions
+- [ ] **P4.9** — Tạo hooks/ + types/
+- [ ] **P4.10** — Thêm error/not-found pages
+- [ ] **P4.11** — Login bypass → env vars
+- [ ] **P4.12** — ESLint rules
+- [ ] **P4.13** — CSS animation consolidation
+- [ ] **P4.14** — Fix seed_blogs.sql
+
+---
+
 *Cập nhật lần cuối: 18/06/2026*
