@@ -21,7 +21,7 @@ CREATE TABLE users (
   is_active BOOLEAN DEFAULT TRUE,
   notification_token JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
-  CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
+  CONSTRAINT users_role_cccd_check CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
 );
 
 -- Customers Table

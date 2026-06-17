@@ -233,12 +233,28 @@ export async function updateStaff(staffId: string, staffData: any) {
     throw new Error('Unauthorized');
   }
   const supabase = await createClient();
-  const updates: any = {
+
+  const { data: current } = await supabase
+    .from('users')
+    .select('role, cccd')
+    .eq('id', staffId)
+    .single();
+
+  const newRole = staffData.role || current?.role;
+  const newCccd = staffData.cccd?.trim() ?? '';
+
+  if (newRole === 'STAFF' && !newCccd) {
+    return { success: false, error: 'CCCD là bắt buộc khi phân quyền là STAFF. Vui lòng nhập số CCCD.' };
+  }
+
+  const updates: Record<string, any> = {
     username: staffData.username,
     full_name: staffData.full_name,
-    cccd: staffData.cccd,
   };
+
   if (staffData.role) updates.role = staffData.role;
+  if (staffData.cccd !== undefined) updates.cccd = newCccd;
+
   const { error } = await supabase.from('users').update(updates).eq('id', staffId);
 
   if (!error) {
@@ -406,7 +422,7 @@ export async function deleteStaffSafely(staffId: string, staffName: string) {
   try {
     const { error: updateErr } = await supabase
       .from('users')
-      .update({ is_active: false })
+      .update({ is_active: false, cccd: '' })
       .eq('id', staffId);
 
     if (updateErr) throw updateErr;
@@ -1045,6 +1061,13 @@ export async function getFilteredAppointments(filters: {
       users!appointments_staff_id_fkey ( id, full_name, username ),
       appointment_services (
         services ( id, name, price )
+      ),
+      reviews (
+        id,
+        rating,
+        quick_tags,
+        comment,
+        created_at
       )
     `);
 

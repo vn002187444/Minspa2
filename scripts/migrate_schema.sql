@@ -81,6 +81,23 @@ ON CONFLICT (id) DO NOTHING;
 -- ========================================
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
 
+-- Fix unnamed 'users_check' constraint → đặt tên rõ ràng, tránh lỗi constraint
+-- (Lỗi "new row... violates check constraint 'users_check'" khi đổi role)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_check' AND conrelid = 'users'::regclass) THEN
+    ALTER TABLE public.users DROP CONSTRAINT users_check;
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_role_cccd_check' AND conrelid = 'users'::regclass) THEN
+    ALTER TABLE public.users ADD CONSTRAINT users_role_cccd_check
+      CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL));
+  END IF;
+END $$;
+
 -- ========================================
 -- 2. services
 -- ========================================

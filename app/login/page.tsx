@@ -1,12 +1,10 @@
 "use client"
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Sparkles, User, Lock, AlertCircle, ArrowRight, LogIn, ArrowLeft } from 'lucide-react';
 import { loginUser } from './actions';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [authError, setAuthError] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, setIsPending] = useState(false);
@@ -28,18 +26,14 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget);
     try {
       const data = await loginUser(null, formData);
-      if (!data) {
-        throw new Error('Không nhận được phản hồi từ máy chủ.');
-      }
-      
-      if (data.success) {
-        if (data.redirectTo) {
-          router.push(data.redirectTo);
-        }
-      } else {
+      // Nếu login thành công, redirect() đã gọi bên trong server action,
+      // chúng ta không bao giờ chạy tới đây.
+      // Nếu tới được đây tức là login thất bại (data chứa lỗi).
+      if (data) {
         setErrorMsg(data.message || data.error || 'Sai tên đăng nhập hoặc mật khẩu.');
       }
     } catch (err: any) {
+      if (err?.digest?.startsWith('NEXT_REDIRECT')) return;
       console.error('Login error caught:', err);
       setErrorMsg(
         err?.message || 'Không thể kết nối đến máy chủ. Vui lòng mở trang web trong tab mới (Open in new tab) hoặc sử dụng các tài khoản khẩn cấp dưới đây.'

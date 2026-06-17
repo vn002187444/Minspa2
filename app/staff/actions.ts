@@ -121,13 +121,13 @@ export async function checkIn() {
   
   if (error) return { success: false, error: error.message };
 
-  // Trigger push notification to checked-in staff device
-  await sendPushNotification(
+  // Fire-and-forget: push notification to staff
+  sendPushNotification(
     session.user.id,
     'Điểm danh thành công! ⏰',
     `Bạn đã điểm danh có mặt lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ngày ${format(new Date(), 'dd/MM/yyyy')}. Chúc một ngày làm việc tuyệt vời!`,
     '/staff'
-  ).catch(err => console.error("Attendance notification error:", err));
+  ).catch(() => {});
 
   return { success: true };
 }
@@ -353,12 +353,11 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
     }
   }
 
-  if (session && oldAppt && oldAppt.status !== status) {
-    if (session.user.role === 'ADMIN' || session.user.role === 'MANAGER') {
-      import('@/utils/audit').then(({ logAuditAction }) => {
-        logAuditAction(session.user.id, "STATUS_CHANGE", `Đổi trạng thái đơn '${appointmentId}': ${oldAppt.status} ➔ ${status}`);
-      });
-    }
+  // Fire-and-forget: audit log
+  if (session && oldAppt && oldAppt.status !== status && (session.user.role === 'ADMIN' || session.user.role === 'MANAGER')) {
+    import('@/utils/audit').then(({ logAuditAction }) =>
+      logAuditAction(session.user.id, "STATUS_CHANGE", `Đổi trạng thái đơn '${appointmentId}': ${oldAppt.status} ➔ ${status}`)
+    ).catch(() => {});
   }
 
   return { success: true };
@@ -366,118 +365,101 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
 
 export async function completeAppointment(appointmentId: string, extraServiceIds: string[] = [], tipAmount: number = 0, discountPercent: number = 0) {
   const supabase = await createClient();
-  
-  // 1. Add extra services if any
-  if (extraServiceIds.length > 0) {
-    const records = extraServiceIds.map(id => ({
-      appointment_id: appointmentId,
-      service_id: id
-    }));
-    await supabase.from('appointment_services').insert(records);
-  }
 
-  // 1b. Fetch appointment details to check package session status and for cascade shift
-  const { data: dbAppt } = await supabase
-    .from('appointments')
-    .select('is_package_session, use_package_id, customer_id, staff_id, start_time, end_time')
-    .eq('id', appointmentId)
-    .single();
+  // Parallel: fetch appointment, fetch services, insert extra services
+  const fetchExtra = extraServiceIds.length > 0
+    ? supabase.from('appointment_services').insert(
+        extraServiceIds.map(id => ({ appointment_id: appointmentId, service_id: id }))
+      )
+    : Promise.resolve({ data: null, error: null });
 
+  const [apptResult, servicesResult] = await Promise.all([
+    supabase
+      .from('appointments')
+      .select('is_package_session, use_package_id, customer_id, staff_id, start_time, end_time')
+      .eq('id', appointmentId)
+      .single(),
+    supabase
+      .from('appointment_services')
+      .select('service_id, services(id, price, commission_percentage, commission_amount)')
+      .eq('appointment_id', appointmentId),
+    fetchExtra,
+  ]);
+
+  const dbAppt = apptResult.data;
+
+  // Process package session deduction in parallel with other work
   let coveredServiceId: string | null = null;
-  let usePackageId: string | null = null;
-
-  if (dbAppt?.is_package_session && dbAppt?.use_package_id) {
-    usePackageId = dbAppt.use_package_id;
-    // Fetch the package details to find the covered service
-    const { data: customerPkg } = await supabase
-      .from('customer_packages')
-      .select('id, remaining_sessions, treatment_packages!package_id(service_id, name)')
-      .eq('id', usePackageId)
-      .single();
-
-    if (customerPkg?.treatment_packages?.length) {
-  coveredServiceId = customerPkg.treatment_packages[0].service_id;
-}
-
-    // Process session deduction if remaining sessions > 0
-    if (customerPkg && customerPkg.remaining_sessions > 0) {
-      const nextRemaining = customerPkg.remaining_sessions - 1;
-      const nextStatus = nextRemaining <= 0 ? 'EXHAUSTED' : 'ACTIVE';
-
-      // Update remaining sessions and status
-      await supabase
+  const packagePromise = (dbAppt?.is_package_session && dbAppt?.use_package_id)
+    ? supabase
         .from('customer_packages')
-        .update({
-          remaining_sessions: nextRemaining,
-          status: nextStatus
-        })
-        .eq('id', usePackageId);
+        .select('id, remaining_sessions, treatment_packages!package_id(service_id, name)')
+        .eq('id', dbAppt.use_package_id)
+        .single()
+    : Promise.resolve({ data: null, error: null });
 
-      // Log the usage
-      await supabase
-        .from('package_usage_logs')
-        .insert({
-          customer_package_id: usePackageId,
-          appointment_id: appointmentId,
-          used_at: new Date().toISOString(),
-          notes: `Khấu trừ tự động 1 buổi khi hoàn thành lịch hẹn`
-        });
-    }
+  const pkgResult = await packagePromise;
+  const customerPkg = pkgResult.data;
+
+  if (customerPkg?.treatment_packages?.length) {
+    coveredServiceId = customerPkg.treatment_packages[0].service_id;
   }
 
-  // 2. Calculate new total amount and commission
-  const { data: apptServices } = await supabase
-    .from('appointment_services')
-    .select('service_id, services(id, price, commission_percentage, commission_amount)')
-    .eq('appointment_id', appointmentId);
-    
+  // Calculate total and commission
+  const apptServices = servicesResult.data;
   let total = 0;
   let commission = 0;
   if (apptServices) {
     apptServices.forEach((item: any) => {
       const svc = item.services;
       if (svc) {
-        // If this is a treatment package session, the covered service price goes to 0đ
         const isCovered = coveredServiceId && String(item.service_id) === String(coveredServiceId);
         const price = isCovered ? 0 : (Number(svc.price) || 0);
-
-        // Commission is ALWAYS computed based on the original full service price to support staff earnings fairly
         const basePriceForCommission = Number(svc.price) || 0;
-
         total += price;
         const commFixed = Number(svc.commission_amount) || 0;
         const commPercent = svc.commission_percentage !== undefined && svc.commission_percentage !== null ? Number(svc.commission_percentage) : 20;
-        if (commFixed > 0) {
-          commission += commFixed;
-        } else {
-          commission += Math.round(basePriceForCommission * (commPercent / 100));
-        }
+        commission += commFixed > 0 ? commFixed : Math.round(basePriceForCommission * (commPercent / 100));
       }
     });
   } else {
-    commission = Math.round(total * 0.20); // Fallback to 20% commission
+    commission = Math.round(total * 0.20);
   }
 
-  // Calculate discount and apply to total_amount
   const discountAmount = Math.round(total * (discountPercent / 100));
   const discountedTotal = Math.max(0, total - discountAmount);
-  
-  // 3. Update appointment — set actual_end_time (keep end_time as expected), trigger cascade
+
+  // Update appointment
   const completedAt = new Date().toISOString();
   const { error } = await supabase
     .from('appointments')
-    .update({ 
+    .update({
       status: 'COMPLETED',
       actual_end_time: completedAt,
       total_amount: discountedTotal,
       commission_amount: commission,
-      tip_amount: tipAmount
+      tip_amount: tipAmount,
     })
     .eq('id', appointmentId);
-    
+
   if (error) return { success: false, error: error.message };
 
-  // Cascade shift: if completed early, shift subsequent appointments forward → unlocks remaining slots
+  // Deduct package session (after main update succeeds)
+  if (customerPkg && customerPkg.remaining_sessions > 0) {
+    const nextRemaining = customerPkg.remaining_sessions - 1;
+    const nextStatus = nextRemaining <= 0 ? 'EXHAUSTED' : 'ACTIVE';
+    await Promise.all([
+      supabase.from('customer_packages').update({ remaining_sessions: nextRemaining, status: nextStatus }).eq('id', dbAppt!.use_package_id),
+      supabase.from('package_usage_logs').insert({
+        customer_package_id: dbAppt!.use_package_id,
+        appointment_id: appointmentId,
+        used_at: completedAt,
+        notes: 'Khấu trừ tự động 1 buổi khi hoàn thành lịch hẹn',
+      }),
+    ]);
+  }
+
+  // Cascade shift (must await for data consistency)
   if (dbAppt?.staff_id && dbAppt?.end_time) {
     const completedAtDate = new Date(completedAt);
     const originalEnd = new Date(dbAppt.end_time);
@@ -486,30 +468,33 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
     }
   }
 
-  // Trigger real-time notifications to customer and active staff of the completed appointment
+  // Fire-and-forget: push notifications + reminders (non-blocking background tasks)
   if (dbAppt) {
+    const bgTasks: Promise<any>[] = [];
     if (dbAppt.customer_id) {
-      await sendPushNotification(
-        dbAppt.customer_id,
-        'Thanh toán hoàn tất! ✨',
-        `Hóa đơn của bạn đã sẵn sàng. Tổng thanh toán là ${discountedTotal.toLocaleString('vi-VN')} VNĐ. Cảm ơn quý khách đã tin chọn Min Salon!`,
-        '/booking'
-      ).catch(err => console.error("Customer checkout push notification error:", err));
+      bgTasks.push(
+        sendPushNotification(
+          dbAppt.customer_id,
+          'Thanh toán hoàn tất! ✨',
+          `Hóa đơn của bạn đã sẵn sàng. Tổng thanh toán là ${discountedTotal.toLocaleString('vi-VN')} VNĐ. Cảm ơn quý khách đã tin chọn Min Salon!`,
+          '/booking'
+        ).catch(() => {})
+      );
     }
-    
-    const staffId = dbAppt.staff_id;
-    if (staffId) {
-      await sendPushNotification(
-        staffId,
-        'Hóa đơn hoàn tất! 🎉',
-        `Bạn đã hoàn thành lịch hẹn #${appointmentId.slice(-6).toUpperCase()}. Hoa hồng của bạn là ${commission.toLocaleString('vi-VN')} VNĐ đã được ghi nhận.`,
-        '/staff'
-      ).catch(err => console.error("Staff checkout push notification error:", err));
+    if (dbAppt.staff_id) {
+      bgTasks.push(
+        sendPushNotification(
+          dbAppt.staff_id,
+          'Hóa đơn hoàn tất! 🎉',
+          `Bạn đã hoàn thành lịch hẹn #${appointmentId.slice(-6).toUpperCase()}. Hoa hồng của bạn là ${commission.toLocaleString('vi-VN')} VNĐ đã được ghi nhận.`,
+          '/staff'
+        ).catch(() => {})
+      );
     }
+    bgTasks.push(runRemindersCheck().catch(() => {}));
+    // Not awaited — runs in background
+    Promise.all(bgTasks).catch(() => {});
   }
-
-  // Trigger reminders check immediately to notify other staff members of any unclaimed random appointments
-  await runRemindersCheck().catch(err => console.error("Reminders check error:", err));
 
   return { success: true, total: discountedTotal };
 }

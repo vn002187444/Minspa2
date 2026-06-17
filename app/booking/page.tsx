@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { checkCustomerHistory, submitBooking, getAvailableStaff, getPublicServices, getCustomerCareSuggestion, getPublicSeoSettings, getSlotAvailability } from './actions';
 import type { SlotInfo } from './actions';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
+import LoadingButton from '@/components/LoadingButton';
+import LoadingOverlay from '@/components/LoadingOverlay';
 import BookingCalendar from '@/components/BookingCalendar';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -83,19 +85,46 @@ export default function BookingPage() {
     getPublicSeoSettings().then((s) => setDiscountSettings({ enabled: s.discountEnabled, percent: s.discountPercent }));
   }, []);
 
+  const restoredRef = useRef(false);
+
   useEffect(() => {
-    if (typeof window !== 'undefined' && allPackages.length > 0) {
+    if (typeof window !== 'undefined' && !restoredRef.current) {
       const params = new URLSearchParams(window.location.search);
       const buyPkgParam = params.get('buy_pkg');
       if (buyPkgParam) {
         const pkg = allPackages.find(p => p.id === buyPkgParam);
         if (pkg) {
           setBuyPackageId(pkg.id);
-          // Auto select the service associated with this treatment package!
           if (pkg.service_id) {
             setSelectedServices([String(pkg.service_id)]);
           }
         }
+      }
+    }
+  }, [allPackages]);
+
+  // Restore phone number from previous booking
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !restoredRef.current && allPackages.length > 0) {
+      const savedPhone = localStorage.getItem('min_salon_customer_phone');
+      if (savedPhone) {
+        restoredRef.current = true;
+        setPhone(savedPhone);
+        setTimeout(async () => {
+          try {
+            const result = await checkCustomerHistory(savedPhone);
+            if (result.found) {
+              setName(result.name);
+              setCustomerId(result.id);
+              localStorage.setItem('min_salon_customer_id', result.id);
+              setActivePackages(result.activePackages || []);
+            }
+            const suggestion = await getCustomerCareSuggestion(savedPhone);
+            setAiSuggestion(suggestion);
+          } catch (e) {
+            console.error(e);
+          }
+        }, 100);
       }
     }
   }, [allPackages]);
@@ -111,6 +140,7 @@ export default function BookingPage() {
         setCustomerId(id);
         if (typeof window !== 'undefined') {
           localStorage.setItem('min_salon_customer_id', id);
+          localStorage.setItem('min_salon_customer_phone', phone);
         }
         setActivePackages(foundPackages || []);
       } else {
@@ -197,8 +227,11 @@ export default function BookingPage() {
     setIsSubmitting(false);
     
     if (res.success) {
-      if (res.customerId && typeof window !== 'undefined') {
-        localStorage.setItem('min_salon_customer_id', res.customerId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('min_salon_customer_phone', phone);
+        if (res.customerId) {
+          localStorage.setItem('min_salon_customer_id', res.customerId);
+        }
       }
       setStep(3);
     } else {
@@ -459,14 +492,14 @@ export default function BookingPage() {
                    </div>
                  </div>
 
-                 <div className="pt-4">
-                   <button 
-                     onClick={handleNext}
-                     className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 group tracking-widest uppercase text-xs shadow-md"
-                   >
-                     Tiếp tục lựa chọn <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                   </button>
-                 </div>
+                  <div className="pt-4">
+                    <LoadingButton
+                      onClick={handleNext}
+                      className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 group tracking-widest uppercase text-xs shadow-md"
+                    >
+                      Tiếp tục lựa chọn <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </LoadingButton>
+                  </div>
               </div>
             )}
 
@@ -546,20 +579,14 @@ export default function BookingPage() {
                  </div>
 
                  <div className="pt-4">
-                   <button 
-                     onClick={handleSubmit}
-                     disabled={isSubmitting}
-                     className="w-full bg-[#5C4033] disabled:opacity-50 hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md uppercase tracking-wider text-xs"
-                   >
-                     {isSubmitting ? (
-                       <span className="flex items-center gap-2">
-                         <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin block shrink-0" />
-                         Đang lưu lịch hẹn...
-                       </span>
-                     ) : (
-                       'Hoàn tất gửi lịch hẹn'
-                     )}
-                   </button>
+                    <LoadingButton
+                      onClick={handleSubmit}
+                      isLoading={isSubmitting}
+                      loadingText="Đang lưu lịch hẹn..."
+                      className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md uppercase tracking-wider text-xs"
+                    >
+                      Hoàn tất gửi lịch hẹn
+                    </LoadingButton>
                  </div>
               </div>
             )}
@@ -701,6 +728,7 @@ export default function BookingPage() {
 
       </div>
       <BottomNavigation />
+      <LoadingOverlay isVisible={isSubmitting} message="Đang gửi lịch hẹn..." />
     </div>
   );
 }

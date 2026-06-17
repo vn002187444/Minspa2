@@ -129,24 +129,18 @@ export async function cascadeShiftForward(
     const newStart = new Date(cursor);
     const newEnd = new Date(cursor.getTime() + originalDuration);
 
-    await supabase
-      .from('appointments')
-      .update({
+    const oldLockStart = appt.actual_start_time || appt.start_time;
+    const oldLockEnd = appt.actual_end_time || appt.end_time;
+
+    // Parallel: update appointment + unlock old slot + lock new slot
+    await Promise.all([
+      supabase.from('appointments').update({
         actual_start_time: newStart.toISOString(),
         actual_end_time: newEnd.toISOString(),
-      })
-      .eq('id', appt.id);
-
-    const oldLockStart = new Date(appt.actual_start_time || appt.start_time);
-    const oldLockEnd = new Date(appt.actual_end_time || appt.end_time);
-
-    if (appt.actual_start_time || appt.actual_end_time) {
-      await unlockTimeSlotsInRange(staffId, oldLockStart.toISOString(), oldLockEnd.toISOString());
-    } else {
-      await unlockTimeSlotsInRange(staffId, appt.start_time, appt.end_time);
-    }
-
-    await lockTimeSlots(appt.id, staffId, newStart.toISOString(), newEnd.toISOString());
+      }).eq('id', appt.id),
+      unlockTimeSlotsInRange(staffId, oldLockStart, oldLockEnd),
+      lockTimeSlots(appt.id, staffId, newStart.toISOString(), newEnd.toISOString()),
+    ]);
 
     cursor = newEnd;
   }
@@ -212,23 +206,18 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
         const newStart = new Date(cursor);
         const newEnd = new Date(cursor.getTime() + originalDuration);
 
-        if (ra.actual_start_time || ra.actual_end_time) {
-          await unlockTimeSlotsInRange(
-            appt.staff_id,
-            (ra.actual_start_time || ra.start_time),
-            (ra.actual_end_time || ra.end_time)
-          );
-        }
+        const oldLockStart = ra.actual_start_time || ra.start_time;
+        const oldLockEnd = ra.actual_end_time || ra.end_time;
 
-        await supabase
-          .from('appointments')
-          .update({
+        // Parallel: unlock old slot + update appointment + lock new slot
+        await Promise.all([
+          unlockTimeSlotsInRange(appt.staff_id, oldLockStart, oldLockEnd),
+          supabase.from('appointments').update({
             actual_start_time: newStart.toISOString(),
             actual_end_time: newEnd.toISOString(),
-          })
-          .eq('id', ra.id);
-
-        await lockTimeSlots(ra.id, appt.staff_id, newStart.toISOString(), newEnd.toISOString());
+          }).eq('id', ra.id),
+          lockTimeSlots(ra.id, appt.staff_id, newStart.toISOString(), newEnd.toISOString()),
+        ]);
 
         cursor = newEnd;
       }

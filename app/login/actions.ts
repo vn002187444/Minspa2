@@ -1,5 +1,6 @@
 'use server'
 
+import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { createSession } from '@/utils/auth';
 
@@ -33,7 +34,7 @@ export async function loginUser(prevState: any, formData: FormData) {
       }
 
       await createSession({ id: adminId, role: 'ADMIN', username: 'admin' });
-      return { success: true, redirectTo: '/admin' };
+      redirect('/admin');
     }
 
     if (normUsername === 'staff1' && (normPassword === 'Staff@1' || normPassword === 'staff1')) {
@@ -53,7 +54,7 @@ export async function loginUser(prevState: any, formData: FormData) {
       }
 
       await createSession({ id: staffId, role: 'STAFF', username: 'staff1' });
-      return { success: true, redirectTo: '/staff' };
+      redirect('/staff');
     }
 
     console.log(`[AUTH] Starting authentication attempt in database for user: "${normUsername}"`);
@@ -98,11 +99,11 @@ export async function loginUser(prevState: any, formData: FormData) {
     const routeDest = (userRoleNormalized === 'ADMIN' || userRoleNormalized === 'MANAGER') ? '/admin' : '/staff';
     console.log(`[AUTH] Login successful! Redirecting user "${user.username}" to: "${routeDest}"`);
 
-    return { 
-      success: true, 
-      redirectTo: routeDest
-    };
+    redirect(routeDest);
   } catch (error: any) {
+    if (error?.digest?.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
     console.error("[AUTH CRITICAL SYSTEM ERROR]:", error);
     return { success: false, error: error?.message || 'Hệ thống đang gặp sự cố kết nối, vui lòng thử lại sau.' };
   }

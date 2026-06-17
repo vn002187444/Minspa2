@@ -1727,9 +1727,10 @@ function EditStaffModal({ staff, userRole, onClose, onReload }: any) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Số CCCD
+              Số CCCD {form.role === 'STAFF' && <span className="text-red-500">(*Bắt buộc)</span>}
             </label>
             <input
+              required={form.role === 'STAFF'}
               type="text"
               value={form.cccd}
               onChange={(e) => setForm({ ...form, cccd: e.target.value })}

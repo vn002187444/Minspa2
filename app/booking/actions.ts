@@ -368,38 +368,42 @@ export async function submitBooking(formData: any) {
         await supabase.from('appointment_services').insert(insertData);
     }
 
-    // Trigger real-time push notifications
-    // 1. Notify the customer
-    await sendPushNotification(
+    // Fire-and-forget: push notifications (non-blocking background tasks)
+    const staffId = formData.staffId;
+    const bgTasks: Promise<any>[] = [
+      sendPushNotification(
         customerId,
         'Đặt lịch thành công! ✨',
         `Lịch hẹn của bạn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')} đã được ghi nhận thành công.`,
         '/booking'
-    ).catch((err: any) => console.error("Customer booking push notification error:", err));
-
-    // 2. Notify the requested staff member, if specific
-    const staffId = formData.staffId;
+      ).catch(() => {}),
+    ];
     if (staffId && staffId !== 'Ngẫu nhiên') {
-        await sendPushNotification(
-            staffId,
-            'Lịch hẹn mới! 📅',
-            `Khách hàng ${formData.name} đã đặt lịch hẹn trực tuyến với bạn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
-            '/staff'
-        ).catch((err: any) => console.error("Staff booking push notification error:", err));
+      bgTasks.push(
+        sendPushNotification(
+          staffId,
+          'Lịch hẹn mới! 📅',
+          `Khách hàng ${formData.name} đã đặt lịch hẹn trực tuyến với bạn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
+          '/staff'
+        ).catch(() => {})
+      );
     }
-    
-    // 3. Notify Admins/Managers
-    const { data: admins } = await supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']);
-    if (admins) {
-      for (const admin of admins) {
-        await sendPushNotification(
-          admin.id,
-          'Đơn đặt lịch mới! 🛎️',
-          `Khách hàng ${formData.name} vừa đặt lịch hẹn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
-          '/admin/orders'
-        ).catch((err: any) => console.error("Admin booking push notification error:", err));
+    // Notify all admins/managers in parallel (fire-and-forget)
+    void supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).then(({ data: admins }) => {
+      if (admins) {
+        Promise.all(admins.map(admin =>
+          sendPushNotification(
+            admin.id,
+            'Đơn đặt lịch mới! 🛎️',
+            `Khách hàng ${formData.name} vừa đặt lịch hẹn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
+            '/admin/orders'
+          ).catch(() => {})
+        )).catch(() => {});
       }
-    }
+    });
+
+    // Not awaited — runs in background
+    Promise.all(bgTasks).catch(() => {});
     
     return { success: true, customerId: customerId };
   } catch (error: any) {
@@ -535,18 +539,19 @@ export async function cancelAppointmentByCustomer(appointmentId: string) {
   // Unlock time slots immediately
   await unlockTimeSlots(appointmentId);
 
-  // Notify Admins/Managers
-  const { data: admins } = await supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']);
-  if (admins) {
-    for (const admin of admins) {
-      await sendPushNotification(
-        admin.id,
-        'Lịch hẹn bị hủy! ❌',
-        `Một lịch hẹn vừa bị khách hàng hủy trên hệ thống.`,
-        '/admin/orders'
-      ).catch((err: any) => console.error("Admin cancel push notification error:", err));
+  // Fire-and-forget: notify admins/managers
+  void supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).then(({ data: admins }) => {
+    if (admins) {
+      Promise.all(admins.map(admin =>
+        sendPushNotification(
+          admin.id,
+          'Lịch hẹn bị hủy! ❌',
+          `Một lịch hẹn vừa bị khách hàng hủy trên hệ thống.`,
+          '/admin/orders'
+        ).catch(() => {})
+      )).catch(() => {});
     }
-  }
+  });
 
   return { success: true };
 }

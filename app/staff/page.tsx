@@ -61,6 +61,8 @@ import {
 import MasterSchedule from "@/components/MasterSchedule";
 import BottomNavigation from "@/components/BottomNavigation";
 import PushNotificationManager from "@/components/PushNotificationManager";
+import LoadingButton from "@/components/LoadingButton";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function StaffDashboard() {
   const router = useRouter();
@@ -78,6 +80,8 @@ export default function StaffDashboard() {
   // Real-time Staff Notification toasts and Check-in reminder status states
   const [staffToasts, setStaffToasts] = useState<{ id: string; type: "success" | "danger" | "info" | "warning"; message: string }[]>([]);
   const [showCheckInReminder, setShowCheckInReminder] = useState(false);
+  const [checkInLoading, setCheckInLoading] = useState(false);
+  const [overlayLoading, setOverlayLoading] = useState(false);
   const alertedTenMinutesRef = useRef<Record<string, boolean>>({});
 
   // Data state
@@ -281,8 +285,12 @@ export default function StaffDashboard() {
   }, [data?.myAppointments]);
 
   const handleCheckIn = async () => {
+    setOverlayLoading(true);
+    setCheckInLoading(true);
     await checkIn();
     loadData();
+    setCheckInLoading(false);
+    setOverlayLoading(false);
   };
 
   const handleShowHistory = async (customer: any) => {
@@ -551,13 +559,15 @@ export default function StaffDashboard() {
                         )}
                       </div>
                     ) : (
-                      <button
+                      <LoadingButton
                         onClick={handleCheckIn}
+                        isLoading={checkInLoading}
+                        loadingText="Đang điểm danh..."
                         className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-2xl shadow-lg transition-transform active:scale-95 cursor-pointer text-center"
                       >
                         <CalendarCheck className="w-5 h-5" /> Điểm danh làm việc
                         ngay
-                      </button>
+                      </LoadingButton>
                     )}
                   </div>
                 </div>
@@ -640,6 +650,7 @@ export default function StaffDashboard() {
           allServices={data.allServices}
           onClose={() => setCompleteModal({ appt: null, isOpen: false })}
           onComplete={async (extraServices: string[], tip: number, discountPercent: number, paymentMethod: "CASH" | "BANK") => {
+            setOverlayLoading(true);
             setIsLoading(true);
             try {
               const res = await completeAppointment(completeModal.appt.id, extraServices, tip, discountPercent);
@@ -672,6 +683,7 @@ export default function StaffDashboard() {
               alert("Lỗi hệ thống: " + (error.message || "Không thể thực hiện hoàn thành đơn"));
             } finally {
               setIsLoading(false);
+              setOverlayLoading(false);
               setCompleteModal({ appt: null, isOpen: false });
             }
           }}
@@ -720,6 +732,8 @@ export default function StaffDashboard() {
           }}
         />
       )}
+
+      <LoadingOverlay isVisible={overlayLoading} message="Hệ thống đang xử lý, vui lòng không tắt trình duyệt..." />
 
       {/* Real-time floating staffToasts notifications */}
       <div className="fixed top-20 right-4 z-55 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
@@ -790,6 +804,19 @@ function AppointmentCard({
   }
 
   const isPackage = !!appt.is_package_session;
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const handleStartAppointment = async () => {
+    setActionLoading(true);
+    await onAction(() => updateAppointmentStatus(appt.id, "IN_PROGRESS"));
+    setActionLoading(false);
+  };
+
+  const handleTakeRandom = async () => {
+    setActionLoading(true);
+    await onAction(() => takeRandomAppointment(appt.id));
+    setActionLoading(false);
+  };
 
   return (
     <div
@@ -859,16 +886,14 @@ function AppointmentCard({
         <div className="flex flex-col gap-2 w-full">
           {appt.status === "CONFIRMED" && (
             <div className="flex flex-col gap-2 w-full">
-              <button
-                onClick={() =>
-                  onAction(() =>
-                    updateAppointmentStatus(appt.id, "IN_PROGRESS"),
-                  )
-                }
+              <LoadingButton
+                onClick={handleStartAppointment}
+                isLoading={actionLoading}
+                loadingText="Đang nhận khách..."
                 className="w-full bg-gray-950 active:scale-95 transition-transform hover:bg-black text-white font-bold py-3.5 rounded-xl text-s cursor-pointer text-center"
               >
                 Nhận Khách (Bắt đầu làm)
-              </button>
+              </LoadingButton>
               <button
                 onClick={() => setSwapModal({ isOpen: true, appt })}
                 className="w-full bg-white border border-gray-200 active:scale-95 transition-transform hover:bg-gray-50 text-gray-700 py-3 rounded-xl text-sm font-semibold cursor-pointer text-center flex items-center justify-center gap-2"
@@ -887,12 +912,14 @@ function AppointmentCard({
           )}
         </div>
       ) : (
-        <button
-          onClick={() => onAction(() => takeRandomAppointment(appt.id))}
+        <LoadingButton
+          onClick={handleTakeRandom}
+          isLoading={actionLoading}
+          loadingText="Đang nhận..."
           className="w-full bg-blue-500 active:scale-95 transition-transform hover:bg-blue-600 text-white font-semibold py-3.5 rounded-xl text-sm transition-all shadow-md shadow-blue-100 cursor-pointer text-center animate-pulse"
         >
           Nhận khách này
-        </button>
+        </LoadingButton>
       )}
     </div>
   );
@@ -959,6 +986,7 @@ function HistoryModal({ history, customerName, onClose }: any) {
 }
 
 function CompleteModal({ appt, allServices, onClose, onComplete }: any) {
+  const [confirmLoading, setConfirmLoading] = useState(false);
   const [extraServices, setExtraServices] = useState<string[]>([]);
   const [tip, setTip] = useState("");
   const [discountPercent, setDiscountPercent] = useState("");
@@ -1186,12 +1214,18 @@ function CompleteModal({ appt, allServices, onClose, onComplete }: any) {
           >
             Hủy
           </button>
-          <button
-            onClick={() => onComplete(extraServices, Number(tip) || 0, Number(discountPercent) || 0, paymentMethod)}
+          <LoadingButton
+            onClick={async () => {
+              setConfirmLoading(true);
+              await onComplete(extraServices, Number(tip) || 0, Number(discountPercent) || 0, paymentMethod);
+              setConfirmLoading(false);
+            }}
+            isLoading={confirmLoading}
+            loadingText="Đang hoàn thành..."
             className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-150 active:scale-95 transition-transform cursor-pointer"
           >
             Xác nhận
-          </button>
+          </LoadingButton>
         </div>
       </div>
     </div>
@@ -1239,6 +1273,7 @@ function PaymentQRModal({ appt, finalAmount, extraServices, allServices, bankCon
     ? `https://img.vietqr.io/image/${bankConfig.bank_id}-${bankConfig.account_number}-compact2.png?amount=${finalAmount}&addInfo=${encodeURIComponent(memoText)}&accountName=${encodeURIComponent(bankConfig.account_owner || "")}`
     : "";
 
+  const [paidLoading, setPaidLoading] = useState(false);
   const [copiedId, setCopiedId] = useState("");
   const copyText = (text: string, id: string) => {
     navigator.clipboard.writeText(text);
@@ -1360,13 +1395,19 @@ function PaymentQRModal({ appt, finalAmount, extraServices, allServices, bankCon
             Đóng
           </button>
           {hasConfig && (
-            <button
-              onClick={onPaid}
+            <LoadingButton
+              onClick={async () => {
+                setPaidLoading(true);
+                await onPaid();
+                setPaidLoading(false);
+              }}
+              isLoading={paidLoading}
+              loadingText="Đang xác nhận..."
               className="flex-1 py-4 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl shadow-lg shadow-pink-100 active:scale-95 transition-transform cursor-pointer flex items-center justify-center gap-2"
             >
               <CheckCircle2 className="w-5 h-5" />
               Khách đã trả
-            </button>
+            </LoadingButton>
           )}
         </div>
       </div>
@@ -1378,6 +1419,7 @@ function ReviewModal({ apptId, onSubmit }: any) {
   const [rating, setRating] = useState(5);
   const [tags, setTags] = useState<string[]>([]);
   const [comment, setComment] = useState("");
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const SUGGESTIONS = [
     "Thợ làm kỹ",
@@ -1458,12 +1500,18 @@ function ReviewModal({ apptId, onSubmit }: any) {
           />
         </div>
 
-        <button
-          onClick={() => onSubmit(rating, tags, comment)}
+        <LoadingButton
+          onClick={async () => {
+            setSubmitLoading(true);
+            await onSubmit(rating, tags, comment);
+            setSubmitLoading(false);
+          }}
+          isLoading={submitLoading}
+          loadingText="Đang gửi..."
           className="w-full py-4 bg-gray-950 text-white font-bold rounded-2xl shadow-xl shadow-gray-950/10 hover:bg-black active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer mt-2"
         >
           Hoàn tất <ArrowRight className="w-5 h-5" />
-        </button>
+        </LoadingButton>
       </div>
     </div>
   );
@@ -1471,6 +1519,7 @@ function ReviewModal({ apptId, onSubmit }: any) {
 
 function SwapModal({ appt, otherStaff, onClose, onSwap }: any) {
   const [selected, setSelected] = useState("");
+  const [swapLoading, setSwapLoading] = useState(false);
   return (
     <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:h-auto md:max-w-sm p-6 shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300 flex flex-col justify-between md:justify-start">
@@ -1509,13 +1558,19 @@ function SwapModal({ appt, otherStaff, onClose, onSwap }: any) {
           >
             Hủy
           </button>
-          <button
+          <LoadingButton
             disabled={!selected}
-            onClick={() => onSwap(selected)}
+            onClick={async () => {
+              setSwapLoading(true);
+              await onSwap(selected);
+              setSwapLoading(false);
+            }}
+            isLoading={swapLoading}
+            loadingText="Đang chuyển..."
             className="flex-1 py-4 bg-pink-600 text-white font-bold rounded-xl disabled:opacity-50 active:scale-95 transition-transform cursor-pointer"
           >
             Chuyển
-          </button>
+          </LoadingButton>
         </div>
       </div>
     </div>
@@ -1634,18 +1689,16 @@ function TabPassword() {
         </div>
 
         <div className="pt-4 border-t border-gray-100 flex justify-end">
-          <button
+          <LoadingButton
             type="submit"
+            isLoading={loading}
+            loadingText="Đang cập nhật..."
             disabled={loading}
             className="px-8 py-3.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer font-semibold"
           >
-            {loading ? (
-              <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div>
-            ) : (
-              <CheckCircle2 className="w-5 h-5" />
-            )}
+            <CheckCircle2 className="w-5 h-5" />
             Cập nhật mật khẩu
-          </button>
+          </LoadingButton>
         </div>
       </form>
 
@@ -1921,18 +1974,16 @@ function TabSellPackage({
           )}
         </div>
 
-        <button
+        <LoadingButton
           type="submit"
+          isLoading={submitting}
+          loadingText="Đang xử lý..."
           disabled={submitting || !phone || !customerName || !selectedPackageId}
           className="w-full p-4 bg-gray-900 text-white font-bold rounded-2xl hover:bg-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none shadow-md flex items-center justify-center gap-2 text-base cursor-pointer"
         >
-          {submitting ? (
-            <div className="animate-spin w-5 h-5 border-2 border-white/20 border-t-white rounded-full"></div>
-          ) : (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-          )}
+          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           Xác nhận thanh toán và kích hoạt gói
-        </button>
+        </LoadingButton>
       </form>
     </div>
   );

@@ -5,10 +5,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   ArrowLeft, Search, Filter, Calendar, ClipboardCheck, Trash2, 
-  User, CheckCircle2, Clock, X, AlertTriangle, Play, Check, Ban, ShieldAlert
+  User, CheckCircle2, Clock, X, AlertTriangle, Play, Check, Ban, ShieldAlert, Star
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getFilteredAppointments, deleteAppointment, getAdminSessionInfo } from '../actions';
+import LoadingButton from '@/components/LoadingButton';
+import LoadingOverlay from '@/components/LoadingOverlay';
 
 export default function AdminOrdersPage() {
   const router = useRouter();
@@ -316,6 +318,7 @@ export default function AdminOrdersPage() {
                     <th className="p-4">Dịch vụ đã chọn</th>
                     <th className="p-4">Kỹ thuật viên</th>
                     <th className="p-4 text-right">Tổng Tiền</th>
+                    <th className="p-4">Đánh giá</th>
                     <th className="p-4 text-center">Trạng thái</th>
                     <th className="p-4 text-right">Thao tác nâng cao</th>
                   </tr>
@@ -357,6 +360,36 @@ export default function AdminOrdersPage() {
                       <td className="p-4 text-right font-mono font-black text-[#5C4033] text-sm">
                         {(appt.total_amount || 0).toLocaleString('vi')} đ
                       </td>
+                      {/* Review */}
+                      <td className="p-4 max-w-[200px]">
+                        {appt.reviews && appt.reviews.length > 0 ? (() => {
+                          const r = appt.reviews[0];
+                          return (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1">
+                                <span className="text-amber-500 font-black text-sm">{r.rating}</span>
+                                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                              </div>
+                              {r.quick_tags && r.quick_tags.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {r.quick_tags.map((tag: string, i: number) => (
+                                    <span key={i} className="text-[9px] bg-gray-100 px-1.5 py-0.5 rounded font-semibold text-gray-600">
+                                      {tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {r.comment && (
+                                <p className="text-[10px] text-gray-500 italic leading-relaxed line-clamp-2">
+                                  &ldquo;{r.comment}&rdquo;
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })() : (
+                          <span className="text-gray-400 italic text-[11px]">Chưa đánh giá</span>
+                        )}
+                      </td>
                       {/* Status */}
                       <td className="p-4 text-center">
                         {getStatusBadge(appt.status)}
@@ -364,65 +397,79 @@ export default function AdminOrdersPage() {
                       {/* Control Operations */}
                       <td className="p-4 text-right">
                         <div className="flex justify-end items-center gap-1.5">
-                          {updatingId === appt.id ? (
-                            <span className="text-gray-400 text-[11px] animate-pulse font-bold">Đang lưu...</span>
-                          ) : (
-                            <>
-                              {(appt.status === 'PENDING_RANDOM' || appt.status === 'CONFIRMED') && (
-                                <>
-                                  <button
-                                    onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')}
-                                    className="px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-105 hover:bg-blue-100 text-[10px] font-extrabold cursor-pointer transition-colors"
-                                    title="Bắt đầu phục vụ"
-                                  >
-                                    Bắt đầu làm
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
-                                    className="px-2 py-1 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors"
-                                    title="Hủy đơn"
-                                  >
-                                    Hủy lịch
-                                  </button>
-                                </>
-                              )}
-                              {appt.status === 'IN_PROGRESS' && (
-                                <>
-                                  <button
-                                    onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')}
-                                    className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 text-[10px] font-extrabold cursor-pointer transition-colors"
-                                    title="Hoàn thành lịch"
-                                  >
-                                    Hoàn thành
-                                  </button>
-                                  <button
-                                    onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
-                                    className="px-2 py-1 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors"
-                                    title="Hủy đơn"
-                                  >
-                                    Hủy lịch
-                                  </button>
-                                </>
-                              )}
-                              {appt.status === 'COMPLETED' && (
-                                <span className="text-gray-400 text-[10px] font-bold">Xong</span>
-                              )}
-                              {appt.status === 'CANCELLED' && (
-                                <span className="text-gray-400 text-[10px] font-bold">Đã hủy</span>
-                              )}
-
-                              {/* Delete permanently (strictly restricted to state check userRole === 'ADMIN') */}
-                              {sessionUser && sessionUser.role === 'ADMIN' && (
-                                <button
-                                  onClick={() => setDeleteConfirmId(appt.id)}
-                                  className="p-1 px-1.5 bg-rose-600 text-white rounded hover:bg-rose-700 text-[10.5px] font-black cursor-pointer ml-1 text-center transition-colors flex items-center justify-center"
-                                  title="Xóa vĩnh viễn"
+                          <>
+                            {(appt.status === 'PENDING_RANDOM' || appt.status === 'CONFIRMED') && (
+                              <>
+                                <LoadingButton
+                                  onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')}
+                                  className="px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-105 hover:bg-blue-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  title="Bắt đầu phục vụ"
+                                  isLoading={updatingId === appt.id}
+                                  loadingText="Đang cập nhật..."
+                                  variant="ghost"
+                                  size="sm"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </>
-                          )}
+                                  Bắt đầu làm
+                                </LoadingButton>
+                                <LoadingButton
+                                  onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
+                                  className="px-2 py-1 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  title="Hủy đơn"
+                                  isLoading={updatingId === appt.id}
+                                  loadingText="Đang cập nhật..."
+                                  variant="ghost"
+                                  size="sm"
+                                >
+                                  Hủy lịch
+                                </LoadingButton>
+                              </>
+                            )}
+                            {appt.status === 'IN_PROGRESS' && (
+                              <>
+                                <LoadingButton
+                                  onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')}
+                                  className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  title="Hoàn thành lịch"
+                                  isLoading={updatingId === appt.id}
+                                  loadingText="Đang cập nhật..."
+                                  variant="ghost"
+                                  size="sm"
+                                >
+                                  Hoàn thành
+                                </LoadingButton>
+                                <LoadingButton
+                                  onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
+                                  className="px-2 py-1 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  title="Hủy đơn"
+                                  isLoading={updatingId === appt.id}
+                                  loadingText="Đang cập nhật..."
+                                  variant="ghost"
+                                  size="sm"
+                                >
+                                  Hủy lịch
+                                </LoadingButton>
+                              </>
+                            )}
+                            {appt.status === 'COMPLETED' && (
+                              <span className="text-gray-400 text-[10px] font-bold">Xong</span>
+                            )}
+                            {appt.status === 'CANCELLED' && (
+                              <span className="text-gray-400 text-[10px] font-bold">Đã hủy</span>
+                            )}
+
+                            {/* Delete permanently (strictly restricted to state check userRole === 'ADMIN') */}
+                            {sessionUser && sessionUser.role === 'ADMIN' && (
+                              <LoadingButton
+                                onClick={() => setDeleteConfirmId(appt.id)}
+                                className="p-1 px-1.5 bg-rose-600 text-white rounded hover:bg-rose-700 text-[10.5px] font-black cursor-pointer ml-1 text-center transition-colors flex items-center justify-center"
+                                title="Xóa vĩnh viễn"
+                                variant="danger"
+                                size="sm"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </LoadingButton>
+                            )}
+                          </>
                         </div>
                       </td>
                     </tr>
@@ -484,57 +531,99 @@ export default function AdminOrdersPage() {
                     </div>
                   </div>
 
+                  {/* Review Section - Mobile */}
+                  {appt.reviews && appt.reviews.length > 0 && (() => {
+                    const r = appt.reviews[0];
+                    return (
+                      <div className="bg-amber-50/30 p-3 rounded-2xl border border-amber-100/50 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Đánh giá khách hàng</span>
+                          <div className="flex items-center gap-1 bg-amber-100 px-2 py-0.5 rounded-lg">
+                            <span className="font-black text-amber-800 text-xs">{r.rating}</span>
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                          </div>
+                        </div>
+                        {r.quick_tags && r.quick_tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {r.quick_tags.map((tag: string, i: number) => (
+                              <span key={i} className="text-[9px] bg-white border border-amber-100 px-1.5 py-0.5 rounded font-bold text-amber-800">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {r.comment && (
+                          <p className="text-[11px] text-gray-600 italic leading-relaxed">&ldquo;{r.comment}&rdquo;</p>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Mobile Actions - easy to interact */}
                   <div className="flex flex-wrap gap-2 items-center justify-end pt-2 border-t border-gray-100">
-                    {updatingId === appt.id ? (
-                      <span className="text-gray-400 text-sm font-bold animate-pulse">Đang cập nhật...</span>
-                    ) : (
-                      <>
-                        {(appt.status === 'PENDING_RANDOM' || appt.status === 'CONFIRMED') && (
-                          <>
-                            <button
-                              onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')}
-                              className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold font-sans active:scale-95 transition-all cursor-pointer text-center"
-                            >
-                              Bắt đầu dịch vụ
-                            </button>
-                            <button
-                              onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
-                              className="px-3.5 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center"
-                            >
-                              Hủy
-                            </button>
-                          </>
-                        )}
-                        {appt.status === 'IN_PROGRESS' && (
-                          <>
-                            <button
-                              onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')}
-                              className="flex-1 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold font-sans active:scale-95 transition-all cursor-pointer text-center"
-                            >
-                              Hoàn thành
-                            </button>
-                            <button
-                              onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
-                              className="px-3.5 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center"
-                            >
-                              Hủy
-                            </button>
-                          </>
-                        )}
-
-                        {/* Delete button on mobile for Admin */}
-                        {sessionUser && sessionUser.role === 'ADMIN' && (
-                          <button
-                            onClick={() => setDeleteConfirmId(appt.id)}
-                            className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer flex items-center justify-center"
-                            title="Xóa vĩnh viễn"
+                    <>
+                      {(appt.status === 'PENDING_RANDOM' || appt.status === 'CONFIRMED') && (
+                        <>
+                          <LoadingButton
+                            onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')}
+                            className="flex-1 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold font-sans active:scale-95 transition-all cursor-pointer text-center"
+                            isLoading={updatingId === appt.id}
+                            loadingText="Đang cập nhật..."
+                            variant="primary"
+                            size="md"
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </>
-                    )}
+                            Bắt đầu dịch vụ
+                          </LoadingButton>
+                          <LoadingButton
+                            onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
+                            className="px-3.5 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center"
+                            isLoading={updatingId === appt.id}
+                            loadingText="Đang cập nhật..."
+                            variant="ghost"
+                            size="md"
+                          >
+                            Hủy
+                          </LoadingButton>
+                        </>
+                      )}
+                      {appt.status === 'IN_PROGRESS' && (
+                        <>
+                          <LoadingButton
+                            onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')}
+                            className="flex-1 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold font-sans active:scale-95 transition-all cursor-pointer text-center"
+                            isLoading={updatingId === appt.id}
+                            loadingText="Đang cập nhật..."
+                            variant="primary"
+                            size="md"
+                          >
+                            Hoàn thành
+                          </LoadingButton>
+                          <LoadingButton
+                            onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
+                            className="px-3.5 py-3 bg-rose-50 text-rose-600 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center"
+                            isLoading={updatingId === appt.id}
+                            loadingText="Đang cập nhật..."
+                            variant="ghost"
+                            size="md"
+                          >
+                            Hủy
+                          </LoadingButton>
+                        </>
+                      )}
+
+                      {/* Delete button on mobile for Admin */}
+                      {sessionUser && sessionUser.role === 'ADMIN' && (
+                        <LoadingButton
+                          onClick={() => setDeleteConfirmId(appt.id)}
+                          className="p-3 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+                          title="Xóa vĩnh viễn"
+                          variant="danger"
+                          size="md"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </LoadingButton>
+                      )}
+                    </>
                   </div>
                 </div>
               ))}
@@ -567,24 +656,31 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="flex gap-3 pt-2">
-              <button
+              <LoadingButton
                 disabled={deleteLoading}
                 onClick={() => setDeleteConfirmId(null)}
                 className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 cursor-pointer text-center transition-all"
+                variant="ghost"
+                size="md"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </LoadingButton>
+              <LoadingButton
                 disabled={deleteLoading}
                 onClick={handleDelete}
                 className="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 rounded-xl text-xs font-bold text-white cursor-pointer text-center shadow-md shadow-rose-200 transition-all flex items-center justify-center gap-2"
+                isLoading={deleteLoading}
+                loadingText="Đang xóa..."
+                variant="danger"
+                size="md"
               >
-                {deleteLoading ? "Đang xóa..." : "Xác nhận xóa"}
-              </button>
+                Xác nhận xóa
+              </LoadingButton>
             </div>
           </div>
         </div>
       )}
+      <LoadingOverlay isVisible={deleteLoading} message="Đang xóa dữ liệu, vui lòng chờ..." />
       <BottomNavigation />
     </div>
   );
