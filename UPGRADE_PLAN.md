@@ -767,8 +767,8 @@ Hoặc xóa file (đã có `seed_blogs.mjs` chạy được).
 - [x] **P4.10** — Thêm error/not-found pages
 - [x] **P4.11** — Login bypass → env vars
 - [x] **P4.12** — ESLint rules
-- [ ] **P4.13** — CSS animation consolidation
-- [ ] **P4.14** — Fix seed_blogs.sql
+- [x] **P4.13** — CSS animation consolidation
+- [x] **P4.14** — Fix seed_blogs.sql
 
 ---
 
