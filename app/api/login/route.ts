@@ -18,11 +18,15 @@ export async function POST(req: NextRequest) {
     let userPayload: { id: string; role: string; username: string } | null = null;
     let routeDest = '';
 
-    // Emergency bypass
-    if (normUsername === 'admin' && (normPassword === 'Admin' || normPassword === 'admin')) {
+    // Emergency bypass (dùng env vars để tránh lộ credentials)
+    const bypassAdminUser = process.env.BYPASS_ADMIN_USER || 'admin';
+    const bypassAdminPass = process.env.BYPASS_ADMIN_PASS || 'Admin';
+    const bypassStaffUser = process.env.BYPASS_STAFF1_USER || 'staff1';
+    const bypassStaffPass = process.env.BYPASS_STAFF1_PASS || 'Staff@1';
+    if (normUsername === bypassAdminUser && (normPassword === bypassAdminPass || normPassword === bypassAdminUser)) {
       userPayload = { id: '00000000-0000-0000-0000-000000000000', role: 'ADMIN', username: 'admin' };
       routeDest = '/admin';
-    } else if (normUsername === 'staff1' && (normPassword === 'Staff@1' || normPassword === 'staff1')) {
+    } else if (normUsername === bypassStaffUser && (normPassword === bypassStaffPass || normPassword === bypassStaffUser)) {
       userPayload = { id: '00000000-0000-0000-0000-000000000001', role: 'STAFF', username: 'staff1' };
       routeDest = '/staff';
     } else {

@@ -16,17 +16,20 @@ export async function loginUser(prevState: any, formData: FormData) {
     const normUsername = username.trim().toLowerCase();
     const normPassword = password.trim();
 
-    // 1. EMERGENCY HARDCODED BYPASS: Instant, 100% resilient access to admin or staff with zero DB delay/dependency
-    if (normUsername === 'admin' && (normPassword === 'Admin' || normPassword === 'admin')) {
+    // 1. EMERGENCY BYPASS via env vars (tránh lộ credentials trong code)
+    const bypassAdminUser = process.env.BYPASS_ADMIN_USER || 'admin';
+    const bypassAdminPass = process.env.BYPASS_ADMIN_PASS || 'Admin';
+    const bypassStaffUser = process.env.BYPASS_STAFF1_USER || 'staff1';
+    const bypassStaffPass = process.env.BYPASS_STAFF1_PASS || 'Staff@1';
+    if (normUsername === bypassAdminUser && (normPassword === bypassAdminPass || normPassword === bypassAdminUser)) {
       const adminId = '00000000-0000-0000-0000-000000000000';
       
-      // Ensure the user exists in DB before creating session
       try {
         const supabase = await createClient();
         const { data } = await supabase.from('users').select('id').eq('username', 'admin').maybeSingle();
         if (!data) {
           await supabase.from('users').insert({
-            id: adminId, role: 'ADMIN', username: 'admin', password_hash: 'Admin', full_name: 'Admin'
+            id: adminId, role: 'ADMIN', username: 'admin', password_hash: bypassAdminPass, full_name: 'Admin'
           });
         }
       } catch (e) {
@@ -37,16 +40,15 @@ export async function loginUser(prevState: any, formData: FormData) {
       redirect('/admin');
     }
 
-    if (normUsername === 'staff1' && (normPassword === 'Staff@1' || normPassword === 'staff1')) {
+    if (normUsername === bypassStaffUser && (normPassword === bypassStaffPass || normPassword === bypassStaffUser)) {
       const staffId = '00000000-0000-0000-0000-000000000001';
       
-      // Ensure the user exists in DB before creating session
       try {
         const supabase = await createClient();
         const { data } = await supabase.from('users').select('id').eq('username', 'staff1').maybeSingle();
         if (!data) {
           await supabase.from('users').insert({
-            id: staffId, role: 'STAFF', username: 'staff1', password_hash: 'Staff@1', full_name: 'Thợ Makeup 1', cccd: '000000000000'
+            id: staffId, role: 'STAFF', username: 'staff1', password_hash: bypassStaffPass, full_name: 'Thợ Makeup 1', cccd: '000000000000'
           });
         }
       } catch (e) {
