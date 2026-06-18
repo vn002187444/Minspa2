@@ -35,7 +35,8 @@ export async function getScheduleData(dateStr?: string) {
       .from('attendance')
       .select('staff_id')
       .eq('date', formattedDateStr)
-      .eq('status', 'PRESENT');
+      .eq('status', 'PRESENT')
+      .limit(100);
 
     const presentStaffIds = attendance?.map((a: any) => a.staff_id) || [];
 
@@ -44,7 +45,8 @@ export async function getScheduleData(dateStr?: string) {
       .from('users')
       .select('id, full_name, username')
       .in('role', ['STAFF', 'MANAGER'])
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .limit(100);
 
     const finalStaffList = (staffList || []).map(staff => ({
       ...staff,
@@ -63,7 +65,8 @@ export async function getScheduleData(dateStr?: string) {
         )
       `)
       .gte('start_time', startISO)
-      .lte('start_time', endISO);
+      .lte('start_time', endISO)
+      .limit(500);
 
     // 4. Filter sensitive details for guests
     const processedAppointments = (appointments || []).map((appt: any) => {
@@ -91,14 +94,16 @@ export async function getScheduleData(dateStr?: string) {
     const { data: services } = await supabase
       .from('services')
       .select('id, name, price')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .limit(200);
 
     // 6. Get explicit time slot locks for the day
     const { data: timeSlotLocks } = await supabase
       .from('time_slot_locks')
       .select('id, staff_id, appointment_id, start_time, end_time')
       .eq('lock_date', formattedDateStr)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .limit(500);
 
     return { 
       staffList: finalStaffList, 

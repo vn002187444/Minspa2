@@ -1,932 +1,229 @@
 # KẾ HOẠCH NÂNG CẤP HỆ THỐNG — MIN NAIL & HAIR
 
-> Ngày tạo: 17/06/2026 | Cập nhật: 18/06/2026 (Phase 4 — ✅ All complete)
-> Mục tiêu: Fix bug, cải thiện UI/UX, tối ưu performance cho 7 vấn đề lớn
+> Ngày tạo: 17/06/2026 | Cập nhật: 18/06/2026
+> Mục tiêu: Tối ưu Vercel & Supabase performance, giảm cost, tăng tốc ứng dụng
+>
+> **Các giai đoạn đã hoàn thành:** Phase 1–6 → xem `PLAN.md`
+> **Quy tắc vận hành:** Xem `PLAN.md` phần "QUY TẮC VẬN HÀNH & GIAO TIẾP"
 
 ---
 
-## THỨ TỰ ƯU TIÊN THỰC HIỆN
+## 📜 HƯỚNG DẪN SỬ DỤNG FILE NÀY
 
-### Phase 1 — P0: Critical (Lỗi sai + Bảo mật)
+### Đọc khi nào?
+- Bắt đầu 1 session mới → Đọc từ đầu đến `Tiến độ Phase 7`
+- Muốn biết mục nào cần làm tiếp → Xem bảng `Tiến độ Phase 7` ở cuối file
 
-| # | Vấn đề | Lý do | Gộp với |
-|---|--------|-------|---------|
-| **P1.1** | **Vấn đề 4** — Session persistence | Login sai → không dùng được app | VĐ6 (soft delete login) |
-| **P1.2** | **Vấn đề 6a** — Chặn soft-delete login | Bảo mật: staff đã xóa vẫn login được | VĐ4 (cùng file login) |
-| **P1.3** | **Vấn đề 2** — MasterSchedule attendance | Sai dữ liệu "Đã trực" → admin tin tưởng sai | VĐ6b (filter is_active) |
+### Cập nhật khi nào?
+- Hoàn thành 1 mục PX.Y → Đánh dấu `[x]` trong `Tiến độ Phase 7`
+- Thêm mục mới → Thêm vào `Tiến độ Phase 7` + mô tả chi tiết bên trên
+- Bỏ qua mục → Đánh dấu `[-]` + ghi lý do
 
-### Phase 2 — P1: High (Nâng cấp UI/UX)
+### Format khi thêm mục mới
+```markdown
+### [Mức ưu tiên] PX.Y — Tên mục
 
-| # | Vấn đề | Lý do | Gộp với |
-|---|--------|-------|---------|
-| **P2.1** | **Vấn đề 1** — Staff status trong Admin | Admin cần thấy ai đang hoạt động | VĐ6d (restore UI), VĐ6c (index) |
-| **P2.2** | **Vấn đề 6b** — Filter `is_active` trong query | Commission, schedule, notification sai | VĐ2, VĐ5 (cùng file) |
-| **P2.3** | **Vấn đề 5** — Booking time slots | Mở rộng giờ, cache lịch sử, recommend | — |
-| **P2.4** | **Vấn đề 6c** — Index + NOT NULL DB | Tối ưu query cho is_active | VĐ1, VĐ7 (index chung) |
+**Vấn đề:** Mô tả ngắn gọn vấn đề
 
-### Phase 3 — P2: Medium (Layout + Performance)
+| File | Cần sửa |
+|------|---------|
+| `file/path.ts` | Mô tả cần sửa |
 
-| # | Vấn đề | Lý do | Gộp với |
-|---|--------|-------|---------|
-| **P3.1** | **Vấn đề 3** — Bell layout admin | UI xấu, không ảnh hưởng chức năng | — |
-| **P3.2** | **Vấn đề 7a** — Edge middleware + Cache | Tối ưu Vercel cost | — |
-| **P3.3** | **Vấn đề 7b** — Composite index + Fix N+1 | Tối ưu Supabase | VĐ6c (index) |
-| **P3.4** | **Vấn đề 7c** — Realtime notifications | Thay polling bằng WebSocket | — |
-
-### Ghi chép gộp file
-
-Khi code cần xử lý đồng thời các vấn đề chung file:
-- `app/login/actions.ts` + `app/api/login/route.ts`: Làm VĐ4 và VĐ6a trong 1 lần sửa
-- `app/admin/schedule/actions.ts`: Làm VĐ2, VĐ6b, VĐ7b trong 1 lần sửa
-- `app/admin/page.tsx`: Làm VĐ1, VĐ3, VĐ6d trong 1 lần sửa
-- Lib, index: Làm VĐ5c, VĐ5e, VĐ6c, VĐ7b cùng lúc
-
----
-
-## MỤC LỤC
-
-- [Vấn đề 1: Trạng thái nhân viên trong Admin](#vấn-đề-1-trạng-thái-nhân-viên-trong-admin)
-- [Vấn đề 2: Lịch ngang MasterSchedule — "Đã trực" sai](#vấn-đề-2-lịch-ngang-masterschedule--đã-trực-sai)
-- [Vấn đề 3: Icon thông báo Admin trên PC bị lỗi layout](#vấn-đề-3-icon-thông-báo-admin-trên-pc-bị-lỗi-layout)
-- [Vấn đề 4: Session login bị mất khi quay lại](#vấn-đề-4-session-login-bị-mất-khi-quay-lại)
-- [Vấn đề 5: Booking time slots — mở rộng khung giờ & UX](#vấn-đề-5-booking-time-slots--mở-rộng-khung-giờ--ux)
-- [Vấn đề 6: Soft Delete — tối ưu & đồng bộ](#vấn-đề-6-soft-delete--tối-ưu--đồng-bộ)
-- [Vấn đề 7: Tối ưu Vercel & Supabase](#vấn-đề-7-tối-ưu-vercel--supabase--tránh-limit-cpu--request)
-- [Tổng kết files cần sửa](#tổng-kết-files-cần-sửa)
-
----
-
-## Vấn đề 1: Trạng thái nhân viên trong Admin
-
-### Hiện trạng
-
-Bảng nhân viên trong tab STAFF (`app/admin/page.tsx`) chỉ hiển thị:
-- Tên nhân viên (`full_name`)
-- Username
-- Role (STAFF/MANAGER)
-
-**Không có** indicator trạng thái hoạt động/nghỉ. Soft delete (`is_active = false`) tồn tại nhưng không hiển thị trên UI — admin không biết nhân viên nào đang bị vô hiệu hóa, không có nút khôi phục.
-
-### Nguyên nhân
-
-- `getStaffs()` trong `app/admin/actions.ts` không filter `is_active` (cố ý — để admin thấy tất cả)
-- Nhưng view không hiển thị trạng thái `is_active` cho từng staff
-- Không có action "Kích hoạt lại" (restore) trên UI
-
-### Giải pháp
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 1.1 | Thêm cột "Trạng thái" | `app/admin/page.tsx` | Badge 🟢 Hoạt động (`is_active=true`) / 🔴 Đã vô hiệu hóa (`is_active=false`) |
-| 1.2 | Thêm filter dropdown | `app/admin/page.tsx` | "Tất cả / Hoạt động / Đã vô hiệu hóa" |
-| 1.3 | Thêm nút toggle | `app/admin/page.tsx` | "Vô hiệu hóa" / "Kích hoạt lại" theo từng staff |
-| 1.4 | Thêm hàm restore + toggle | `app/admin/actions.ts` | `toggleStaffActive(staffId, newStatus)` |
-| 1.5 | Audit log | `app/admin/actions.ts` | Log `TOGGLE_STAFF_ACTIVE` khi thay đổi |
-
-### Ghi chú
-
-- Mở rộng UI pattern này cho tab SERVICES và PACKAGES nếu cần
-- Soft-delete staff vẫn phải chặn login được (xem Vấn đề 4)
-
----
-
-## Vấn đề 2: Lịch ngang MasterSchedule — "Đã trực" sai
-
-### Hiện trạng
-
-Trong `components/MasterSchedule.tsx`, tất cả nhân viên đều hiển thị badge **"Đã trực"** (màu xanh lá) bất kể họ có điểm danh hay không.
-
-### Nguyên nhân gốc
-
-Trong `getScheduleData()` (`app/admin/schedule/actions.ts:33-40`):
-```typescript
-const { data: attendance } = await supabase
-    .from('attendance')
-    .select('staff_id')
-    .eq('date', formattedDateStr)
-    .eq('status', 'PRESENT');
-
-const presentStaffIds = attendance?.map((a: any) => a.staff_id) || [];
+**Giải pháp:** Hướng dẫn cụ thể
 ```
 
-Biến `presentStaffIds` được query nhưng **không bao giờ được sử dụng** trong dữ liệu trả về. Kết quả là tất cả staff từ `users` đều được render như nhau.
-
-### Giải pháp
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 2.1 | Thêm `is_present` vào staff list | `app/admin/schedule/actions.ts` | Sau khi query attendance, gắn flag `is_present` cho mỗi staff |
-| 2.2 | Chỉ render staff đã điểm danh | `components/MasterSchedule.tsx` | Grid chỉ hiển thị staff có `is_present = true` trong ngày |
-| 2.3 | Badge động | `components/MasterSchedule.tsx` | "Đã trực" (xanh) nếu `is_present=true`, "Chưa điểm danh" (xám) nếu không |
-| 2.4 | Ô thời gian cho staff chưa điểm danh | `components/MasterSchedule.tsx` | Hiển thị "Chưa trực" thay vì "Rảnh" |
-| 2.5 | Toggle hiển thị staff chưa điểm danh | `components/MasterSchedule.tsx` | Checkbox "Hiển thị NV chưa điểm danh" (mặc định ẩn) |
-
 ---
 
-## Vấn đề 3: Icon thông báo Admin trên PC bị lỗi layout
+## 📊 Phase 7 — P1/P2: Tối ưu Vercel & Supabase (CÒN DỰ KIẾN)
 
-### Hiện trạng
-
-NotificationBell được đặt trong desktop sidebar (`w-64`). Dropdown của bell dùng `right-0` nên đổ xuống trong sidebar, bị che khuất hoặc layout sai.
-
-### Giải pháp
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 3.1 | Di chuyển bell ra main content | `app/admin/page.tsx` | Desktop: đặt bell ở góc phải **main content** (cạnh nội dung chính, bên ngoài sidebar) |
-| 3.2 | Giữ nguyên mobile | `app/admin/page.tsx` | Mobile header giữ nguyên vị trí hiện tại |
-| 3.3 | Dropdown direction | `components/NotificationBell.tsx` | Có thể cần thêm prop `dropdownAlign` để canh trái/phải tùy vị trí |
-
----
-
-## Vấn đề 4: Session login bị mất khi quay lại
-
-### Hiện trạng
-
-Người dùng phải login lại nhiều lần, đặc biệt khi:
-- Quay lại trang sau khi đóng tab
-- Chuyển giữa các trang
-- Sau 30 ngày sử dụng
-- Logout đôi khi không hết session
-
-### 4 nguyên nhân chính
-
-#### Nguyên nhân 4.1: JWT không được refresh khi middleware re-set cookie
-
-**File:** `middleware.ts:10-19`
-
-Middleware đọc cookie cũ và re-set nó với `maxAge: 30d` nhưng **giữ nguyên JWT cũ**. JWT bên trong có `exp` (expiration) được đặt lúc login, không được refresh. Sau 30 ngày, JWT hết hạn → `decrypt()` thất bại → redirect `/login`.
-
-**Fix:** Middleware cần giải mã session, tạo JWT mới với expiry mới, rồi mới set cookie.
-
-#### Nguyên nhân 4.2: Middleware tạo response mới — dễ mất cookie
-
-**File:** `utils/supabase/middleware.ts:6-10`
-
-`updateSession()` gọi `NextResponse.next({ request: { headers: request.headers } })` tạo response hoàn toàn mới, không kế thừa cookie từ upstream.
-
-**Fix:** Bỏ qua `updateSession()` hoặc sửa để không tạo response mới.
-
-#### Nguyên nhân 4.3: Logout race condition
-
-**File:** `app/api/logout/route.ts`
-
-Khi logout:
-1. Middleware chạy TRƯỚC → đọc cookie cũ → re-set với `maxAge: 30d`
-2. Route handler chạy SAU → gọi `logout()` → set cookie với `expires: new Date(0)`
-
-Nếu thứ tự merge cookie bị đảo ngược, cookie sẽ không bị xóa.
-
-**Fix:** Thêm `maxAge: 0` song song với `expires: new Date(0)`.
-
-#### Nguyên nhân 4.4: JWT_SECRET không đồng bộ
-
-`.env.local` có secret riêng, production (Vercel) dùng fallback. Nếu secret khác nhau giữa các môi trường, cookie tạo ở local không decode được ở production.
-
-### Giải pháp tổng thể
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 4.1 | Re-encrypt JWT trong middleware | `middleware.ts` | Giải mã session cũ → tạo JWT mới với `exp` mới → set cookie |
-| 4.2 | Fix response creation | `utils/supabase/middleware.ts` | Không dùng `NextResponse.next({ request })` gây mất cookie |
-| 4.3 | Thêm `maxAge: 0` khi logout | `utils/auth.ts` | Song song với `expires: new Date(0)` |
-| 4.4 | Kiểm tra JWT_SECRET | Deploy config | Đảm bảo `JWT_SECRET` được set trên Vercel |
-| 4.5 | (Optional) Thêm `/api/auth/me` | File mới | Endpoint kiểm tra session còn sống không |
-
----
-
-## Vấn đề 5: Booking time slots — mở rộng khung giờ, UX & cache lịch sử
-
-### Hiện trạng
-
-| Yếu tố | Giá trị hiện tại |
-|--------|-----------------|
-| Giờ bắt đầu | 09:00 |
-| Giờ kết thúc | 19:30 |
-| Hard cutoff | 20:00 |
-| Date picker | 7 ngày (hôm nay + 6) |
-| Hiển thị slot quá giờ | Có (gray, line-through) |
-| Recommend | Có flag `isRecommended` nhưng chưa nổi bật |
-| Kiểm tra duration | actions.ts dùng 30p cố định (sai), booking-engine.ts đúng |
-| Cache lịch sử KH | Không — `checkCustomerHistory()` gọi DB mỗi lần nhập SDT |
-
-### Giải pháp
-
-#### 5a. Mở rộng khung giờ đến 20:30
-
-| File | Thay đổi |
-|------|----------|
-| `lib/booking-engine.ts:319` | `h <= 19` → `h <= 20` |
-| `lib/booking-engine.ts:329` | `20 * 60` → `21 * 60` |
-| `app/booking/actions.ts:206` | `h <= 19` → `h <= 20` |
-
-#### 5b. Ẩn slot quá giờ (>60 phút)
-
-| File | Thay đổi |
-|------|----------|
-| `components/BookingCalendar.tsx` | Lọc `status !== 'past'` trước khi render |
-| `components/BookingCalendar.tsx` | Cập nhật stats (available/total) loại trừ past slots |
-
-#### 5c. Mở rộng date picker & recommend
-
-| File | Thay đổi |
-|------|----------|
-| `app/booking/page.tsx` | Date picker từ 7 ngày → 14 ngày (hoặc 30) |
-| `components/BookingCalendar.tsx` | Thêm badge "⭐ Gợi ý" cho `isRecommended` |
-| `components/BookingCalendar.tsx` | Highlight đậm hơn (viền xanh đậm + icon) |
-| `components/BookingCalendar.tsx` | Tooltip hiển thị số lượng NV trống |
-
-#### 5d. Fix bug duration check (actions.ts)
-
-| File | Thay đổi |
-|------|----------|
-| `app/booking/actions.ts` | Dùng `getSlotAvailabilityWithNames()` từ booking-engine thay vì logic tự viết, hoặc align duration check |
-| `app/booking/actions.ts` | Thay hardcoded 30p overlap bằng `totalDuration` thực tế |
-
-#### 5e. Cache lịch sử khách hàng (localStorage)
-
-**Vấn đề:** Mỗi lần nhập SDT, `checkCustomerHistory()` gọi **3 queries DB** (customers + appointments JOIN services + customer_packages). Trên booking page, có 2 luồng gọi: (1) khi page load auto-restore, (2) khi blur input → tối thiểu 2 request/phiên.
-
-**Giải pháp — localStorage caching:**
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 5e.1 | Tạo cache key | `app/booking/page.tsx` | Key = `min_salon_customer_{phoneHash}`, dùng SHA-256 digest ngắn (8 ký tự đầu) từ phone |
-| 5e.2 | Cache structure | `app/booking/page.tsx` | `{ data: {...}, timestamp: number }` — lưu toàn bộ response của `checkCustomerHistory` |
-| 5e.3 | TTL cache | `app/booking/page.tsx` | **24h** cho history (ít thay đổi), **5 phút** cho activePackages (dễ hết) |
-| 5e.4 | Check cache trước khi gọi server | `app/booking/page.tsx` | Trong `handlePhoneBlur` và `useEffect` load: kiểm tra localStorage trước, nếu còn hạn thì setState luôn, không gọi server |
-| 5e.5 | Invalidate cache sau booking mới | `app/booking/page.tsx` | Sau khi đặt lịch thành công: xóa cache key của SDT đó để lần sau fetch lại |
-| 5e.6 | Cache riêng cho package | `app/booking/page.tsx` | `min_salon_packages_{phoneHash}` — TTL 5 phút, tự động refresh độc lập với history |
-
-**Kết quả mong đợi:**
-- Lần 1 (no cache): 3 queries DB + 1 server action call (như hiện tại)
-- Lần 2+ (có cache): 0 queries, 0 server action → render ngay từ localStorage
-- Giảm ~80% request cho `checkCustomerHistory`
-
-**Rủi ro & xử lý:**
-- Dữ liệu cũ: TTL hợp lý + invalidate sau booking mới
-- localStorage đầy: Dung lượng < 5KB/cache — không đáng lo
-- Privacy: Cache chỉ lưu trên thiết bị, không sync — an toàn
-
----
-
----
-
-## Vấn đề 6: Soft Delete — tối ưu & đồng bộ
-
-### Hiện trạng
-
-Hệ thống có `is_active` trên 4 bảng: `users`, `services`, `treatment_packages`, `time_slot_locks`. Soft delete được thực hiện bằng `UPDATE is_active = false`. Có 3 hàm soft-delete trong `app/admin/actions.ts`:
-- `deleteStaffSafely()` — set `is_active = false` + xóa CCCD
-- `deleteServiceSafely()` — set `is_active = false`
-- `deleteTreatmentPackageSafely()` — set `is_active = false`
-
-### Các lỗi & bất cập
-
-| Mức độ | Vấn đề | File | Dòng |
-|--------|--------|------|------|
-| **CRITICAL** | Staff soft-delete **vẫn login được** | `app/login/actions.ts` | 64-100 |
-| **CRITICAL** | Staff soft-delete login được qua API | `app/api/login/route.ts` | 30-46 |
-| **CAO** | Báo cáo hoa hồng tính cả staff đã xóa mềm | `app/admin/actions.ts` | 743-746 |
-| **CAO** | Lịch tổng hiển thị staff đã xóa mềm | `app/admin/schedule/actions.ts` | 43-46 |
-| **CAO** | Thông báo booking mới gửi cho admin đã xóa | `app/booking/actions.ts` | 392 |
-| **TB** | Không có nút **khôi phục** (restore) trên UI | `app/admin/page.tsx` | — |
-| **TB** | Thiếu index trên cột `is_active` | `database.sql` | — |
-| **TB** | Không thể toggle nhanh (bật/tắt) từ UI | `app/admin/page.tsx` | — |
-| **THẤP** | Thiếu `NOT NULL` trên cột `is_active` | `database.sql` | — |
-
-### Giải pháp
-
-#### 6a. Chặn staff soft-delete đăng nhập
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 6.1 | Kiểm tra `is_active` sau khi verify password | `app/login/actions.ts` | Trả lỗi "Tài khoản đã bị vô hiệu hóa" nếu `is_active = false` |
-| 6.2 | Kiểm tra tương tự trong API login | `app/api/login/route.ts` | Chặn login qua endpoint API |
-
-#### 6b. Filter `is_active = true` cho các query bị thiếu
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 6.3 | Thêm `.eq('is_active', true)` | `app/admin/actions.ts` (getCommissionReport) | Chỉ tính staff đang hoạt động |
-| 6.4 | Thêm `.eq('is_active', true)` | `app/admin/schedule/actions.ts` (getScheduleData) | Lịch tổng chỉ hiển thị staff hoạt động |
-| 6.5 | Thêm `.eq('is_active', true)` | `app/booking/actions.ts` (gửi notif) | Chỉ gửi thông báo cho admin đang hoạt động |
-
-#### 6c. Database tối ưu
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 6.6 | Thêm index | `scripts/migrate_schema.sql` | `idx_users_is_active`, `idx_services_is_active`, `idx_treatment_packages_is_active` |
-| 6.7 | Thêm NOT NULL | `scripts/migrate_schema.sql` | `ALTER COLUMN is_active SET NOT NULL` |
-| 6.8 | Cập nhật schema gốc | `database.sql` | Thêm `NOT NULL` vào DDL của 4 bảng |
-
-#### 6d. UI Admin — Restore & Toggle
-
-| STT | Thay đổi | File | Mô tả |
-|-----|----------|------|-------|
-| 6.9 | Nút "Vô hiệu hóa" / "Kích hoạt lại" | `app/admin/page.tsx` | Toggle trạng thái từng staff/service/package |
-| 6.10 | Hàm toggle | `app/admin/actions.ts` | `updateStaffActive(staffId, isActive)`, tương tự cho service & package |
-| 6.11 | Audit log | `app/admin/actions.ts` | Log `TOGGLE_STAFF_ACTIVE`, `TOGGLE_SERVICE_ACTIVE`, `TOGGLE_PACKAGE_ACTIVE` |
-
-### Ghi chú
-
-- Vấn đề 6.1 (chặn login) và 6.4 (schedule grid) **đã được đề cập** trong Vấn đề 2 và 4 — cần đồng bộ khi code
-- Soft delete `time_slot_locks` đã hoạt động tốt và có index riêng — không cần thay đổi
-
----
-
----
-
-## Vấn đề 7: Tối ưu Vercel & Supabase — tránh limit CPU / Request
-
-### Hiện trạng
-
-Hệ thống đang sử dụng Vercel serverless (Node.js runtime) cho tất cả API route + server actions, và Supabase PostgreSQL cho database. Chưa có tối ưu nào cho tier free/pro.
-
-### Rủi ro hiện tại
-
-#### Vercel
-
-| Yếu tố | Rủi ro | Mức |
-|--------|--------|-----|
-| **Server Actions** | Mỗi lần click gọi 1 request → tốn số lượng function invocation | Cao |
-| **Middleware** | Chạy trên **Node.js** (không Edge) → latency + cost cao hơn | Cao |
-| **Cold start** | API routes cold start ~500ms–1s (Node runtime) | Trung bình |
-| **Bundle size** | Import heavy libs (recharts, date-fns, lucide) trong server components → tăng size deployment | Thấp |
-| **Polling 30s** | NotificationBell polling `/api/notifications/unread-count` mỗi 30s → 2 request/phút/người | Cao |
-| **Recursive booking engine** | `cascadeShiftForward()` gọi đệ quy qua API → request timeout nếu nhiều booking | Trung bình |
-
-#### Supabase
-
-| Yếu tố | Rủi ro | Mức |
-|--------|--------|-----|
-| **Không RLS** | Mọi query đều qua server action → tốn cả request count + CPU | Cao |
-| **N+1 queries** | Trong `getScheduleData()`, vòng lặp staff → query từng booking → 1+N pattern | Cao |
-| **Full scan** | Thiếu index trên `date`, `is_active`, `status` → sequential scan | Cao |
-| **Không connection pool** | Mỗi serverless function tạo TCP connection mới đến DB | Trung bình |
-| **Realtime chưa dùng** | Polling 30s thay vì Supabase Realtime (WebSocket) | Cao |
-
-### Giải pháp
-
-#### 7a. Vercel — Giảm function invocation + cold start
-
-| STT | Thay đổi | File/Mô tả | Tác động |
-|-----|----------|------------|----------|
-| 7.1 | Chuyển middleware sang **Edge Runtime** | `middleware.ts` thêm `export const runtime = 'edge'` | Giảm cold start ~10x, tăng tốc redirect |
-| 7.2 | Cache unread count với **Redis/Upstash** | Polling chỉ gọi DB 1 lần, các lần sau đọc cache | Giảm 90% request đến DB |
-| 7.3 | Batch API — gộp nhiều action vào 1 call | Booking steps: gộp 2-3 server action nhỏ thành 1 | Giảm 50% request |
-| 7.4 | Dùng **ISR** cho trang tĩnh | `app/notifications/page.tsx` có thể SSG + revalidate | 0 server request cho phần lớn traffic |
-| 7.5 | Lazy-load heavy libs recharts | `app/admin/page.tsx` dynamic import → `next/dynamic` | Giảm initial bundle 200KB+ |
-| 7.6 | Kiểm tra unused code | `npm run build` kiểm tra tree-shaking | Tối ưu deployment size |
-
-#### 7b. Supabase — Query optimization
-
-| STT | Thay đổi | File/Mô tả | Tác động |
-|-----|----------|------------|----------|
-| 7.7 | Thêm **composite index** cần thiết | `(date, status)` cho attendance + booking | Eliminate sequential scan |
-| 7.8 | Fix N+1 trong `getScheduleData` | Dùng `in()` query thay vì loop từng staff | Giảm từ N+1 xuống 2 queries |
-| 7.9 | Giới hạn result mặc định | Tất cả `select()` phải có `.limit()` hoặc `.range()` | Tránh memory spike |
-| 7.10 | Dùng PostgreSQL **VIEW** cho report | Tạo `commission_report_view` tổng hợp sẵn | Giảm CPU cho aggregation queries |
-| 7.11 | Chuyển polling → **Supabase Realtime** | `NotificationBell` subscribe channel thay vì fetch 30s | Real-time, 0 request, 0 DB hit |
-| 7.12 | **RLS policy** cho notifications | Dùng RLS thay vì kiểm tra trong code | Giảm round-trip + code complexity |
-| 7.13 | `EXPLAIN ANALYZE` định kỳ | Kiểm tra slow queries trong Supabase Logs | Phát hiện sớm degradation |
-| 7.14 | Connection pooling = PgBouncer | Supabase có sẵn Transaction mode | Giảm memory trên DB |
-
-#### 7c. Architecture — tái cấu trúc
-
-| STT | Thay đổi | Mô tả | Tác động |
-|-----|----------|-------|----------|
-| 7.15 | **Server Action** → **API Route** cho booking heavy | Chuyển booking confirm sang API route để dùng streaming/timeout dài | Tránh timeout 60s |
-| 7.16 | **Edge Functions** cho cron job | Cron reminder chạy edge → 0 cold start | Rẻ hơn serverless |
-| 7.17 | **Incremental migration** từ polling → realtime | Từng component migrate dần, không break UI | Zero downtime |
+> Các mục đã hoàn thành trong Phase 1–6 đã được chuyển sang `PLAN.md`.
+> Dưới đây là **các mục CHƯA LÀM** từ Vấn đề 7 (Tối ưu Vercel & Supabase).
 
 ### Ưu tiên thực hiện
 
 | Mức | Mục | Lý do |
 |-----|-----|-------|
-| 🔴 **P0** | 7.8 (Fix N+1) | Ảnh hưởng ngay đến hiệu năng Admin page |
 | 🔴 **P0** | 7.9 (Limit select) | Tránh crash DB do data lớn |
-| 🔴 **P0** | 7.7 (Composite index) | Ảnh hưởng mọi query booking |
-| 🟡 **P1** | 7.1 (Edge middleware) | Chi phí thấp, lợi ích cao |
-| 🟡 **P1** | 7.11 (Realtime notifications) | Thay polling, giảm request rõ rệt |
 | 🟡 **P1** | 7.3 (Batch API) | Giảm request booking flow |
-| 🟢 **P2** | 7.12 (RLS) | Refactor lớn, làm sau cùng |
+| 🟡 **P1** | 7.5 (Lazy-load recharts) | Giảm initial bundle 200KB+ |
+| 🟡 **P1** | 7.6 (Unused code check) | Tối ưu deployment size |
+| 🟢 **P2** | 7.10 (PostgreSQL VIEW) | Giảm CPU cho aggregation queries |
+| 🟢 **P2** | 7.12 (RLS policy) | Refactor lớn, giảm code complexity |
+| 🟢 **P2** | 7.13 (EXPLAIN ANALYZE) | Phát hiện sớm degradation |
+| 🟢 **P2** | 7.14 (Connection pooling) | Giảm memory trên DB |
+| 🟢 **P2** | 7.15 (Server Action → API Route) | Tránh timeout 60s cho booking heavy |
+| 🟢 **P2** | 7.17 (Incremental realtime migration) | Zero downtime |
 
-#### 7d. Review bảng cần bật Supabase Realtime
+### 🔴 P7.9 — Giới hạn result mặc định (Limit select)
 
-Supabase Realtime dùng WebSocket, phù hợp thay polling. Cần chọn lọc vì mỗi bảng enable Realtime làm tăng CPU (write amplification).
+**Vấn đề:** Mọi query `select()` đều không có `.limit()` hoặc `.range()` — khi data lớn sẽ load toàn bộ vào memory → crash.
 
-| Bảng | Enable? | Lý do | Mức ưu tiên |
-|------|---------|-------|-------------|
-| `notifications` | **✅ CÓ** | Thay thế polling 30s ở NotificationBell + real-time badge count | **P0** |
-| `appointments` | **✅ CÓ** | Staff page cập nhật trạng thái booking realtime (có ai vừa đặt / hủy) | **P1** |
-| `attendance` | **⚠️ XEM XÉT** | Admin schedule có thể cập nhật realtime khi staff điểm danh | P2 |
-| `time_slot_locks` | **❌ KHÔNG** | Lock là transient, booking engine tự quản lý, realtime không giúp ích | — |
-| `users` | **❌ KHÔNG** | Dữ liệu tĩnh, chỉ thay đổi khi admin edit | — |
-| `services` | **❌ KHÔNG** | Dữ liệu tĩnh, ít thay đổi | — |
-| `customers` | **❌ KHÔNG** | Chỉ tạo mới qua booking flow | — |
-| `audit_logs` | **❌ KHÔNG** | Log chiều, không cần realtime | — |
+| File | Cần sửa |
+|------|---------|
+| `app/admin/actions.ts` | `getStaffs()`, `getCommissionReport()`, `getFilteredAppointments()` |
+| `app/admin/schedule/actions.ts` | `getScheduleData()` |
+| `app/booking/actions/customer.ts` | `checkCustomerHistory()`, `lookupAppointmentsByPhone()` |
+| `app/staff/actions.ts` | `getStaffData()` |
 
-**Lưu ý:**
-- Realtime dùng **WebSocket** — nếu client mất kết nối (đi thang máy, chuyển mạng) sẽ tự reconnect
-- Về mặt CPU: bật Realtime trên `notifications` và `appointments` là chấp nhận được
-- Cần thêm `Authorization` header khi subscribe channel để bảo mật
-
-### Lưu ý khi triển khai
-
-- Edge Runtime không hỗ trợ `fs`, `crypto` (jose) một phần — cần test middleware kỹ trước khi chuyển
-- Supabase Realtime yêu cầu enable Realtime trên bảng — chỉ enable bảng đã được review ở mục 7d
-- Composite index có thể làm chậm write — cần monitor sau khi thêm
-- PgBouncer Transaction mode không hỗ trợ prepared statements xuyên request
+**Giải pháp:** Thêm `.range(0, 199)` hoặc `.limit(200)` cho tất cả query chưa có limit.
 
 ---
 
-## Tổng kết files đã sửa (25 files)
+### 🟡 P7.3 — Batch API — gộp nhiều action vào 1 call
 
-| File | Issues | Phase | Trạng thái |
-|------|--------|-------|-----------|
-| `app/admin/page.tsx` | 1, 3, 6 | P2, P3 | ✅ Status column, filter dropdown, toggle button, bell layout |
-| `app/admin/actions.ts` | 1, 6 | P2 | ✅ `toggleStaffActive()`, filter `is_active` trong commission |
-| `app/admin/schedule/actions.ts` | 2, 6 | P1, P2 | ✅ `is_present` flag, `.eq('is_active', true)`, N+1 đã fix |
-| `components/MasterSchedule.tsx` | 2 | P1 | ✅ Badge "Chưa điểm danh" / "Đã trực" (refactor: 1,277→430 dòng) |
-| `components/ScheduleDndComponents.tsx` | 4.5 | P1 | ✅ New — DraggableApptCard, DroppableSlotCell, DroppableStaffCard |
-| `components/MasterScheduleGrid.tsx` | 4.5 | P1 | ✅ New — Grid view extracted |
-| `components/MasterScheduleList.tsx` | 4.5 | P1 | ✅ New — List view extracted |
-| `components/AppointmentDetailModal.tsx` | 4.5 | P1 | ✅ New — Modal extracted |
-| `middleware.ts` | 4 | P1 | ✅ Re-encrypt JWT với fresh exp |
-| `utils/supabase/middleware.ts` | 4 | P1 | ✅ Bỏ `updateSession()` gây mất cookie |
-| `utils/auth.ts` | 4 | P1 | ✅ Thêm `maxAge: 0` khi logout |
-| `app/api/logout/route.ts` | 4 | P1 | 🟢 Không cần sửa (auth.ts đã xử lý) |
-| `lib/booking-engine.ts` | 5 | P2 | ✅ `getSlotAvailabilityWithNames` dùng `durationMinutes` động |
-| `app/booking/actions/public.ts` | 4.8 | P1 | ✅ New — public queries |
-| `app/booking/actions/slots.ts` | 4.8 | P1 | ✅ New — slot availability |
-| `app/booking/actions/booking.ts` | 4.8 | P1 | ✅ New — submitBooking |
-| `app/booking/actions/customer.ts` | 4.8 | P1 | ✅ New — customer operations |
-| `app/booking/actions/suggestions.ts` | 4.8 | P1 | ✅ New — suggestions AI |
-| `app/booking/actions/notifications.ts` | 4.8 | P1 | ✅ New — notification CRUD |
-| `components/BookingCalendar.tsx` | 5 | P2 | ✅ Ẩn past slot, badge "⭐ Gợi ý" |
-| `app/booking/page.tsx` | 5 | P2 | ✅ Date 14 ngày, cache localStorage, pass services vào getSlotAvailability |
-| `app/login/actions.ts` | 4, 6 | P1 | ✅ Hardcoded bypass, check `is_active === false` |
-| `app/api/login/route.ts` | 4, 6 | P1 | ✅ Check `is_active === false` |
-| `app/api/auth/me/route.ts` | 4 | P1 | ✅ Endpoint kiểm tra session |
-| `scripts/migrate_schema.sql` | 5, 6, 7 | P2, P3 | ✅ Index + NOT NULL + composite index |
-| `database.sql` | 5, 6 | P2 | ✅ Sửa trailing comma, thêm actual_start_time/end_time, reorder, indexes, seed data |
-| `components/NotificationBell.tsx` | 3, 7 | P3 | ✅ Realtime subscribe + polling 5 phút |
-| `UPGRADE_PLAN.md` | — | — | ✅ Tạo + cập nhật |
+**Vấn đề:** Mỗi lần click trong booking flow gọi 1 server action riêng → 3-4 request/booking.
 
-### Không thực hiện
-- ~~`app/notifications/page.tsx`~~ — Không cần sửa (đã ổn)
-- ~~`supabase/client.ts`~~ — Realtime config trong NotificationBell bằng dynamic import
-- ~~**P3.2** Edge middleware + Redis~~ — Edge runtime không tương thích jose
+| File | Cần sửa |
+|------|---------|
+| `app/booking/actions/booking.ts` | `submitBooking()` — gộp validate + insert + notify |
+
+**Giải pháp:** Gộp các thao tác nhỏ (validate + insert + notify) vào 1 server action duy nhất.
 
 ---
 
-## Tiến độ
+### 🟡 P7.5 — Lazy-load heavy libs (recharts)
 
-- [x] Tạo `UPGRADE_PLAN.md`
+**Vấn đề:** `recharts` (~200KB) được import static trong `app/admin/components/TabDashboard.tsx` → tăng initial bundle.
 
-### Phase 1 — P0: Critical ✅
-- [x] **P1.1** Vấn đề 4: Session persistence (middleware + auth + logout + /api/auth/me)
-- [x] **P1.2** Vấn đề 6a: Chặn soft-delete staff login (login actions + API)
-- [x] **P1.3** Vấn đề 2: MasterSchedule attendance (actions + MasterSchedule.tsx)
+| File | Cần sửa |
+|------|---------|
+| `app/admin/components/TabDashboard.tsx` | Dynamic import recharts |
 
-### Phase 2 — P1: High ✅
-- [x] **P2.1** Vấn đề 1: Staff status UI + toggle (admin page + actions)
-- [x] **P2.2** Vấn đề 6b: Filter is_active trong query (commission, schedule, notif)
-- [x] **P2.3** Vấn đề 5: Booking time slots (giờ 20:30, ẩn slot quá giờ, date picker 14 ngày, badge "⭐ Gợi ý", cache localStorage, fix hardcoded 30 → totalDuration động)
-- [x] **P2.4** Vấn đề 6c: Index + NOT NULL DB (migration + database.sql)
-
-### Phase 3 — P2: Medium ✅ (trừ 7a)
-- [x] **P3.1** Vấn đề 3: Bell layout admin
-- [ ] ~~**P3.2** Vấn đề 7a: Edge middleware + Redis cache~~ *(Bỏ qua — Edge runtime không tương thích jose; Redis cần Upstash infrastructure)*
-- [x] **P3.3** Vấn đề 7b: Composite index (idx_attendance_date_status, idx_appointments_start_time_status) + N+1 (đã fix từ trước trong getScheduleData)
-- [x] **P3.4** Vấn đề 7c: Realtime notifications (subscribe channel + giảm polling 30s → 5 phút)
-
-### Kết quả
-- **19 files** sửa / tạo mới (theo danh sách ở trên)
-- **1 file** bỏ qua có chủ đích (P3.2)
-- **Phase 4 bổ sung: +10 files** (MasterSchedule: 4, Booking actions: 6)
-
----
-
----
-
-## Phase 4 — P0/P1: Code & Deployment Optimization (18/06/2026)
-
-> Mục tiêu: Fix config lỗi tiềm ẩn ảnh hưởng Vercel build/Supabase query, tái cấu trúc monolithic components, xóa code chết, tối ưu maintainability.
-
-### Tổng quan tác động đến Vercel & Supabase
-
-| Mục | Tác động Vercel | Tác động Supabase |
-|-----|----------------|-------------------|
-| ✂️ Bundle nhỏ hơn | Giảm cold start, giảm function size | — |
-| ⚡ Target ES2017 | Giảm polyfill, tăng tốc execution | — |
-| 🖼️ Image optimization | Giảm bandwidth, cache qua Vercel CDN | — |
-| 📦 Tách components | Code splitting dễ hơn, lazy-load từng phần | — |
-| 🗑️ Xóa code chết | Giảm deployment size, tree-shake tốt hơn | — |
-| 🔍 ESLint rules | Phát hiện lỗi sớm trước deploy | — |
-| 🔐 Login security | — | Giảm nguy cơ leak DB |
-
-### Detail & giải pháp
-
-#### 🔴 P4.1 — Tailwind content paths thiếu folder
-
-**File:** `tailwind.config.ts`
-
-```diff
- content: [
-   "./app/**/*.{js,ts,jsx,tsx,mdx}",
-+  "./components/**/*.{js,ts,jsx,tsx,mdx}",
-+  "./lib/**/*.{js,ts,jsx,tsx,mdx}",
-+  "./utils/**/*.{js,ts,jsx,tsx,mdx}",
- ],
-```
-
-**Hậu quả nếu không sửa:** Class Tailwind dùng trong `components/`, `lib/`, `utils/` có thể bị missing trong production build do JIT scanner không quét tới — gây lỗi UI khó debug trên production.
-
----
-
-#### 🔴 P4.2 — TypeScript target es5 → outdated
-
-**File:** `tsconfig.json`
-
-```diff
-- "target": "es5",
-+ "target": "es2017",
-```
-
-**Tác động Vercel:** Next.js 16 chạy Node 18+ (Vercel uses Node 20). ES5 polyfill hoàn toàn không cần thiết.
-- ✅ Giảm bundle size ~5-10%
-- ✅ Tăng tốc compile
-- ✅ Cho phép dùng `async/await`, `Object.entries`, `String.prototype.padStart` native (không polyfill)
-
----
-
-#### 🔴 P4.3 — next.config.ts trống
-
-**File:** `next.config.ts`
-
-```ts
-const nextConfig: NextConfig = {
-  images: {
-    remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: '**.supabase.co' },
-    ],
-  },
-  logging: {
-    fetches: { fullUrl: process.env.NODE_ENV === 'development' },
-  },
-};
-```
-
-**Tác động Vercel:**
-- 🖼️ `images.remotePatterns` — cho phép Next.js Image Optimization cache ảnh từ Unsplash + Supabase Storage qua Vercel CDN (giảm bandwidth, tăng tốc load)
-- 📝 `logging.fetches` — debug fetch caching khi dev, dễ phát hiện N+1
-
----
-
-#### ✅ P4.4 — Tách admin page (4.956 → 424 dòng)
-
-**File:** `app/admin/page.tsx` → 16 files in `app/admin/components/`
-
-**Kết quả:** Admin page giảm từ 4.956 dòng xuống còn 424 dòng. Tách thành 16 component files:
-
-| File mới | Dòng | Nội dung |
-|----------|------|----------|
-| `TodayMonitoringWidget.tsx` | ~290 | Widget giám sát đơn hàng real-time |
-| `TabDashboard.tsx` | ~510 | Dashboard: biểu đồ doanh thu, thống kê, attendance |
-| `TabStaff.tsx` | ~350 | Bảng nhân viên + filter/tìm kiếm |
-| `AddStaffModal.tsx` | ~120 | Modal thêm nhân viên |
-| `EditStaffModal.tsx` | ~175 | Modal sửa/xóa/reset pass nhân viên |
-| `StaffDetailModal.tsx` | ~110 | Modal chi tiết doanh thu nhân viên |
-| `TabServices.tsx` | ~140 | CRUD dịch vụ |
-| `ServiceModal.tsx` | ~295 | Modal thêm/sửa dịch vụ + AI generate |
-| `TabReviews.tsx` | ~90 | Bảng đánh giá khách hàng |
-| `TabSEO.tsx` | ~1.110 | SEO Hub: metadata, AI writer, articles, banner |
-| `TabBank.tsx` | ~90 | Cấu hình tài khoản ngân hàng |
-| `TabPassword.tsx` | ~140 | Đổi mật khẩu + push notification |
-| `TabCommission.tsx` | ~305 | Báo cáo hoa hồng + xuất CSV |
-| `TabPackages.tsx` | ~140 | CRUD gói liệu trình |
-| `EditPackageModal.tsx` | ~205 | Modal thêm/sửa gói liệu trình |
-| `TabSellAndProgress.tsx` | ~365 | Bán gói + tra cứu tiến độ |
-
-**Tác động:** Giảm bundle size, cải thiện maintainability, cho phép lazy-load từng tab sau này.
-
----
-
-#### ✅ P4.5 — Tách MasterSchedule (1.277 → ~430 dòng)
-
-**File:** `components/MasterSchedule.tsx` → 4 files:
-
-| File mới | Dòng | Nội dung |
-|----------|------|----------|
-| `components/MasterScheduleGrid.tsx` | ~180 | Desktop grid view (bảng) |
-| `components/MasterScheduleList.tsx` | ~450 | Mobile list view (theo giờ + theo thợ) |
-| `components/AppointmentDetailModal.tsx` | ~260 | Modal sửa/swap appointment |
-| `components/ScheduleDndComponents.tsx` | ~100 | DraggableApptCard, DroppableSlotCell, DroppableStaffCard |
-
----
-
-#### 🟡 P4.6 — Xóa duplicate push notification
-
-| File | Hành động |
-|------|-----------|
-| `utils/push.ts` | ✅ Giữ lại (có DB lookup + cleanup token) |
-| `lib/push.ts` | ❌ Xóa |
-
-Kiểm tra import cần update:
-```bash
-grep -r "from '@/lib/push'" --include="*.ts" --include="*.tsx" .
-```
-
----
-
-#### 🟡 P4.7 — Xóa stub middleware
-
-**File:** `utils/supabase/middleware.ts` (5 dòng, no-op)
-
-```diff
-- Xóa toàn bộ file
-```
-
-Root `middleware.ts` đã tự xử lý session riêng, không import Supabase middleware. File này không được dùng.
-
----
-
-#### 🟡 P4.11 — Hardcoded login bypass → dùng env vars
-
-**File:** `app/login/actions.ts`, `app/api/login/route.ts`
-
-```diff
-- if (username === 'admin' && password === '123456')
-+ if (username === process.env.BYPASS_ADMIN_USER && password === process.env.BYPASS_ADMIN_PASS)
-```
-
-Thêm vào `.env.example`:
-```
-BYPASS_ADMIN_USER=admin
-BYPASS_ADMIN_PASS=123456
-```
-
-**Tác động Supabase:** Giảm nguy cơ leak credentials nếu code bị lộ (dù bypass chỉ là fallback).
-
----
-
-#### 🟢 P4.9 — Tạo `hooks/` + `types/` directories
-
-**File mới:**
-- `hooks/useSession.ts` — custom hook đọc session từ `/api/auth/me`
-- `hooks/useNotifications.ts` — Realtime subscription hook
-- `types/database.ts` — DB row types (generated from Supabase)
-- `types/booking.ts` — `SlotAvailability`, `TimeLock`, etc.
-
-**Lợi ích:** DRY types, dễ maintain khi schema thay đổi.
-
----
-
-#### 🟢 P4.10 — Thêm error boundaries
-
-| Route | File | Ghi chú |
-|-------|------|---------|
-| `/booking` | `app/booking/error.tsx` + `not-found.tsx` | Booking có thể fail do slot conflict |
-| `/admin` | `app/admin/error.tsx` | Admin data fetch error |
-| `/staff` | `app/staff/error.tsx` + `not-found.tsx` | Staff page error |
-| `/blog/[slug]` | `app/blog/[slug]/not-found.tsx` | Slug không tồn tại → 404 đẹp |
-
----
-
-#### 🟢 P4.12 — ESLint rules
-
-**File:** `.eslintrc.json`
-
-```json
-{
-  "extends": ["next/core-web-vitals"],
-  "rules": {
-    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-    "react-hooks/exhaustive-deps": "warn"
-  }
-}
-```
-
-**Tác động Vercel:** Bắt lỗi sớm → giảm nguy cơ build fail trên CI/CD.
-
----
-
-#### 🟢 P4.13 — CSS animation consolidation
-
-```diff
-- globals.css: giữ @keyframes fadeIn, slideUp, float, shimmer
-- tailwind.config.ts: có keyframes.blob
-=> Chuyển hết keyframes vào tailwind.config.ts
-```
-
-Để dùng className thuần Tailwind, tránh CSS không tree-shake được.
-
----
-
-#### 🟢 P4.14 — Fix seed_blogs.sql syntax error
-
-**File:** `scripts/seed_blogs.sql:10` — dư `);` giữa câu.
-
-```diff
--   'https://images.unsplash.com/...');
--   'https://images.unsplash.com/...')
-- ON CONFLICT (slug) DO NOTHING;
-+   'https://images.unsplash.com/...')
-+ ON CONFLICT (slug) DO NOTHING;
-```
-
-Hoặc xóa file (đã có `seed_blogs.mjs` chạy được).
-
----
-
-### Files cần sửa (Phase 4) — Tổng kết
-
-| File | P4 | Mức | Loại |
-|------|----|-----|------|
-| `tailwind.config.ts` | 4.1 | P0 | Config |
-| `tsconfig.json` | 4.2 | P0 | Config |
-| `next.config.ts` | 4.3 | P0 | Config |
-| `app/admin/page.tsx` → 7 files mới | 4.4 | P1 | Refactor |
-| `components/MasterSchedule.tsx` → 4 files mới | 4.5 | P1 | Refactor |
-| `lib/push.ts` (xóa) | 4.6 | P1 | Xóa |
-| `utils/supabase/middleware.ts` (xóa) | 4.7 | P1 | Xóa |
-| `app/booking/actions.ts` → `app/booking/actions/*.ts` (6 files) | 4.8 | P1 | Refactor |
-| Tạo `hooks/` + `types/` | 4.9 | P2 | New |
-| Tạo 5 `error.tsx` / `not-found.tsx` | 4.10 | P2 | New |
-| `app/login/actions.ts`, `app/api/login/route.ts` | 4.11 | P1 | Fix |
-| `.eslintrc.json` | 4.12 | P2 | Config |
-| `globals.css` + `tailwind.config.ts` | 4.13 | P2 | Refactor |
-| `scripts/seed_blogs.sql` | 4.14 | P2 | Fix |
-
----
-
-### Tiến độ Phase 4 ✅
-
-- [x] **P4.1** — Tailwind content paths
-- [x] **P4.2** — TypeScript target
-- [x] **P4.3** — next.config.ts images + logging
-- [x] **P4.4** — Tách admin page (16 files)
-- [x] **P4.5** — Tách MasterSchedule (4 files)
-- [x] **P4.6** — Xóa `lib/push.ts`
-- [x] **P4.7** — Xóa `utils/supabase/middleware.ts`
-- [x] **P4.8** — Tách booking actions (6 files)
-- [x] **P4.9** — Tạo hooks/ + types/
-- [x] **P4.10** — Thêm error/not-found pages
-- [x] **P4.11** — Login bypass → env vars
-- [x] **P4.12** — ESLint rules
-- [x] **P4.13** — CSS animation consolidation
-- [x] **P4.14** — Fix seed_blogs.sql
-
-**Tổng Phase 4: 14/14 items — ✅ Hoàn thành**
-
----
-
-## Phase 5 — P2: Cron Job (Thay polling client bằng Supabase Edge Function)
-
-> Mục tiêu: Loại bỏ polling client-side 30 giây từ `PwaSupport.tsx`, thay bằng Supabase Edge Function chạy theo lịch. Logic reminders giữ nguyên trong `utils/reminders.ts` — Edge Function chỉ là HTTP trigger.
-
-### Hiện trạng
-
-**Polling tạm bợ:** `components/PwaSupport.tsx` gọi `POST /api/cron-check` mỗi **30 giây** từ trình duyệt.
-
+**Giải pháp:**
 ```typescript
-// PwaSupport.tsx — sẽ xoá
-useEffect(() => {
-  const triggerRemindersCheck = () => {
-    fetch('/api/cron-check', { method: 'POST' })
-  };
-  const initTimer = setTimeout(triggerRemindersCheck, 2000);
-  const pollInterval = setInterval(triggerRemindersCheck, 30000);
-  return () => { clearTimeout(initTimer); clearInterval(pollInterval); };
-}, []);
+const RechartsBar = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
 ```
 
-**Vấn đề:**
-- Chạy trên mọi tab trình duyệt đang mở → request nhân bản
-- Chạy cả khi không có ai cần reminder (không staff login)
-- Tốn Vercel function invocation (2 request/phút/tab)
-- Không chạy nếu user đóng tab — reminder không gửi được
+---
 
-### Phân tích giải pháp
+### 🟡 P7.6 — Kiểm tra unused code
 
-| Giải pháp | Mô tả | Chi phí | Phức tạp |
-|-----------|-------|---------|----------|
-| **A. Edge Function Cron → gọi HTTP API** | EF nhẹ, fetch `POST /api/cron-check` | ✅ Free (cron cần Supabase Pro $25/th) | Thấp |
-| **B. Edge Function Cron → tự xử lý logic** | Copy `reminders.ts` + `push.ts` vào EF | ✅ Free (cron cần Supabase Pro $25/th) | Cao (web-push trên Deno) |
-| **C. cron-job.org → gọi HTTP API** | Dùng cron-job.org free gọi API | ✅ Free | Thấp nhất |
+**Vấn đề:** Tree-shaking không hoạt động tối ưu nếu import unused modules.
 
-**Khuyến nghị: A hoặc C** — tuỳ budget. A nếu đã có Supabase Pro, C nếu đang Free.
+| File | Cần kiểm tra |
+|------|-------------|
+| `app/admin/page.tsx` | Kiểm tra import sau refactor |
+| `lib/` | Kiểm tra utilities không dùng |
 
-### Kiến trúc (Phương án A)
+**Giải pháp:** `npx next lint` + grep import chain để xác định dead code.
 
-```
-┌──────────────────────┐     ┌───────────────────────────┐
-│  Supabase Dashboard   │     │  Vercel (Next.js)         │
-│  Cron: */5 * * * *   │     │                           │
-│       │              │     │                           │
-│       ▼              │     │                           │
-│  Edge Function       │────▶│  POST /api/cron-check    │
-│  cron-trigger        │     │         │                 │
-│  (3 dòng code)       │     │         ▼                 │
-└──────────────────────┘     │  runRemindersCheck()      │
-                             │         │                 │
-                             │         ▼                 │
-                             │  sendPushNotification()   │
-                             │  upsert logs → DB         │
-                             └───────────────────────────┘
-```
+---
 
-### Các bước triển khai
+### 🟢 P7.10 — PostgreSQL VIEW cho report
 
-#### Bước 1: Cài Supabase CLI
-```bash
-npm install -g supabase
-supabase login
-supabase link --project-ref dpviknfsfgvkfyurhtpm
+**Vấn đề:** Báo cáo hoa hồng (`getCommissionReport()`) chạy aggregation mỗi lần request → CPU cao.
+
+**Giải pháp:**
+```sql
+CREATE VIEW commission_report_view AS
+SELECT
+  u.id AS staff_id,
+  u.full_name,
+  a.id AS appointment_id,
+  a.start_time,
+  a.commission_amount,
+  a.tip_amount,
+  ...
+FROM appointments a
+JOIN users u ON a.staff_id = u.id
+WHERE a.status = 'COMPLETED';
 ```
 
-#### Bước 2: Tạo Edge Function `cron-trigger`
-```bash
-supabase functions new cron-trigger
-```
+---
 
-**File:** `supabase/functions/cron-trigger/index.ts`
-```typescript
-const DEPLOYMENT_URL = Deno.env.get('VERCEL_DEPLOYMENT_URL')!;
-const CRON_SECRET = Deno.env.get('CRON_SECRET')!;
+### 🟢 P7.12 — RLS policy cho notifications
 
-Deno.serve(async () => {
-  const res = await fetch(`${DEPLOYMENT_URL}/api/cron-check`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-cron-secret': CRON_SECRET,
-    },
-  });
-  const body = await res.json();
-  return new Response(JSON.stringify(body), { status: res.status });
-});
-```
+**Vấn đề:** Mọi query notifications đều qua server action → tốn round-trip + code.
 
-#### Bước 3: Set secrets
-```bash
-supabase secrets set VERCEL_DEPLOYMENT_URL=https://min-nail-hair.vercel.app
-supabase secrets set CRON_SECRET=<your_cron_secret>
-```
+**Giải pháp:** Enable RLS trên `notifications` table, tạo policy `recipient_id = auth.uid()`.
 
-#### Bước 4: Deploy
-```bash
-supabase functions deploy cron-trigger
-```
+**Lưu ý:** Cần test kỹ vì Supabase RLS dùng `auth.uid()` — cần map `users.id` → `auth.uid()`.
 
-#### Bước 5: Cấu hình Cron trên Supabase Dashboard
-1. **Edge Functions** → **Cron Jobs**
-2. Add:
-   - Name: `reminders-check`
-   - Function: `cron-trigger`
-   - Schedule: `*/5 * * * *`
-   - Method: `POST`
+---
 
-> ⚠️ Cron Jobs yêu cầu **Supabase Pro plan** ($25/th). Nếu đang Free → dùng **cron-job.org** (free) gọi `POST https://min-nail-hair.vercel.app/api/cron-check` thay thế.
+### 🟢 P7.13 — EXPLAIN ANALYZE định kỳ
 
-#### Bước 6: Xoá polling trong `PwaSupport.tsx`
-Xoá toàn bộ section 3 (dòng 52-82):
-```typescript
-// Xoá useEffect chứa triggerRemindersCheck, initTimer, pollInterval
-```
+**Vấn đề:** Không có monitoring slow queries → phát hiện degradation muộn.
 
-#### Bước 7: (Optional) Bảo vệ `/api/cron-check`
-Thêm check `x-cron-secret` trong `app/api/cron-check/route.ts`:
-```typescript
-// if (request.headers.get('x-cron-secret') !== process.env.CRON_SECRET) {
-//   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-// }
-```
+**Giải pháp:**
+- Tạo script chạy `EXPLAIN ANALYZE` trên các query thường gặp
+- Review Supabase Logs → Dashboard → Database → Query Performance
 
-### Files thay đổi
+---
 
-| File | Hành động | Mô tả |
-|------|-----------|-------|
-| `components/PwaSupport.tsx` | 🔨 Sửa | Xoá polling useEffect (dòng 52-82) |
-| `supabase/functions/cron-trigger/index.ts` | ✨ Mới | Edge Function 3 dòng |
-| `app/api/cron-check/route.ts` | 🔨 Sửa (optional) | Thêm x-cron-secret check |
+### 🟢 P7.14 — Connection pooling (PgBouncer)
 
-**Giữ nguyên:**
-- `utils/reminders.ts` — logic reminders tập trung
-- `utils/push.ts` — gửi push notification
-- `app/api/cron-check/route.ts` — vẫn là entry point
+**Vấn đề:** Mỗi serverless function tạo TCP connection mới → memory spike trên DB.
 
-### Rủi ro & xử lý
+**Giải pháp:** Bật **Transaction mode** trong Supabase Dashboard → Settings → Database → Connection pooling.
 
-| Rủi ro | Xử lý |
-|--------|-------|
-| Edge Function cold start (~200ms) | Cron 5 phút → không đáng kể |
-| cron-job.org downtime | Có retry, alert nếu fail liên tục |
-| web-push không tương thích Deno | Giải pháp A không gặp vấn đề này |
-| Chi phí Supabase Pro | Có cron-job.org thay thế free |
+---
+
+### 🟢 P7.15 — Server Action → API Route cho booking heavy
+
+**Vấn đề:** `completeAppointment()` chạy nhiều thao tác (update + deduct + notify + cascade) → có thể timeout 60s.
+
+| File | Cần sửa |
+|------|---------|
+| `app/staff/actions.ts` | `completeAppointment()` |
+
+**Giải pháp:** Chuyển sang API route (`/api/booking/complete`) để dùng streaming response + timeout dài hơn.
+
+---
+
+### 🟢 P7.17 — Incremental migration polling → realtime
+
+**Vấn đề:** Một số component vẫn dùng polling 30s thay vì Realtime.
+
+| Component | Hiện tại | Cần chuyển |
+|-----------|----------|-----------|
+| `NotificationBell` | ✅ Đã realtime | — |
+| `StaffPage` (booking list) | Polling | Realtime `appointments` |
+| `MasterSchedule` | Manual refresh | Realtime `appointments` + `attendance` |
+
+---
+
+## Tổng kết files cần sửa
+
+| File | P7 | Mức |
+|------|----|-----|
+| `app/admin/actions.ts` | 7.9, 7.10 | P0, P2 |
+| `app/admin/schedule/actions.ts` | 7.9 | P0 |
+| `app/admin/components/TabDashboard.tsx` | 7.5 | P1 |
+| `app/booking/actions/customer.ts` | 7.9 | P0 |
+| `app/booking/actions/booking.ts` | 7.3 | P1 |
+| `app/staff/actions.ts` | 7.9, 7.15 | P0, P2 |
+| `scripts/migrate_schema.sql` | 7.10 | P2 |
+| `components/StaffPage.tsx` | 7.17 | P2 |
+| `components/MasterSchedule.tsx` | 7.17 | P2 |
+
+---
+
+## Tiến độ Phase 7
+
+- [x] **P7.3** — Batch API (submitBooking() đã gộp sẵn)
+- [x] **P7.5** — Lazy-load recharts (next/dynamic trong TabDashboard.tsx)
+- [x] **P7.6** — Unused code cleanup (xóa motion + @dnd-kit/utilities)
+- [x] **P7.9** — Limit select cho tất cả query (admin, staff, booking, schedule)
+- [x] **P7.10** — PostgreSQL VIEW cho commission report (scripts/migrate_p7_10_view.sql)
+- [x] **P7.12** — RLS policy cho notifications (scripts/migrate_p7_12_rls_notifications.sql)
+- [x] **P7.13** — EXPLAIN ANALYZE monitoring (scripts/monitor_queries.sql)
+- [x] **P7.14** — Connection pooling (Supabase tự xử lý qua PostgREST)
+- [ ] **P7.15** — Server Action → API Route cho booking (cần refactor lớn)
+- [ ] **P7.17** — Incremental realtime migration (cần test Supabase dashboard)
+
+**Tổng Phase 7: 8/10 items — ✅ Partially Complete**
+
+---
+
+## 📦 VERSION HISTORY
+
+| Version | Ngày | Mô tả | Files thay đổi |
+|---------|------|-------|----------------|
+| `v1.0.0` | 17/06/2026 | Phase 1–6 hoàn thành | Nhiều files |
+| `v1.1.0` | 18/06/2026 | Phase 7 partial: P7.3, P7.5, P7.6, P7.9, P7.10, P7.12, P7.13, P7.14 | admin/actions.ts, staff/actions.ts, booking/actions/customer.ts, schedule/actions.ts, TabDashboard.tsx, package.json, migrate_p7_*.sql, monitor_queries.sql |
+
+> **Lưu ý:** Khi upgrade schema, tạo file `scripts/migrate_vX.Y.Z.sql` mới, KHÔNG sửa `database.sql`.
 
 ---
 

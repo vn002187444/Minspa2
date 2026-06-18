@@ -54,7 +54,8 @@ export async function getStaffData() {
     .eq('staff_id', staffId)
     .gte('start_time', startOfTodayISO)
     .lte('start_time', endOfTodayISO)
-    .order('start_time', { ascending: true });
+    .order('start_time', { ascending: true })
+    .limit(50);
 
   // Random appointments (all unclaimed pending random or confirmed bookings so staff can claim them immediately)
   const { data: randomAppointments } = await supabase
@@ -68,7 +69,8 @@ export async function getStaffData() {
     `)
     .is('staff_id', null)
     .in('status', ['PENDING_RANDOM', 'CONFIRMED'])
-    .order('start_time', { ascending: true });
+    .order('start_time', { ascending: true })
+    .limit(50);
 
   // Other staff & managers for swap
   const { data: otherStaff } = await supabase
@@ -76,20 +78,23 @@ export async function getStaffData() {
     .select('id, full_name')
     .in('role', ['STAFF', 'MANAGER'])
     .neq('id', staffId)
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .limit(100);
 
   // All active services for upsell
   const { data: allServices } = await supabase
     .from('services')
     .select('id, name, category, price, duration, description, is_active')
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .limit(200);
 
   // Active treatment packages
   const { data: treatmentPackages } = await supabase
     .from('treatment_packages')
     .select('*, services(name)')
     .eq('is_active', true)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(200);
 
   return {
     staffId,
@@ -446,17 +451,11 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
 
   // Deduct package session (after main update succeeds)
   if (customerPkg && customerPkg.remaining_sessions > 0) {
-    const nextRemaining = customerPkg.remaining_sessions - 1;
-    const nextStatus = nextRemaining <= 0 ? 'EXHAUSTED' : 'ACTIVE';
-    await Promise.all([
-      supabase.from('customer_packages').update({ remaining_sessions: nextRemaining, status: nextStatus }).eq('id', dbAppt!.use_package_id),
-      supabase.from('package_usage_logs').insert({
-        customer_package_id: dbAppt!.use_package_id,
-        appointment_id: appointmentId,
-        used_at: completedAt,
-        notes: 'Khấu trừ tự động 1 buổi khi hoàn thành lịch hẹn',
-      }),
-    ]);
+    await supabase.rpc('deduct_package_session', {
+      p_pkg_id: dbAppt!.use_package_id,
+      p_appt_id: appointmentId,
+      p_used_at: completedAt,
+    });
   }
 
   // Cascade shift (must await for data consistency)
@@ -540,7 +539,8 @@ export async function getStaffStats(startDateStr?: string, endDateStr?: string) 
       .eq('staff_id', staffId)
       .eq('status', 'COMPLETED')
       .gte('start_time', startRange)
-      .lte('start_time', endRange);
+      .lte('start_time', endRange)
+      .limit(1000);
 
     // 1b. Treatment packages sold by this staff member this month
     const { data: mySoldPackages } = await supabase
@@ -553,7 +553,8 @@ export async function getStaffStats(startDateStr?: string, endDateStr?: string) 
       `)
       .eq('sold_by_staff_id', staffId)
       .gte('purchased_at', startRange)
-      .lte('purchased_at', endRange);
+      .lte('purchased_at', endRange)
+      .limit(500);
 
     // 2. Attendance this month
     const { data: attendance } = await supabase
@@ -562,7 +563,8 @@ export async function getStaffStats(startDateStr?: string, endDateStr?: string) 
       .eq('staff_id', staffId)
       .gte('date', startRangeDay)
       .lte('date', endRangeDay)
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(100);
 
     let totalRevenue = 0;
     let totalCommission = 0;

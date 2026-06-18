@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/utilities": "^3.2.2",
     "@google/genai": "^2.7.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.107.0",
@@ -20,7 +19,6 @@
     "dotenv": "^17.4.2",
     "jose": "^6.2.3",
     "lucide-react": "^0.471.0",
-    "motion": "^12.40.0",
     "next": "^16.2.7",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",

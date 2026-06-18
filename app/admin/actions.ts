@@ -47,7 +47,8 @@ export async function getDashboardData(startDateStr?: string, endDateStr?: strin
       `)
       .eq('status', 'COMPLETED')
       .gte('start_time', startRange)
-      .lte('start_time', endRange);
+      .lte('start_time', endRange)
+      .limit(1000);
 
     if (err1) throw err1;
 
@@ -191,7 +192,8 @@ export async function getStaffs() {
     const { data, error } = await supabase.from('users')
       .select('id, username, full_name, role, cccd, is_active, created_at')
       .in('role', ['STAFF', 'MANAGER'])
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
     if (error) throw error;
     console.log('Fetched staff count:', data?.length);
     return data || [];
@@ -201,7 +203,8 @@ export async function getStaffs() {
       const { data, error: err2 } = await supabase.from('users')
         .select('id, username, full_name, role, cccd, created_at')
         .in('role', ['STAFF', 'MANAGER'])
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
       if (err2) {
         console.error('Error fetching staff list (fallback):', err2);
         return [];
@@ -297,7 +300,8 @@ export async function getStaffDetail(staffId: string, startDateStr?: string, end
       .eq('staff_id', staffId)
       .eq('status', 'COMPLETED')
       .gte('start_time', startMonth)
-      .lte('start_time', endMonth);
+      .lte('start_time', endMonth)
+      .limit(1000);
 
     if (err1) throw err1;
 
@@ -306,7 +310,8 @@ export async function getStaffDetail(staffId: string, startDateStr?: string, end
       .select('id, date, status, check_in_time, check_out_time')
       .eq('staff_id', staffId)
       .gte('date', format(new Date(startMonth), 'yyyy-MM-dd'))
-      .lte('date', format(new Date(endMonth), 'yyyy-MM-dd'));
+      .lte('date', format(new Date(endMonth), 'yyyy-MM-dd'))
+      .limit(100);
 
     if (err2) throw err2;
 
@@ -345,7 +350,7 @@ export async function getServices() {
   await checkAdminOrManager();
   const supabase = await createClient();
   try {
-    const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, commission_percentage, commission_amount, is_active').order('category', { ascending: true });
+    const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, commission_percentage, commission_amount, is_active').order('category', { ascending: true }).limit(200);
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -480,7 +485,8 @@ export async function getReviews() {
           users (full_name)
         )
       `)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -543,7 +549,8 @@ export async function getSeoArticles() {
     const { data, error } = await supabase
       .from('seo_articles')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
     if (error) throw error;
     return (data || []).map((a: any) => ({
       id: a.id,
@@ -750,7 +757,8 @@ export async function getCommissionReport(startDateStr: string, endDateStr: stri
       .eq('status', 'COMPLETED')
       .gte('start_time', startDateStr)
       .lte('start_time', endDateStr)
-      .order('start_time', { ascending: false });
+      .order('start_time', { ascending: false })
+      .limit(1000);
 
     if (error) throw error;
 
@@ -766,14 +774,16 @@ export async function getCommissionReport(startDateStr: string, endDateStr: stri
         customers ( full_name )
       `)
       .gte('purchased_at', startDateStr)
-      .lte('purchased_at', endDateStr);
+      .lte('purchased_at', endDateStr)
+      .limit(500);
 
     // Get all active staff to ensure we list everyone even if they have 0 appointments
     const { data: staffList } = await supabase
       .from('users')
       .select('id, full_name, username')
       .eq('role', 'STAFF')
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .limit(100);
 
     const staffMap: Record<string, any> = {};
     if (staffList) {
@@ -901,7 +911,8 @@ export async function getTreatmentPackages() {
       .from('treatment_packages')
       .select('*, services(name, price)')
       .order('is_active', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(200);
     if (error) throw error;
     return data || [];
   } catch (error) {
@@ -995,6 +1006,7 @@ export async function sellPackageToCustomer(customerPhone: string, customerName:
   const commission_amount = Math.round(price * (commPercent / 100));
 
   // 3. Insert customer_packages
+  const expiresAt = new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString(); // 2 years
   const { error: insertErr } = await supabase.from('customer_packages').insert({
     customer_id: customer.id,
     package_id: pkg.id,
@@ -1002,6 +1014,7 @@ export async function sellPackageToCustomer(customerPhone: string, customerName:
     remaining_sessions: pkg.total_sessions,
     status: 'ACTIVE',
     purchased_at: new Date().toISOString(),
+    expires_at: expiresAt,
     sold_by_staff_id: session.user.id,
     commission_amount: commission_amount
   });
@@ -1160,7 +1173,7 @@ export async function getFilteredAppointments(filters: {
     }
   }
 
-  const { data, error } = await query.order('start_time', { ascending: false });
+  const { data, error } = await query.order('start_time', { ascending: false }).limit(1000);
   if (error) {
     console.error('getFilteredAppointments Error:', error);
     return [];

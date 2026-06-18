@@ -436,9 +436,15 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
 ## ⚠️ QUY CHẾ VẬN HÀNH (CYCLE PROTOCOL)
 
-1. **Đọc `UPGRADE_PLAN.md` và `AI_MAP.md`** trước khi code
-2. **Viết code** theo đúng kiến trúc
-3. **Cập nhật `UPGRADE_PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
+> **Chi tiết hơn:** Xem `PLAN.md` phần "QUY TẮC VẬN HÀNH & GIAO TIẾP"
+
+1. **Đọc `PLAN.md`** → Tổng quan + trạng thái
+2. **Đọc `UPGRADE_PLAN.md`** → Các mục chưa làm + ưu tiên
+3. **Đọc `AI_MAP.md`** → Kiến trúc, DB schema, quy tắc kỹ thuật
+4. **Viết code** theo đúng kiến trúc
+5. **Cập nhật `PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
+6. **Commit** với message rõ ràng: `feat:`, `fix:`, `refactor:`
+7. **Không push secrets** (.env.local, .env)
 
 ---
 
@@ -458,3 +464,55 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 **Tỉ lệ phục hồi ước tính: ~80-85%**
 
 Nếu mất source code, có thể tái thiết từ 2 file này + database.sql. Các phần bị thiếu: chi tiết UI layout, business logic xử lý edge cases, và 22 seed services trong database.sql.
+
+---
+
+## 🤖 HƯỚNG DẪN CHO AI MODEL
+
+> Khi bắt đầu làm việc với project này, hãy thực hiện theo thứ tự:
+
+### Step 1: Đọc 3 file chính
+```
+1. PLAN.md        → Tổng quan 7 phases + workflows + quy tắc vận hành
+2. UPGRADE_PLAN.md → Các mục CHƯA LÀM + ưu tiên + hướng dẫn cụ thể
+3. AI_MAP.md       → File bạn đang đọc (kiến trúc, DB, routes, auth)
+```
+
+### Step 2: Hiểu cấu trúc project
+```
+app/
+├── booking/          → Landing page + booking flow (public)
+├── admin/            → Dashboard admin + 16 components
+├── staff/            → Portal nhân viên
+├── api/              → API routes (cron, auth, notifications...)
+└── login/            → Trang đăng nhập
+
+components/           → Shared UI components
+lib/                  → Business logic (booking-engine.ts)
+utils/                → Helpers (supabase, push, reminders)
+scripts/              → DB migration + seed
+```
+
+### Step 3: Quy tắc khi code
+| Quy tắc | Chi tiết |
+|---------|----------|
+| Không `SELECT *` | Luôn định rõ fields |
+| Soft Delete | `is_active = false`, không DELETE |
+| Session | Custom JWT cookie, không dùng Supabase Auth |
+| Auth | Override `auth.getUser` trong `utils/supabase/server.ts` |
+| Schema | Không sửa `database.sql`, tạo file migrate mới |
+
+### Step 4: Sau khi code xong
+```
+□ Cập nhật PLAN.md (đánh dấu [x])
+□ Cập nhật AI_MAP.md (nếu thêm table/route/dependency)
+□ Tạo migration file nếu cần ALTER TABLE
+□ npm run lint
+□ npm run build
+□ Commit message rõ ràng
+```
+
+### Step 5: Nếu cần help
+- Thắc mắc về logic → Hỏi người dùng
+- Không chắc về architecture → Đọc lại AI_MAP.md
+- Muốn biết đã làm gì → Đọc PLAN.md + UPGRADE_PLAN.md

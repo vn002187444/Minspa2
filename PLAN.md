@@ -59,7 +59,7 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
   - [x] **Nhắc duyệt lịch (Unaccepted Booking Reminders)**: Cảnh báo khi có lịch hẹn trạng thái PENDING quá lâu chưa được đổi sang CONFIRMED.
   - [x] **Nhắc hoàn thành lịch (Uncompleted Booking Reminders)**: Tự động cảnh báo các đơn đặt lịch đã qua thời gian hẹn nhưng nhân viên chưa chuyển thành COMPLETED.
 
-### 🟡 Giai đoạn 7: Hệ Thống KPI, Chấm Công Nâng Cao & Tối Ưu Hiệu Năng
+### 🟢 Giai đoạn 7: Hệ Thống KPI, Chấm Công Nâng Cao & Tối Ưu Hiệu Năng
 - [/] Tinh chỉnh hệ thống log reminders background để tối ưu hóa tần suất chạy hạn chế quá tải bộ nhớ.
 - [x] Quản lý bảng chấm công (`attendance`) theo ngày cho toàn bộ nhân sự spa.
 - [ ] Tích hợp tính toán nợ lương/thưởng nâng cao tự động gửi báo cáo cuối tháng hóa đơn.
@@ -101,7 +101,26 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 
 ---
 
-### 🟢 Phase 4 — Code & Deployment Optimization (18/06/2026 ✅)
+## 📊 CÁC GIAI ĐOẠN NÂNG CẤP HOÀN THÀNH
+
+### 🟢 Phase 1 — P0: Critical (Lỗi sai + Bảo mật) ✅
+- [x] **P1.1** Vấn đề 4: Session persistence (middleware + auth + logout + /api/auth/me)
+- [x] **P1.2** Vấn đề 6a: Chặn soft-delete staff login (login actions + API)
+- [x] **P1.3** Vấn đề 2: MasterSchedule attendance (actions + MasterSchedule.tsx)
+
+### 🟢 Phase 2 — P1: High (Nâng cấp UI/UX) ✅
+- [x] **P2.1** Vấn đề 1: Staff status UI + toggle (admin page + actions)
+- [x] **P2.2** Vấn đề 6b: Filter is_active trong query (commission, schedule, notif)
+- [x] **P2.3** Vấn đề 5: Booking time slots (giờ 20:30, ẩn slot quá giờ, date picker 14 ngày, badge "⭐ Gợi ý", cache localStorage, fix hardcoded 30 → totalDuration động)
+- [x] **P2.4** Vấn đề 6c: Index + NOT NULL DB (migration + database.sql)
+
+### 🟢 Phase 3 — P2: Medium (Layout + Performance) ✅
+- [x] **P3.1** Vấn đề 3: Bell layout admin
+- [ ] ~~**P3.2** Vấn đề 7a: Edge middleware + Redis cache~~ *(Bỏ qua — Edge runtime không tương thích jose; Redis cần Upstash infrastructure)*
+- [x] **P3.3** Vấn đề 7b: Composite index (idx_attendance_date_status, idx_appointments_start_time_status) + N+1 (đã fix từ trước trong getScheduleData)
+- [x] **P3.4** Vấn đề 7c: Realtime notifications (subscribe channel + giảm polling 30s → 5 phút)
+
+### 🟢 Phase 4 — Code & Deployment Optimization ✅
 - [x] **P4.1** Tailwind content paths — fix missing classes in production
 - [x] **P4.2** TypeScript target ES5 → ES2017 — giảm bundle size
 - [x] **P4.3** next.config.ts — images remotePatterns + logging
@@ -117,5 +136,121 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 - [x] **P4.13** CSS keyframes → tailwind.config.ts
 - [x] **P4.14** Fix seed_blogs.sql syntax
 
+### 🟢 Phase 5 — Cron Job Edge Function ✅
+- [x] **P5.1** Tạo Edge Function `cron-trigger` thay polling client 30s
+- [x] **P5.2** Xoá polling useEffect trong `PwaSupport.tsx`
+- [x] **P5.3** Thêm `x-cron-secret` check trong `/api/cron-check`
+
+### 🟢 Phase 6 — Gói Liệu Trình Nâng Cao (Package Enhancement) ✅
+- [x] **P6.1** Thêm cột `expires_at` cho `customer_packages` (mặc định 2 năm)
+- [x] **P6.2** `sellPackageToCustomer`: Tạo mới (không gộp), set `expires_at` = 2 năm
+- [x] **P6.3** `checkCustomerHistory`: Trả về grouped packages, filter hết hạn
+- [x] **P6.4** Booking UI: Hiển thị tất cả gói, auto-select priority cho cùng loại, manual cho khác loại
+- [x] **P6.5** Hủy lịch: Hoàn buổi ngay lập tức
+- [x] **P6.6** Trừ buổi: RPC/optimistic lock tránh race condition
+
+### 🟡 Phase 7 — Tối ưu Vercel & Supabase (Partial) ✅
+- [x] **P7.9** Giới hạn result mặc định (limit select) — tất cả queries trong admin, staff, booking
+- [x] **P7.12** RLS policy cho notifications — `scripts/migrate_p7_12_rls_notifications.sql`
+- [x] **P7.3** Batch API — submitBooking() đã gộp sẵn trong 1 server action
+- [ ] **P7.17** Incremental realtime migration — cần test Supabase dashboard (custom JWT cookie)
+- [x] **P7.5** Lazy-load recharts — `TabDashboard.tsx` chuyển sang `next/dynamic`
+- [ ] **P7.15** Server Action → API Route cho booking — cần refactor lớn
+- [x] **P7.13** EXPLAIN ANALYZE monitoring — `scripts/monitor_queries.sql`
+- [x] **P7.6** Unused code cleanup — xóa package `motion` + `@dnd-kit/utilities`
+- [x] **P7.10** PostgreSQL VIEW cho commission report — `scripts/migrate_p7_10_view.sql`
+- [x] **P7.14** Connection pooling — Supabase JS client tự xử lý qua PostgREST
+
 ---
+
+## 📜 QUY TẮC VẬN HÀNH & GIAO TIẾP (CYCLE PROTOCOL)
+
+> **Mục đích:** Đảm bảo mọi developer (con người hoặc AI) đều đọc–hiểu–thực hiện nhất quán.
+
+### 1. Trật tự đọc khi bắt đầu làm việc
+
+```
+1. Đọc PLAN.md        → Xem tổng quan + trạng thái hiện tại
+2. Đọc UPGRADE_PLAN.md → Xem các mục CHƯA LÀM + ưu tiên
+3. Đọc AI_MAP.md       → Kiến trúc, DB schema, quy tắc kỹ thuật
+4. Bắt đầu code
+```
+
+### 2. Quy tắc đánh số Version (Upgrade Versioning)
+
+| Cú pháp | Ý nghĩa |
+|---------|----------|
+| `Phase X` | Giai đoạn lớn (Phase 1–7) |
+| `PX.Y` | Mục cụ thể trong phase (P5.1, P5.2...) |
+| `vX.Y.Z` | Release version (semantic versioning) |
+
+**Quy tắc:**
+- Mỗi lần upgrade xong → cập nhật `PLAN.md` đánh dấu `[x]`
+- Nếu upgrade ảnh hưởng schema → tạo file `scripts/migrate_vX.Y.Z.sql`
+- Nếu upgrade tạo file mới → cập nhật `AI_MAP.md` phần Routes/Components
+
+### 3. Quy tắc đánh dấu trạng thái
+
+| Ký hiệu | Ý nghĩa |
+|---------|----------|
+| `[x]` | Đã hoàn thành |
+| `[ ]` | Chưa làm |
+| `[-]` | Đã huỷ / bỏ qua |
+| `[/]` | Đang thực hiện |
+
+### 4. Quy tắc cập nhật file sau khi code
+
+| File | Khi nào cập nhật |
+|------|------------------|
+| `PLAN.md` | Đánh dấu `[x]` mục PX.Y đã hoàn thành |
+| `UPGRADE_PLAN.md` | Thêm mục mới hoặc đánh dấu hoàn thành |
+| `AI_MAP.md` | Cập nhật nếu: thêm table, thêm route, đổi dependencies, đổi auth flow |
+| `database.sql` | **KHÔNG sửa** — giữ nguyên schema gốc |
+| `scripts/migrate_v*.sql` | Tạo file mới nếu cần ALTER TABLE |
+| `.env.example` | Thêm biến môi trường mới nếu có |
+
+### 5. Quy tắc đặt tên file
+
+| Loại | Convention | Ví dụ |
+|------|-----------|-------|
+| Server Action | `actions.ts` trong folder route | `app/admin/actions.ts` |
+| API Route | `route.ts` trong `app/api/...` | `app/api/cron/reminders/route.ts` |
+| Component | PascalCase, đặt trong `components/` hoặc route folder | `TabDashboard.tsx` |
+| Migration | `migrate_vX.Y.Z.sql` | `migrate_v1.2.0.sql` |
+| Edge Function | `supabase/functions/<name>/index.ts` | `cron-reminders/index.ts` |
+
+### 6. Quy tắc trước khi Push lên GitHub
+
+```
+□ Kiểm tra eslint: npm run lint
+□ Kiểm tra types: npm run build (hoặc npx tsc --noEmit)
+□ Không commit secrets (.env.local, .env)
+□ Kiểm tra không có file thừa/temp
+□ Cập nhật PLAN.md + AI_MAP.md nếu có thay đổi
+□ Commit message rõ ràng: "feat: ...", "fix: ...", "refactor: ..."
+```
+
+### 7. Quy tắc Deploy
+
+| Platform | Checklist |
+|----------|-----------|
+| **Vercel** | Env vars đã set đầy đủ? Build success? |
+| **Supabase** | Migration đã chạy? Extensions enabled (pg_cron, pg_net)? RLS policies? |
+| **GitHub** | Branch protection? Secrets không bị leak? |
+
+### 8. Quy tắc cho AI Model tiếp nhận project
+
+> Khi một AI model mới bắt đầu làm việc với project này:
+
+```
+1. Đọc PLAN.md → Hiểu 7 phases + workflows
+2. Đọc UPGRADE_PLAN.md → Biết mục nào chưa làm
+3. Đọc AI_MAP.md → Kiến trúc DB, routes, auth, booking engine
+4. Đọc PHASE5_REVIEW.md (nếu có) → Biết vấn đề cần fix
+5. Hỏi lại người dùng nếu có thắc mắc
+6. Sau khi code xong → Cập nhật PLAN.md + AI_MAP.md
+```
+
+---
+
 *Tài liệu này sẽ liên tục được cập nhật song hành cùng sự tiến bộ của dự án!*

@@ -37,15 +37,31 @@ export async function checkCustomerHistory(phone: string) {
     services: app.appointment_services.map((as: any) => as.services?.name).filter(Boolean)
   }));
 
+  const now = new Date().toISOString();
   const { data: allActivePkgs } = await supabase
     .from('customer_packages')
-    .select('id, customer_id, package_id, total_sessions, remaining_sessions, status')
+    .select(`
+      id, customer_id, package_id, total_sessions, remaining_sessions, status,
+      purchased_at, expires_at, sold_by_staff_id, commission_amount,
+      treatment_packages!package_id(id, name, service_id, services(name, price))
+    `)
     .eq('customer_id', customer.id)
-    .eq('status', 'ACTIVE');
+    .eq('status', 'ACTIVE')
+    .gt('expires_at', now)
+    .gt('remaining_sessions', 0)
+    .limit(50);
 
-  const activePackages = (allActivePkgs || []).filter((p: any) => p.remaining_sessions > 0);
+  const activePackages = (allActivePkgs || []);
 
-  return { found: true, name: customer.full_name, id: customer.id, history, activePackages };
+  // Group packages by treatment_package_id (same package type)
+  const groupedPackages = activePackages.reduce((acc: Record<string, any[]>, pkg: any) => {
+    const key = pkg.treatment_packages?.id || pkg.package_id;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(pkg);
+    return acc;
+  }, {});
+
+  return { found: true, name: customer.full_name, id: customer.id, history, activePackages, groupedPackages };
 }
 
 export async function lookupAppointmentsByPhone(phone: string) {
@@ -81,7 +97,8 @@ export async function lookupAppointmentsByPhone(phone: string) {
       )
     `)
     .eq('customer_id', customer.id)
-    .order('start_time', { ascending: false });
+    .order('start_time', { ascending: false })
+    .limit(20);
 
   if (apptErr) {
     return { success: false, error: 'Không thể truy xuất danh sách lịch hẹn: ' + apptErr.message };
@@ -145,7 +162,7 @@ export async function cancelAppointmentByCustomer(appointmentId: string) {
 
   const { data: appt, error: findErr } = await supabase
     .from('appointments')
-    .select('status')
+    .select('status, is_package_session, use_package_id')
     .eq('id', appointmentId)
     .single();
 
@@ -155,6 +172,15 @@ export async function cancelAppointmentByCustomer(appointmentId: string) {
 
   if (appt.status !== 'PENDING_RANDOM' && appt.status !== 'CONFIRMED') {
     return { success: false, error: 'Chỉ có thể tự hủy lịch hẹn ở trạng thái Chưa phục vụ.' };
+  }
+
+  // Refund package session if this appointment used a package
+  if (appt.is_package_session && appt.use_package_id) {
+    await supabase.rpc('refund_package_session', {
+      p_pkg_id: appt.use_package_id,
+      p_appt_id: appointmentId,
+      p_used_at: new Date().toISOString(),
+    });
   }
 
   const { error: updateErr } = await supabase
