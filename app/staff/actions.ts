@@ -143,7 +143,8 @@ export async function getCustomerActivePackages(customerId: string) {
     .from('customer_packages')
     .select('id, remaining_sessions, treatment_packages!package_id(name, service_id)')
     .eq('customer_id', customerId)
-    .eq('status', 'ACTIVE');
+    .eq('status', 'ACTIVE')
+    .limit(20);
   return data || [];
 }
 
@@ -621,7 +622,8 @@ export async function getStaffStats(startDateStr?: string, endDateStr?: string) 
         )
       `)
       .eq('appointments.staff_id', staffId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500);
 
     if (!reviewErr && reviews) {
       staffReviews = reviews.map((r: any) => ({
@@ -716,7 +718,8 @@ export async function getCustomerPackagesDetailed(customerId: string) {
       )
     `)
     .eq('customer_id', customerId)
-    .order('purchased_at', { ascending: false });
+    .order('purchased_at', { ascending: false })
+    .limit(50);
   if (error) {
     console.error("Lỗi lấy chi tiết gói của khách:", error);
     return [];

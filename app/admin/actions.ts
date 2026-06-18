@@ -104,7 +104,8 @@ export async function getDashboardData(startDateStr?: string, endDateStr?: strin
       `)
       .gte('date', startRangeDay)
       .lte('date', endRangeDay)
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(500);
 
     // 5. Today's appointments (all statuses) for widget
     const { data: todayAppts } = await supabase
@@ -116,7 +117,8 @@ export async function getDashboardData(startDateStr?: string, endDateStr?: strin
       `)
       .gte('start_time', startOfTodayISO)
       .lte('start_time', endOfTodayISO)
-      .order('start_time', { ascending: true });
+      .order('start_time', { ascending: true })
+      .limit(100);
 
     // Chart Data (group by day in chosen interval)
     const dailyRevenue: Record<string, number> = {};
@@ -1285,7 +1287,8 @@ export async function getCustomerPackageProgress(phone: string) {
         services(name)
       )
     `)
-    .eq('customer_id', customer.id);
+    .eq('customer_id', customer.id)
+    .limit(50);
     
   if (pkgErr) {
     return { success: false, error: pkgErr.message };
@@ -1308,7 +1311,8 @@ export async function getCustomerPackageProgress(phone: string) {
           )
         `)
         .eq('customer_package_id', p.id)
-        .order('used_at', { ascending: false });
+        .order('used_at', { ascending: false })
+        .limit(100);
         
       packagesWithLogs.push({
         ...p,
