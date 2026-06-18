@@ -469,30 +469,23 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
 
   // Fire-and-forget: push notifications + reminders (non-blocking background tasks)
   if (dbAppt) {
-    const bgTasks: Promise<any>[] = [];
-    if (dbAppt.customer_id) {
-      bgTasks.push(
-        sendPushNotification(
-          dbAppt.customer_id,
-          'Thanh toán hoàn tất! ✨',
-          `Hóa đơn của bạn đã sẵn sàng. Tổng thanh toán là ${discountedTotal.toLocaleString('vi-VN')} VNĐ. Cảm ơn quý khách đã tin chọn Min Salon!`,
-          '/booking'
-        ).catch(() => {})
-      );
-    }
-    if (dbAppt.staff_id) {
-      bgTasks.push(
-        sendPushNotification(
-          dbAppt.staff_id,
-          'Hóa đơn hoàn tất! 🎉',
-          `Bạn đã hoàn thành lịch hẹn #${appointmentId.slice(-6).toUpperCase()}. Hoa hồng của bạn là ${commission.toLocaleString('vi-VN')} VNĐ đã được ghi nhận.`,
-          '/staff'
-        ).catch(() => {})
-      );
-    }
-    bgTasks.push(runRemindersCheck().catch(() => {}));
-    // Not awaited — runs in background
-    Promise.all(bgTasks).catch(() => {});
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    fetch(`${appUrl}/api/booking/background-tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        appointmentId,
+        customerId: dbAppt.customer_id,
+        staffId: dbAppt.staff_id,
+        commission,
+        total,
+        discountedTotal,
+        customerName: 'Khách',
+        staffName: dbAppt.staff_id,
+        appointmentDate: dbAppt.start_time,
+        appointmentTime: dbAppt.start_time ? new Date(dbAppt.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
+      }),
+    }).catch(() => {});
   }
 
   return { success: true, total: discountedTotal };

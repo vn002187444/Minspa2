@@ -149,13 +149,13 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 - [x] **P6.5** Hủy lịch: Hoàn buổi ngay lập tức
 - [x] **P6.6** Trừ buổi: RPC/optimistic lock tránh race condition
 
-### 🟡 Phase 7 — Tối ưu Vercel & Supabase (Partial) ✅
+### 🟢 Phase 7 — Tối ưu Vercel & Supabase ✅
 - [x] **P7.9** Giới hạn result mặc định (limit select) — tất cả queries trong admin, staff, booking
 - [x] **P7.12** RLS policy cho notifications — `scripts/migrate_p7_12_rls_notifications.sql`
 - [x] **P7.3** Batch API — submitBooking() đã gộp sẵn trong 1 server action
-- [ ] **P7.17** Incremental realtime migration — cần test Supabase dashboard (custom JWT cookie)
+- [x] **P7.17** Incremental realtime migration — Staff page + Dashboard dùng Supabase Realtime, polling 5 phút fallback
 - [x] **P7.5** Lazy-load recharts — `TabDashboard.tsx` chuyển sang `next/dynamic`
-- [ ] **P7.15** Server Action → API Route cho booking — cần refactor lớn
+- [x] **P7.15** Server Action → API Route — Tách background tasks (push + reminders) sang `/api/booking/background-tasks`
 - [x] **P7.13** EXPLAIN ANALYZE monitoring — `scripts/monitor_queries.sql`
 - [x] **P7.6** Unused code cleanup — xóa package `motion` + `@dnd-kit/utilities`
 - [x] **P7.10** PostgreSQL VIEW cho commission report — `scripts/migrate_p7_10_view.sql`

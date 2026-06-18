@@ -175,15 +175,64 @@ export default function TabDashboard() {
     }
   }, [rangeType]);
 
-  // Handle real-time silent polling every 15 seconds
+  // Handle real-time silent polling every 5 minutes (Realtime handles instant updates)
   useEffect(() => {
     if (rangeType !== "custom") {
       const interval = setInterval(() => {
         const dates = calculateDates(rangeType);
         fetchDashboardData(dates.start, dates.end, true);
-      }, 15000);
+      }, 300000);
       return () => clearInterval(interval);
     }
+  }, [rangeType]);
+
+  // Supabase Realtime subscription for appointments + attendance
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
+
+    import('@supabase/supabase-js').then(({ createClient }) => {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const channel: any = supabase
+        .channel('dashboard_updates')
+        .on(
+          'postgres_changes' as any,
+          {
+            event: '*',
+            schema: 'public',
+            table: 'appointments',
+          },
+          () => {
+            if (rangeType !== "custom") {
+              const dates = calculateDates(rangeType);
+              fetchDashboardData(dates.start, dates.end, true);
+            }
+          }
+        )
+        .on(
+          'postgres_changes' as any,
+          {
+            event: '*',
+            schema: 'public',
+            table: 'attendance',
+          },
+          () => {
+            if (rangeType !== "custom") {
+              const dates = calculateDates(rangeType);
+              fetchDashboardData(dates.start, dates.end, true);
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }).catch(() => {});
   }, [rangeType]);
 
   const handleCustomSearch = () => {

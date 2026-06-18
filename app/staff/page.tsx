@@ -139,13 +139,61 @@ export default function StaffDashboard() {
   useEffect(() => {
     loadData();
     
-    // Auto-refresh every 15 seconds silently to fetch incoming random bookings immediately
+    // Auto-refresh every 5 minutes as fallback (Realtime handles instant updates)
     const intervalId = setInterval(() => {
       loadData(true);
-    }, 15000);
+    }, 300000);
     
     return () => clearInterval(intervalId);
   }, [activeTab]);
+
+  // Supabase Realtime subscription for appointments
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
+    if (!data?.staffId) return;
+
+    const staffId = data.staffId;
+
+    import('@supabase/supabase-js').then(({ createClient }) => {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+
+      const channel: any = supabase
+        .channel('staff_appointments')
+        .on(
+          'postgres_changes' as any,
+          {
+            event: '*',
+            schema: 'public',
+            table: 'appointments',
+            filter: `staff_id=eq.${staffId}`,
+          },
+          () => {
+            loadData(true);
+          }
+        )
+        .on(
+          'postgres_changes' as any,
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'appointments',
+            filter: `status=in.(PENDING_RANDOM,CONFIRMED)`,
+          },
+          () => {
+            loadData(true);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }).catch(() => {});
+  }, [data?.staffId]);
 
   // Hook to detect newly placed random/unassigned appointments and alert staff
   useEffect(() => {

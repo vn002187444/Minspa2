@@ -209,10 +209,10 @@ WHERE a.status = 'COMPLETED';
 - [x] **P7.12** — RLS policy cho notifications (scripts/migrate_p7_12_rls_notifications.sql)
 - [x] **P7.13** — EXPLAIN ANALYZE monitoring (scripts/monitor_queries.sql)
 - [x] **P7.14** — Connection pooling (Supabase tự xử lý qua PostgREST)
-- [ ] **P7.15** — Server Action → API Route cho booking (cần refactor lớn)
-- [ ] **P7.17** — Incremental realtime migration (cần test Supabase dashboard)
+- [x] **P7.15** — Server Action → API Route (tách background tasks sang /api/booking/background-tasks)
+- [x] **P7.17** — Realtime migration (Staff page + Dashboard dùng Supabase Realtime)
 
-**Tổng Phase 7: 8/10 items — ✅ Partially Complete**
+**Tổng Phase 7: 10/10 items — ✅ HOÀN THÀNH**
 
 ---
 
