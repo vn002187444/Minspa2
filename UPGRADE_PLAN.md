@@ -91,6 +91,23 @@
 
 ---
 
+### 🎯 S22 — Staff Booking Hộ Khách (Chưa có)
+> **Mục tiêu:** Nhân viên tại quầy có thể đặt lịch hộ khách hàng trực tiếp từ giao diện Staff, bao gồm chọn dịch vụ, chọn giờ, áp dụng gói liệu trình.
+
+| # | Task | Trạng thái | Ghi chú |
+|---|------|-----------|---------|
+| 22.1 | Thêm tab "Đặt lịch hộ" trong giao diện Staff | [ ] | `/staff` → tab mới "Đặt lịch" |
+| 22.2 | Form tìm kiếm/số điện thoại khách hàng | [ ] | Tìm theo SĐT → chọn hoặc tạo mới |
+| 22.3 | Chọn dịch vụ (multi-select) + xem tổng thời gian | [ ] | Kế thừa component từ booking page |
+| 22.4 | Chọn nhân viên (mặc định là chính họ hoặc chọn) | [ ] | Dropdown staff (chỉ active, có mặt) |
+| 22.5 | Chọn ngày giờ + kiểm tra trùng lịch real-time | [ ] | Reuse `BookingCalendar` + slot validation |
+| 22.6 | Áp dụng gói liệu trình của khách (nếu có) | [ ] | Tích hợp `checkCustomerHistory` |
+| 22.7 | Ghi chú lịch hẹn (admin note, yêu cầu đặc biệt) | [ ] | Textarea + lưu vào `notes` |
+| 22.8 | Xác nhận & tạo lịch — update realtime dashboard | [ ] | Server action + Realtime broadcast |
+| 22.9 | In hoá đơn tạm / xác nhận sau khi đặt | [ ] | Print receipt component |
+
+---
+
 ### 🎯 S21 — Hardening (Đang có: `lib/rate-limit.ts`, test)
 > **Mục tiêu:** Bảo mật, hiệu năng, kiểm thử an ninh.
 
