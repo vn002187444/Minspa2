@@ -108,6 +108,26 @@
 
 ---
 
+### 🎯 S25 — Staff Checkout & Payment Flow (Cập nhật CompleteModal)
+> **Mục tiêu:** Thiết kế lại luồng hoàn thành đơn hàng của nhân viên: edit dịch vụ, KM theo DV/tổng đơn, khách chọn tip, biên lai xác nhận, thanh toán.
+> **Flow:** Edit đơn → Đánh giá + Tip → Biên lai xác nhận → CASH/BANK → QR (nếu BANK) → Cảm ơn
+
+| # | Task | Trạng thái | Ghi chú |
+|---|------|-----------|---------|
+| 25.1 | Thiết kế lại CompleteModal → giao diện edit đơn hàng | [ ] | Thêm/xoá dịch vụ, xem tổng thời gian |
+| 25.2 | Khuyến mãi linh hoạt: % từng DV hoặc % tổng đơn | [ ] | Toggle: KM theo dòng / KM toàn đơn |
+| 25.3 | Bỏ ô nhập tip cũ khỏi CompleteModal | [ ] | Tách tip sang bước riêng sau khi edit đơn |
+| 25.4 | Giao diện đánh giá DV + chọn tip (10k/20k/30k/50k/custom) | [ ] | Rating sao + quick tags + comment + tip selector |
+| 25.5 | Giao diện biên lai xác nhận dịch vụ | [ ] | Chi tiết: DV → KM → Tip (không KM) → Tổng |
+| 25.6 | Tip hiển thị riêng, **không bị giảm giá** | [ ] | Tip không nhân discount%, giữ nguyên 100% |
+| 25.7 | Phương thức thanh toán: CASH / BANK | [ ] | Giữ nguyên toggle hiện tại |
+| 25.8 | QR Code cho BANK (kế thừa PaymentQRModal) | [ ] | Giữ nguyên VietQR |
+| 25.9 | Màn hình "Cảm ơn đã thực hiện dịch vụ" kết thúc luồng | [ ] | Thank-you screen thay vì ReviewModal ở cuối |
+
+
+
+---
+
 ### 🎯 S21 — Hardening (Đang có: `lib/rate-limit.ts`, test)
 > **Mục tiêu:** Bảo mật, hiệu năng, kiểm thử an ninh.
 
