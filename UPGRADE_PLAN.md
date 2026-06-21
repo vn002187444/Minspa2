@@ -7,8 +7,7 @@
 
 ## 🧠 BẢN ĐỒ TƯ DUY HỆ THỐNG (V3 FOCUS)
 
-- **Client Portal (Hướng khách hàng)**
-    - Loyalty (V3): ❌ Tạm hoãn (S22).
+
 - **Staff Operations (Hướng nhân viên)**
     - Commission: Real-time calculation.
 - **Admin Dashboard (Hướng quản trị)**
@@ -108,18 +107,6 @@
 
 ---
 
-### ❌ S22 — Customer Portal (Tạm hoãn)
-> **Lý do:** Chưa ưu tiên — sẽ làm sau khi các tính năng cốt lõi hoàn thiện.
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 22.1 | Tạo route `/customer` + auth riêng (OTP/SĐT) | [-] | Tạm hoãn |
-| 22.2 | Trang xem lịch sử đặt lịch + gói liệu trình | [-] | Tạm hoãn |
-| 22.3 | Hệ thống Loyalty Points | [-] | Tạm hoãn |
-| 22.4 | Referral code: giới thiệu bạn → thưởng buổi | [-] | Tạm hoãn |
-| 22.5 | Đánh giá dịch vụ sau khi hoàn thành | [-] | Tạm hoãn |
-| 22.6 | Thông báo khuyến mãi cá nhân hoá | [-] | Tạm hoãn |
-| 22.7 | Quà tặng sinh nhật (auto coupon) | [-] | Tạm hoãn |
 
 ---
 
