@@ -127,7 +127,8 @@
 | 25.8 | QR Code cho BANK (kế thừa PaymentQRModal) | [ ] | Giữ nguyên VietQR |
 | 25.9 | Màn hình "Cảm ơn đã thực hiện dịch vụ" kết thúc luồng | [ ] | Thank-you screen thay vì ReviewModal ở cuối |
 | 25.10 | Xem lại đơn hàng đã hoàn thành sau khi checkout | [ ] | Card đơn COMPLETED click vào → xem chi tiết DV, KM, tip, tổng |
-| 25.11 | Edit tip sau khi hoàn thành (nếu KH chưa nhập/nhập sai) | [ ] | Nút "Sửa tip" trên đơn COMPLETED → modal nhập lại tip |
+| 25.11 | Edit tip sau khi hoàn thành (nếu KH chưa nhập/nhập sai) | [ ] | Staff chỉ sửa được trong ngày; Admin sửa bất kỳ lúc nào từ lịch sử đơn |
+| 25.12 | Admin: xem & edit tip từ lịch sử đơn hàng | [ ] | Tab Đơn hàng → click đơn → sửa tip + ghi chú audit |
 
 
 
