@@ -138,16 +138,18 @@
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 26.1 | Tạo bảng `tasks` trong database | [ ] | id, title, desc, type (daily/one_time), assignee (all/staff_id[]), created_by, deadline, status |
+| 26.1 | Tạo bảng `tasks` trong database | [ ] | id, title, desc, type (daily/one_time), assignee (all/staff_id[]), created_by, deadline, status, parent_task_id (cho daily) |
 | 26.2 | Admin UI: tạo công việc mới | [ ] | Modal: loại công việc, chọn NV (all/chỉ định), khung giờ, ghi chú |
-| 26.3 | Admin UI: chọn "Toàn bộ NV" hoặc chỉ định từng người | [ ] | Radio: Giao cho tất cả / Chọn NV cụ thể |
-| 26.4 | Staff UI: danh sách công việc được giao | [ ] | Tab "Công việc" trên /staff, filter: chưa nhận/đang làm/hoàn thành |
-| 26.5 | Staff nhận việc (Nhận / Từ chối) | [ ] | Nút "Nhận việc" → status = IN_PROGRESS |
-| 26.6 | Staff cập nhật trạng thái: Đang làm / Hoàn thành | [ ] | Nút "Hoàn thành" → status = COMPLETED |
-| 26.7 | Thông báo nếu NV chưa nhận việc (quá giờ) | [ ] | Push notification + cron check |
-| 26.8 | Thông báo trễ hạn hoàn thành | [ ] | So sánh deadline vs hiện tại → push |
-| 26.9 | Dashboard cho Admin: theo dõi tiến độ | [ ] | Thống kê: chưa nhận / đang làm / hoàn thành / trễ hạn |
-| 26.10 | Lọc & tìm kiếm công việc | [ ] | Theo NV, loại, ngày, trạng thái |
+| 26.3 | Nếu chọn **daily** → auto nhắc lại hàng ngày | [ ] | Cron job tạo task clone cho ngày mới, copy assignee + deadline |
+| 26.4 | Admin UI: chọn "Toàn bộ NV" hoặc chỉ định từng người | [ ] | Radio: Giao cho tất cả / Chọn NV cụ thể |
+| 26.5 | Staff UI: danh sách công việc được giao | [ ] | Tab "Công việc" trên /staff, filter: chưa nhận/đang làm/hoàn thành |
+| 26.6 | Staff nhận việc (Nhận / Từ chối) | [ ] | Nút "Nhận việc" → status = IN_PROGRESS |
+| 26.7 | Staff cập nhật trạng thái: Đang làm / Hoàn thành | [ ] | Nút "Hoàn thành" → status = COMPLETED |
+| 26.8 | Thông báo admin khi NV hoàn thành task | [ ] | Push + realtime: "[NV] đã hoàn thành [task]" |
+| 26.9 | Thông báo nếu NV chưa nhận việc (quá giờ) | [ ] | Push notification + cron check |
+| 26.10 | Thông báo trễ hạn hoàn thành | [ ] | So sánh deadline vs hiện tại → push |
+| 26.11 | Dashboard cho Admin: theo dõi tiến độ | [ ] | Thống kê: chưa nhận / đang làm / hoàn thành / trễ hạn |
+| 26.12 | Lọc & tìm kiếm công việc | [ ] | Theo NV, loại, ngày, trạng thái |
 
 ---
 
