@@ -43,7 +43,8 @@
 | 17.3 | Sound effect & Micro-interaction khi click | [ ] | Sử dụng Web Audio API |
 | 17.4 | Mascot dashboard cho admin (bật/tắt, chọn kiểu) | [ ] | TabSettings → Mascot config |
 | 17.5 | Mascot xuất hiện trên toàn bộ trang (không chỉ booking) | [ ] | Global provider, context-based triggers |
-| 17.6 | A/B test tracking tỷ lệ click/booking với mascot | [ ] | `lib/analytics.ts` → event tracking |
+| 17.6 | Mascot homepage: hướng dẫn, mô tả DV vui nhộn | [ ] | Chạy dọc theo section, bong bóng chat giới thiệu service |
+| 17.7 | A/B test tracking tỷ lệ click/booking với mascot | [ ] | `lib/analytics.ts` → event tracking |
 
 ---
 
