@@ -57,8 +57,10 @@
 | 18.2 | Cải tiến auto-assign: xét kỹ năng + chứng chỉ | [ ] | Thêm bảng `staff_skills` (service_id ↔ staff_id) |
 | 18.3 | UI "Gợi ý giờ đẹp" trên booking page | [ ] | Badge ⭐ cho slot đề xuất |
 | 18.4 | Caching slot availability (Redis hoặc Supabase) | [ ] | Giảm query lặp |
-| 18.5 | Auto-assign batch: tối ưu thuật toán workload | [ ] | Cân bằng tải giữa các nhân viên |
-| 18.6 | Lịch sử auto-assign: log & undo | [ ] | Bảng `auto_assign_logs` |
+| 18.5 | Cho phép đặt lịch ngày mai dù chưa có điểm danh | [ ] | Bỏ attendance filter cho ngày T+1, thay = giới hạn 1 slot/khung giờ |
+| 18.6 | Giới hạn 1 slot / khung giờ cho ngày mai | [ ] | Dùng `time_slot_locks` để chặn trùng, tối đa 1 booking mỗi khung |
+| 18.7 | Auto-assign batch: tối ưu thuật toán workload | [ ] | Cân bằng tải giữa các nhân viên |
+| 18.8 | Lịch sử auto-assign: log & undo | [ ] | Bảng `auto_assign_logs` |
 
 ---
 
