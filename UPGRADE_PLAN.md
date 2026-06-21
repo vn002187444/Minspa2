@@ -8,7 +8,7 @@
 ## 🧠 BẢN ĐỒ TƯ DUY HỆ THỐNG (V3 FOCUS)
 
 - **Client Portal (Hướng khách hàng)**
-    - Loyalty (V3): Customer portal, Package tracking, Loyalty points.
+    - Loyalty (V3): ❌ Tạm hoãn (S22).
 - **Staff Operations (Hướng nhân viên)**
     - Commission: Real-time calculation.
 - **Admin Dashboard (Hướng quản trị)**
@@ -76,17 +76,19 @@
 
 ---
 
-### 🎯 S20 — Financials & Payment (Đang có: CASH/BANK, queue `payment_notification`)
+### ⏳ S20 — Financials & Payment (Chờ — cần cấu hình sau)
 > **Mục tiêu:** Thanh toán online, hoá đơn tự động, báo cáo tài chính.
+> **Trạng thái:** Chưa có cổng thanh toán — tasks 20.1-20.2 ở trạng thái chờ. Các task còn lại làm độc lập. Cần UI bật/tắt từng phương thức + nhập API key sau.
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 20.1 | MoMo/ZaloPay QR thanh toán tự động | [ ] | Webhook integration → cập nhật trạng thái |
-| 20.2 | Tạo hoá đơn PDF (`jspdf`) sau thanh toán | [ ] | Gửi ZNS/email cho khách |
-| 20.3 | Xuất báo cáo doanh thu Excel (`exceljs`) | [ ] | Lọc theo ngày, dịch vụ, nhân viên |
-| 20.4 | Dashboard tài chính nâng cao | [ ] | Biểu đồ P&L, dự báo doanh thu |
+| 20.1 | MoMo/ZaloPay QR thanh toán tự động | [/] | Chờ — cần tạo UI config (bật/tắt, nhập API key, webhook URL) |
+| 20.2 | Tạo hoá đơn PDF (`jspdf`) sau thanh toán | [/] | Chờ — phụ thuộc 20.1 |
+| 20.3 | Xuất báo cáo doanh thu Excel (`exceljs`) | [ ] | Làm được ngay — lọc theo ngày, dịch vụ, nhân viên |
+| 20.4 | Dashboard tài chính nâng cao | [ ] | Làm được ngay — biểu đồ P&L, dự báo doanh thu |
 | 20.5 | Tính năng refund/hoàn tiền | [ ] | Flow hoàn tiền khi hủy lịch |
 | 20.6 | Tích hợp POS offline (Cash Register) | [ ] | Khi mất mạng vẫn bán được |
+| 20.7 | UI Settings: bật/tắt cổng thanh toán + nhập API key | [ ] | TabSettings → Payment config form |
 
 ---
 
@@ -106,18 +108,18 @@
 
 ---
 
-### 🎯 S22 — Customer Portal (Chưa có)
-> **Mục tiêu:** Cổng thông tin khách hàng, điểm thưởng, giới thiệu bạn bè.
+### ❌ S22 — Customer Portal (Tạm hoãn)
+> **Lý do:** Chưa ưu tiên — sẽ làm sau khi các tính năng cốt lõi hoàn thiện.
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 22.1 | Tạo route `/customer` + auth riêng (OTP/SĐT) | [ ] | JWT token cho customer |
-| 22.2 | Trang xem lịch sử đặt lịch + gói liệu trình | [ ] | Tương tự staff portal nhưng cho khách |
-| 22.3 | Hệ thống Loyalty Points | [ ] | Bảng `loyalty_points` (tích/triệt điểm) |
-| 22.4 | Referral code: giới thiệu bạn → thưởng buổi | [ ] | Mã giới thiệu + tracking |
-| 22.5 | Đánh giá dịch vụ sau khi hoàn thành | [ ] | Gửi link sau COMPLETED |
-| 22.6 | Thông báo khuyến mãi cá nhân hoá | [ ] | Push notification theo segment |
-| 22.7 | Quà tặng sinh nhật (auto coupon) | [ ] | Cron job kiểm tra + tặng |
+| 22.1 | Tạo route `/customer` + auth riêng (OTP/SĐT) | [-] | Tạm hoãn |
+| 22.2 | Trang xem lịch sử đặt lịch + gói liệu trình | [-] | Tạm hoãn |
+| 22.3 | Hệ thống Loyalty Points | [-] | Tạm hoãn |
+| 22.4 | Referral code: giới thiệu bạn → thưởng buổi | [-] | Tạm hoãn |
+| 22.5 | Đánh giá dịch vụ sau khi hoàn thành | [-] | Tạm hoãn |
+| 22.6 | Thông báo khuyến mãi cá nhân hoá | [-] | Tạm hoãn |
+| 22.7 | Quà tặng sinh nhật (auto coupon) | [-] | Tạm hoãn |
 
 ---
 
