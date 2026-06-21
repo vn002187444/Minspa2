@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://min-nail-hair.vercel.app/sitemap.xml

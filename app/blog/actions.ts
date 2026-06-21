@@ -3,19 +3,41 @@
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { revalidatePath } from "next/cache";
+import { sanitizeHtml, stripHtml } from "@/lib/sanitize";
 
-export async function getBlogPosts() {
+export async function getBlogPosts(page: number = 1, pageSize: number = 6) {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('blogs')
-    .select('id, title, slug, summary, content, image_url, created_at')
-    .order('created_at', { ascending: false });
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-  if (error) {
-    console.error("Error reading blogs:", error);
-    return [];
+  const { data: posts, count } = await supabase
+    .from('blogs')
+    .select('id, title, slug, summary, content, image_url, created_at', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  if (count === null) {
+    const { data, error } = await supabase
+      .from('blogs')
+      .select('id, title, slug, summary, content, image_url, created_at')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error("Error reading blogs:", error);
+      return { posts: [], total: 0, page: 1, pageSize: 6, totalPages: 0 };
+    }
+    return { posts: (data || []).map(sanitizePost), total: data?.length || 0, page: 1, pageSize: 6, totalPages: 1 };
   }
-  return data || [];
+
+  return { posts: (posts || []).map(sanitizePost), total: count || 0, page, pageSize, totalPages: Math.ceil((count || 0) / pageSize) };
+}
+
+function sanitizePost(post: any) {
+  return {
+    ...post,
+    content: sanitizeHtml(post.content || ''),
+    summary: stripHtml(post.summary || ''),
+  };
 }
 
 export async function getBlogPostBySlug(slug: string) {
@@ -30,7 +52,7 @@ export async function getBlogPostBySlug(slug: string) {
     console.warn(`Blog not found for slug: ${slug}, error:`, error?.message);
     return null;
   }
-  return data;
+  return sanitizePost(data);
 }
 
 export async function saveBlogPost(postData: {
@@ -55,8 +77,8 @@ export async function saveBlogPost(postData: {
       .update({
         title: postData.title,
         slug: postData.slug,
-        summary: postData.summary,
-        content: postData.content,
+        summary: stripHtml(postData.summary || ''),
+        content: sanitizeHtml(postData.content || ''),
         image_url: postData.image_url,
         updated_at: new Date().toISOString()
       })
@@ -83,8 +105,8 @@ export async function saveBlogPost(postData: {
       .insert({
         title: postData.title,
         slug: postData.slug,
-        summary: postData.summary,
-        content: postData.content,
+        summary: stripHtml(postData.summary || ''),
+        content: sanitizeHtml(postData.content || ''),
         image_url: postData.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
         created_at: new Date().toISOString()
       });

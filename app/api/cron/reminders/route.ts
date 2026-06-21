@@ -4,9 +4,9 @@ import { sendPushNotification } from '@/utils/push';
 import { format } from 'date-fns';
 
 export async function GET(req: Request) {
-  // In production, you would check an Authorization header here to ensure only Vercel Cron calls this
-  const authHeader = req.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  // Auth: either Vercel Cron secret hoặc Supabase pg_cron internal call
+  const authHeader = req.headers.get('authorization') || '';
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}` && req.headers.get('x-supabase-cron') !== 'true') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

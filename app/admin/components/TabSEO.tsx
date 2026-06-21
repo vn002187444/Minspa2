@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import Image from "next/image";
 import { Globe, Sparkles, Search, PenTool, ImageIcon, FileText, CheckCircle2, Facebook, Twitter, Send, Trash2, RefreshCw } from "lucide-react";
 import {
   getBannerSettings,
@@ -549,12 +550,14 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
               </p>
               {form.og_image_url && (
                 <div className="mt-4 rounded-xl overflow-hidden border border-gray-200 inline-block">
-                  <img
+                  <Image
                     src={form.og_image_url}
                     alt="OG Preview"
-                    className="h-32 object-cover"
+                    width={300}
+                    height={128}
+                    className="h-32 w-auto object-cover"
                     onError={(e) =>
-                      ((e.target as HTMLImageElement).style.display = "none")
+                      ((e.currentTarget as HTMLImageElement).style.display = "none")
                     }
                   />
                 </div>
@@ -740,10 +743,11 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
               {seoImageUrl && (
                 <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
                   <div className="relative aspect-video rounded-lg overflow-hidden border border-gray-200 bg-gray-200">
-                    <img
+                    <Image
                       src={seoImageUrl}
                       alt="SEO AI"
-                      className="w-full h-full object-cover animate-fade-in"
+                      fill
+                      className="object-cover animate-fade-in"
                     />
                     <span className="absolute bottom-2 right-2 px-2 py-1 text-[9px] bg-black/70 text-white rounded font-mono font-bold tracking-widest">
                       {seoImageMethod === 'AI' ? 'GEMINI IMAGEN' : 'STOCK REPOSITORY'}
@@ -810,8 +814,8 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
                     </p>
 
                     {seoImageUrl && (
-                      <div className="rounded-xl overflow-hidden border border-gray-150 max-h-48 aspect-video">
-                        <img src={seoImageUrl} alt="Social Promo" className="w-full h-full object-cover" />
+                      <div className="relative rounded-xl overflow-hidden border border-gray-150 max-h-48 aspect-video">
+                        <Image src={seoImageUrl} alt="Social Promo" fill className="object-cover" sizes="(max-width: 768px) 100vw, 400px" />
                       </div>
                     )}
 
@@ -874,8 +878,8 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
                       }`}
                     >
                       {art.imageUrl ? (
-                        <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0 bg-gray-100">
-                          <img src={art.imageUrl} alt="preview" className="w-full h-full object-cover" />
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0 bg-gray-100">
+                          <Image src={art.imageUrl} alt="preview" fill className="object-cover" sizes="48px" />
                         </div>
                       ) : (
                         <div className="w-12 h-12 rounded-lg bg-gray-100 text-gray-400 flex items-center justify-center shrink-0">
@@ -990,8 +994,8 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
 
                     {/* Image visualizer */}
                     {selectedArticle.imageUrl && (
-                      <div className="relative aspect-video max-h-48 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 inline-block w-full">
-                        <img src={selectedArticle.imageUrl} alt="visual banner" className="w-full h-full object-cover" />
+                      <div className="relative aspect-video max-h-48 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 w-full">
+                        <Image src={selectedArticle.imageUrl} alt="visual banner" fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
                       </div>
                     )}
 

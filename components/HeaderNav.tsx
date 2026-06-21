@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { ArrowRight, Menu, X } from 'lucide-react';
 import { motion } from 'motion/react';
-import { ArrowRight } from 'lucide-react';
 import NotificationBell from '@/components/NotificationBell';
 
 const NAV_ITEMS = [
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
 export default function HeaderNav() {
   const [activeSection, setActiveSection] = useState<string>('');
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const observerOptions = {
@@ -56,7 +57,13 @@ export default function HeaderNav() {
   }, []);
 
   return (
-    <nav id="nav-header" className="sticky top-0 inset-x-0 z-50 bg-[#FAF6F0]/90 backdrop-blur-md border-b border-[#EADDCD] transition-all">
+    <motion.nav
+      id="nav-header"
+      className="sticky top-0 inset-x-0 z-50 bg-[#FAF6F0]/90 backdrop-blur-md border-b border-[#EADDCD] transition-all relative"
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+    >
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
         
         {/* Brand / Logo */}
@@ -86,19 +93,15 @@ export default function HeaderNav() {
               >
                 {/* Active Underline Effect */}
                 {isActive && (
-                  <motion.div
-                    layoutId="nav-active"
+                  <div
                     className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#8D6E53] rounded-full"
-                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
                   />
                 )}
 
                 {/* Hover Pill Effect */}
                 {isHovered && (
-                  <motion.div
-                    layoutId="nav-hover"
+                  <div
                     className="absolute inset-0 bg-[#EADDCD]/30 rounded-lg -z-10"
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
                   />
                 )}
                 
@@ -109,6 +112,33 @@ export default function HeaderNav() {
             );
           })}
         </div>
+
+        {/* Mobile Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden absolute top-full left-0 right-0 bg-white border-b border-[#EADDCD] shadow-lg z-50">
+            <div className="px-4 py-3 space-y-1">
+              {NAV_ITEMS.map((item) => (
+                <a
+                  key={item.id}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="block py-3 px-4 text-sm font-bold text-[#3A2E2B] hover:text-[#8D6E53] hover:bg-[#FAF6F0] rounded-lg transition-colors"
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Hamburger */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="md:hidden p-2 text-[#3A2E2B] hover:text-[#8D6E53] transition-colors"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
 
         {/* CTAs */}
         <div className="flex items-center gap-3">
@@ -127,6 +157,6 @@ export default function HeaderNav() {
           </Link>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

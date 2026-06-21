@@ -1,0 +1,12 @@
+node_modules
+.next
+out
+build
+.git
+.env.local
+.env.development
+.env.production
+.env.staging
+migrate_to_nas.bat
+Dockerfile
+docker-compose.yml

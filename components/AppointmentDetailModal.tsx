@@ -1,6 +1,7 @@
 'use client'
 
 import { User, Clock, CheckCircle, Info, X, RefreshCw, Edit, Trash2 } from 'lucide-react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 interface AppointmentModalProps {
   selectedAppt: any;
@@ -63,16 +64,25 @@ export default function AppointmentDetailModal({
 }: AppointmentModalProps) {
   if (!selectedAppt) return null;
 
+  const trapRef = useFocusTrap(!!selectedAppt);
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setSelectedAppt(null)}>
-      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+      aria-label={isEditingSelected ? 'Sửa thông tin đặt lịch' : 'Chi tiết lịch hẹn'}
+      onClick={() => setSelectedAppt(null)}
+      onKeyDown={(e) => e.key === 'Escape' && setSelectedAppt(null)}
+    >
+      <div ref={trapRef} className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
         {/* Header banner */}
         <div className="p-5 border-b border-[#FAF6F0] bg-[#FAF6F0] flex items-center justify-between">
           <h4 className="font-semibold text-[#5C4033] flex items-center gap-1.5 text-xs uppercase tracking-wider font-sans">
             <Info className="w-4 h-4 text-[#8D6E53]" />
-            {isEditingSelected ? '📅 Sửa thông tin đặt lịch' : '📋 Chi Tiết Lịch Hướng Dẫn'}
+            {isEditingSelected ? 'Sửa thông tin đặt lịch' : 'Chi Tiết Lịch Hẹn'}
           </h4>
-          <button onClick={() => setSelectedAppt(null)} className="p-1.5 text-gray-400 hover:text-gray-900 bg-white shadow-xs rounded-full transition-all cursor-pointer">
+          <button onClick={() => setSelectedAppt(null)} aria-label="Đóng modal" className="p-1.5 text-gray-400 hover:text-gray-900 bg-white shadow-xs rounded-full transition-all cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -206,14 +216,14 @@ export default function AppointmentDetailModal({
                 <div className="flex gap-1">
                   <button
                     onClick={() => setIsEditingSelected(true)}
-                    title="Chỉnh sửa thông tin đơn hàng"
+                    aria-label="Chỉnh sửa thông tin đơn hàng"
                     className="p-2 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-xl border border-amber-100 transition-all cursor-pointer"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleCancelAppt}
-                    title="Hủy lịch hẹn"
+                    aria-label="Hủy lịch hẹn"
                     className="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-xl border border-rose-100 transition-all cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />

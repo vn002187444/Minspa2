@@ -17,39 +17,43 @@ export async function checkCustomerHistory(phone: string) {
   
   if (!customer) return { found: false, name: '' };
 
-  const { data: appointments } = await supabase
-    .from('appointments')
-    .select(`
-      created_at,
-      users ( full_name ),
-      appointment_services (
-        services ( name )
-      )
-    `)
-    .eq('customer_id', customer.id)
-    .in('status', ['COMPLETED'])
-    .order('created_at', { ascending: false })
-    .limit(3);
+  const now = new Date().toISOString();
+  const [appointmentsResult, allActivePkgsResult] = await Promise.all([
+    supabase
+      .from('appointments')
+      .select(`
+        created_at,
+        users ( full_name ),
+        appointment_services (
+          services ( name )
+        )
+      `)
+      .eq('customer_id', customer.id)
+      .in('status', ['COMPLETED'])
+      .order('created_at', { ascending: false })
+      .limit(3),
+    supabase
+      .from('customer_packages')
+      .select(`
+        id, customer_id, package_id, total_sessions, remaining_sessions, status,
+        purchased_at, expires_at, sold_by_staff_id, commission_amount,
+        treatment_packages!package_id(id, name, service_id, services(name, price))
+      `)
+      .eq('customer_id', customer.id)
+      .eq('status', 'ACTIVE')
+      .gt('expires_at', now)
+      .gt('remaining_sessions', 0)
+      .limit(50),
+  ]);
+
+  const appointments = appointmentsResult?.data || [];
+  const allActivePkgs = allActivePkgsResult?.data || [];
 
   const history = (appointments || []).map((app: any) => ({
     date: new Date(app.created_at).toLocaleDateString('vi-VN'),
     staff: app.users?.full_name || null,
     services: app.appointment_services.map((as: any) => as.services?.name).filter(Boolean)
   }));
-
-  const now = new Date().toISOString();
-  const { data: allActivePkgs } = await supabase
-    .from('customer_packages')
-    .select(`
-      id, customer_id, package_id, total_sessions, remaining_sessions, status,
-      purchased_at, expires_at, sold_by_staff_id, commission_amount,
-      treatment_packages!package_id(id, name, service_id, services(name, price))
-    `)
-    .eq('customer_id', customer.id)
-    .eq('status', 'ACTIVE')
-    .gt('expires_at', now)
-    .gt('remaining_sessions', 0)
-    .limit(50);
 
   const activePackages = (allActivePkgs || []);
 

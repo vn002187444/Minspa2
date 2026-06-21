@@ -1,19 +1,30 @@
 'use client'
 
+import React from 'react';
 import { DraggableApptCard, DroppableSlotCell } from './ScheduleDndComponents';
+
+interface StaffInfo {
+  id: string; full_name: string; username: string; is_virtual: boolean; is_present: boolean;
+}
+export interface ApptInfo {
+  id: string; customers?: { full_name?: string; phone?: string }; staff_id?: string;
+  appointment_services?: { service_id: string; services?: { name?: string } }[];
+  start_time: string; end_time?: string; status: string;
+  actual_start_time?: string | null; actual_end_time?: string | null;
+}
 
 interface GridViewProps {
   activeTimeSlots: string[];
-  displayStaffList: any[];
-  getSlotAppointment: (staffId: string, slot: string) => any;
-  getSlotLock: (staffId: string, slot: string) => any;
-  getStatusStyle: (appt: any) => string;
-  isCascadeShifted: (appt: any) => boolean;
+  displayStaffList: StaffInfo[];
+  getSlotAppointment: (staffId: string, slot: string) => ApptInfo | null;
+  getSlotLock: (staffId: string, slot: string) => object | null;
+  getStatusStyle: (appt: ApptInfo) => string;
+  isCascadeShifted: (appt: ApptInfo) => boolean;
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
-  handleSelectAppt: (appt: any) => void;
+  handleSelectAppt: (appt: ApptInfo) => void;
 }
 
-export default function MasterScheduleGrid({
+export default React.memo(function MasterScheduleGrid({
   activeTimeSlots,
   displayStaffList,
   getSlotAppointment,
@@ -54,26 +65,26 @@ export default function MasterScheduleGrid({
               </td>
             </tr>
           ) : (
-            displayStaffList.map((staff: any) => (
+            displayStaffList.map((staff: StaffInfo) => (
               <tr key={staff.id} className="border-b border-[#EADDCD]/40 hover:bg-[#FAF6F0]/20 transition-all">
                 <td className="sticky left-0 bg-white z-10 p-3 pr-4 border-r border-[#EADDCD] font-bold text-xs text-[#3A2E2B]">
                   <div className="truncate">{staff.full_name || staff.username}</div>
                   {staff.is_virtual ? (
-                    <span className="text-[9px] font-medium text-amber-600 flex items-center gap-1 mt-0.5 bg-amber-50 w-max px-1.5 py-0.5 rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                      Chờ gán thợ
-                    </span>
-                  ) : staff.is_present ? (
-                    <span className="text-[9px] font-medium text-emerald-600 flex items-center gap-1 mt-0.5 bg-emerald-50 w-max px-1.5 py-0.5 rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                      Đã trực
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-medium text-gray-400 flex items-center gap-1 mt-0.5 bg-gray-50 w-max px-1.5 py-0.5 rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
-                      Chưa điểm danh
-                    </span>
-                  )}
+                     <span className="text-[9px] font-medium text-amber-600 flex items-center gap-1 mt-0.5 bg-amber-50 w-max px-1.5 py-0.5 rounded transition-colors duration-300">
+                       <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                       Chờ gán thợ
+                     </span>
+                   ) : staff.is_present ? (
+                     <span className="text-[9px] font-medium text-emerald-600 flex items-center gap-1 mt-0.5 bg-emerald-50 w-max px-1.5 py-0.5 rounded transition-colors duration-300">
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                       Đã trực
+                     </span>
+                   ) : (
+                     <span className="text-[9px] font-medium text-gray-400 flex items-center gap-1 mt-0.5 bg-gray-50 w-max px-1.5 py-0.5 rounded transition-colors duration-300">
+                       <span className="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                       Chưa điểm danh
+                     </span>
+                   )}
                 </td>
 
                 {activeTimeSlots.map((slot) => {
@@ -91,15 +102,15 @@ export default function MasterScheduleGrid({
                           appt={appt}
                           mode={mode}
                           onClick={() => handleSelectAppt(appt)}
-                          className={`w-full h-full rounded-xl border flex flex-col items-center justify-center p-1 cursor-pointer transition-all ${
+                          className={`w-full h-full rounded-xl border border-l-4 flex flex-col items-center justify-center p-1 cursor-pointer transition-all ${
                             mode === 'ADMIN' ? 'cursor-grab hover:scale-[1.02] active:scale-95' : ''
                           } ${getStatusStyle(appt)} ${isCascadeShifted(appt) ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
                         >
-                          <span className="text-[10px] font-bold truncate max-w-full block leading-snug">
+                          <span className="text-[11px] font-bold truncate max-w-full block leading-snug">
                             {mode === 'READ_ONLY' ? 'Lịch bận' : appt.customers?.full_name || 'Khách lẻ'}
                           </span>
                           {mode !== 'READ_ONLY' && (
-                            <span className="text-[8px] opacity-80 truncate max-w-full block">
+                            <span className="text-[10px] opacity-80 truncate max-w-full block">
                               {appt.appointment_services?.[0]?.services?.name || 'Chi tiết'}
                             </span>
                           )}
@@ -108,11 +119,15 @@ export default function MasterScheduleGrid({
                           )}
                         </DraggableApptCard>
                       ) : lock ? (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-100/60 rounded-xl border border-dashed border-gray-300 cursor-not-allowed">
+                        <div className={`w-full h-full flex items-center justify-center text-[10px] font-bold rounded-xl border-2 border-dashed cursor-not-allowed ${
+                          mode === 'READ_ONLY'
+                            ? 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 border-gray-400 text-gray-500'
+                            : 'bg-gray-100/60 border-gray-300 text-gray-400'
+                        }`}>
                           <span>🔒 Khóa</span>
                         </div>
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-emerald-600/80 bg-emerald-50/10 rounded-xl hover:bg-emerald-50/40 transition-colors">
+                        <div className="w-full h-full flex items-center justify-center text-[10px] font-bold text-gray-400 bg-gray-50/50 rounded-xl hover:bg-gray-100/80 transition-colors">
                           Rảnh
                         </div>
                       )}
@@ -126,4 +141,4 @@ export default function MasterScheduleGrid({
       </table>
     </div>
   );
-}
+});

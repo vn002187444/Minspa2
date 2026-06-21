@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { encrypt } from '@/utils/auth';
+import { verifyPassword } from '@/lib/password';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown';
+    const rl = await rateLimit(`login:${ip}`, 10, 60);
+    if (!rl.allowed) {
+      return NextResponse.json({ success: false, message: 'Quá nhiều yêu cầu. Vui lòng thử lại sau 60 giây.' }, { status: 429 });
+    }
+
     const formData = await req.formData();
     const username = formData.get('username') as string | null;
     const password = formData.get('password') as string | null;
@@ -45,7 +53,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: 'Tài khoản đã bị vô hiệu hóa' });
       }
 
-      if (user.password_hash !== normPassword) {
+      if (!(await verifyPassword(normPassword, user.password_hash))) {
         return NextResponse.json({ success: false, error: 'Sai tên đăng nhập hoặc mật khẩu' });
       }
 

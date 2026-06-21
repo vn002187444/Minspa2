@@ -6,6 +6,119 @@ import { getSession } from "@/utils/auth";
 import { format, startOfDay, endOfDay, subDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { logAuditAction } from "@/utils/audit";
+import { hashPassword, verifyPassword } from "@/lib/password";
+import { sanitizeHtml, stripHtml } from "@/lib/sanitize";
+
+interface StaffInput {
+  username?: string;
+  password?: string;
+  fullName?: string;
+  full_name?: string;
+  role?: string;
+  cccd?: string;
+}
+
+interface ServiceInput {
+  id?: string;
+  name?: string;
+  category?: string;
+  price?: number;
+  duration?: number;
+  description?: string;
+  image_url?: string;
+  is_active?: boolean;
+  commission_percentage?: number;
+  commission_amount?: number;
+}
+
+interface PackageInput {
+  id?: string;
+  name?: string;
+  service_id?: string;
+  buy_count?: number;
+  free_count?: number;
+  price?: number;
+  commission_percentage?: number;
+  is_active?: boolean;
+  services?: any[];
+}
+
+interface BankInput {
+  bank_id?: string;
+  bank_name?: string;
+  account_number?: string;
+  account_owner?: string;
+}
+
+interface SeoInput {
+  page_title?: string;
+  meta_description?: string;
+  meta_keywords?: string;
+  og_image_url?: string;
+  online_discount_enabled?: boolean;
+  online_discount_percent?: number;
+  default_commission_percent?: number;
+  hotline?: string;
+}
+
+interface BannerInput {
+  is_enabled?: boolean;
+  content?: string;
+}
+
+interface StaffReportEntry {
+  staffId: string;
+  fullName: string;
+  username: string;
+  totalAppointments: number;
+  totalSales: number;
+  totalCommission: number;
+  totalTip: number;
+  items: Array<{
+    id: string;
+    startTime: string;
+    customerName: string;
+    sales: number;
+    commission: number;
+    tip: number;
+    services: string[];
+  }>;
+}
+
+interface AppointmentRow {
+  id: string;
+  total_amount?: number;
+  commission_amount?: number;
+  tip_amount?: number;
+  start_time?: string;
+  status?: string;
+  staff_id?: string;
+  customer_id?: string;
+  customers?: { full_name?: string; phone?: string } | null;
+  users?: { id?: string; full_name?: string; username?: string } | null;
+  appointment_services?: Array<{
+    services?: { id?: string; name?: string; price?: number } | null;
+    service_id?: string;
+  }>;
+  reviews?: Array<{
+    id?: string;
+    rating?: number;
+    quick_tags?: string[];
+    comment?: string;
+    created_at?: string;
+  }> | null;
+}
+
+interface AttendanceRow {
+  id: string;
+  staff_id?: string;
+  date?: string;
+  status?: string;
+  check_in_time?: string;
+  check_out_time?: string;
+  note?: string;
+  users?: { full_name?: string; username?: string } | null;
+}
 
 async function checkAdmin() {
   const session = await getSession();
@@ -218,13 +331,14 @@ export async function getStaffs() {
   }
 }
 
-export async function createStaff(staffData: any) {
+export async function createStaff(staffData: StaffInput) {
   await checkAdminOrManager();
   const supabase = await createClient();
+  const hashedPw = await hashPassword((staffData.password || '').trim());
   const { error } = await supabase.from('users').insert({
     role: staffData.role || 'STAFF',
     username: (staffData.username || '').trim().toLowerCase(),
-    password_hash: (staffData.password || '').trim(),
+    password_hash: hashedPw,
     full_name: (staffData.fullName || '').trim(),
     cccd: (staffData.cccd || '').trim()
   });
@@ -232,7 +346,7 @@ export async function createStaff(staffData: any) {
   return { success: true };
 }
 
-export async function updateStaff(staffId: string, staffData: any) {
+export async function updateStaff(staffId: string, staffData: StaffInput) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
     throw new Error('Unauthorized');
@@ -252,7 +366,7 @@ export async function updateStaff(staffId: string, staffData: any) {
     return { success: false, error: 'CCCD là bắt buộc khi phân quyền là STAFF. Vui lòng nhập số CCCD.' };
   }
 
-  const updates: Record<string, any> = {
+  const updates: Record<string, unknown> = {
     username: staffData.username,
     full_name: staffData.full_name,
   };
@@ -275,8 +389,9 @@ export async function resetStaffPassword(staffId: string) {
     throw new Error('Unauthorized');
   }
   const supabase = await createClient();
+  const hashedResetPw = await hashPassword('123456');
   const { error } = await supabase.from('users').update({
-    password_hash: '123456'
+    password_hash: hashedResetPw
   }).eq('id', staffId);
 
   if (!error) {
@@ -360,7 +475,7 @@ export async function getServices() {
   }
 }
 
-export async function saveService(serviceData: any) {
+export async function saveService(serviceData: ServiceInput) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
     throw new Error('Unauthorized');
@@ -368,7 +483,11 @@ export async function saveService(serviceData: any) {
   const supabase = await createClient();
   let imageUrl = serviceData.image_url;
   if (imageUrl && imageUrl.startsWith('data:')) {
-    imageUrl = await uploadBase64ToStorage(imageUrl);
+    try {
+      imageUrl = await uploadBase64ToStorage(imageUrl);
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
   }
   const { id, ...updateData } = { ...serviceData, image_url: imageUrl };
   if (serviceData.id) {
@@ -500,7 +619,7 @@ export async function getSeoSettings() {
   await checkAdminOrManager();
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('seo_settings').select('*').eq('id', 1).single();
+    const { data, error } = await supabase.from('seo_settings').select('page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline').eq('id', 1).single();
     if (error) throw error;
     if (data) {
       return {
@@ -520,7 +639,7 @@ export async function getSeoSettings() {
   return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878' };
 }
 
-export async function saveSeoSettings(payload: any) {
+export async function saveSeoSettings(payload: SeoInput) {
   await checkAdminOrManager();
   try {
     const supabase = await createClient();
@@ -550,11 +669,13 @@ export async function getSeoArticles() {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('seo_articles')
-      .select('*')
+      .select('id, created_at, topic, keywords, article, image_url')
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) throw error;
-    return (data || []).map((a: any) => ({
+    return (data || []).map((a: {
+      id: number; created_at: string; topic: string; keywords: string; article: string; image_url: string | null;
+    }) => ({
       id: a.id,
       createdAt: a.created_at,
       topic: a.topic,
@@ -574,6 +695,13 @@ async function uploadBase64ToStorage(base64Url: string): Promise<string> {
   if (!matches) return base64Url;
   const base64Data = matches[2];
   const raw = Buffer.from(base64Data, 'base64');
+  
+  // Server-side size limit: 500KB (ảnh gốc trước khi optimize)
+  if (raw.length > 512000) {
+    console.warn('[STORAGE] Rejected upload >500KB:', raw.length, 'bytes');
+    throw new Error('Ảnh quá lớn! Vui lòng chọn ảnh dưới 500KB.');
+  }
+  
   let optimized: Buffer;
   try {
     optimized = await sharp(raw).resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
@@ -591,10 +719,10 @@ async function uploadBase64ToStorage(base64Url: string): Promise<string> {
   return urlData.publicUrl;
 }
 
-export async function saveSeoArticle(article: any) {
+export async function saveSeoArticle(article: Record<string, unknown>) {
   await checkAdminOrManager();
   try {
-    const imageUrl = await uploadBase64ToStorage(article.image_url || '');
+    const imageUrl = await uploadBase64ToStorage(String(article.image_url || ''));
     const supabase = await createClient();
     const { data: existing } = await supabase
       .from('seo_articles')
@@ -720,13 +848,15 @@ export async function changePassword(oldPassword: string, newPassword: string) {
     return { success: false, error: 'Không tìm thấy tài khoản người dùng trong hệ thống' };
   }
   
-  if (user.password_hash !== oldPassword) {
+  const isOldPasswordCorrect = await verifyPassword(oldPassword, user.password_hash) || user.password_hash === oldPassword;
+  if (!isOldPasswordCorrect) {
     return { success: false, error: 'Mật khẩu cũ nhập vào không chính xác' };
   }
   
+  const hashedNewPassword = await hashPassword(newPassword);
   const { error: updateErr } = await supabase
     .from('users')
-    .update({ password_hash: newPassword })
+    .update({ password_hash: hashedNewPassword })
     .eq('id', userId);
     
   if (updateErr) {
@@ -787,13 +917,13 @@ export async function getCommissionReport(startDateStr: string, endDateStr: stri
       .eq('is_active', true)
       .limit(100);
 
-    const staffMap: Record<string, any> = {};
+    const staffMap: Record<string, StaffReportEntry> = {};
     if (staffList) {
-      staffList.forEach((s: any) => {
+      staffList.forEach((s: { id: string; full_name: string | null; username: string | null }) => {
         staffMap[s.id] = {
           staffId: s.id,
           fullName: s.full_name || s.username || 'N/A',
-          username: s.username,
+          username: s.username || '',
           totalAppointments: 0,
           totalSales: 0,
           totalCommission: 0,
@@ -922,7 +1052,7 @@ export async function getTreatmentPackages() {
   }
 }
 
-export async function saveTreatmentPackage(packageData: any) {
+export async function saveTreatmentPackage(packageData: PackageInput) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
     throw new Error('Unauthorized');
@@ -1037,7 +1167,7 @@ export async function getBankSettings() {
   }
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('bank_settings').select('*').eq('id', 1).single();
+    const { data, error } = await supabase.from('bank_settings').select('bank_id, bank_name, account_number, account_owner').eq('id', 1).single();
     if (error) throw error;
     if (data) {
       return {
@@ -1053,7 +1183,7 @@ export async function getBankSettings() {
   return { bank_id: 'vcb', bank_name: 'Vietcombank', account_number: '', account_owner: '' };
 }
 
-export async function saveBankSettings(payload: any) {
+export async function saveBankSettings(payload: BankInput) {
   await checkAdmin();
   try {
     const supabase = await createClient();
@@ -1204,6 +1334,127 @@ export async function deleteAppointment(appointmentId: string) {
   }
 }
 
+export async function getAttendanceLogs(startDate: string, endDate: string) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('attendance')
+    .select(`
+      id, staff_id, date, status, check_in_time, check_out_time, note,
+      users!attendance_staff_id_fkey(full_name, username)
+    `)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: false })
+    .limit(1000);
+
+  if (error) {
+    console.error('getAttendanceLogs error:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+export async function getSystemHealth() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/health`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    return { status: res.ok ? 'ok' : 'unhealthy', ...data };
+  } catch (e: any) {
+    return { status: 'error', error: e.message };
+  }
+}
+
+export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_assign') {
+  const session = await getSession();
+  if (!session || session.user.role !== 'ADMIN') throw new Error('Unauthorized');
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  const endpoints: Record<string, string> = {
+    reminders: `${baseUrl}/api/cron/reminders`,
+    marketing: `${baseUrl}/api/cron/marketing`,
+    auto_assign: `${baseUrl}/api/cron/auto-assign`,
+  };
+
+  try {
+    const res = await fetch(endpoints[jobName], {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await res.json();
+    return { success: res.ok, ...data };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+export async function createManualNotification(recipientRole: string, title: string, body: string) {
+  const session = await getSession();
+  if (!session || session.user.role !== 'ADMIN') throw new Error('Unauthorized');
+
+  const supabase = await createClient();
+  const { data: users } = await supabase
+    .from('users')
+    .select('id')
+    .in('role', recipientRole === 'ALL' ? ['ADMIN', 'MANAGER', 'STAFF'] : [recipientRole])
+    .eq('is_active', true)
+    .limit(500);
+
+  if (!users || users.length === 0) return { success: false, error: 'Không tìm thấy người nhận' };
+
+  const notifications = users.map((u: { id: string }) => ({
+    user_id: u.id,
+    title,
+    body,
+    is_read: false,
+    created_at: new Date().toISOString(),
+  }));
+
+  const { error } = await supabase.from('notifications').insert(notifications);
+  if (error) return { success: false, error: error.message };
+
+  await logAuditAction(session.user.id, "SEND_NOTIFICATION", `Gửi thông báo "${title}" cho ${users.length} người dùng (${recipientRole})`);
+  return { success: true, count: notifications.length };
+}
+
+export async function getCronJobStatuses() {
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const jobs = [
+    { name: 'reminders', label: 'Nhắc lịch hẹn' },
+    { name: 'marketing', label: 'Marketing tự động' },
+    { name: 'auto_assign', label: 'Tự động phân ca' },
+    { name: 'background_worker', label: 'Background Worker' },
+  ];
+
+  const results: any[] = [];
+  for (const job of jobs) {
+    const { data: logs } = await supabase
+      .from('cron_job_logs')
+      .select('started_at, finished_at, success, error')
+      .eq('job_name', job.name)
+      .gte('started_at', oneDayAgo)
+      .order('started_at', { ascending: false })
+      .limit(1);
+
+    results.push({
+      name: job.name,
+      label: job.label,
+      lastRun: logs && logs.length > 0 ? logs[0] : null,
+    });
+  }
+
+  return results;
+}
+
 export async function getAdminSessionInfo() {
   const session = await getSession();
   if (!session) return null;
@@ -1213,12 +1464,12 @@ export async function getAdminSessionInfo() {
 export async function getBannerSettings() {
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('banner_settings').select('*').eq('id', 1).single();
+    const { data, error } = await supabase.from('banner_settings').select('is_enabled, content').eq('id', 1).single();
     if (error) throw error;
     if (data) {
       return {
         is_enabled: data.is_enabled,
-        content: data.content,
+        content: stripHtml(data.content || ''),
       };
     }
   } catch (e) {
@@ -1234,14 +1485,14 @@ export async function getBannerSettings() {
   return { is_enabled: true, content: `✨ GIẢM NGAY 5% KHI ĐẶT LỊCH HẸN TRỰC TUYẾN ✨ HOTLINE: ${hotline}` };
 }
 
-export async function saveBannerSettings(payload: any) {
+export async function saveBannerSettings(payload: BannerInput) {
   await checkAdminOrManager();
   try {
     const supabase = await createClient();
     const { error } = await supabase.from('banner_settings').upsert({
       id: 1,
       is_enabled: payload.is_enabled,
-      content: payload.content,
+      content: stripHtml(payload.content || ''),
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
     if (error) throw error;

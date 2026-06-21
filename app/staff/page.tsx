@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { sendZalo } from "@/lib/notify";
 import Link from "next/link";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -336,10 +339,25 @@ export default function StaffDashboard() {
   const handleCheckIn = async () => {
     setOverlayLoading(true);
     setCheckInLoading(true);
-    await checkIn();
-    loadData();
-    setCheckInLoading(false);
-    setOverlayLoading(false);
+
+    // Optimistic Update: Immediately set attendance state
+    setData((prev: any) => ({
+      ...prev,
+      attendance: { check_in_time: new Date().toISOString() }
+    }));
+
+    try {
+      await checkIn();
+      toast.success('Điểm danh thành công!');
+    } catch (err: any) {
+      toast.error('Lỗi điểm danh: ' + err.message);
+      // Rollback: reset attendance to null if it failed
+      setData((prev: any) => ({ ...prev, attendance: null }));
+    } finally {
+      await loadData();
+      setCheckInLoading(false);
+      setOverlayLoading(false);
+    }
   };
 
   const handleShowHistory = async (customer: any) => {
@@ -416,7 +434,7 @@ export default function StaffDashboard() {
         </div>
       )}
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm shrink-0">
-        <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
+         <div className="max-w-7xl xxl:max-w-[1500px] mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-pink-600 rounded-lg flex items-center justify-center text-white font-bold">
               NV
@@ -452,7 +470,7 @@ export default function StaffDashboard() {
         </div>
 
         {/* Desktop Navigation - Hidden on mobile */}
-        <div className="hidden md:flex px-4 max-w-5xl mx-auto border-t border-gray-100 gap-6">
+         <div className="hidden md:flex px-4 max-w-7xl xxl:max-w-[1500px] mx-auto border-t border-gray-100 gap-6">
           {[
             { id: "SCHEDULE", label: "Lịch trình cá nhân", icon: Clock },
             { id: "MASTER", label: "Lịch làm việc của Tiệm", icon: Activity },
@@ -484,7 +502,7 @@ export default function StaffDashboard() {
         </div>
       </nav>
 
-      <main className="flex-1 p-4 max-w-5xl mx-auto w-full pb-24 md:pb-8">
+       <main className="flex-1 p-4 max-w-7xl xxl:max-w-[1500px] mx-auto w-full pb-24 md:pb-8">
         {/* Persistent Flashing Checkin Reminder Past 09:00 AM */}
         {showCheckInReminder && (
           <div className="mb-6 p-4 rounded-3xl bg-amber-500/10 border-2 border-amber-500 text-[#3A2E2B] font-bold flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-amber-100/50 animate-[pulse_2s_infinite]">
@@ -699,44 +717,50 @@ export default function StaffDashboard() {
           appt={completeModal.appt}
           allServices={data.allServices}
           onClose={() => setCompleteModal({ appt: null, isOpen: false })}
-          onComplete={async (extraServices: string[], tip: number, discountPercent: number, paymentMethod: "CASH" | "BANK") => {
-            setOverlayLoading(true);
-            setIsLoading(true);
-            try {
-              const res = await completeAppointment(completeModal.appt.id, extraServices, tip, discountPercent);
-              if (res.success) {
-                triggerStaffToast(
-                  'success',
-                  `🎉 Đơn hàng của khách ${completeModal.appt.customers?.full_name || 'Khách lẻ'} đã hoàn tất & checkout thành công lúc ${format(new Date(), "HH:mm")}!`
-                );
-                await loadData(); // refresh parent dashboards
+           onComplete={async (extraServices: string[], tip: number, discountPercent: number, paymentMethod: "CASH" | "BANK") => {
+             setCompleteModal({ appt: null, isOpen: false }); // Optimistic: Close modal immediately
+             setOverlayLoading(true);
+             setIsLoading(true);
+             try {
+               const res = await completeAppointment(completeModal.appt.id, extraServices, tip, discountPercent);
+               if (res.success) {
+                 triggerStaffToast(
+                   'success',
+                   `🎉 Đơn hàng của khách ${completeModal.appt.customers?.full_name || 'Khách lẻ'} đã hoàn tất & checkout thành công lúc ${format(new Date(), "HH:mm")}!`
+                 );
+                 await loadData(); // refresh parent dashboards
 
-                if (paymentMethod === "CASH") {
-                  // Direct to ReviewModal for Cash payments
-                  setReviewModal({ isOpen: true, apptId: completeModal.appt.id });
-                } else {
-                  // Fetch latest bank configuration template safely for Bank payments
-                  const bankConfig = await getBankSettings();
-                  setQrModal({
-                    isOpen: true,
-                    appt: completeModal.appt,
-                    finalAmount: res.total || 0,
-                    extraServices,
-                    bankConfig,
-                  });
-                }
-              } else {
-                alert("Lỗi khi hoàn thành đơn: " + res.error);
-              }
-            } catch (error: any) {
-              console.error(error);
-              alert("Lỗi hệ thống: " + (error.message || "Không thể thực hiện hoàn thành đơn"));
-            } finally {
-              setIsLoading(false);
-              setOverlayLoading(false);
-              setCompleteModal({ appt: null, isOpen: false });
-            }
-          }}
+                 // Send Zalo Thank You Notification
+                 sendZalo({
+                   phone: completeModal.appt.customers?.phone || '',
+                   message: `Cảm ơn ${completeModal.appt.customers?.full_name || 'quý khách'} đã sử dụng dịch vụ tại Min Nail & Hair! Chúc bạn một ngày tuyệt vời. ✨`
+                 }).catch(() => {});
+
+                 if (paymentMethod === "CASH") {
+                   setReviewModal({ isOpen: true, apptId: completeModal.appt.id });
+                 } else {
+                   const bankConfig = await getBankSettings();
+                   setQrModal({
+                     isOpen: true,
+                     appt: completeModal.appt,
+                     finalAmount: res.total || 0,
+                     extraServices,
+                     bankConfig,
+                   });
+                 }
+               } else {
+                 toast.error("Lỗi khi hoàn thành đơn: " + res.error);
+                 setCompleteModal({ appt: completeModal.appt, isOpen: true }); // Rollback: Re-open modal
+               }
+             } catch (error: any) {
+               console.error(error);
+               toast.error("Lỗi hệ thống: " + (error.message || "Không thể thực hiện hoàn thành đơn"));
+               setCompleteModal({ appt: completeModal.appt, isOpen: true }); // Rollback
+             } finally {
+               setIsLoading(false);
+               setOverlayLoading(false);
+             }
+           }}
         />
       )}
 
@@ -774,12 +798,18 @@ export default function StaffDashboard() {
           appt={swapModal.appt}
           otherStaff={data.otherStaff}
           onClose={() => setSwapModal({ appt: null, isOpen: false })}
-          onSwap={async (staffId: string) => {
-            await handleAction(() =>
-              swapAppointment(swapModal.appt.id, staffId),
-            );
-            setSwapModal({ appt: null, isOpen: false });
-          }}
+           onSwap={async (staffId: string) => {
+             setSwapModal({ appt: null, isOpen: false }); // Optimistic: Close modal immediately
+             try {
+               await handleAction(() =>
+                 swapAppointment(swapModal.appt.id, staffId),
+               );
+               toast.success('Đã chuyển lịch hẹn thành công!');
+             } catch (err: any) {
+               toast.error('Lỗi khi chuyển lịch: ' + err.message);
+               setSwapModal({ appt: swapModal.appt, isOpen: true }); // Rollback
+             }
+           }}
         />
       )}
 
@@ -855,17 +885,34 @@ function AppointmentCard({
 
   const isPackage = !!appt.is_package_session;
   const [actionLoading, setActionLoading] = useState(false);
-
+  const [optimisticStatus, setOptimisticStatus] = useState<string | null>(null);
+  
   const handleStartAppointment = async () => {
     setActionLoading(true);
-    await onAction(() => updateAppointmentStatus(appt.id, "IN_PROGRESS"));
-    setActionLoading(false);
+    setOptimisticStatus('IN_PROGRESS');
+    try {
+      await onAction(() => updateAppointmentStatus(appt.id, "IN_PROGRESS"));
+      toast.success('Đã bắt đầu phục vụ khách!');
+    } catch (err: any) {
+      setOptimisticStatus(null);
+      toast.error('Lỗi: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
-
+  
   const handleTakeRandom = async () => {
     setActionLoading(true);
-    await onAction(() => takeRandomAppointment(appt.id));
-    setActionLoading(false);
+    setOptimisticStatus('TAKEN');
+    try {
+      await onAction(() => takeRandomAppointment(appt.id));
+      toast.success('Đã nhận lịch hẹn!');
+    } catch (err: any) {
+      setOptimisticStatus(null);
+      toast.error('Lỗi: ' + err.message);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -874,24 +921,24 @@ function AppointmentCard({
         isPackage
           ? "border-amber-500 bg-amber-50/40 ring-1 ring-amber-500/20"
           : "bg-white border-gray-100"
-      } ${
-        appt.status === "IN_PROGRESS" 
-          ? "ring-2 ring-emerald-500" 
-          : isNew 
-          ? "ring-2 ring-pink-500 border-pink-300 bg-pink-50/10 animate-[pulse_2.1s_infinite] shadow-lg shadow-pink-100/50" 
-          : ""
-      }`}
+       } ${
+         (optimisticStatus === 'IN_PROGRESS' || appt.status === "IN_PROGRESS") 
+           ? "ring-2 ring-emerald-500" 
+           : (optimisticStatus === 'TAKEN' || !isNew) 
+           ? "" 
+           : "ring-2 ring-pink-500 border-pink-300 bg-pink-50/10 animate-[pulse_2.1s_infinite] shadow-lg shadow-pink-100/50" 
+       }`}
     >
-      {appt.status === "IN_PROGRESS" && (
-        <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-bl-xl">
-          Đang phục vụ
-        </div>
-      )}
-      {appt.status === "COMPLETED" && (
-        <div className="absolute top-0 right-0 px-3 py-1 bg-gray-200 text-gray-600 text-xs font-bold rounded-bl-xl">
-          Đã xong
-        </div>
-      )}
+       {(optimisticStatus === 'IN_PROGRESS' || appt.status === "IN_PROGRESS") && (
+         <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-bl-xl">
+           Đang phục vụ
+         </div>
+       )}
+       {(optimisticStatus === 'COMPLETED' || appt.status === "COMPLETED") && (
+         <div className="absolute top-0 right-0 px-3 py-1 bg-gray-200 text-gray-600 text-xs font-bold rounded-bl-xl">
+           Đã xong
+         </div>
+       )}
       {!isMine && isNew && (
         <div className="absolute top-0 right-0 px-3.5 py-1.5 bg-gradient-to-l from-pink-600 to-rose-500 text-white text-[10px] font-black tracking-wider uppercase rounded-bl-2xl shadow-sm animate-bounce">
           🎯 MỚI NHẬN!
@@ -1363,12 +1410,14 @@ function PaymentQRModal({ appt, finalAmount, extraServices, allServices, bankCon
             <div className="space-y-5">
               {/* QR Image Container */}
               <div className="bg-gray-50 border border-gray-100 rounded-3xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden shadow-sm">
-                <div className="bg-white p-3 rounded-2xl border border-gray-150 shadow-sm max-w-[240px] aspect-square flex items-center justify-center">
-                  <img
+                <div className="bg-white p-3 rounded-2xl border border-gray-150 shadow-sm max-w-[240px] aspect-square relative flex items-center justify-center">
+                  <Image
                     src={qrUrl}
                     alt="VietQR code"
-                    className="w-full h-full object-contain animate-in zoom-in-95 duration-500"
+                    fill
+                    className="object-contain animate-in zoom-in-95 duration-500"
                     referrerPolicy="no-referrer"
+                    unoptimized
                   />
                 </div>
                 <p className="text-[10px] text-gray-400 font-semibold mt-3 uppercase tracking-wider">
@@ -2611,7 +2660,7 @@ function ManagementTab() {
   };
 
   const handleResearchAI = async () => {
-    if (!seoTopic) return alert("Vui lòng nhập chủ để cần tìm kiếm nghiên cứu!");
+    if (!seoTopic) return toast.error("Vui lòng nhập chủ để cần tìm kiếm nghiên cứu!");
     setIsResearchLoading(true);
     setSeoResearchText("");
     try {
@@ -2634,7 +2683,7 @@ function ManagementTab() {
   };
 
   const handleGenerateArticleAI = async () => {
-    if (!seoTopic) return alert("Vui lòng nhập chủ để bài viết SEO!");
+    if (!seoTopic) return toast.error("Vui lòng nhập chủ để bài viết SEO!");
     setIsArticleLoading(true);
     setSeoArticleText("");
     try {
@@ -2685,7 +2734,7 @@ function ManagementTab() {
   const simulateSocialShare = (platform: string, content: string) => {
     const title = "Chia sẻ Bài Viết SEO";
     const text = `Tôi vừa viết xong bài viết: ${seoTopic || "Bài viết mới"} - Chia sẻ qua ${platform}!`;
-    alert(`[MÔ PHỎNG CHIA SẺ] Đã chia sẻ nội dung bài viết lên ${platform} một cách nhanh chóng cùng hashtag #MinNailHair #SEO!`);
+    toast.success(`[MÔ PHỎNG CHIA SẺ] Đã chia sẻ nội dung bài viết lên ${platform} một cách nhanh chóng cùng hashtag #MinNailHair #SEO!`);
   };
 
   return (
@@ -2930,7 +2979,7 @@ function ManagementTab() {
                 {seoImageUrl && (
                   <div className="rounded-2xl overflow-hidden border border-gray-200 space-y-2">
                     <div className="relative aspect-video w-full bg-gray-100">
-                      <img src={seoImageUrl} alt="Seo Illustration" className="w-full h-full object-cover" />
+                      <Image src={seoImageUrl} alt="Seo Illustration" fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
                     </div>
                     <div className="p-3 bg-gray-50 text-[10px] flex justify-between items-center text-gray-500 font-semibold">
                       <span>Mô hình: {seoImageMethod === "AI" ? "Gemini Realtime Image" : "Hình Stock Cực Đẹp"}</span>

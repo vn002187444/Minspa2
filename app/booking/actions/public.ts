@@ -1,11 +1,16 @@
 'use server'
 
 import { createClient } from "@/utils/supabase/server";
+import { stripHtml } from "@/lib/sanitize";
 
 export async function getPublicServices() {
   const supabase = await createClient();
   const { data } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, is_active').eq('is_active', true);
-  return data || [];
+  return (data || []).map(s => ({
+    ...s,
+    name: stripHtml(s.name || ''),
+    description: stripHtml(s.description || ''),
+  }));
 }
 
 export async function getPublicSeoSettings() {

@@ -110,7 +110,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
+              <label htmlFor="login_username" className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
                 Tài khoản
               </label>
               <div className="relative">
@@ -118,6 +118,7 @@ export default function LoginPage() {
                   <User className="h-5 w-5" />
                 </div>
                 <input
+                  id="login_username"
                   name="username"
                   type="text"
                   required
@@ -129,7 +130,7 @@ export default function LoginPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1.5 ml-1 pr-1">
-                <label className="block text-sm font-medium text-gray-700">
+                <label htmlFor="login_password" className="block text-sm font-medium text-gray-700">
                   Mật khẩu
                 </label>
                 <button type="button" className="text-xs font-semibold text-pink-600 hover:text-pink-700 transition-colors">
@@ -141,6 +142,7 @@ export default function LoginPage() {
                   <Lock className="h-5 w-5" />
                 </div>
                 <input
+                  id="login_password"
                   name="password"
                   type="password"
                   required

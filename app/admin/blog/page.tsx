@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -13,7 +14,7 @@ import {
   BookOpen, Plus, Edit3, Trash2, ArrowLeft, ArrowRight, 
   Sparkles, Globe, Key, CheckCircle, AlertTriangle, Info, Image as ImageIcon,
   Bold, Italic, Link2, Code,
-  WandSparkles, FileText
+  WandSparkles, FileText, BarChart3
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -101,7 +102,7 @@ export default function AdminBlogPage() {
     setLoading(true);
     setError('');
     try {
-      const data = await getBlogPosts();
+      const { posts: data } = await getBlogPosts();
       setPosts(data);
     } catch (e: any) {
       setError('Lỗi khi tải danh sách bài viết từ database.');
@@ -337,10 +338,6 @@ export default function AdminBlogPage() {
       return;
     }
 
-    if (!confirm(`Bạn chắc chắn muốn xóa bài viết "${postTitle}"? Thao tác này không thể hoàn tác.`)) {
-      return;
-    }
-
     setLoading(true);
     setError('');
     setSuccess('');
@@ -395,7 +392,7 @@ export default function AdminBlogPage() {
       <Toaster position="top-right" richColors />
       {/* Top Banner Administration navbar */}
       <nav className="sticky top-0 z-50 bg-[#FAF6F0]/95 backdrop-blur-md border-b border-[#EADDCD] px-4 py-4 md:px-8 shadow-sm">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+         <div className="max-w-7xl xxl:max-w-[1500px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link href={currentUser?.role === 'ADMIN' ? '/admin' : '/staff'} className="p-2 border border-[#EADDCD] rounded-full hover:bg-stone-50 transition-colors">
               <ArrowLeft className="w-4 h-4 text-[#8D6E53]" />
@@ -409,6 +406,14 @@ export default function AdminBlogPage() {
             </div>
           </div>
 
+          <div className="flex items-center gap-2">
+            <Link
+              href="/admin/blog-analytics"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#EADDCD] rounded-xl text-[10px] font-black text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all uppercase tracking-wider"
+            >
+              <BarChart3 className="w-3.5 h-3.5" /> Analytics
+            </Link>
+          </div>
           <div className="flex items-center gap-3.5 bg-white px-4 py-2 rounded-2xl border border-[#EADDCD]/60 self-start md:self-auto text-xs font-bold">
             <span className="text-gray-500">Tài khoản:</span>
             <span className="text-[#3A2E2B]">{currentUser?.username || 'Chưa nhận diện'}</span>
@@ -421,7 +426,7 @@ export default function AdminBlogPage() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 md:px-8 mt-8 space-y-8">
+       <main className="max-w-7xl xxl:max-w-[1500px] mx-auto px-4 md:px-8 mt-8 space-y-8">
         
         {/* Global Notifications Alert boxes */}
         {error && (
@@ -537,7 +542,7 @@ export default function AdminBlogPage() {
                         onClick={() => setImageUrl(img)}
                         className={`shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${imageUrl === img ? 'border-purple-500 ring-2 ring-purple-300' : 'border-[#EADDCD] hover:border-[#8D6E53]'}`}
                       >
-                        <img src={img} alt={`suggest ${idx}`} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                        <Image src={img} alt={`suggest ${idx}`} width={80} height={56} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} unoptimized />
                       </button>
                     ))}
                   </div>
@@ -557,22 +562,22 @@ export default function AdminBlogPage() {
 
                 {/* Rich Formatting Toolbar */}
                 <div className="flex flex-wrap items-center gap-1 p-1.5 bg-[#FAF6F0]/95 backdrop-blur-md rounded-2xl border-2 border-[#EADDCD] text-[11px] font-bold text-stone-700 sticky top-[75px] md:top-[83px] z-30 shadow-sm">
-                  <button type="button" onClick={() => applyFormat('bold')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In đậm"><Bold className="w-3.5 h-3.5 align-middle" /></button>
-                  <button type="button" onClick={() => applyFormat('italic')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In nghiêng"><Italic className="w-3.5 h-3.5 align-middle" /></button>
-                  <button type="button" onClick={() => applyFormat('underline')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all underline text-sm" title="Gạch chân">U</button>
-                  <button type="button" onClick={() => applyFormat('strikethrough')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all line-through text-sm" title="Gạch ngang">S</button>
+                  <button type="button" onClick={() => applyFormat('bold')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In đậm" aria-label="In đậm"><Bold className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('italic')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In nghiêng" aria-label="In nghiêng"><Italic className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('underline')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all underline text-sm" title="Gạch chân" aria-label="Gạch chân">U</button>
+                  <button type="button" onClick={() => applyFormat('strikethrough')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all line-through text-sm" title="Gạch ngang" aria-label="Gạch ngang">S</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('h2')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H2">H2</button>
-                  <button type="button" onClick={() => applyFormat('h3')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H3">H3</button>
+                  <button type="button" onClick={() => applyFormat('h2')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H2" aria-label="Tiêu đề H2">H2</button>
+                  <button type="button" onClick={() => applyFormat('h3')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H3" aria-label="Tiêu đề H3">H3</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('ul')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Danh sách">☰</button>
-                  <button type="button" onClick={() => applyFormat('ol')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-xs font-bold" title="Danh sách số">#.</button>
+                  <button type="button" onClick={() => applyFormat('ul')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Danh sách" aria-label="Danh sách">☰</button>
+                  <button type="button" onClick={() => applyFormat('ol')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-xs font-bold" title="Danh sách số" aria-label="Danh sách số">#.</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('blockquote')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Trích dẫn">❝</button>
-                  <button type="button" onClick={() => applyFormat('code')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Code">&lt;/&gt;</button>
-                  <button type="button" onClick={() => applyFormat('hr')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Đường kẻ">—</button>
+                  <button type="button" onClick={() => applyFormat('blockquote')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Trích dẫn" aria-label="Trích dẫn">❝</button>
+                  <button type="button" onClick={() => applyFormat('code')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Code" aria-label="Code">&lt;/&gt;</button>
+                  <button type="button" onClick={() => applyFormat('hr')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Đường kẻ" aria-label="Đường kẻ">—</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('link')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="Chèn link"><Link2 className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('link')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="Chèn link" aria-label="Chèn link"><Link2 className="w-3.5 h-3.5 align-middle" /></button>
                 </div>
 
                 {/* AI Assist Toolbar */}
@@ -818,7 +823,7 @@ export default function AdminBlogPage() {
             <div className="p-8 text-center text-stone-400 text-xs">Chưa có bài viết nào trong hệ thống. Hãy soạn và thêm mới nhé!</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-xs font-sans">
                 <thead>
                   <tr className="border-b border-stone-200 text-stone-500 font-black uppercase tracking-wider text-[10px]">
                     <th className="pb-3.5 pl-2 font-black">Bài viết</th>
@@ -831,11 +836,12 @@ export default function AdminBlogPage() {
                   {posts.map((post: any) => (
                     <tr key={post.id} className="hover:bg-stone-50/50 transition-colors">
                       <td className="py-4 pl-2 flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
-                          <img
+                        <div className="w-12 h-12 relative rounded-lg bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
+                          <Image
                             src={post.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop'}
                             alt={post.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
                           />
                         </div>
                         <div className="max-w-xs md:max-w-md min-w-0">

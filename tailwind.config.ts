@@ -22,6 +22,9 @@ const config: Config = {
         "float-delayed": "float 6s ease-in-out infinite 2s",
         shimmer: "shimmer 1.5s infinite",
       },
+      screens: {
+        'xxl': '1600px',
+      },
       keyframes: {
         blob: {
           "0%": {

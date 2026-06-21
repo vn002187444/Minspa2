@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { format } from 'date-fns';
 
 export default function TodayMonitoringWidget({ appointments, onReload }: { appointments: any[], onReload: () => void }) {
@@ -28,8 +29,8 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
     try {
       const { updateAppointmentStatus } = await import('../../staff/actions');
       const res = await updateAppointmentStatus(id, nextStatus);
-      if (res.success) onReload();
-      else alert('Lỗi: ' + res.error);
+      if (res.success) { onReload(); toast.success('Cập nhật trạng thái thành công'); }
+      else toast.error('Lỗi: ' + res.error);
     } catch (err: any) { console.error(err); }
     finally { setUpdatingId(null); }
   };

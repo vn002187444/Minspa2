@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from "react";
+import { toast } from 'sonner';
 import { Package, PenTool, XIcon } from "lucide-react";
 import { saveTreatmentPackage, deleteTreatmentPackageSafely } from "../actions";
 import EditPackageModal from "./EditPackageModal";
@@ -9,18 +10,16 @@ export default function TabPackages({ packages, services, userRole, onReload }: 
   const [editingPackage, setEditingPackage] = useState<any>(null);
 
   const handleDeletePackage = async (id: string, name: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa gói "${name}" không?`)) return;
-
     try {
       const res = await deleteTreatmentPackageSafely(id, name);
       if (res.success) {
-        alert(res.message);
+        toast.success(res.message);
         onReload();
       } else {
-        alert("Lỗi: " + res.error);
+        toast.error("Lỗi: " + res.error);
       }
     } catch (err: any) {
-      alert("Lỗi: " + err.message);
+      toast.error("Lỗi: " + err.message);
     }
   };
 
@@ -56,16 +55,16 @@ export default function TabPackages({ packages, services, userRole, onReload }: 
               )}
               <button
                 onClick={() => setEditingPackage(pkg)}
+                aria-label="Sửa gói"
                 className="text-blue-500 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 p-2 rounded-lg transition-colors cursor-pointer"
-                title="Sửa"
               >
                 <PenTool className="w-4 h-4" />
               </button>
               {userRole === 'ADMIN' && (
                 <button
                   onClick={() => handleDeletePackage(pkg.id, pkg.name)}
+                  aria-label="Xóa gói"
                   className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors cursor-pointer"
-                  title="Xóa"
                 >
                   <XIcon className="w-4 h-4" />
                 </button>

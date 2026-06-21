@@ -1,5 +1,16 @@
-import { GoogleGenAI } from "@google/genai";
+import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
+
+const SYSTEM_INSTRUCTION = `Bạn là chuyên gia viết copy cho spa và salon làm đẹp (Nail, Gội dưỡng sinh, Massage) tại Việt Nam.
+Chỉ viết mô tả dịch vụ, không tư vấn y tế. Giọng văn sinh động, hấp dẫn. Tiếng Việt có dấu.`;
+
+const DESC_SCHEMA = {
+  type: "object",
+  properties: {
+    description: { type: "string", description: "Đoạn mô tả ngắn 2-3 câu, tối đa 50 từ" },
+  },
+  required: ["description"],
+};
 
 export async function POST(req: NextRequest) {
   let serviceName = "";
@@ -13,32 +24,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Service name is required" }, { status: 400 });
     }
 
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error("GEMINI_API_KEY is not defined");
+    const prompt = `Viết mô tả dịch vụ:
+Tên: "${serviceName}"
+Danh mục: "${category}"`;
+
+    const result = await callGemini({
+      systemInstruction: SYSTEM_INSTRUCTION,
+      prompt,
+      jsonSchema: DESC_SCHEMA,
+      useCache: true,
+    });
+
+    if (result.text) {
+      const parsed = JSON.parse(result.text);
+      return NextResponse.json({ description: parsed.description, fromCache: result.fromCache });
     }
-    const ai = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
 
-    const prompt = `Bạn là một chuyên gia viết copy cho spa và salon làm đẹp (Nail, Gội dưỡng sinh, Massage).
-Hãy viết một đoạn mô tả ngắn gọn, sinh động, hấp dẫn (khoảng 2-3 câu, tối đa 50 từ) cho dịch vụ sau:
-Tên dịch vụ: "${serviceName}"
-Danh mục: "${category}"
-
-Chỉ trả về đoạn văn mô tả, không cần thêm tiêu đề hay lời chào hỏi.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: prompt,
-    });
-
-    return NextResponse.json({ description: response.text });
+    throw new Error("Gemini returned empty");
   } catch (error: any) {
     console.warn("[GEMINI API ERROR] Using fallback description.", error);
     

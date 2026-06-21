@@ -1,23 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Smartphone, Download, X, Share } from 'lucide-react';
 
 export default function InstallPWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIos, setIsIos] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Detect if already running standalone
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                         (window.navigator as any).standalone === true;
 
     if (isStandalone) return;
 
-    // Detect iOS
     const ua = window.navigator.userAgent.toLowerCase();
     const isApple = /iphone|ipad|ipod/.test(ua);
     setIsIos(isApple);
@@ -25,25 +24,24 @@ export default function InstallPWA() {
     const handleBeforeInstallEvent = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      // Wait 3 seconds, then show the prompt banner
-      const timer = setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         setIsVisible(true);
       }, 3000);
-      return () => clearTimeout(timer);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallEvent);
 
-    // If Apple device (Safari doesn't support beforeinstallprompt)
     if (isApple) {
-      const timer = setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         setIsVisible(true);
       }, 5000);
-      return () => clearTimeout(timer);
     }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallEvent);
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+      }
     };
   }, []);
 

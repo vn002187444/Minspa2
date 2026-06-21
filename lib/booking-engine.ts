@@ -26,7 +26,14 @@ export function calculateProgressiveDuration(serviceIds: string[], services: { i
   return selected.reduce((sum, s) => sum + (s.duration || 30), 0);
 }
 
-export function getEffectiveTimeRange(appt: any): { start: Date; end: Date } {
+interface AppointmentTimeFields {
+  start_time: string;
+  end_time: string;
+  actual_start_time?: string | null;
+  actual_end_time?: string | null;
+}
+
+export function getEffectiveTimeRange(appt: AppointmentTimeFields): { start: Date; end: Date } {
   const expectedStart = new Date(appt.start_time);
   const expectedEnd = new Date(appt.end_time);
   const actualStart = appt.actual_start_time ? new Date(appt.actual_start_time) : null;
@@ -287,8 +294,8 @@ export async function getSlotAvailabilityWithNames(
     .eq('date', date)
     .eq('status', 'PRESENT');
 
-  const presentStaffIds = new Set((attendance || []).map((a: any) => a.staff_id));
-  const presentStaff = allStaff.filter((s: any) => presentStaffIds.has(s.id));
+  const presentStaffIds = new Set((attendance || []).map((a: { staff_id: string }) => a.staff_id));
+  const presentStaff = allStaff.filter((s: { id: string; full_name: string }) => presentStaffIds.has(s.id));
   const totalStaff = presentStaff.length;
 
   const dayStart = new Date(`${date}T00:00:00+07:00`).toISOString();
@@ -356,9 +363,9 @@ export async function getSlotAvailabilityWithNames(
         }
       }
 
-      const availableStaff = presentStaff.filter((s: any) => !busyStaffIdsForSlot.has(s.id));
+      const availableStaff = presentStaff.filter((s: { id: string; full_name: string }) => !busyStaffIdsForSlot.has(s.id));
       const availableCount = availableStaff.length;
-      const availableStaffNames = availableStaff.map((s: any) => s.full_name);
+      const availableStaffNames = availableStaff.map((s: { id: string; full_name: string }) => s.full_name);
 
       let status: SlotAvailability['status'];
       if (availableCount === 0) {

@@ -173,7 +173,7 @@ export default function AdminOrdersPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] p-4 sm:p-6 text-[#3A2E2B] font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl xxl:max-w-[1500px] mx-auto space-y-6">
         {/* Navigation & Header */}
         <button 
           onClick={() => router.push('/admin')} 

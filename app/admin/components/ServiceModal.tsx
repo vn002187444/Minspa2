@@ -1,10 +1,13 @@
 'use client'
 
 import { useState } from "react";
+import Image from "next/image";
 import { RefreshCw, Sparkles, ImageIcon, CheckCircle2, XIcon } from "lucide-react";
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { saveService } from "../actions";
 
 export default function ServiceModal({ service, onClose, onReload }: any) {
+  const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
     id: service.id || null,
     name: service.name || "",
@@ -64,7 +67,7 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}>
       <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto scrollbar-none">
         <h3 className="font-display font-bold text-lg text-gray-900 mb-6">
           {form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}
@@ -212,7 +215,7 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
             <div className="space-y-3">
               {form.image_url && (
                 <div className="relative w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
-                  <img src={form.image_url} alt={form.name} className="w-full h-full object-cover" />
+                  <Image src={form.image_url} alt={form.name} fill className="object-cover" sizes="(max-width: 400px) 100vw, 400px" />
                   <button type="button" onClick={() => setForm({ ...form, image_url: '' })}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow-md cursor-pointer"
                   >&times;</button>
@@ -225,6 +228,10 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
                   <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
+                    if (file.size > 512000) {
+                      setErrorMsg('Ảnh quá lớn! Vui lòng chọn ảnh dưới 500KB.');
+                      return;
+                    }
                     const reader = new FileReader();
                     reader.onload = () => setForm({ ...form, image_url: reader.result as string });
                     reader.readAsDataURL(file);

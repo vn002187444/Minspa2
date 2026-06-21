@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { XIcon } from "lucide-react";
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { saveTreatmentPackage } from "../actions";
 
 export default function EditPackageModal({ pkg, services, onClose, onReload }: any) {
+  const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
     id: pkg.id || "",
     name: pkg.name || "",
@@ -54,7 +56,7 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-label={pkg.id ? "Sửa gói liệu trình" : "Thêm gói mới"}>
       <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
           <h3 className="text-xl font-bold text-gray-900 font-display">
@@ -63,6 +65,7 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
           <button
             onClick={onClose}
             className="text-gray-400 hover:bg-white hover:shadow-sm p-2 rounded-xl transition-all cursor-pointer"
+            aria-label="Đóng modal"
           >
             <XIcon className="w-5 h-5" />
           </button>

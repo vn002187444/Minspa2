@@ -1,6 +1,12 @@
 'use client'
 
+import React from 'react';
+import type { ApptInfo } from './MasterScheduleGrid';
 import { DraggableApptCard, DroppableStaffCard } from './ScheduleDndComponents';
+
+interface StaffInfo {
+  id: string; full_name: string; username: string;
+}
 
 interface ListViewProps {
   viewType: 'grid' | 'list';
@@ -11,20 +17,20 @@ interface ListViewProps {
   filterStaffId: string;
   setFilterStaffId: (v: string) => void;
   timeSlots: string[];
-  displayStaffList: any[];
-  getSlotAppointment: (staffId: string, slot: string) => any;
-  getSlotLock: (staffId: string, slot: string) => any;
-  getStatusStyle: (appt: any) => string;
-  isCascadeShifted: (appt: any) => boolean;
+  displayStaffList: StaffInfo[];
+  getSlotAppointment: (staffId: string, slot: string) => ApptInfo | null;
+  getSlotLock: (staffId: string, slot: string) => object | null;
+  getStatusStyle: (appt: ApptInfo) => string;
+  isCascadeShifted: (appt: ApptInfo) => boolean;
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
-  handleSelectAppt: (appt: any) => void;
-  data: any;
+  handleSelectAppt: (appt: ApptInfo) => void;
+  data: { appointments: ApptInfo[] };
   getVNTimeStr: (dateStr: string) => string;
-  getEffectiveStart: (appt: any) => string;
-  getEffectiveEnd: (appt: any) => string;
+  getEffectiveStart: (appt: ApptInfo) => string;
+  getEffectiveEnd: (appt: ApptInfo) => string;
 }
 
-export default function MasterScheduleList({
+const MasterScheduleList = React.memo(function MasterScheduleList({
   viewType,
   listGroupType,
   setListGroupType,
@@ -46,7 +52,7 @@ export default function MasterScheduleList({
   getEffectiveEnd,
 }: ListViewProps) {
   return (
-    <div className={viewType === 'list' ? 'block space-y-6' : 'block md:hidden space-y-6'}>
+    <div className={viewType === 'list' ? 'block space-y-6' : 'hidden'}>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FAF6F0]/40 p-3 rounded-2xl border border-[#EADDCD]/45">
         <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-[#EADDCD]/60 shadow-xs max-w-max">
           <button
@@ -93,7 +99,7 @@ export default function MasterScheduleList({
               className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-[#EADDCD] outline-none text-gray-700 focus:ring-1 focus:ring-[#8D6E53] cursor-pointer"
             >
               <option value="">Tất cả thợ</option>
-              {displayStaffList.map((s: any) => (
+              {displayStaffList.map((s: StaffInfo) => (
                 <option key={s.id} value={s.id}>
                   {s.full_name || s.username}
                 </option>
@@ -129,10 +135,27 @@ export default function MasterScheduleList({
           getVNTimeStr={getVNTimeStr}
           getEffectiveStart={getEffectiveStart}
           getEffectiveEnd={getEffectiveEnd}
-        />
+         />
       )}
     </div>
   );
+});
+
+export default MasterScheduleList;
+
+interface TimeGroupedViewProps {
+  timeSlots: string[];
+  displayStaffList: StaffInfo[];
+  filterStaffId: string;
+  hideEmptySlots: boolean;
+  getSlotAppointment: (staffId: string, slot: string) => ApptInfo | null;
+  mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
+  handleSelectAppt: (appt: ApptInfo) => void;
+  isCascadeShifted: (appt: ApptInfo) => boolean;
+  getStatusStyle: (appt: ApptInfo) => string;
+  getVNTimeStr: (dateStr: string) => string;
+  getEffectiveStart: (appt: ApptInfo) => string;
+  getEffectiveEnd: (appt: ApptInfo) => string;
 }
 
 function TimeGroupedView({
@@ -148,7 +171,7 @@ function TimeGroupedView({
   getVNTimeStr,
   getEffectiveStart,
   getEffectiveEnd,
-}: any) {
+}: TimeGroupedViewProps) {
   if (displayStaffList.length === 0) {
     return (
       <div className="bg-white rounded-3xl border border-[#EADDCD]/50 p-4 sm:p-6 shadow-xs">
@@ -160,13 +183,13 @@ function TimeGroupedView({
   }
 
   const filteredStaffList = filterStaffId
-    ? displayStaffList.filter((s: any) => s.id === filterStaffId)
+    ? displayStaffList.filter((s: StaffInfo) => s.id === filterStaffId)
     : displayStaffList;
 
   const renderedSlots = timeSlots.filter((slot: string) => {
     if (!hideEmptySlots) return true;
-    return filteredStaffList.some((staff: any) => getSlotAppointment(staff.id, slot));
-  });
+    return filteredStaffList.some((staff: StaffInfo) => getSlotAppointment(staff.id, slot));
+});
 
   if (renderedSlots.length === 0) {
     return (
@@ -183,14 +206,14 @@ function TimeGroupedView({
       <div className="relative border-l-2 border-[#EADDCD]/50 ml-3.5 pl-6 space-y-6">
         {renderedSlots.map((slot: string) => {
           const slotAppointments = filteredStaffList
-            .map((staff: any) => {
+            .map((staff: StaffInfo) => {
               const appt = getSlotAppointment(staff.id, slot);
               return appt ? { staff, appt } : null;
             })
-            .filter(Boolean) as { staff: any; appt: any }[];
+            .filter(Boolean) as { staff: StaffInfo; appt: ApptInfo }[];
 
           const activeStaffIds = slotAppointments.map((sa) => sa.staff.id);
-          const freeStaff = filteredStaffList.filter((staff: any) => !activeStaffIds.includes(staff.id));
+          const freeStaff = filteredStaffList.filter((staff: StaffInfo) => !activeStaffIds.includes(staff.id));
 
           const isBusy = slotAppointments.length > 0;
           const dotColor = isBusy ? 'bg-[#8D6E53] border-white' : 'bg-emerald-500 border-white';
@@ -211,7 +234,7 @@ function TimeGroupedView({
                   <div className="grid grid-cols-1 gap-2">
                     {slotAppointments.map(({ staff, appt }) => {
                       const servicesText =
-                        appt.appointment_services?.map((as: any) => as.services?.name).join(', ') || 'Chi tiết';
+                        appt.appointment_services?.map((as) => as.services?.name).join(' · ') || 'Chi tiết';
                       const shifted = isCascadeShifted(appt);
                       const start = getVNTimeStr(getEffectiveStart(appt));
                       const end = getVNTimeStr(getEffectiveEnd(appt));
@@ -222,12 +245,12 @@ function TimeGroupedView({
                           appt={appt}
                           mode={mode}
                           onClick={() => handleSelectAppt(appt)}
-                          className={`bg-white border border-[#EADDCD]/40 rounded-2xl p-4 shadow-3xs hover:border-[#8D6E53] hover:translate-x-0.5 cursor-pointer transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${mode === 'ADMIN' ? 'active:cursor-grabbing' : ''}`}
+                          className={`bg-white border border-[#EADDCD]/40 rounded-2xl p-3 sm:p-4 shadow-3xs hover:border-[#8D6E53] hover:translate-x-0.5 cursor-pointer transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${mode === 'ADMIN' ? 'active:cursor-grabbing' : ''}`}
                         >
                           <div className="space-y-1 flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span
-                                className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md uppercase tracking-wider ${
+                                className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md uppercase tracking-wider ${
                                   appt.status === 'CONFIRMED'
                                     ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                     : appt.status === 'IN_PROGRESS'
@@ -246,12 +269,15 @@ function TimeGroupedView({
                                   : appt.status}
                               </span>
 
-                              <span className="text-xs font-extrabold text-gray-800 bg-gray-55 border border-gray-100 px-2 py-0.5 rounded-md">
+                              <span className="text-xs font-extrabold text-gray-800 bg-gray-55 border border-gray-100 px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                                <span className="w-4 h-4 rounded-full bg-[#8D6E53] text-white text-[8px] flex items-center justify-center font-bold shrink-0">
+                                  {(staff.full_name || staff.username).charAt(0).toUpperCase()}
+                                </span>
                                 KTV: {staff.full_name || staff.username}
                               </span>
 
-                              <span className="text-[10px] text-gray-400 font-bold font-mono">
-                                ({start} - {end})
+                              <span className="text-xs font-extrabold text-[#5C4033] font-mono">
+                                {start} - {end}
                               </span>
                               {shifted && (
                                 <span className="text-[9px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">
@@ -272,10 +298,10 @@ function TimeGroupedView({
                           <div className="flex sm:flex-col items-start sm:items-end gap-1 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-100">
                             <span className="text-[10px] text-gray-400">Thời lượng</span>
                             <span className="text-xs font-bold text-[#8D6E53] font-mono">
-                              {Math.round(
+                              {appt.end_time ? Math.round(
                                 (new Date(appt.end_time).getTime() - new Date(appt.start_time).getTime()) /
                                   (1000 * 60)
-                              )}{' '}
+                              ) : 0}{' '}
                               phút
                             </span>
                           </div>
@@ -294,7 +320,7 @@ function TimeGroupedView({
                         : `Sẵn sàng (${freeStaff.length}): `}
                       {freeStaff.length < filteredStaffList.length && (
                         <span className="font-semibold text-emerald-700">
-                          {freeStaff.map((s: any) => s.full_name || s.username).join(', ')}
+                          {freeStaff.map((s: StaffInfo) => s.full_name || s.username).join(', ')}
                         </span>
                       )}
                     </p>
@@ -309,6 +335,18 @@ function TimeGroupedView({
   );
 }
 
+interface StaffGroupedViewProps {
+  displayStaffList: StaffInfo[];
+  mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
+  handleSelectAppt: (appt: ApptInfo) => void;
+  isCascadeShifted: (appt: ApptInfo) => boolean;
+  getStatusStyle: (appt: ApptInfo) => string;
+  data: { appointments: ApptInfo[] };
+  getVNTimeStr: (dateStr: string) => string;
+  getEffectiveStart: (appt: ApptInfo) => string;
+  getEffectiveEnd: (appt: ApptInfo) => string;
+}
+
 function StaffGroupedView({
   displayStaffList,
   mode,
@@ -319,7 +357,7 @@ function StaffGroupedView({
   getVNTimeStr,
   getEffectiveStart,
   getEffectiveEnd,
-}: any) {
+}: StaffGroupedViewProps) {
   if (displayStaffList.length === 0) {
     return (
       <div className="p-8 text-center text-sm col-span-full text-gray-400 bg-gray-50 rounded-2xl">
@@ -330,13 +368,13 @@ function StaffGroupedView({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {displayStaffList.map((staff: any) => {
+      {displayStaffList.map((staff: StaffInfo) => {
         const staffAppts = data.appointments
-          .filter((appt: any) => {
+          .filter((appt: ApptInfo) => {
             const apptStaffId = appt.staff_id || '_unassigned';
             return apptStaffId === staff.id;
           })
-          .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+          .sort((a: ApptInfo, b: ApptInfo) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
         return (
           <DroppableStaffCard
@@ -345,10 +383,12 @@ function StaffGroupedView({
             className={`bg-[#FAF6F0]/40 rounded-2xl p-4 sm:p-5 space-y-4 shadow-xs animate-in fade-in duration-300 transition-all border`}
           >
             <div className="flex justify-between items-center border-b border-[#EADDCD]/50 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="font-bold text-sm text-[#3A2E2B]">{staff.full_name || staff.username}</span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-[#8D6E53] text-white text-[10px] flex items-center justify-center font-bold shrink-0">
+                    {(staff.full_name || staff.username).charAt(0).toUpperCase()}
+                  </span>
+                  <span className="font-bold text-sm text-[#3A2E2B]">{staff.full_name || staff.username}</span>
+                </div>
               <span className="text-[10px] bg-white px-2.5 py-1 rounded-full text-gray-500 border border-[#EADDCD]/40">
                 {staffAppts.length} ca đặt hẹn
               </span>
@@ -358,10 +398,10 @@ function StaffGroupedView({
               <p className="text-xs text-gray-400 italic py-4 pl-3">Trống lịch - Có thể thả phân công vào đây</p>
             ) : (
               <div className="relative border-l-2 border-[#EADDCD]/60 ml-2.5 pl-4 py-1 space-y-4">
-                {staffAppts.map((appt: any) => {
+                {staffAppts.map((appt: ApptInfo) => {
                   const shiftedStaffView = isCascadeShifted(appt);
                   const servicesText =
-                    appt.appointment_services?.map((as: any) => as.services?.name).join(', ') || 'Chi tiết';
+                    appt.appointment_services?.map((as) => as.services?.name).join(' · ') || 'Chi tiết';
                   const start = getVNTimeStr(getEffectiveStart(appt));
                   const end = getVNTimeStr(getEffectiveEnd(appt));
 
@@ -388,7 +428,7 @@ function StaffGroupedView({
                       >
                         <div className="space-y-1 sm:space-y-1.5 min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] font-extrabold text-[#5C4033] bg-[#FAF0E6] px-2 py-0.5 rounded-md font-mono shrink-0">
+                            <span className="text-xs font-extrabold text-[#5C4033] bg-[#FAF0E6] px-2 py-0.5 rounded-md font-mono shrink-0">
                               {start} - {end}
                             </span>
                             {shiftedStaffView && (
@@ -406,7 +446,7 @@ function StaffGroupedView({
                         </div>
 
                         <span
-                          className={`px-2 py-0.5 text-[9px] font-extrabold rounded-md uppercase shrink-0 tracking-wider ${
+                          className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md uppercase shrink-0 tracking-wider ${
                             appt.status === 'CONFIRMED'
                               ? 'bg-amber-50 text-amber-700 border border-amber-200'
                               : appt.status === 'IN_PROGRESS'

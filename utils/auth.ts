@@ -2,25 +2,37 @@ import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 
 const secretKey = process.env.JWT_SECRET;
-if (!secretKey && process.env.NODE_ENV === 'production') {
-  console.warn('[AUTH] JWT_SECRET not set — using fallback key (insecure in production)');
+if (!secretKey) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('[AUTH] JWT_SECRET is required in production environment');
+  }
+  console.warn('[AUTH] JWT_SECRET not set — using fallback key for development only');
 }
-const safeKey = secretKey || 'min-nail-hair-super-secret-key-24h';
+const safeKey = secretKey || 'min-nail-hair-dev-secret-key-2026';
 const key = new TextEncoder().encode(safeKey);
 
-export async function encrypt(payload: any) {
-  return await new SignJWT(payload)
+export interface SessionPayload {
+  user: { id: string; role: string; username: string };
+  expires: Date;
+}
+
+export async function encrypt(payload: SessionPayload) {
+  return await new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
     .sign(key);
 }
 
-export async function decrypt(input: string): Promise<any> {
-  const { payload } = await jwtVerify(input, key, {
-    algorithms: ['HS256'],
-  });
-  return payload;
+export async function decrypt(input: string): Promise<SessionPayload | null> {
+  try {
+    const { payload } = await jwtVerify(input, key, {
+      algorithms: ['HS256'],
+    });
+    return payload as unknown as SessionPayload;
+  } catch {
+    return null;
+  }
 }
 
 export async function createSession(user: { id: string; role: string; username: string }) {
@@ -46,14 +58,13 @@ export async function getSession() {
     console.log(`[AUTH] getSession: No session cookie found.`);
     return null;
   }
-  try {
-    const parsed = await decrypt(session);
+  const parsed = await decrypt(session);
+  if (parsed) {
     console.log(`[AUTH] getSession: Session valid. User ID: ${parsed.user.id}, Role: ${parsed.user.role}`);
-    return parsed;
-  } catch (error) {
-    console.error(`[AUTH] getSession: Session decryption failed!`, error);
-    return null;
+  } else {
+    console.error(`[AUTH] getSession: Session decryption failed!`);
   }
+  return parsed;
 }
 
 export async function logout() {

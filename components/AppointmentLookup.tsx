@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { Search, Calendar, Clock, User, Sparkles, Check, ChevronDown, CheckCircle, ShieldAlert, BadgeInfo, X, Star, AlertTriangle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
@@ -490,6 +490,7 @@ export default function AppointmentLookup() {
               <button
                 type="button"
                 onClick={clearSearch}
+                aria-label="Xóa tìm kiếm"
                 className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#5C4033] p-1 rounded-full hover:bg-gray-100"
               >
                 <X className="w-4 h-4" />
@@ -511,14 +512,12 @@ export default function AppointmentLookup() {
         </form>
 
         {/* Results Container */}
-        <AnimatePresence mode="wait">
           {results && (
             <motion.div
+              className="pt-4 border-t border-[#FAF6F0] space-y-6"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-              className="pt-4 border-t border-[#FAF6F0] space-y-6"
+              transition={{ duration: 0.3, ease: 'easeOut' }}
             >
               {results.success ? (
                 <>
@@ -688,7 +687,6 @@ export default function AppointmentLookup() {
               )}
             </motion.div>
           )}
-        </AnimatePresence>
       </div>
     </div>
   );

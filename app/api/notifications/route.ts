@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/utils/auth';
 import { createClient } from '@/utils/supabase/server';
+import { stripHtml } from '@/lib/sanitize';
 
 export async function GET(req: NextRequest) {
   try {
@@ -29,7 +30,11 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      data: data || [],
+      data: (data || []).map(n => ({
+        ...n,
+        title: stripHtml(n.title || ''),
+        content: stripHtml(n.content || ''),
+      })),
       total: count || 0,
       page,
       limit,

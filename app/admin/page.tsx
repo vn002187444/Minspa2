@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -12,6 +13,7 @@ import {
   Star,
   LogOut,
   CalendarCheck,
+  CalendarDays,
   FileText,
   CheckCircle2,
   Globe,
@@ -23,8 +25,8 @@ import {
   ShieldAlert,
   Package,
   User,
+  Activity,
 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import {
   getStaffs,
   getServices,
@@ -45,6 +47,8 @@ import TabPassword from "./components/TabPassword";
 import TabCommission from "./components/TabCommission";
 import TabPackages from "./components/TabPackages";
 import TabSellAndProgress from "./components/TabSellAndProgress";
+import TabAttendance from "./components/TabAttendance";
+import TabSettings from "./components/TabSettings";
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -63,6 +67,7 @@ export default function AdminDashboard() {
   const [bankSettings, setBankSettings] = useState<any>(null);
 
   const loadData = async (tab: string, additionalParams?: any) => {
+    if (tab === "ATTENDANCE" || tab === "SETTINGS") return;
     setIsLoading(true);
     setStaffError(null);
     try {
@@ -70,7 +75,7 @@ export default function AdminDashboard() {
         try {
           setStaffs(await getStaffs());
         } catch (e: any) {
-          setStaffError(e.message || "Lá»—i khÃ´ng xÃ¡c Ä‘á»‹nh khi táº£i danh sÃ¡ch nhÃ¢n viÃªn");
+          setStaffError(e.message || "Lỗi không xác định khi tải danh sách nhân viên");
           console.error(e);
         }
       }
@@ -92,7 +97,7 @@ export default function AdminDashboard() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
-      if (tabParam && ["DASHBOARD", "STAFF", "SERVICES", "PACKAGES", "COMMISSION", "REVIEWS", "SEO", "BANK", "PASSWORD"].includes(tabParam)) {
+      if (tabParam && ["DASHBOARD", "STAFF", "SERVICES", "PACKAGES", "COMMISSION", "REVIEWS", "SEO", "BANK", "PASSWORD", "ATTENDANCE", "SETTINGS"].includes(tabParam)) {
         setActiveTab(tabParam);
       }
     }
@@ -124,13 +129,14 @@ export default function AdminDashboard() {
           <NotificationBell />
           <Link
             href="/"
-            title="Quay láº¡i Trang Chá»§"
+            aria-label="Về trang chủ"
             className="text-gray-400 hover:text-white p-1.5 rounded-lg"
           >
             <Home className="w-5 h-5" />
           </Link>
           <button
             onClick={() => setIsDrawerOpen(true)}
+            aria-label="Mở menu"
             className="text-gray-300 hover:text-white p-1.5 focus:outline-none cursor-pointer"
           >
             <MenuIcon className="w-6 h-6" />
@@ -144,114 +150,118 @@ export default function AdminDashboard() {
           <>
             {/* Backdrop Overlay */}
             <motion.div
+              onClick={() => setIsDrawerOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsDrawerOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
+              transition={{ duration: 0.2 }}
             />
             {/* Slide-out Drawer */}
             <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed top-0 right-0 h-full w-4/5 max-w-[300px] bg-gray-950 text-gray-300 z-[110] shadow-2xl p-6 flex flex-col md:hidden"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-              <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-6">
-                <span className="font-display font-black text-white text-base tracking-widest">
-                  ADMIN MENU
-                </span>
+            <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-6">
+              <span className="font-display font-black text-white text-base tracking-widest">
+                ADMIN MENU
+              </span>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-805 cursor-pointer"
+                aria-label="Đóng menu"
+              >
+                <XIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <nav className="flex-1 flex flex-col gap-2.5">
+              {userRole === 'MANAGER' && (
                 <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-805 cursor-pointer"
+                  onClick={() => router.push('/staff')}
+                  className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20"
                 >
-                  <XIcon className="w-6 h-6" />
+                  <CheckCircle2 className="w-5 h-5 shrink-0" />
+                  <span>Giao diện Thợ</span>
                 </button>
-              </div>
-
-              <nav className="flex-1 flex flex-col gap-2.5">
-                {userRole === 'MANAGER' && (
-                  <button
-                    onClick={() => router.push('/staff')}
-                    className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20"
-                  >
-                    <CheckCircle2 className="w-5 h-5 shrink-0" />
-                    <span>Giao diá»‡n Thá»£</span>
-                  </button>
-                )}
-                {[
-                  { id: "DASHBOARD", label: "Tá»•ng quan", icon: BarChart },
-                  { id: "SCHEDULE", label: "Lá»‹ch Tá»•ng", icon: CalendarCheck },
-                  { id: "ORDERS", label: "Quáº£n lÃ½ ÄÆ¡n hÃ ng", icon: CheckCircle2 },
-                  { id: "CUSTOMERS", label: "KhÃ¡ch hÃ ng (CRM)", icon: User },
-                  { id: "SELL_PACKAGE", label: "BÃ¡n GÃ³i & Tiáº¿n Äá»™", icon: Package },
-                  { id: "STAFF", label: "NhÃ¢n sá»±", icon: Users },
-                  { id: "SERVICES", label: "Dá»‹ch vá»¥", icon: Settings },
-                  { id: "PACKAGES", label: "Quáº£n lÃ½ GÃ³i Liá»‡u TrÃ¬nh", icon: Package },
-                  {
-                    id: "COMMISSION",
-                    label: "BÃ¡o cÃ¡o Hoa há»“ng",
-                    icon: FileText,
-                  },
-                  { id: "REVIEWS", label: "ÄÃ¡nh giÃ¡", icon: Star },
-                  { id: "SEO", label: "Cáº¥u hÃ¬nh SEO", icon: Globe },
-                  { id: "BANK", label: "TÃ i khoáº£n Bank", icon: CreditCard },
-                  { id: "AUDIT_LOGS", label: "Nháº­t kÃ½ há»‡ thá»‘ng", icon: ShieldAlert },
-                  { id: "PASSWORD", label: "Äá»•i máº­t kháº©u", icon: Key },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setIsDrawerOpen(false);
-                      if (item.id === "SCHEDULE") {
-                        router.push("/admin/schedule");
-                      } else if (item.id === "AUDIT_LOGS") {
-                        router.push("/admin/audit-logs");
-                      } else if (item.id === "ORDERS") {
-                        router.push("/admin/orders");
-                      } else if (item.id === "CUSTOMERS") {
-                        router.push("/admin/customers");
-                      } else {
-                        setActiveTab(item.id);
-                      }
-                    }}
-                    className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
-                      activeTab === item.id
-                        ? "bg-[#8D6E53] text-white shadow-lg"
-                        : "hover:bg-gray-900 text-gray-400 hover:text-white"
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5 shrink-0" />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </nav>
-
-              <div className="border-t border-gray-800 pt-4 mt-6">
+              )}
+              {[
+                { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
+                { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck },
+                { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
+                { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
+                { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
+                { id: "STAFF", label: "Nhân sự", icon: Users },
+                { id: "SERVICES", label: "Dịch vụ", icon: Settings },
+                { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
+                {
+                  id: "COMMISSION",
+                  label: "Báo cáo Hoa hồng",
+                  icon: FileText,
+                },
+                { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
+                { id: "REVIEWS", label: "Đánh giá", icon: Star },
+                { id: "SEO", label: "Cấu hình SEO", icon: Globe },
+                { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
+                { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
+                { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
+                { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
+              ].map((item) => (
                 <button
+                  key={item.id}
                   onClick={() => {
                     setIsDrawerOpen(false);
-                    handleLogout();
+                    if (item.id === "SCHEDULE") {
+                      router.push("/admin/schedule");
+                    } else if (item.id === "AUDIT_LOGS") {
+                      router.push("/admin/audit-logs");
+                    } else if (item.id === "ORDERS") {
+                      router.push("/admin/orders");
+                    } else if (item.id === "CUSTOMERS") {
+                      router.push("/admin/customers");
+                    } else {
+                      setActiveTab(item.id);
+                    }
                   }}
-                  className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 w-full transition-colors cursor-pointer"
+                  className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+                    activeTab === item.id
+                      ? "bg-[#8D6E53] text-white shadow-lg"
+                      : "hover:bg-gray-900 text-gray-400 hover:text-white"
+                  }`}
                 >
-                  <LogOut className="w-5 h-5 shrink-0" />
-                  <span>ÄÄƒng xuáº¥t</span>
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  <span>{item.label}</span>
                 </button>
-              </div>
-            </motion.div>
+              ))}
+            </nav>
+
+            <div className="border-t border-gray-800 pt-4 mt-6">
+              <button
+                onClick={() => {
+                  setIsDrawerOpen(false);
+                  handleLogout();
+                }}
+                className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 w-full transition-colors cursor-pointer"
+              >
+                <LogOut className="w-5 h-5 shrink-0" />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          </motion.div>
           </>
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 min-h-screen flex-col shrink-0">
+        {/* Desktop Sidebar */}
+        <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 min-h-screen flex-col shrink-0 font-sans">
         <div className="h-16 flex items-center justify-between px-6 bg-black/20 text-white font-display font-bold text-lg">
           <span>ADMIN PORTAL</span>
           <Link
             href="/"
-            title="Quay láº¡i Trang Chá»§"
+            aria-label="Về trang chủ"
             className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-gray-800"
           >
             <Home className="w-5 h-5" />
@@ -264,24 +274,26 @@ export default function AdminDashboard() {
               className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20 shadow-sm shadow-pink-900/10 transition-all"
             >
               <CheckCircle2 className="w-5 h-5 shrink-0" />
-              <span>Giao diá»‡n Thá»£</span>
+              <span>Giao diện Thợ</span>
             </button>
           )}
           {[
-            { id: "DASHBOARD", label: "Tá»•ng quan", icon: BarChart },
-            { id: "SCHEDULE", label: "Lá»‹ch Tá»•ng", icon: CalendarCheck },
-            { id: "ORDERS", label: "Quáº£n lÃ½ ÄÆ¡n hÃ ng", icon: CheckCircle2 },
-            { id: "CUSTOMERS", label: "KhÃ¡ch hÃ ng (CRM)", icon: User },
-            { id: "SELL_PACKAGE", label: "BÃ¡n GÃ³i & Tiáº¿n Äá»™", icon: Package },
-            { id: "STAFF", label: "NhÃ¢n sá»±", icon: Users },
-            { id: "SERVICES", label: "Dá»‹ch vá»¥", icon: Settings },
-            { id: "PACKAGES", label: "Quáº£n lÃ½ GÃ³i Liá»‡u TrÃ¬nh", icon: Package },
-            { id: "COMMISSION", label: "BÃ¡o cÃ¡o Hoa há»“ng", icon: FileText },
-            { id: "REVIEWS", label: "ÄÃ¡nh giÃ¡", icon: Star },
-            { id: "SEO", label: "Cáº¥u hÃ¬nh SEO", icon: Globe },
-            { id: "BANK", label: "TÃ i khoáº£n Bank", icon: CreditCard },
-            { id: "AUDIT_LOGS", label: "Nháº­t kÃ½ há»‡ thá»‘ng", icon: ShieldAlert },
-            { id: "PASSWORD", label: "Äá»•i máº­t kháº©u", icon: Key },
+            { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
+            { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck },
+            { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
+            { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
+            { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
+            { id: "STAFF", label: "Nhân sự", icon: Users },
+            { id: "SERVICES", label: "Dịch vụ", icon: Settings },
+            { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
+            { id: "COMMISSION", label: "Báo cáo Hoa hồng", icon: FileText },
+            { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
+            { id: "REVIEWS", label: "Đánh giá", icon: Star },
+            { id: "SEO", label: "Cấu hình SEO", icon: Globe },
+            { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
+            { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
+            { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
+            { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
           ].map((item) => (
             <button
               key={item.id}
@@ -315,7 +327,7 @@ export default function AdminDashboard() {
             className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 w-full transition-colors cursor-pointer"
           >
             <LogOut className="w-5 h-5 shrink-0" />
-            <span>ÄÄƒng xuáº¥t</span>
+            <span>Đăng xuất</span>
           </button>
         </div>
       </aside>
@@ -330,7 +342,12 @@ export default function AdminDashboard() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8D6E53]"></div>
           </div>
         ) : (
-          <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+             className="animate-in fade-in duration-500 max-w-7xl xxl:max-w-[1500px] mx-auto"
+          >
             {activeTab === "DASHBOARD" && <TabDashboard />}
             {activeTab === "STAFF" && (
               <TabStaff staffs={staffs} staffError={staffError} userRole={userRole} onReload={() => loadData("STAFF")} />
@@ -365,7 +382,9 @@ export default function AdminDashboard() {
                 onReload={() => loadData("PACKAGES")}
               />
             )}
-          </div>
+            {activeTab === "ATTENDANCE" && <TabAttendance />}
+            {activeTab === "SETTINGS" && <TabSettings />}
+          </motion.div>
         )}
       </main>
       <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />

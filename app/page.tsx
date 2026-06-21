@@ -1,5 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import Link from 'next/link';
+import Image from 'next/image';
+import { Suspense } from 'react';
 
 // Enable Incremental Static Regeneration (ISR) - cache page and services data for 5 minutes
 export const revalidate = 3600;
@@ -7,12 +9,25 @@ import {
   ArrowRight, Sparkles, MapPin, Phone, Clock, Star, 
   CheckCircle2, Heart, Shield, Award, Calendar, ChevronRight 
 } from 'lucide-react';
-import MasterSchedule from '@/components/MasterSchedule';
+import dynamic from 'next/dynamic';
 import HeaderNav from '@/components/HeaderNav';
 import AppointmentLookup from '@/components/AppointmentLookup';
 import BottomNavigation from '@/components/BottomNavigation';
+import ServiceBookButton from '@/components/ServiceBookButton';
+import ScrollReveal from '@/components/ScrollReveal';
+import StatsCounter from '@/components/StatsCounter';
+import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 import { getBannerSettings } from './admin/actions';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
+
+const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
+  loading: () => (
+    <div className="animate-pulse space-y-4">
+      <div className="h-12 bg-[#EADDCD] rounded-xl w-1/3" />
+      <div className="h-64 bg-[#EADDCD] rounded-2xl" />
+    </div>
+  ),
+});
 
 // Helper to normalize strings into valid URL-safe IDs matching the Header ids
 function slugify(text: string) {
@@ -99,7 +114,7 @@ export default async function Home() {
   }, {});
 
   return (
-    <div className="min-h-screen bg-[#FAF6F0] text-[#3A2E2B] font-sans selection:bg-[#EADDCD] selection:text-[#5C4033]">
+    <div className="min-h-screen theme-bg theme-text font-sans selection:bg-[#EADDCD] selection:text-[#5C4033]">
       {/* Premium Notification Topbar */}
       <AnnouncementBanner settings={bannerSettings} />
 
@@ -107,14 +122,14 @@ export default async function Home() {
       <HeaderNav />
 
       {/* Elegant Hero Frame */}
-      <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-b from-[#FAF6F0] via-[#FDFBF7] to-[#FAF6F0]">
+      <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-b from-[rgb(var(--color-bg))] via-[rgb(var(--color-bg-card))] to-[rgb(var(--color-bg))]">
         {/* Subtle decorative circles with floating animations */}
-        <div className="absolute top-20 right-[-10%] w-96 h-96 rounded-full bg-[#EADDCD]/20 blur-3xl -z-10 animate-float" />
-        <div className="absolute bottom-10 left-[-10%] w-96 h-96 rounded-full bg-[#EADDCD]/30 blur-3xl -z-10 animate-float-delayed" />
+        <div className="absolute top-20 right-[-10%] w-96 h-96 rounded-full theme-border/20 blur-3xl -z-10 animate-float" />
+        <div className="absolute bottom-10 left-[-10%] w-96 h-96 rounded-full theme-border/30 blur-3xl -z-10 animate-float-delayed" />
 
         <div className="max-w-4xl mx-auto text-center space-y-8 animate-slideUp">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#FAF0E6] text-[#8D6E53] rounded-full text-xs font-bold ring-1 ring-[#EADDCD] tracking-widest uppercase">
-            <Sparkles className="w-3.5 h-3.5 text-[#8D6E53] animate-pulse" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[rgb(var(--color-bg-warm))] theme-text-secondary rounded-full text-xs font-bold ring-1 theme-border tracking-widest uppercase">
+            <Sparkles className="w-3.5 h-3.5 theme-text-secondary animate-pulse" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
           </div>
 
           <div className="space-y-4">
@@ -131,18 +146,36 @@ export default async function Home() {
           </div>
 
           <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
-            Chào mừng bạn đến với <strong>không gian spa sang trọng và ấm cúng</strong> tại Chung cư Lavita Charm. Chúng tôi kiến tạo những liệu trình thư giãn sâu kết hợp chăm sóc làm đẹp chu đáo nhất cho đôi tay, mái tóc và làn da của bạn.
-          </p>
+             Chào mừng bạn đến với <strong>không gian spa sang trọng và ấm cúng</strong> tại Chung cư Lavita Charm. Chúng tôi kiến tạo những liệu trình thư giãn sâu kết hợp chăm sóc làm đẹp chu đáo nhất cho đôi tay, mái tóc và làn da của bạn.
+           </p>
 
-          {/* Quick Info Grid */}
+           {/* Primary CTA */}
+           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+              <Link
+                href="/booking"
+                className="inline-flex items-center gap-2 bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-8 py-3.5 rounded-full font-bold text-sm tracking-wider uppercase transition-all shadow-lg hover:shadow-xl active:scale-95 hover-magnetic"
+              >
+                <Calendar className="w-4 h-4" />
+                Đặt lịch ngay
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="#services"
+                className="inline-flex items-center gap-2 border-2 border-[#EADDCD] hover:border-[#8D6E53] text-[#5C4033] px-8 py-3.5 rounded-full font-bold text-sm tracking-wider uppercase transition-all active:scale-95 hover-magnetic"
+             >
+               Xem dịch vụ
+             </Link>
+           </div>
+
+           {/* Quick Info Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto pt-4">
             <div className="flex items-center gap-3 bg-white/70 p-4 rounded-2xl border border-[#EADDCD] backdrop-blur-sm hover:border-[#8D6E53] hover-magnetic transition-all cursor-default">
               <div className="w-10 h-10 rounded-full bg-[#FAF0E6] flex items-center justify-center shrink-0 shadow-sm">
                 <MapPin className="w-5 h-5 text-[#8D6E53]" />
               </div>
               <div className="text-left">
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Địa chỉ</p>
-                <p className="text-xs font-semibold text-[#3A2E2B] line-clamp-1">TM14 Lavita Charm, Thủ Đức</p>
+                <p className="text-xs uppercase tracking-wider text-gray-400 font-bold">Địa chỉ</p>
+               <p className="text-xs font-semibold text-[#3A2E2B] line-clamp-1">TM14 Lavita Charm, Thủ Đức</p>
               </div>
             </div>
             
@@ -151,7 +184,7 @@ export default async function Home() {
                 <Phone className="w-5 h-5 text-[#8D6E53]" />
               </div>
               <div className="text-left">
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Hotline đặt lịch</p>
+                <p className="text-xs uppercase tracking-wider text-gray-400 font-bold">Hotline đặt lịch</p>
                 <p className="text-xs font-semibold text-[#3A2E2B]">{hotline}</p>
               </div>
             </a>
@@ -161,7 +194,7 @@ export default async function Home() {
                 <Clock className="w-5 h-5 text-[#8D6E53]" />
               </div>
               <div className="text-left">
-                <p className="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Giờ mở cửa</p>
+                <p className="text-xs uppercase tracking-wider text-gray-400 font-bold">Giờ mở cửa</p>
                 <p className="text-xs font-semibold text-[#3A2E2B]">09:00 - 20:30 (Mỗi ngày)</p>
               </div>
             </div>
@@ -170,7 +203,7 @@ export default async function Home() {
       </header>
 
       {/* Unique AI Highlight Section */}
-      <section className="py-8 max-w-6xl mx-auto px-4">
+      <section className="py-8 max-w-7xl xxl:max-w-[1500px] mx-auto px-4">
         <div className="bg-gradient-to-r from-[#5C4033] to-[#452F25] text-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden hover-magnetic transition-all group border border-[#8D6E53]/30">
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full filter blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-700"></div>
           <div className="space-y-2 text-center md:text-left">
@@ -184,7 +217,7 @@ export default async function Home() {
           </div>
           <Link 
             href="/booking" 
-            className="shrink-0 bg-amber-150 hover:bg-amber-200 text-gray-900 font-bold text-xs tracking-wider uppercase px-6 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group-hover:scale-105 active:scale-95"
+            className="shrink-0 bg-amber-150 hover:bg-amber-200 text-gray-900 font-bold text-xs tracking-wider uppercase px-6 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group-hover:scale-105 active:scale-95 hover-magnetic"
           >
             Trải nghiệm AI Ngay <ChevronRight className="w-4 h-4 animate-bounce" />
           </Link>
@@ -210,7 +243,7 @@ export default async function Home() {
       </section>
 
       {/* Services Menu Section */}
-      <main className="max-w-6xl mx-auto px-4 space-y-16 pb-12">
+      <main id="services" className="max-w-6xl mx-auto px-4 space-y-16 pb-12">
         {/* Treatment Packages Carousel/Grid Section */}
         {treatmentPackages && treatmentPackages.length > 0 && (
           <section className="bg-gradient-to-r from-amber-50 to-orange-50/70 p-8 md:p-10 rounded-3xl border border-[#EADDCD] space-y-8 shadow-sm">
@@ -312,8 +345,8 @@ export default async function Home() {
           }
 
           return (
+            <ScrollReveal key={categoryKey}>
             <section 
-              key={categoryKey} 
               id={`category-${slugify(categoryKey)}`} 
               className="scroll-mt-24 space-y-8"
             >
@@ -333,7 +366,7 @@ export default async function Home() {
               </div>
 
               {/* Grid of service cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xxl:grid-cols-4 gap-6">
                 {items.map((service: any) => {
                   const isDeal = categoryKey === 'Deal Chấn Động';
                   return (
@@ -342,8 +375,8 @@ export default async function Home() {
                       className={`relative bg-white rounded-3xl border ${borderStyle} hover-magnetic hover:border-[#8D6E53]/40 transition-all flex flex-col justify-between overflow-hidden`}
                     >
                       {service.image_url && (
-                        <div className="w-full h-48 overflow-hidden bg-gray-50">
-                          <img src={service.image_url} alt={service.name} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                        <div className="relative w-full h-48 overflow-hidden bg-gray-50">
+                          <Image src={service.image_url} alt={service.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover hover:scale-105 transition-transform duration-500" />
                         </div>
                       )}
                       <div className="p-6">
@@ -393,12 +426,11 @@ export default async function Home() {
                           </div>
                         </div>
 
-                        <Link 
-                          href="/booking" 
-                          className="px-4 py-2 bg-[#FAF0E6] hover:bg-[#5C4033] hover:text-white text-[#8D6E53] border border-[#EADDCD] text-xs font-bold rounded-full transition-all flex items-center gap-1 uppercase tracking-wider"
-                        >
-                          Book <ChevronRight className="w-3 h-3" />
-                        </Link>
+                        <ServiceBookButton
+                          href="/booking"
+                          serviceName={service.name}
+                          serviceCategory={categoryKey}
+                        />
                       </div>
                     </div>
 
@@ -415,9 +447,25 @@ export default async function Home() {
                 })}
               </div>
             </section>
+            </ScrollReveal>
           );
         })}
       </main>
+
+      {/* Stats Counter Section */}
+      <ScrollReveal>
+      <section className="py-16 bg-gradient-to-r from-[#FAF6F0] to-[#FDFBF7] border-y border-[#EADDCD]">
+        <div className="max-w-4xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
+          <StatsCounter end={15000} suffix="+" icon="💅" label="Khách hàng đã phục vụ" />
+          <StatsCounter end={8} suffix="+" icon="⭐" label="Năm kinh nghiệm" />
+          <StatsCounter end={22} icon="💆" label="Dịch vụ làm đẹp cao cấp" />
+          <StatsCounter end={98} suffix="%" icon="😊" label="Khách hài lòng quay lại" />
+        </div>
+      </section>
+      </ScrollReveal>
+
+      {/* Testimonials Carousel */}
+      <TestimonialsCarousel />
 
       {/* Extra Service Guarantee Banner */}
       <section className="py-12 bg-white border-t border-b border-[#EADDCD] my-8">
@@ -447,11 +495,14 @@ export default async function Home() {
       </section>
 
       {/* Appointment Tracker Portal */}
+      <Suspense fallback={<div className="h-32 bg-[#EADDCD]/30 rounded-3xl animate-pulse" />}>
       <section className="max-w-4xl mx-auto px-4 py-8">
         <AppointmentLookup />
       </section>
+      </Suspense>
 
       {/* Real-time Schedule Tracker Section */}
+      <Suspense fallback={<div className="h-64 bg-[#EADDCD]/30 rounded-3xl animate-pulse" />}>
       <section className="max-w-6xl mx-auto px-4 py-8">
         <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
           <span className="text-xs tracking-[0.2em] font-bold text-[#8D6E53] uppercase block">MIN TRANSPARENT SCHEDULING</span>
@@ -462,6 +513,7 @@ export default async function Home() {
         </div>
         <MasterSchedule mode="READ_ONLY" />
       </section>
+      </Suspense>
 
       {/* High-end Styled Final CTA Banner */}
       <section className="max-w-6xl mx-auto px-4 py-8">
@@ -478,14 +530,14 @@ export default async function Home() {
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link 
                 href="/booking" 
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FAF6F0] hover:bg-[#F5EBE0] text-[#5C4033] px-8 py-4 rounded-full font-bold text-sm tracking-wider uppercase transition-all shadow-lg hover:shadow-xl"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FAF6F0] hover:bg-[#F5EBE0] text-[#5C4033] px-8 py-4 rounded-full font-bold text-sm tracking-wider uppercase transition-all shadow-lg hover:shadow-xl hover-magnetic"
               >
                 <Calendar className="w-4 h-4 text-[#5C4033]" />
                 ĐẶT LỊCH GỒI & LÀM MÓNG
               </Link>
               <a 
                 href={`tel:${hotline.replace(/\s/g, '')}`} 
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/40 hover:border-white text-white px-8 py-4 rounded-full font-bold text-sm tracking-wider uppercase transition-all"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/40 hover:border-white text-white px-8 py-4 rounded-full font-bold text-sm tracking-wider uppercase transition-all hover-magnetic"
               >
                 <Phone className="w-4 h-4 text-white" />
                 ĐIỆN THOẠI ĐẶT TRỰC TIẾP
@@ -499,14 +551,30 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Simple Elite Footer */}
-      <footer className="border-t border-[#EADDCD] py-8 text-center text-xs text-gray-500 space-y-3">
-         <div className="flex justify-center gap-6 text-[11px] font-bold text-[#8D6E53]">
-           <Link href="/blog" className="hover:text-[#5C4033] hover:underline uppercase tracking-wider">Cẩm nang Blog Làm đẹp 💅</Link>
-           <span className="text-stone-300">|</span>
-           <Link href="/booking" className="hover:text-[#5C4033] hover:underline uppercase tracking-wider">Đặt lịch dịch vụ nhanh ⚡</Link>
-         </div>
-         <p>© Min Nail & Hair Salon. Bản quyền thuộc về chủ tiệm Min.</p>
+      {/* Footer */}
+      <footer className="bg-[#3A2E2B] text-white py-12">
+        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="space-y-3">
+            <h4 className="font-display font-bold text-lg text-[#EADDCD]">Min Nail &amp; Hair</h4>
+            <p className="text-xs text-gray-400">📍 TM14 Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức</p>
+            <a href="tel:0934323878" className="text-xs text-amber-300 font-bold">📞 0934 323 878</a>
+            <p className="text-xs text-gray-400">⏰ 09:00 - 20:30 (Mỗi ngày)</p>
+          </div>
+          <div className="space-y-3">
+            <h4 className="font-display font-bold text-lg text-[#EADDCD]">Dịch vụ</h4>
+            <Link href="/booking" className="block text-xs text-gray-400 hover:text-amber-300">Đặt lịch trực tuyến</Link>
+            <Link href="/blog" className="block text-xs text-gray-400 hover:text-amber-300">Blog làm đẹp</Link>
+            <a href="https://maps.google.com/?q=Lavita+Charm+Thu+Duc" target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-400 hover:text-amber-300">Xem bản đồ</a>
+          </div>
+          <div className="space-y-3">
+            <h4 className="font-display font-bold text-lg text-[#EADDCD]">Kết nối</h4>
+            <a href="https://facebook.com/minnailhair" target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-400 hover:text-amber-300">Facebook</a>
+            <a href="https://zalo.me/0934323878" target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-400 hover:text-amber-300">Zalo OA</a>
+          </div>
+        </div>
+        <div className="border-t border-gray-700 mt-8 pt-6 text-center text-xs text-gray-500">
+          © 2026 Min Nail &amp; Hair Salon. All rights reserved.
+        </div>
       </footer>
       <BottomNavigation />
     </div>

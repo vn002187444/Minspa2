@@ -1,15 +1,28 @@
 'use client'
 
 import { useDraggable, useDroppable } from '@dnd-kit/core';
+import React, { type ReactNode } from 'react';
 
-export function DraggableApptCard({ appt, mode, className, children, onClick }: any) {
+interface DraggableApptCardProps {
+  appt: { id: string };
+  mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
+  className?: string;
+  children?: ReactNode;
+  onClick?: () => void;
+}
+
+export const DraggableApptCard = React.memo(function DraggableApptCard({ appt, mode, className, children, onClick }: DraggableApptCardProps) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: appt.id,
     data: { appt }
   });
 
   if (mode !== 'ADMIN') {
-    return <div className={className} onClick={onClick}>{children}</div>;
+    return (
+      <div className={className} onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onClick?.()}>
+        {children}
+      </div>
+    );
   }
 
   return (
@@ -23,9 +36,16 @@ export function DraggableApptCard({ appt, mode, className, children, onClick }: 
        {children}
     </div>
   );
+});
+
+interface DroppableSlotCellProps {
+  id: string;
+  staffId: string;
+  children?: ReactNode;
+  className?: string;
 }
 
-export function DroppableSlotCell({ id, staffId, children, className }: any) {
+export const DroppableSlotCell = React.memo(function DroppableSlotCell({ id, staffId, children, className }: DroppableSlotCellProps) {
   const { isOver, setNodeRef } = useDroppable({
     id,
     data: { staffId }
@@ -39,9 +59,15 @@ export function DroppableSlotCell({ id, staffId, children, className }: any) {
       {children}
     </td>
   );
+});
+
+interface DroppableStaffCardProps {
+  staffId: string;
+  children?: ReactNode;
+  className?: string;
 }
 
-export function DroppableStaffCard({ staffId, children, className }: any) {
+export const DroppableStaffCard = React.memo(function DroppableStaffCard({ staffId, children, className }: DroppableStaffCardProps) {
   const { isOver, setNodeRef } = useDroppable({
     id: `staff-${staffId}`,
     data: { staffId }
@@ -55,4 +81,4 @@ export function DroppableStaffCard({ staffId, children, className }: any) {
       {children}
     </div>
   );
-}
+});

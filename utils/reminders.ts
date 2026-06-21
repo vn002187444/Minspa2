@@ -31,7 +31,12 @@ export async function runRemindersCheck() {
     supabase.from('uncompleted_booking_reminders_log').select('*')
   ]);
 
-  const db: any = {
+  interface ReminderUser { id: string; role: string; full_name: string }
+  interface ReminderAppt { id: string; status: string; staff_id: string; start_time: string; end_time: string }
+  interface ReminderAttendance { staff_id: string; date: string; status: string }
+  interface ReminderLog { staff_id?: string; appointment_id?: string; date?: string; count?: number; sent_at?: string }
+
+  const db: Record<string, any[]> = {
     users: users || [],
     appointments: appointments || [],
     attendance: attendance || [],
@@ -42,19 +47,18 @@ export async function runRemindersCheck() {
   };
 
   const now = new Date();
-  // Vietnam time (GMT+7)
   const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-  const todayStr = vnTime.toISOString().split('T')[0]; // YYYY-MM-DD
+  const todayStr = vnTime.toISOString().split('T')[0];
   const vnHour = vnTime.getUTCHours();
 
-  const staffUsers = db.users.filter((u: any) => u.role === 'STAFF');
+  const staffUsers = db.users.filter((u: ReminderUser) => u.role === 'STAFF');
 
   // ==== RULE 1: Attendance reminder at 10:00 AM daily (max 2 times) ====
   if (vnHour >= 10) {
     for (const staff of staffUsers) {
-      const hasCheckedIn = db.attendance.some((a: any) => a.staff_id === staff.id && a.date === todayStr && a.status === 'PRESENT');
+      const hasCheckedIn = db.attendance.some((a: ReminderAttendance) => a.staff_id === staff.id && a.date === todayStr && a.status === 'PRESENT');
       if (!hasCheckedIn) {
-        let logIndex = db.attendance_reminders_log.findIndex((l: any) => l.staff_id === staff.id && l.date === todayStr);
+        let logIndex = db.attendance_reminders_log.findIndex((l: ReminderLog) => l.staff_id === staff.id && l.date === todayStr);
         if (logIndex === -1) {
           db.attendance_reminders_log.push({ staff_id: staff.id, date: todayStr, count: 0 });
           logIndex = db.attendance_reminders_log.length - 1;
@@ -76,15 +80,15 @@ export async function runRemindersCheck() {
   }
 
   // ==== RULE 2: Notify idle staff about pending random bookings ====
-  const pendingRandomAppointments = db.appointments.filter((a: any) => a.status === 'PENDING_RANDOM');
+  const pendingRandomAppointments = db.appointments.filter((a: ReminderAppt) => a.status === 'PENDING_RANDOM');
   if (pendingRandomAppointments.length > 0) {
     for (const staff of staffUsers) {
-      const isPresentToday = db.attendance.some((a: any) => a.staff_id === staff.id && a.date === todayStr && a.status === 'PRESENT');
+      const isPresentToday = db.attendance.some((a: ReminderAttendance) => a.staff_id === staff.id && a.date === todayStr && a.status === 'PRESENT');
       if (!isPresentToday) continue;
-      const hasActiveAppointment = db.appointments.some((a: any) => a.staff_id === staff.id && a.status === 'ACTIVE');
+      const hasActiveAppointment = db.appointments.some((a: ReminderAppt) => a.staff_id === staff.id && a.status === 'ACTIVE');
       if (hasActiveAppointment) continue;
       for (const appt of pendingRandomAppointments) {
-        const alreadyReminded = db.random_booking_reminders_log.some((l: any) => l.staff_id === staff.id && l.appointment_id === appt.id);
+        const alreadyReminded = db.random_booking_reminders_log.some((l: ReminderLog) => l.staff_id === staff.id && l.appointment_id === appt.id);
         if (alreadyReminded) continue;
         const apptTime = format(new Date(appt.start_time), 'HH:mm');
         const apptDate = format(new Date(appt.start_time), 'dd/MM/yyyy');
@@ -106,11 +110,11 @@ export async function runRemindersCheck() {
     if (!isUnaccepted) continue;
     const startTime = new Date(appt.start_time);
     if (startTime <= now) {
-      const alreadyLogged = db.unaccepted_booking_reminders_log.some((l: any) => l.appointment_id === appt.id);
+      const alreadyLogged = db.unaccepted_booking_reminders_log.some((l: ReminderLog) => l.appointment_id === appt.id);
       if (alreadyLogged) continue;
       const apptTime = format(startTime, 'HH:mm');
       if (appt.status === 'CONFIRMED' && appt.staff_id) {
-        const assignedStaff = db.users.find((u: any) => u.id === appt.staff_id);
+        const assignedStaff = db.users.find((u: ReminderUser) => u.id === appt.staff_id);
         console.log(`[Reminders] Reminding staff ${assignedStaff?.full_name || appt.staff_id} to accept arriving booking ${appt.id}`);
         await sendPushNotification(
           appt.staff_id,
@@ -134,13 +138,13 @@ export async function runRemindersCheck() {
   }
 
   // ==== RULE 4: Remind if staff forgot to complete an appointment (>15 mins overdue) ====
-  const activeAppointments = db.appointments.filter((a: any) => a.status === 'ACTIVE');
+  const activeAppointments = db.appointments.filter((a: ReminderAppt) => a.status === 'ACTIVE');
   for (const appt of activeAppointments) {
     if (!appt.end_time || !appt.staff_id) continue;
     const endTime = new Date(appt.end_time);
     const fifteenMinsLater = new Date(endTime.getTime() + 15 * 60 * 1000);
     if (now >= fifteenMinsLater) {
-      const alreadyLogged = db.uncompleted_booking_reminders_log.some((l: any) => l.appointment_id === appt.id);
+      const alreadyLogged = db.uncompleted_booking_reminders_log.some((l: ReminderLog) => l.appointment_id === appt.id);
       if (alreadyLogged) continue;
       console.log(`[Reminders] Appointment ${appt.id} >15m overdue. Reminding staff ${appt.staff_id}`);
       await sendPushNotification(

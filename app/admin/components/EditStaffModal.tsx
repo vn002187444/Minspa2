@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from 'sonner';
 import { Key } from "lucide-react";
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { updateStaff, resetStaffPassword, deleteStaffSafely } from "../actions";
 
 export default function EditStaffModal({ staff, userRole, onClose, onReload }: any) {
+  const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
     fullName: staff.full_name || "",
     username: staff.username || "",
@@ -50,7 +53,7 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: a
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Sửa thông tin nhân viên">
       <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95">
         <h3 className="font-display font-bold text-lg text-gray-900 mb-6">
           Sửa thông tin nhân viên
@@ -137,19 +140,17 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: a
               <button
                 type="button"
                 onClick={async () => {
-                  if(confirm(`Bạn có chắc muốn ẩn/xóa nhân viên ${staff.full_name}?`)) {
-                    setLoading(true);
-                    const res = await deleteStaffSafely(staff.id, staff.full_name);
-                    if (res.success) {
-                      onReload();
+                  setLoading(true);
+                  const res = await deleteStaffSafely(staff.id, staff.full_name);
+                  if (res.success) {
+                    toast.success('Đã ẩn/xóa nhân viên');
+                    onReload();
                       onClose();
                     } else {
                       setErrorMsg("Lỗi: " + res.error);
                       setLoading(false);
-                    }
-                  }
-                }}
-                className="px-4 py-2 text-red-500 hover:text-red-700 font-medium text-sm transition-colors cursor-pointer"
+                  }}}
+                  className="px-4 py-2 text-red-500 hover:text-red-700 font-medium text-sm transition-colors cursor-pointer"
               >
                 Xóa nhân viên
               </button>

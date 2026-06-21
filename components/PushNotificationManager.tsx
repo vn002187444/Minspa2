@@ -54,7 +54,7 @@ export default function PushNotificationManager({ customerId }: { customerId?: s
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
-        alert('ạn chưa cấp quyền gửi thông báo.');
+        toast.error('Bạn chưa cấp quyền gửi thông báo.');
         setLoading(false);
         return;
       }
@@ -86,10 +86,10 @@ export default function PushNotificationManager({ customerId }: { customerId?: s
       }
 
       setIsSubscribed(true);
-      alert('Đăng ký nhận thông báo thành công!');
+      toast.success('Đăng ký nhận thông báo thành công!');
     } catch (err) {
       console.error('Failed to subscribe:', err);
-      alert('Lỗi khi đăng ký thông báo.');
+      toast.error('Lỗi khi đăng ký thông báo.');
     } finally {
       setLoading(false);
     }

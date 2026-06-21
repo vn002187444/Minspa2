@@ -118,6 +118,7 @@ CREATE TABLE customer_packages (
   total_sessions INT,
   status VARCHAR(50) DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'EXHAUSTED')),
   purchased_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  expires_at TIMESTAMP WITH TIME ZONE DEFAULT (timezone('utc', now()) + INTERVAL '2 years'),
   sold_by_staff_id UUID REFERENCES users(id) ON DELETE SET NULL,
   commission_amount DECIMAL(10, 2) DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
@@ -324,3 +325,37 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO users (id, role, username, password_hash, full_name, is_active)
 VALUES ('00000000-0000-0000-0000-000000000002', 'MANAGER', 'manager', 'Manager@1', N'Quản lý', TRUE)
 ON CONFLICT (id) DO NOTHING;
+
+-- Blog Analytics Tables
+CREATE TABLE blog_views (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id UUID REFERENCES blogs(id) ON DELETE CASCADE,
+  viewed_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  ip_hash VARCHAR(64),
+  user_agent TEXT
+);
+
+CREATE INDEX idx_blog_views_post_id ON blog_views(post_id);
+CREATE INDEX idx_blog_views_viewed_at ON blog_views(viewed_at);
+
+CREATE TABLE blog_stats (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  post_id UUID REFERENCES blogs(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  views INTEGER DEFAULT 0,
+  UNIQUE(post_id, date)
+);
+
+CREATE INDEX idx_blog_stats_date ON blog_stats(date);
+
+CREATE OR REPLACE FUNCTION increment_blog_view(p_post_id UUID)
+RETURNS void AS $$
+BEGIN
+  UPDATE blog_stats
+  SET views = views + 1
+  WHERE post_id = p_post_id AND date = CURRENT_DATE;
+  IF NOT FOUND THEN
+    INSERT INTO blog_stats (post_id, date, views) VALUES (p_post_id, CURRENT_DATE, 1);
+  END IF;
+END;
+$$ LANGUAGE plpgsql;

@@ -14,17 +14,18 @@ Chào mừng bạn đến với tài liệu **AI-Map**. Đây là bản đồ ch
 | @supabase/ssr | ^0.10.3 | SSR helpers (không dùng override auth) |
 | jose | ^6.2.3 | JWT encrypt/decrypt session cookie |
 | lucide-react | ^0.471.0 | Icons |
-| motion | ^12.40.0 | Animation (thay thế framer-motion) |
 | date-fns | ^4.4.0 | Date utilities |
 | recharts | ^3.8.1 | Charts (admin dashboard) |
 | sonner | ^2.0.7 | Toast notifications |
 | tailwind-merge + clsx | — | Class utilities |
 | web-push | ^3.6.7 | Web push notifications |
 | @google/genai | ^2.7.0 | Gemini AI integration |
-| @dnd-kit/core + utilities | ^6.3.1 | Drag & drop |
+| bcryptjs | ^2.4.3 | Password hashing |
+| dompurify | ^3.2.4 | XSS sanitization |
+| jose | ^6.2.3 | JWT encrypt/decrypt session cookie |
 | TypeScript | ^5 | Language |
 
-**next.config.ts** — Default (empty, không custom config)
+**next.config.ts** — Custom config (security headers, image remote patterns, logging)
 
 ---
 
@@ -41,7 +42,7 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 - `id` (UUID, Primary Key)
 - `role` (VARCHAR - `ADMIN`, `MANAGER`, hoặc `STAFF`)
 - `username` (VARCHAR, Unique)
-- `password_hash` (VARCHAR - so sánh plaintext, **không hash**)
+- `password_hash` (VARCHAR - bcrypt hash qua `lib/password.ts`)
 - `full_name` (VARCHAR)
 - `cccd` (VARCHAR, Nullable - Bắt buộc nếu role = `STAFF`)
 - `is_active` (BOOLEAN, NOT NULL DEFAULT TRUE - Soft delete)
@@ -175,7 +176,37 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 - Index: `idx_time_slot_locks_appointment(appointment_id)`
 - Index: `idx_time_slot_locks_active(is_active)`
 
-### 14. Bảng `notifications` (Thông báo realtime)
+### 14. Bảng `blog_views` (Lượt xem blog)
+- `id` (UUID, PK)
+- `post_id` (UUID, FK → blogs.id ON DELETE CASCADE)
+- `viewed_at` (TIMESTAMP)
+- `ip_hash` (VARCHAR - sha256 ẩn danh)
+- `user_agent` (TEXT)
+- Index: `idx_blog_views_post_id(post_id)`
+- Index: `idx_blog_views_post_ip(post_id, ip_hash)`
+
+### 15. Bảng `blog_stats` (Thống kê blog theo ngày)
+- `id` (UUID, PK)
+- `post_id` (UUID, FK → blogs.id ON DELETE CASCADE)
+- `date` (DATE)
+- `views` (INTEGER DEFAULT 0)
+- UNIQUE: `(post_id, date)`
+
+### 16. Bảng `ai_cache` (Cache Gemini response)
+- `id` (UUID, PK)
+- `cache_key` (VARCHAR, UNIQUE)
+- `response` (TEXT)
+- `created_at` (TIMESTAMP)
+- Index: `idx_ai_cache_created_at(created_at)`
+
+### 17. Bảng `rate_limits` (Rate limiting)
+- `id` (UUID, PK)
+- `key` (VARCHAR - IP hoặc user_id)
+- `count` (INTEGER)
+- `window_start` (TIMESTAMP)
+- UNIQUE: `(key, window_start)`
+
+### 18. Bảng `notifications` (Thông báo realtime)
 - `id` (UUID, PK)
 - `recipient_type` (VARCHAR - `user` | `customer`)
 - `recipient_id` (UUID)
@@ -188,7 +219,7 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 - Index: `idx_notifications_unread(recipient_type, recipient_id, is_read)`
 - Index: `idx_notifications_created_at(created_at DESC)`
 
-### 15. Bảng cấu hình single-row
+### 19. Bảng cấu hình single-row
 | Table | Key columns |
 |-------|-------------|
 | `seo_settings` | id=1, page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline |
@@ -196,7 +227,7 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | `banner_settings` | id=1, is_enabled, content |
 | `bank_settings` | id=1, bank_id, bank_name, account_number, account_owner |
 
-### 16. Bảng reminder logs (4 bảng)
+### 20. Bảng reminder logs (4 bảng)
 - `attendance_reminders_log` — id, staff_id FK, sent_at
 - `random_booking_reminders_log` — id, staff_id FK, appointment_id FK, sent_at
 - `unaccepted_booking_reminders_log` — id, appointment_id FK, sent_at
@@ -226,8 +257,10 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | `/admin/audit-logs` | `app/admin/audit-logs/page.tsx` + `actions.ts` | Nhật ký thao tác |
 | `/staff` | `app/staff/page.tsx` + `actions.ts` | Portal NV: chấm công, lịch cá nhân, trừ buổi liệu trình |
 | `/notifications` | `app/notifications/page.tsx` | Danh sách thông báo |
-| `/blog` | `app/blog/page.tsx` | Danh sách bài viết |
-| `/blog/[slug]` | `app/blog/[slug]/page.tsx` + `ShareButton.tsx` | Chi tiết bài viết SEO |
+| `/offline` | `app/offline/page.tsx` | Offline fallback page |
+| `/admin/blog-analytics` | `app/admin/blog-analytics/page.tsx` | Thống kê blog |
+| `/blog` | `app/blog/page.tsx` | Danh sách bài viết (phân trang 6/page) |
+| `/blog/[slug]` | `app/blog/[slug]/page.tsx` + `ShareButton.tsx` + `ViewTracker.tsx` | Chi tiết bài viết SEO |
 
 ### API Routes
 | Endpoint | Method | Mô tả |
@@ -251,6 +284,8 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | `api/generate-seo-image` | POST | AI sinh ảnh SEO |
 | `api/ai-assist` | POST | AI assistant chat |
 | `api/seo-search` | POST | Tìm kiếm từ khóa SEO |
+| `api/blog/view` | POST | Track blog view (ip_hash, user_agent) |
+| `api/queue/sync` | POST | Trigger offline queue sync |
 
 ---
 
@@ -339,10 +374,12 @@ Fallback: 'min-nail-hair-super-secret-key-24h'
 ```
 1. Page load → getPublicServices() + getSlotAvailability(date, [], [])
 2. Chọn ngày → getSlotAvailability(date, selectedServiceIds, services)
-3. Click slot → getAvailableStaff(date, time, totalDuration)
+3. Click slot → getAvailableStaff(date, time, totalDuration) (Promise.all 3 queries)
 4. Chọn staff + services → next step
-5. Nhập SDT → checkCustomerHistory(phone) → localStorage cache (24h)
-6. Xác nhận → submitBooking(formData) → lockTimeSlots → redirect
+5. Nhập SDT → checkCustomerHistory(phone) (Promise.all appointments+packages)
+6. Xác nhận → submitBooking(formData) (Promise.all seoSettings+services+package)
+   ├── Online → lockTimeSlots → insert → notifications
+   └── Offline → enqueue vào IndexedDB → sync khi online
 ```
 
 ---
@@ -424,25 +461,29 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 2. **Client-side Filtering** — Tải 1 lần, filter bằng React state
 3. **Soft Delete** — Không DELETE, chỉ `is_active = false`
 4. **Web Push** — Service worker thuần trong `/public`
-5. **AI** — Gemini-2.5-flash-lite (text), Gemini-2.5-flash-image (image). Fallback Unsplash
+5. **AI** — Gemini-3.1-flash-lite (text), Gemini-2.5-flash-image (image). Fallback Unsplash
 6. **Image** — Base64 → sharp (resize 1200px, WebP q80) → Supabase Storage
 7. **Schedule Grid** — Ẩn cột giờ trống tự động
 8. **Session** — Custom JWT cookie, middleware refresh mỗi request
-9. **Login** — Hardcoded bypass cho admin/staff1, DB path cho user khác
+9. **Login** — bcrypt hash (`lib/password.ts`), env-based bypass fallback for admin/staff1
 10. **Booking** — `getSlotAvailabilityWithNames` với duration động theo services
 11. **Realtime** — Subscribe `notifications` channel, polling fallback 5 phút
+12. **Offline Queue** — IndexedDB `min-salon-queue`, auto-sync khi online + mỗi 30s
+13. **Slot Lookup** — Dùng Map O(1) thay vì .find() O(n) trong MasterSchedule
+14. **Date Cache** — Map<string, Data> cache cho MasterSchedule tránh re-fetch
+15. **Blog Pagination** — `.range(from, to)` với `count: 'exact'`, 6 posts/page
 
 ---
 
 ## ⚠️ QUY CHẾ VẬN HÀNH (CYCLE PROTOCOL)
 
-> **Chi tiết hơn:** Xem `PLAN.md` phần "QUY TẮC VẬN HÀNH & GIAO TIẾP"
+> **Chi tiết hơn:** Xem `UPGRADE_PLAN.md` phần "QUY TẮC VẬN HÀNH & GIAO TIẾP" hoặc `PLAN.md` (archive)
 
-1. **Đọc `PLAN.md`** → Tổng quan + trạng thái
-2. **Đọc `UPGRADE_PLAN.md`** → Các mục chưa làm + ưu tiên
+1. **Đọc `UPGRADE_PLAN.md`** → Các mục chưa làm + ưu tiên
+2. **Đọc `PLAN.md`** → Workflows + cycle protocol (nếu cần reference cũ)
 3. **Đọc `AI_MAP.md`** → Kiến trúc, DB schema, quy tắc kỹ thuật
 4. **Viết code** theo đúng kiến trúc
-5. **Cập nhật `PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
+5. **Cập nhật `UPGRADE_PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
 6. **Commit** với message rõ ràng: `feat:`, `fix:`, `refactor:`
 7. **Không push secrets** (.env.local, .env)
 
@@ -452,16 +493,16 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
 | Thành phần | Bao phủ | Mất gì? |
 |-----------|---------|---------|
-| DB Schema | **~95%** | Thiếu seed services values (22 services trong database.sql) |
-| Routes | **~90%** | Đã liệt kê tất cả routes + API endpoints |
+| DB Schema | **~97%** | Thêm blog_views, blog_stats, ai_cache, rate_limits |
+| Routes | **~95%** | Đã liệt kê tất cả routes + API endpoints + offline + blog-analytics |
 | Auth | **~95%** | Cookie, JWT, middleware, bypass, override auth.getUser |
-| Booking | **~90%** | Engine exports, flow, localStorage cache |
-| Notifications | **~85%** | Realtime + push + cron |
-| UI Components | **~40%** | Chỉ có tên file, thiếu props/interface |
-| Business Logic | **~70%** | Cron rules mô tả chung, thiếu detail recurring logic |
+| Booking | **~95%** | Engine exports, flow, localStorage cache, offline queue, batch API |
+| Notifications | **~90%** | Realtime + push + cron + offline queue sync |
+| UI Components | **~50%** | Grid/List visual fixes, mobile hamburger, touch targets, OfflineIndicator, ViewTracker |
+| Business Logic | **~75%** | Cron rules, offline queue, blog analytics, slot memoize, date cache |
 | Dependencies | **100%** | package.json đầy đủ |
 
-**Tỉ lệ phục hồi ước tính: ~80-85%**
+**Tỉ lệ phục hồi ước tính: ~85-90%**
 
 Nếu mất source code, có thể tái thiết từ 2 file này + database.sql. Các phần bị thiếu: chi tiết UI layout, business logic xử lý edge cases, và 22 seed services trong database.sql.
 
@@ -473,8 +514,8 @@ Nếu mất source code, có thể tái thiết từ 2 file này + database.sql.
 
 ### Step 1: Đọc 3 file chính
 ```
-1. PLAN.md        → Tổng quan 7 phases + workflows + quy tắc vận hành
-2. UPGRADE_PLAN.md → Các mục CHƯA LÀM + ưu tiên + hướng dẫn cụ thể
+1. UPGRADE_PLAN.md → Các mục CHƯA LÀM + ưu tiên + hướng dẫn cụ thể
+2. PLAN.md        → Tổng quan workflows cũ + cycle protocol (nếu cần)
 3. AI_MAP.md       → File bạn đang đọc (kiến trúc, DB, routes, auth)
 ```
 
@@ -504,7 +545,7 @@ scripts/              → DB migration + seed
 
 ### Step 4: Sau khi code xong
 ```
-□ Cập nhật PLAN.md (đánh dấu [x])
+□ Cập nhật UPGRADE_PLAN.md (đánh dấu [x])
 □ Cập nhật AI_MAP.md (nếu thêm table/route/dependency)
 □ Tạo migration file nếu cần ALTER TABLE
 □ npm run lint
@@ -515,4 +556,4 @@ scripts/              → DB migration + seed
 ### Step 5: Nếu cần help
 - Thắc mắc về logic → Hỏi người dùng
 - Không chắc về architecture → Đọc lại AI_MAP.md
-- Muốn biết đã làm gì → Đọc PLAN.md + UPGRADE_PLAN.md
+- Muốn biết đã làm gì → Đọc UPGRADE_PLAN.md + AI_MAP.md

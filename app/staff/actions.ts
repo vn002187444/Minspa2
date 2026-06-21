@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
+import { verifyPassword, hashPassword } from "@/lib/password";
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { runRemindersCheck } from "@/utils/reminders";
@@ -98,7 +99,7 @@ export async function getStaffData() {
 
   return {
     staffId,
-    profile: profile || { id: staffId, full_name: session.user.name || "Kỹ thuật viên", role: session.user.role },
+    profile: profile || { id: staffId, full_name: session.user.username || "Kỹ thuật viên", role: session.user.role },
     attendance,
     myAppointments: myAppointments || [],
     randomAppointments: randomAppointments || [],
@@ -238,7 +239,7 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
         .eq('id', appt.customer_id);
     }
 
-    const updateObj: any = {};
+    const updateObj: Record<string, string | null> = {};
     const isCancelling = payload.status === 'CANCELLED';
     if (payload.staffId !== undefined) {
       const isUn = payload.staffId === '_unassigned' || !payload.staffId;
@@ -315,8 +316,8 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
     }
 
     return { success: true };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : 'Lỗi không xác định' };
   }
 }
 
@@ -326,7 +327,7 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
   const { data: oldAppt } = await supabase.from('appointments').select('status, staff_id, start_time, end_time, actual_start_time, actual_end_time').eq('id', appointmentId).single();
 
   const now = new Date().toISOString();
-  const updateData: any = { status };
+  const updateData: Record<string, string> = { status };
 
   if (status === 'IN_PROGRESS') {
     updateData.actual_start_time = now;
@@ -683,13 +684,13 @@ export async function changePassword(oldPassword: string, newPassword: string) {
     return { success: false, error: 'Không tìm thấy tài khoản người dùng trong hệ thống' };
   }
   
-  if (user.password_hash !== oldPassword) {
+  if (!(await verifyPassword(oldPassword, user.password_hash))) {
     return { success: false, error: 'Mật khẩu cũ nhập vào không chính xác' };
   }
   
   const { error: updateErr } = await supabase
     .from('users')
-    .update({ password_hash: newPassword })
+    .update({ password_hash: await hashPassword(newPassword) })
     .eq('id', userId);
     
   if (updateErr) {

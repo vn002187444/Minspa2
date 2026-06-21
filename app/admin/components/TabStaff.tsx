@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { toast } from 'sonner';
 import { Search, Plus, ShieldAlert, ChevronRight } from "lucide-react";
 import { getStaffDetail, toggleStaffActive } from "../actions";
 import AddStaffModal from "./AddStaffModal";
@@ -241,7 +242,7 @@ export default function TabStaff({
                         key={staff.id}
                         className="hover:bg-gray-50/80 transition-colors group"
                       >
-                        <td className="p-4 pl-6 font-medium text-gray-900 group-hover:text-pink-600 transition-colors cursor-pointer" onClick={() => setDetailStaff(staff)}>
+                        <td className="p-4 pl-6 font-medium text-gray-900 group-hover:text-pink-600 transition-colors cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
                           <div className="flex items-center gap-3">
                             <div className="w-9 h-9 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center font-bold">
                               {staff.full_name?.charAt(0) || "NV"}
@@ -266,19 +267,19 @@ export default function TabStaff({
                             </span>
                           )}
                         </td>
-                        <td className="p-4 font-mono text-gray-500 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)}>
+                          <td className="p-4 font-mono text-gray-500 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
                           {staff.cccd || "N/A"}
                         </td>
-                        <td className="p-4 text-right font-bold text-gray-900 hidden sm:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)}>
+                        <td className="p-4 text-right font-bold text-gray-900 hidden sm:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
                           {(stats.totalRevenue || 0).toLocaleString("vi")}đ
                         </td>
-                        <td className="p-4 text-right font-bold text-emerald-600 hidden lg:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)}>
+                        <td className="p-4 text-right font-bold text-emerald-600 hidden lg:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
                           {(stats.totalCommission || 0).toLocaleString("vi")}đ
                         </td>
-                        <td className="p-4 text-right font-bold text-pink-500 hidden xl:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)}>
+                        <td className="p-4 text-right font-bold text-pink-500 hidden xl:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
                           {(stats.totalTip || 0).toLocaleString("vi")}đ
                         </td>
-                        <td className="p-4 text-center font-bold text-gray-800 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)}>
+                        <td className="p-4 text-center font-bold text-gray-800 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
                           {stats.totalCompleted || 0}
                         </td>
                         <td className="p-4 pr-6 text-right flex items-center justify-end gap-1.5">
@@ -286,13 +287,9 @@ export default function TabStaff({
                             <button
                               type="button"
                               onClick={async () => {
-                                if (!confirm(staff.is_active !== false
-                                  ? `Vô hiệu hóa nhân viên "${staff.full_name}"?`
-                                  : `Kích hoạt lại nhân viên "${staff.full_name}"?`
-                                )) return;
                                 const res = await toggleStaffActive(staff.id, staff.is_active === false);
-                                if (res.success) onReload();
-                                else alert(res.error);
+                                if (res.success) { onReload(); toast.success(staff.is_active !== false ? 'Đã vô hiệu hóa' : 'Đã kích hoạt'); }
+                                else toast.error(res.error);
                               }}
                               className={`text-[11px] font-semibold px-2 py-1 rounded-lg cursor-pointer transition-all ${
                                 staff.is_active !== false
@@ -313,6 +310,7 @@ export default function TabStaff({
                           <button
                             type="button"
                             onClick={() => setDetailStaff(staff)}
+                            aria-label="Xem chi tiết nhân viên"
                             className="bg-gray-50 text-gray-400 group-hover:bg-pink-50 group-hover:text-pink-600 rounded-full p-1.5 transition-colors cursor-pointer"
                           >
                             <ChevronRight className="w-4 h-4" />

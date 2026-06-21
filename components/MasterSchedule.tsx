@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getScheduleData } from '@/app/admin/schedule/actions';
 import { swapAppointment, updateAppointmentByStaffOrAdmin } from '@/app/staff/actions';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Clock, Sparkles, Filter } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Sparkles, Filter, Grid3x3, List } from 'lucide-react';
 import { DndContext, DragOverlay, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { useScheduleRealtime } from '@/lib/realtime';
 
 import MasterScheduleGrid from './MasterScheduleGrid';
 import MasterScheduleList from './MasterScheduleList';
@@ -48,7 +49,12 @@ function getEffectiveEnd(appt: any): string {
   return appt.actual_end_time || appt.end_time;
 }
 
-function isCascadeShifted(appt: any): boolean {
+interface CascadeAppt {
+  start_time: string; end_time?: string;
+  actual_start_time?: string | null; actual_end_time?: string | null;
+}
+
+function isCascadeShifted(appt: CascadeAppt): boolean {
   return !!(appt.actual_start_time || appt.actual_end_time) &&
     (appt.actual_start_time !== appt.start_time || appt.actual_end_time !== appt.end_time);
 }
@@ -85,6 +91,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
   }, [dateOverride]);
 
   const [data, setData] = useState<any>({ staffList: [], appointments: [], allServices: [], timeSlotLocks: [] });
+  const [dateCache, setDateCache] = useState<Map<string, any>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [selectedAppt, setSelectedAppt] = useState<any>(null);
   const [isSwapping, setIsSwapping] = useState(false);
@@ -116,7 +123,12 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     return data.staffList;
   }, [data.staffList, data.appointments]);
 
-  const handleSelectAppt = (appt: any) => {
+  const handleSelectAppt = useCallback((appt: {
+    id: string; customers?: { full_name?: string; phone?: string };
+    staff_id?: string; start_time: string;
+    appointment_services?: { service_id: string }[];
+    status: string;
+  }) => {
     setSelectedAppt(appt);
     setIsEditingSelected(false);
     setEditFullName(appt.customers?.full_name || '');
@@ -127,10 +139,10 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     } catch (e) {
       setEditStartTime('09:00');
     }
-    const sIds = appt.appointment_services?.map((as: any) => as.service_id).filter(Boolean) || [];
+    const sIds = appt.appointment_services?.map((as: { service_id: string }) => as.service_id).filter(Boolean) || [];
     setEditServiceIds(sIds);
     setEditStatus(appt.status);
-  };
+  }, []);
 
   const [activeDragAppt, setActiveDragAppt] = useState<any>(null);
 
@@ -178,15 +190,32 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
   }, [selectedDate]);
 
   async function loadData() {
+    const cached = dateCache.get(selectedDate);
+    if (cached) {
+      setData(cached);
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await getScheduleData(selectedDate);
       setData(res);
+      setDateCache(prev => new Map(prev).set(selectedDate, res));
     } catch (e) {
       console.error(e);
     }
     setIsLoading(false);
   }
+
+  const handleRealtimeRefresh = useCallback(() => {
+    setDateCache(prev => {
+      const next = new Map(prev);
+      next.delete(selectedDate);
+      return next;
+    });
+    loadData();
+  }, [selectedDate]);
+
+  useScheduleRealtime({ date: selectedDate, onDataChanged: handleRealtimeRefresh, enabled: !!selectedDate });
 
   const timeSlots: string[] = [];
   for (let hour = START_HOUR; hour < END_HOUR; hour++) {
@@ -221,10 +250,8 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
   const parsedLocks = useMemo(() => {
     if (!data.timeSlotLocks) return [];
     return data.timeSlotLocks.map((lock: any) => {
-      const start = new Date(lock.start_time);
-      const end = new Date(lock.end_time);
-      const vnStart = { hour: start.getHours(), minute: start.getMinutes() };
-      const vnEnd = { hour: end.getHours(), minute: end.getMinutes() };
+      const vnStart = getVNTimeComponents(lock.start_time);
+      const vnEnd = getVNTimeComponents(lock.end_time);
       return {
         ...lock,
         _startMins: vnStart.hour * 60 + vnStart.minute,
@@ -233,46 +260,70 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     });
   }, [data.timeSlotLocks]);
 
+  const apptLookupMap = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const appt of parsedAppointments) {
+      const staffId = appt.staff_id || '_unassigned';
+      for (let m = appt._startMins; m < appt._endMins; m += 30) {
+        const key = `${staffId}-${m}`;
+        if (!map.has(key)) {
+          map.set(key, appt);
+        }
+      }
+    }
+    return map;
+  }, [parsedAppointments]);
+
+  const lockLookupMap = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const lock of parsedLocks) {
+      for (let m = lock._startMins; m < lock._endMins; m += 30) {
+        const key = `${lock.staff_id}-${m}`;
+        if (!map.has(key)) {
+          map.set(key, lock);
+        }
+      }
+    }
+    return map;
+  }, [parsedLocks]);
+
   const activeTimeSlots = useMemo(() => {
-    const staffIds = displayStaffList.map((s: any) => s.id);
-    return timeSlots.filter((slot) => {
-      const [sh, sm] = slot.split(':').map(Number);
-      const slotMinutes = sh * 60 + sm;
-      const hasAppt = parsedAppointments.some((appt: any) => {
-        const apptStaffId = appt.staff_id || '_unassigned';
-        if (!staffIds.includes(apptStaffId)) return false;
-        return slotMinutes >= appt._startMins && slotMinutes < appt._endMins;
-      });
-      const hasLock = parsedLocks.some((lock: any) => {
-        if (!staffIds.includes(lock.staff_id)) return false;
-        return slotMinutes >= lock._startMins && slotMinutes < lock._endMins;
-      });
-      return hasAppt || hasLock;
-    });
-  }, [timeSlots, parsedAppointments, parsedLocks, displayStaffList]);
+    const staffIds = new Set(displayStaffList.map((s: any) => s.id));
+    const activeSet = new Set<string>();
+    for (const [key] of apptLookupMap) {
+      const [sid, minsStr] = key.split('-');
+      if (staffIds.has(sid)) {
+        const mins = Number(minsStr);
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        activeSet.add(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      }
+    }
+    for (const [key] of lockLookupMap) {
+      const [sid, minsStr] = key.split('-');
+      if (staffIds.has(sid)) {
+        const mins = Number(minsStr);
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        activeSet.add(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+      }
+    }
+    return timeSlots.filter(slot => activeSet.has(slot));
+  }, [timeSlots, apptLookupMap, lockLookupMap, displayStaffList]);
 
-  function getSlotAppointment(staffId: string, slotStr: string) {
+  const getSlotAppointment = useCallback((staffId: string, slotStr: string) => {
     const [sh, sm] = slotStr.split(':').map(Number);
-    const slotMinutes = sh * 60 + sm;
-    return parsedAppointments.find((appt: any) => {
-      const apptStaffId = appt.staff_id || '_unassigned';
-      if (apptStaffId !== staffId) return false;
-      return slotMinutes >= appt._startMins && slotMinutes < appt._endMins;
-    });
-  }
+    return apptLookupMap.get(`${staffId}-${sh * 60 + sm}`);
+  }, [apptLookupMap]);
 
-  function getSlotLock(staffId: string, slotStr: string) {
+  const getSlotLock = useCallback((staffId: string, slotStr: string) => {
     const [sh, sm] = slotStr.split(':').map(Number);
-    const slotMinutes = sh * 60 + sm;
-    const apptAtSlot = getSlotAppointment(staffId, slotStr);
-    if (apptAtSlot) return null;
-    return parsedLocks.find((lock: any) => {
-      if (lock.staff_id !== staffId) return false;
-      return slotMinutes >= lock._startMins && slotMinutes < lock._endMins;
-    });
-  }
+    const key = `${staffId}-${sh * 60 + sm}`;
+    if (apptLookupMap.has(key)) return null;
+    return lockLookupMap.get(key);
+  }, [apptLookupMap, lockLookupMap]);
 
-  function getStatusStyle(appt: any) {
+  const getStatusStyle = useCallback((appt: { status: string }) => {
     if (mode === 'READ_ONLY') {
       return 'bg-amber-100/90 hover:bg-amber-200 border-amber-200 text-amber-900 font-bold';
     }
@@ -281,6 +332,16 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     if (status === 'IN_PROGRESS') return 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700';
     if (status === 'COMPLETED') return 'bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-700';
     return 'bg-neutral-500 text-white border-neutral-600 hover:bg-neutral-600';
+  }, [mode]);
+
+  function goToToday() {
+    const todayStr = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(new Date());
+    setSelectedDate(todayStr);
   }
 
   async function handleSwap() {
@@ -395,12 +456,13 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                       setSelectedDate(e.target.value);
                     }
                   }}
+                  aria-label="Chọn ngày"
                   className="text-xs font-bold bg-transparent border-none outline-none cursor-pointer text-[#3A2E2B] focus:ring-0"
                 />
               </div>
             )}
 
-            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none items-center">
               {[-3, -2, -1, 0, 1, 2, 3].map((offset) => {
                 const parts = selectedDate.split('-').map(Number);
                 const base = new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
@@ -425,6 +487,13 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={goToToday}
+                className="bg-[#8D6E53] text-white text-xs font-bold px-3 py-2 rounded-xl shrink-0 self-center"
+              >
+                Hôm Nay
+              </button>
             </div>
           </div>
         </div>
@@ -449,6 +518,25 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
                 📱 Biểu đồ đứng (Mobile)
               </button>
             </div>
+          </div>
+
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setViewType('grid')}
+              aria-label="Xem dạng lưới"
+              className={`p-2 rounded-lg transition-all ${viewType === 'grid' ? 'bg-[#5C4033] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 border border-[#EADDCD]/60'}`}
+            >
+              <Grid3x3 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewType('list')}
+              aria-label="Xem dạng danh sách"
+              className={`p-2 rounded-lg transition-all ${viewType === 'list' ? 'bg-[#5C4033] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900 border border-[#EADDCD]/60'}`}
+            >
+              <List className="w-4 h-4" />
+            </button>
           </div>
 
           {mode !== 'READ_ONLY' ? (
@@ -484,7 +572,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
         ) : (
           <div className="space-y-6">
             {/* Grid View */}
-            <div className={`${viewType === 'grid' ? 'block' : 'hidden'} hidden md:block`}>
+            <div className={`${viewType === 'grid' ? 'block' : 'hidden'}`}>
               <MasterScheduleGrid
                 activeTimeSlots={activeTimeSlots}
                 displayStaffList={displayStaffList}

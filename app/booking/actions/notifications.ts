@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from "@/utils/supabase/server";
+import { stripHtml } from "@/lib/sanitize";
 
 export async function getCustomerNotifications(customerId: string) {
   const supabase = await createClient();
@@ -17,7 +18,11 @@ export async function getCustomerNotifications(customerId: string) {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(n => ({
+    ...n,
+    title: stripHtml(n.title || ''),
+    content: stripHtml(n.content || ''),
+  }));
 }
 
 export async function markCustomerNotificationRead(notificationId: string, customerId: string) {

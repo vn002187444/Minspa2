@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/utils/supabase/server';
 import { createSession } from '@/utils/auth';
+import { hashPassword, verifyPassword } from '@/lib/password';
 
 export async function loginUser(prevState: any, formData: FormData) {
   try {
@@ -28,8 +29,9 @@ export async function loginUser(prevState: any, formData: FormData) {
         const supabase = await createClient();
         const { data } = await supabase.from('users').select('id').eq('username', 'admin').maybeSingle();
         if (!data) {
+          const hashedBypassAdminPass = await hashPassword(bypassAdminPass);
           await supabase.from('users').insert({
-            id: adminId, role: 'ADMIN', username: 'admin', password_hash: bypassAdminPass, full_name: 'Admin'
+            id: adminId, role: 'ADMIN', username: 'admin', password_hash: hashedBypassAdminPass, full_name: 'Admin'
           });
         }
       } catch (e) {
@@ -47,8 +49,9 @@ export async function loginUser(prevState: any, formData: FormData) {
         const supabase = await createClient();
         const { data } = await supabase.from('users').select('id').eq('username', 'staff1').maybeSingle();
         if (!data) {
+          const hashedBypassStaffPass = await hashPassword(bypassStaffPass);
           await supabase.from('users').insert({
-            id: staffId, role: 'STAFF', username: 'staff1', password_hash: bypassStaffPass, full_name: 'Thợ Makeup 1', cccd: '000000000000'
+            id: staffId, role: 'STAFF', username: 'staff1', password_hash: hashedBypassStaffPass, full_name: 'Thợ Makeup 1', cccd: '000000000000'
           });
         }
       } catch (e) {
@@ -89,9 +92,18 @@ export async function loginUser(prevState: any, formData: FormData) {
     // Ensure we handle both upper/lower case comparisons if database has different casing
     const userRoleNormalized = (user.role || '').trim().toUpperCase();
 
-    if (user.password_hash !== normPassword) {
+    const isPasswordCorrect = await verifyPassword(normPassword, user.password_hash) || user.password_hash === normPassword;
+
+    if (!isPasswordCorrect) {
       console.warn(`[AUTH WARNING] Password mismatch for username: "${normUsername}"`);
       return { success: false, error: 'Sai tên đăng nhập hoặc mật khẩu' };
+    }
+
+    // Lazy migration: if it matched plaintext, update it to a hash
+    if (user.password_hash === normPassword) {
+      const hashed = await hashPassword(normPassword);
+      await supabase.from('users').update({ password_hash: hashed }).eq('id', user.id);
+      console.log(`[AUTH] Migrated user ${user.username} to hashed password.`);
     }
 
     console.log(`[AUTH] Password verification successful for user: "${user.username}". Creating session...`);

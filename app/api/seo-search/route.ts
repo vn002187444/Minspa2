@@ -1,5 +1,23 @@
-import { GoogleGenAI } from "@google/genai";
+import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
+
+const SYSTEM_INSTRUCTION = `Bạn là cố vấn SEO cho chuỗi dịch vụ "Min Nail & Hair" tại TP.HCM.
+Sử dụng Google Search để tra cứu xu hướng thực tế. Trả về JSON đúng schema. Tiếng Việt có dấu.`;
+
+const SEO_SCHEMA = {
+  type: "object",
+  properties: {
+    keywords: {
+      type: "array",
+      items: { type: "string" },
+      description: "Danh sách 5 từ khóa chính & phụ có lượt tìm kiếm cao",
+    },
+    trends: { type: "string", description: "Xu hướng hoặc thói quen nổi bật của khách hàng" },
+    outline: { type: "string", description: "Cấu trúc dàn bài SEO đề nghị (Markdown)" },
+    headlineTips: { type: "string", description: "Lời khuyên viết tiêu đề thu hút" },
+  },
+  required: ["keywords", "trends", "outline", "headlineTips"],
+};
 
 export async function POST(req: NextRequest) {
   let query = "";
@@ -13,87 +31,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Query/Topic is required" }, { status: 400 });
     }
 
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error("GEMINI_API_KEY is not defined");
-    }
-    const ai = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
+    const prompt = `Nghiên cứu SEO cho chủ đề: "${query}"
+Từ khóa bổ sung: "${keywords || "Không có"}"`;
+
+    const result = await callGemini({
+      systemInstruction: SYSTEM_INSTRUCTION,
+      prompt,
+      config: { tools: [{ googleSearch: {} }] },
+      jsonSchema: SEO_SCHEMA,
+      useCache: true,
     });
 
-    // Using Google Search Grounding to research trending information or keywords
-    const prompt = `Bạn là cố vấn SEO thông thái cho chuỗi dịch vụ "Min Nail & Hair" tại TP.HCM.
-Hãy thực hiện tìm kiếm, tổng hợp xu hướng và nghiên cứu thị trường về chủ đề sau để chuẩn bị viết bải viết SEO:
-Chủ đề cần nghiên cứu: "${query}"
-${keywords ? `Các từ khóa bổ sung quan tâm: "${keywords}"` : ""}
+    if (!result.text) throw new Error("Gemini returned empty");
 
-Yêu cầu đầu ra:
-1. DANH SÁCH 5 từ khóa chính & phụ đang có lượt tìm kiếm cao nhất liên quan đến chủ đề này.
-2. XU HƯỚNG hoặc thói quen nổi bật của khách hàng dạo gần đây về chủ đề này.
-3. cấu trúc dàn bài SEO đề nghị để giữ chân người đọc lâu nhất.
-4. Lời khuyên viết tiêu đề thu hút sự tò mò.
+    const parsed = JSON.parse(result.text);
+    const researchMd = `### Kết quả phân tích SEO\n\n**Từ khóa:** ${(parsed.keywords || []).join(', ')}\n\n**Xu hướng:** ${parsed.trends || ''}\n\n**Dàn bài:**\n${parsed.outline || ''}\n\n**Mẹo tiêu đề:**\n${parsed.headlineTips || ''}`;
 
-Hãy viết ngắn gọn, súc tích (khoảng 150-200 từ) để người quản lý đọc nhanh lấy tư liệu viết bài. Trả về định dạng Markdown.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-      },
-    });
-
-    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks?.map((chunk: any) => ({
-      title: chunk.web?.title,
-      uri: chunk.web?.uri,
-    })) || [];
-
-    return NextResponse.json({ 
-      research: response.text,
-      summary: response.text,
-      sources: sources.slice(0, 3) // Return top 3 dynamic sources
+    return NextResponse.json({
+      research: researchMd,
+      summary: parsed.trends || researchMd,
+      keywords: parsed.keywords || [],
+      outline: parsed.outline || '',
+      headlineTips: parsed.headlineTips || '',
+      sources: result.sources,
+      model: result.modelUsed,
+      fromCache: result.fromCache,
     });
   } catch (error: any) {
-    console.warn("[GEMINI SEO SEARCH ERROR] Using high-quality SEO keyword analysis fallback.", error);
-    
-    const fallbackResearch = `### Kết Quả Phân Tích SEO & Xu Hướng Thị Trường: _${query || "Dịch vụ làm đẹp tại Thủ Đức"}_
+    console.warn("[GEMINI SEO SEARCH ERROR] Using fallback analysis.", error);
 
-1. **Danh sách từ khóa SEO đề xuất có lượng Traffic cao nhất**:
-   - \`làm móng đẹp Thủ Đức\` (Khối lượng tìm kiếm ước tính: 4,800/tháng - Xu hướng: Tăng mạnh)
-   - \`gội đầu dưỡng sinh Lavita Charm\` (Khối lượng tìm kiếm ước tính: 2,100/tháng - Thích hợp SEO local)
-   - \`tiệm tóc nữ uy tín Trường Thọ Thủ Đức\` (Độ cạnh tranh thấp, tiềm năng chuyển đổi cao)
-   - \`${query || "làm nail tóc"} giá rẻ chuyên nghiệp\`
-   - \`combo làm móng gội đầu dưỡng sinh thảo dược\`
+    const fbKeywords = [
+      `làm móng đẹp Thủ Đức`,
+      `gội đầu dưỡng sinh Lavita Charm`,
+      `tiệm tóc nữ uy tín Trường Thọ Thủ Đức`,
+      `${query || "làm nail tóc"} giá rẻ chuyên nghiệp`,
+      `combo làm móng gội đầu dưỡng sinh thảo dược`,
+    ];
+    const fbTrends = `Khách hàng bận rộn chuộng combo trọn gói, đặt lịch online và không gian thư giãn.`;
+    const fbOutline = `Mở bài → Thân bài (H2: Giới thiệu, H2: Quy trình, H2: Feedback) → Kết luận + CTA`;
+    const fbHeadlineTips = `"Bật mí địa chỉ ${query || "làm đẹp"} được chị em Thủ Đức săn đón!"`;
 
-2. **Thói quen & Xu hướng nổi bật của khách hàng dạo gần đây**:
-   - **Tích hợp đa năng**: Khách hàng bận rộn cực kỳ chuộng các Combo trọn gói (vừa làm sạch da đầu, massage cổ vai gáy giảm đau nhức, vừa tranh thủ làm móng tay gel xinh xắn).
-   - **Đặt lịch trực tuyến**: Khách hàng có xu hướng lựa chọn các thương hiệu có ứng dụng hoặc trang Web cho phép đặt lịch chọn thợ Online chủ động và nhanh chóng để tránh phải ngồi chờ đợi, đặc biệt là nhóm đối tượng khách tự do (random).
-   - **Không gian thư giãn**: Ưu ái phong cách mộc mạc, yên tĩnh, có tinh dầu tự nhiên dịu nhẹ và âm nhạc thư sướng lòng người.
-
-3. **Gợi ý cấu trúc dàn bài viết chuẩn SEO lý tưởng**:
-   - **Mở bài (Sapo):** Đánh trúng mong muốn làm đẹp tiện lợi, chuẩn bị cho mùa lễ hội hoặc chăm sóc bản thân dịp cuối tuần. Xuất hiện ngay từ khóa chính.
-   - **Thân bài (H2):** Tại sao *Min Nail & Hair Thủ Đức* là sự lựa chọn số 1 cho dịch vụ này?
-   - **Thân bài (H2):** Trải nghiệm quy trình dịch vụ tỉ mỉ chuẩn 5 sao với giá cực kỳ hợp ví.
-   - **Thân bài (H2):** Phản hồi thực tế từ hàng nghìn khách hàng thân quen tại Lavita Charm.
-   - **Kết luận:** Kêu gọi đặt hẹn Online ngay để nhận ưu đãi chiết khấu 5% giữ thợ giỏi hôm nay!
-
-4. **Gợi ý tiêu đề lôi cuốn giật tít**:
-   - _"Bật Mí Địa Chỉ ${query || "Làm Đẹp"} Được Chị Em Thủ Đức Săn Đón Nhiều Nhất Năm Nay!"_
-   - _"Có Gì Tại Tiệm Min Nail & Hair Lavita Charm Khiến Bạn Không Thể Không Ghé Thử Một Lần?"_`;
-
-    return NextResponse.json({ 
-      research: fallbackResearch,
-      summary: fallbackResearch,
+    return NextResponse.json({
+      research: `### Kết quả phân tích SEO\n\n**Từ khóa:** ${fbKeywords.join(', ')}\n\n**Xu hướng:** ${fbTrends}\n\n**Dàn bài:** ${fbOutline}\n\n**Mẹo tiêu đề:** ${fbHeadlineTips}`,
+      summary: fbTrends,
+      keywords: fbKeywords,
+      outline: fbOutline,
+      headlineTips: fbHeadlineTips,
       sources: [
-        { title: "Báo cáo xu hướng Hair & Spa 2026 - Hiệp hội Chăm sóc Sắc đẹp", uri: "https://minnailhair.vn/reports/beauty-trends" },
-        { title: "Cẩm nang SEO Local ngành làm đẹp Spa & Salon", uri: "https://minnailhair.vn/seo/local-guide" }
+        { title: "Báo cáo xu hướng Hair & Spa 2026", uri: "https://minnailhair.vn/reports/beauty-trends" },
       ],
-      isFallback: true
+      isFallback: true,
     });
   }
 }

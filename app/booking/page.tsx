@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { getPublicServices, getPublicSeoSettings } from './actions/public';
 import { checkCustomerHistory } from './actions/customer';
 import { getCustomerNotifications, markCustomerNotificationRead, markAllCustomerNotificationsRead } from './actions/notifications';
@@ -9,11 +10,14 @@ import { getCustomerCareSuggestion } from './actions/suggestions';
 import { getAvailableStaff, getSlotAvailability } from './actions/slots';
 import type { SlotInfo } from './actions/slots';
 import { submitBooking } from './actions/booking';
-import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell } from 'lucide-react';
+import { trackEvent } from '@/lib/analytics';
+import { stripHtml } from '@/lib/sanitize';
+import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, CloudOff, AlertTriangle } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import BookingCalendar from '@/components/BookingCalendar';
+import BookingMascotGuide from '@/components/BookingMascotGuide';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -33,6 +37,7 @@ export default function BookingPage() {
   
   // Treatment package options
   const [activePackages, setActivePackages] = useState<any[]>([]);
+  const [groupedPackages, setGroupedPackages] = useState<Record<string, any[]>>({});
   const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
   const [buyPackageId, setBuyPackageId] = useState<string | null>(null);
   const [allPackages, setAllPackages] = useState<any[]>([]);
@@ -48,6 +53,7 @@ export default function BookingPage() {
   const [selectedStaff, setSelectedStaff] = useState<string>('');
   const [slotAvailability, setSlotAvailability] = useState<SlotInfo[]>([]);
   
+  const [showMobileInvoice, setShowMobileInvoice] = useState(false);
   const [discountSettings, setDiscountSettings] = useState({ enabled: true, percent: 5 });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -179,9 +185,10 @@ export default function BookingPage() {
               setCustomerId(result.id);
               localStorage.setItem('min_salon_customer_id', result.id);
               setActivePackages(result.activePackages || []);
+              setGroupedPackages(result.groupedPackages || {});
             }
             const suggestion = await getCustomerCareSuggestion(savedPhone);
-            setAiSuggestion(suggestion);
+            setAiSuggestion(stripHtml(suggestion || ''));
           } catch (e) {
             console.error(e);
           }
@@ -200,7 +207,7 @@ export default function BookingPage() {
         cached = await checkCustomerHistory(phone);
         if (cached.found) setCachedHistory(phone, cached);
       }
-      const { found, name: foundName, id, history, activePackages: foundPackages } = cached;
+      const { found, name: foundName, id, history, activePackages: foundPackages, groupedPackages: foundGrouped } = cached;
       if (found) {
         setName(foundName);
         setCustomerId(id);
@@ -209,6 +216,7 @@ export default function BookingPage() {
           localStorage.setItem('min_salon_customer_phone', phone);
         }
         setActivePackages(foundPackages || []);
+        setGroupedPackages(foundGrouped || {});
 
         // Fetch customer notifications
         const notifs = await getCustomerNotifications(id);
@@ -220,6 +228,7 @@ export default function BookingPage() {
       } else {
         setCustomerId(null);
         setActivePackages([]);
+        setGroupedPackages({});
         setSelectedPackageId(null);
         setCustomerNotifs([]);
         setShowNotifBanner(false);
@@ -227,7 +236,7 @@ export default function BookingPage() {
 
       setIsAiLoading(true);
       const suggestion = await getCustomerCareSuggestion(phone);
-      setAiSuggestion(suggestion);
+      setAiSuggestion(stripHtml(suggestion || ''));
       setIsAiLoading(false);
     } catch (e) {
       console.error(e);
@@ -239,6 +248,7 @@ export default function BookingPage() {
   useEffect(() => {
     if (phone.length < 10) {
       setActivePackages([]);
+      setGroupedPackages({});
       setSelectedPackageId(null);
     }
   }, [phone]);
@@ -286,9 +296,8 @@ export default function BookingPage() {
     if (selSlot && (selSlot.status === 'past' || selSlot.status === 'fully_booked' || selSlot.status === 'no_staff_present')) {
       return setErrorMsg('Khung giờ này không khả dụng, vui lòng chọn khung giờ khác.');
     }
-    
-    setIsSubmitting(true);
-    const res = await submitBooking({
+
+    const payload = {
       customerId,
       name,
       phone,
@@ -298,23 +307,46 @@ export default function BookingPage() {
       serviceIds: selectedServices,
       usePackageId: selectedPackageId || null,
       buyPackageId: buyPackageId || null
-    });
+    };
     
-    setIsSubmitting(false);
-    
-    if (res.success) {
-      if (typeof window !== 'undefined') {
-        invalidateCustomerCache(phone);
-        localStorage.setItem('min_salon_customer_phone', phone);
-        if (res.customerId) {
-          localStorage.setItem('min_salon_customer_id', res.customerId);
-        }
-      }
-      setStep(3);
-    } else {
-      setErrorMsg('Có lỗi xảy ra: ' + res.error);
-    }
-  };
+    setIsSubmitting(true);
+    setStep(3); // Optimistic: Show success immediately
+
+    try {
+      const res = await submitBooking(payload);
+      
+      setIsSubmitting(false);
+      
+       if (res.success) {
+         if (typeof window !== 'undefined') {
+           invalidateCustomerCache(phone);
+           localStorage.setItem('min_salon_customer_phone', phone);
+           if (res.customerId) {
+             localStorage.setItem('min_salon_customer_id', res.customerId);
+           }
+         }
+         trackEvent('booking_success', {
+           value: finalTotal,
+           currency: 'VND',
+           customer_phone: phone,
+           services_count: selectedServices.length
+         });
+        } else {
+         // Failed - show error in step 3 with retry
+         setErrorMsg('Lỗi đồng bộ: ' + res.error + '. Vui lòng thử lại sau.');
+         toast.error('Lỗi đồng bộ đặt lịch: ' + res.error);
+       }
+     } catch (err: any) {
+       setIsSubmitting(false);
+       setErrorMsg('Lỗi hệ thống: ' + err.message);
+       toast.error('Lỗi hệ thống khi đặt lịch');
+     }
+   };
+
+   const handleRetry = () => {
+     setStep(2);
+     setErrorMsg('');
+   };
 
   // Get active staff full name
   const selectedStaffName = availableStaff.find(s => s.id === selectedStaff)?.full_name || '';
@@ -342,14 +374,15 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-2 sm:p-4 lg:py-12 font-sans text-[#3A2E2B]">
-      <div className="max-w-xl lg:max-w-5xl w-full bg-white rounded-3xl shadow-xl overflow-hidden min-h-[520px] flex flex-col border border-[#EADDCD] transition-all duration-300">
+       <div className="max-w-xl lg:max-w-6xl xxl:max-w-7xl w-full bg-white rounded-3xl shadow-xl overflow-hidden min-h-[520px] flex flex-col border border-[#EADDCD] transition-all duration-300">
         
         {/* Header Steps */}
         <div className="bg-[#5C4033] p-5 sm:p-6 text-[#FAF6F0] shrink-0 relative overflow-hidden border-b border-[#EADDCD]">
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full mix-blend-overlay filter blur-xl transform translate-x-10 -translate-y-10"></div>
             <button 
               onClick={() => router.push('/')}
-              className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-[#FAF6F0] transition-all hidden sm:flex items-center justify-center"
+              className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-[#FAF6F0] transition-all flex items-center justify-center"
+              aria-label="Về trang chủ"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -390,6 +423,8 @@ export default function BookingPage() {
                 </div>
               </div>
             )}
+
+            <BookingMascotGuide step={step} />
 
             {step === 1 && (
               <div className="space-y-6 flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
@@ -435,60 +470,136 @@ export default function BookingPage() {
                              Đánh dấu tất cả đã đọc
                            </button>
                          </div>
-                         <button
-                           onClick={() => setShowNotifBanner(false)}
-                           className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0"
-                         >
-                           ×
-                         </button>
+                          <button
+                            onClick={() => setShowNotifBanner(false)}
+                            className="text-gray-400 hover:text-gray-600 text-lg leading-none shrink-0"
+                            aria-label="Đóng thông báo"
+                          >
+                            ×
+                          </button>
                        </div>
                      </div>
                    )}
-                   {activePackages && activePackages.length > 0 && (
-                     <div className="p-5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-4 mb-6 animate-in fade-in zoom-in-95 duration-300">
-                       <div className="flex gap-2">
-                         <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                         <div>
-                           <p className="text-xs font-bold text-amber-800 uppercase tracking-wider font-sans">Ưu đãi thẻ liệu trình khả dụng</p>
-                           <p className="text-xs text-amber-950 mt-1 leading-relaxed font-sans">
-                             Hệ thống ghi nhận chị đang có gói liệu trình <span className="font-extrabold text-[#78350F]">“{activePackages[0].treatment_packages?.name || 'Gói liệu trình của bạn'}”</span> còn <span className="font-extrabold text-[#D97706] bg-amber-100/60 px-1.5 py-0.5 rounded">{activePackages[0].remaining_sessions} buổi</span> chưa sử dụng. Chị có muốn dùng 1 buổi của gói này cho lịch hẹn hôm nay không?
-                           </p>
-                         </div>
-                       </div>
-                       <div className="flex flex-wrap gap-2 pt-1 font-sans">
-                         <button
-                           type="button"
-                           onClick={() => {
-                             setSelectedPackageId(activePackages[0].id);
-                             const svcId = activePackages[0].treatment_packages?.service_id;
-                             if (svcId && !selectedServices.includes(svcId)) {
-                               setSelectedServices(prev => [...prev, svcId]);
-                             }
-                           }}
-                           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                             selectedPackageId === activePackages[0].id
-                               ? 'bg-[#8D6E53] text-white shadow-sm ring-2 ring-[#8D6E53]/25'
-                               : 'bg-white text-[#8D6E53] border border-[#EADDCD] hover:bg-[#FAF6F0]'
-                           }`}
-                         >
-                           {selectedPackageId === activePackages[0].id ? '✓ Có, sử dụng buổi liệu trình' : 'Có, sử dụng buổi liệu trình'}
-                         </button>
-                         <button
-                           type="button"
-                           onClick={() => {
-                             setSelectedPackageId(null);
-                           }}
-                           className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                             selectedPackageId === null
-                               ? 'bg-[#3A2E2B] text-white shadow-sm'
-                               : 'bg-white text-gray-700 border border-gray-250 hover:bg-gray-50'
-                           }`}
-                         >
-                           {selectedPackageId === null ? '✓ Không, tôi đặt dịch vụ lẻ khác' : 'Không, tôi đặt dịch vụ lẻ khác'}
-                         </button>
-                       </div>
-                     </div>
-                   )}
+                    {activePackages && activePackages.length > 0 && (
+                      <div className="p-5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-4 mb-6 animate-in fade-in zoom-in-95 duration-300">
+                        <div className="flex gap-2">
+                          <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-bold text-amber-800 uppercase tracking-wider font-sans">Thẻ liệu trình khả dụng ({activePackages.length} gói)</p>
+                            <p className="text-xs text-amber-950 mt-1 leading-relaxed font-sans">
+                              {Object.keys(groupedPackages).length === 1
+                                ? 'Hệ thống sẽ tự chọn gói tối ưu (sắp hết hạn → FIFO → ít buổi nhất).'
+                                : `Bạn có ${Object.keys(groupedPackages).length} loại gói khác nhau, vui lòng chọn gói muốn sử dụng.`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {Object.entries(groupedPackages).map(([pkgTypeId, pkgs]) => {
+                          const sortedPkgs = [...pkgs].sort((a: any, b: any) => {
+                            const expA = new Date(a.expires_at || '2099-12-31').getTime();
+                            const expB = new Date(b.expires_at || '2099-12-31').getTime();
+                            if (expA !== expB) return expA - expB;
+                            const purA = new Date(a.purchased_at || '2099-12-31').getTime();
+                            const purB = new Date(b.purchased_at || '2099-12-31').getTime();
+                            if (purA !== purB) return purA - purB;
+                            return a.remaining_sessions - b.remaining_sessions;
+                          });
+
+                          return (
+                            <div key={pkgTypeId} className="space-y-2 border-t border-amber-200/60 pt-3">
+                              <p className="text-xs font-semibold text-amber-900">
+                                {pkgs[0].treatment_packages?.name || 'Gói liệu trình'}
+                                {pkgs[0].treatment_packages?.services?.name && (
+                                  <span className="text-amber-700 font-normal"> • {pkgs[0].treatment_packages.services.name}</span>
+                                )}
+                              </p>
+
+                              {sortedPkgs.length === 1 ? (
+                                <label className="flex items-center gap-3 p-3 bg-white border border-[#EADDCD] rounded-xl cursor-pointer hover:border-amber-400 transition-all">
+                                  <input
+                                    type="radio"
+                                    name="package"
+                                    value={sortedPkgs[0].id}
+                                    checked={selectedPackageId === sortedPkgs[0].id}
+                                    onChange={() => {
+                                      setSelectedPackageId(sortedPkgs[0].id);
+                                      const svcId = sortedPkgs[0].treatment_packages?.service_id;
+                                      if (svcId && !selectedServices.includes(svcId)) {
+                                        setSelectedServices(prev => [...prev, svcId]);
+                                      }
+                                    }}
+                                    className="accent-amber-600"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-sm text-[#3A2E2B]">Còn {sortedPkgs[0].remaining_sessions}/{sortedPkgs[0].total_sessions} buổi</p>
+                                    <p className="text-[10px] text-gray-500">
+                                      Hết hạn: {sortedPkgs[0].expires_at ? new Date(sortedPkgs[0].expires_at).toLocaleDateString('vi-VN') : 'Không giới hạn'}
+                                    </p>
+                                  </div>
+                                  <span className="text-amber-600 font-bold text-sm shrink-0">{sortedPkgs[0].remaining_sessions} buổi</span>
+                                </label>
+                              ) : (
+                                <>
+                                  <p className="text-[10px] text-amber-700 italic">
+                                    Ưu tiên: Sắp hết hạn → Mua sớm nhất → Ít buổi nhất
+                                  </p>
+                                  {sortedPkgs.map((pkg: any, idx: number) => (
+                                    <label
+                                      key={pkg.id}
+                                      className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${
+                                        idx === 0 && selectedPackageId === pkg.id
+                                          ? 'ring-2 ring-amber-400 bg-amber-50/50 border-amber-300'
+                                          : idx === 0
+                                          ? 'border-amber-300 bg-amber-50/30'
+                                          : 'bg-white border-[#EADDCD] hover:border-amber-400'
+                                      }`}
+                                    >
+                                      <input
+                                        type="radio"
+                                        name="package"
+                                        value={pkg.id}
+                                        checked={selectedPackageId === pkg.id}
+                                        onChange={() => {
+                                          setSelectedPackageId(pkg.id);
+                                          const svcId = pkg.treatment_packages?.service_id;
+                                          if (svcId && !selectedServices.includes(svcId)) {
+                                            setSelectedServices(prev => [...prev, svcId]);
+                                          }
+                                        }}
+                                        defaultChecked={idx === 0}
+                                        className="accent-amber-600"
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="font-medium text-sm text-[#3A2E2B]">Còn {pkg.remaining_sessions}/{pkg.total_sessions} buổi</p>
+                                        <p className="text-[10px] text-gray-500">
+                                          Mua: {pkg.purchased_at ? new Date(pkg.purchased_at).toLocaleDateString('vi-VN') : ''} •
+                                          Hết hạn: {pkg.expires_at ? new Date(pkg.expires_at).toLocaleDateString('vi-VN') : 'Không giới hạn'}
+                                        </p>
+                                      </div>
+                                      <span className={`font-bold text-sm shrink-0 ${idx === 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                                        {pkg.remaining_sessions} buổi {idx === 0 && '✓'}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPackageId(null)}
+                          className={`w-full px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            selectedPackageId === null
+                              ? 'bg-[#3A2E2B] text-white shadow-sm'
+                              : 'bg-white text-gray-700 border border-gray-250 hover:bg-gray-50'
+                          }`}
+                        >
+                          {selectedPackageId === null ? '✓ Không, tôi đặt dịch vụ lẻ khác' : 'Không, tôi đặt dịch vụ lẻ khác'}
+                        </button>
+                      </div>
+                    )}
 
                    {buyPackageId && (
                      <div className="p-4 bg-pink-50/70 border border-pink-200 rounded-2xl flex gap-3 animate-fadeIn mb-5 text-left">
@@ -517,11 +628,12 @@ export default function BookingPage() {
                      </div>
                    )}
 
-                   <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">Số điện thoại khách hàng</label>
-                   <div className="relative">
-                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" />
-                     <input 
-                       type="tel"
+                    <label htmlFor="phone-input" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">Số điện thoại khách hàng</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" />
+                      <input 
+                        id="phone-input"
+                        type="tel"
                        value={phone}
                        onChange={(e) => setPhone(e.target.value)}
                        onBlur={handlePhoneBlur}
@@ -531,14 +643,15 @@ export default function BookingPage() {
                    </div>
                  </div>
                  
-                 <div>
-                   <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">
+                  <div>
+                    <label htmlFor="name-input" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">
                      Họ & Tên quý khách {isCheckingPhone && <span className="text-amber-600 text-xs animate-pulse font-normal"> (Đang tra cứu lịch sử...)</span>}
                    </label>
                    <div className="relative">
                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" />
-                     <input 
-                       type="text"
+                      <input 
+                        id="name-input"
+                        type="text"
                        value={name}
                        onChange={(e) => setName(e.target.value)}
                        placeholder="Ví dụ: Nguyễn Phương Vy"
@@ -637,8 +750,8 @@ export default function BookingPage() {
                   </button>
 
                  <div>
-                   <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn ngày hẹn đẹp nhất</label>
-                   <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
+                    <label htmlFor="date-picker" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn ngày hẹn đẹp nhất</label>
+                    <div id="date-picker" className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
                        {Array.from({ length: 14 }, (_, i) => i).map(offset => {
                         const d = addDays(new Date(), offset);
                         const dateStr = format(d, 'yyyy-MM-dd');
@@ -682,8 +795,9 @@ export default function BookingPage() {
                   </div>
 
                  <div>
-                    <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn kỹ thuật viên yêu thích (Nếu có)</label>
-                    <select 
+                     <label htmlFor="staff-select" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn kỹ thuật viên yêu thích (Nếu có)</label>
+                     <select 
+                       id="staff-select"
                       value={selectedStaff} 
                       onChange={(e) => setSelectedStaff(e.target.value)}
                       disabled={availableStaff.length === 0}
@@ -720,22 +834,48 @@ export default function BookingPage() {
 
             {step === 3 && (
                <div className="flex-1 flex flex-col items-center justify-center text-center animate-in zoom-in-95 duration-500 py-6">
-                 <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 border border-emerald-100">
-                   <CheckCircle2 className="w-8 h-8" />
-                 </div>
-                 <h2 className="text-xl font-display font-bold text-[#3A2E2B] mb-2">Gửi Lịch Hẹn Thành Công!</h2>
-                 <p className="text-sm text-gray-500 mb-8 max-w-xs leading-relaxed font-medium">
-                   Cảm ơn quý khách <strong id="customer-name-lbl" className="text-[#3A2E2B] font-semibold">{name}</strong>. Lịch hẹn lúc <strong className="text-[#3A2E2B]">{selectedTime}</strong> ngày <strong className="text-[#3A2E2B]">{format(new Date(selectedDate), 'dd/MM/yyyy')}</strong> đã được hệ thống Min ghi nhận.
-                 </p>
-                 <button 
-                   onClick={() => router.push('/')}
-                   className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors"
-                 >
-                   Xem Bảng Giá Khác
-                 </button>
-               </div>
-            )}
-          </div>
+                 {errorMsg ? (
+                   <>
+                     <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 border border-red-100">
+                       <AlertTriangle className="w-8 h-8" />
+                     </div>
+                     <h2 className="text-xl font-display font-bold text-red-700 mb-2">Đặt lịch thất bại!</h2>
+                     <p className="text-sm text-red-500 mb-4 max-w-xs leading-relaxed font-medium">{errorMsg}</p>
+                     <div className="flex gap-3">
+                       <button 
+                         onClick={handleRetry}
+                         className="bg-[#8D6E53] hover:bg-[#5C4033] text-white font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors"
+                       >
+                         Thử lại
+                       </button>
+                       <button 
+                         onClick={() => router.push('/')}
+                         className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors"
+                       >
+                         Về trang chủ
+                       </button>
+                     </div>
+                    </>
+                   ) : (
+                    <>
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 border border-emerald-100">
+                      <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                   <h2 className="text-xl font-display font-bold text-[#3A2E2B] mb-2">Gửi Lịch Hẹn Thành Công!</h2>
+                   <p className="text-sm text-gray-500 mb-8 max-w-xs leading-relaxed font-medium">
+                     Cảm ơn quý khách <strong id="customer-name-lbl" className="text-[#3A2E2B] font-semibold">{name}</strong>. Lịch hẹn lúc <strong className="text-[#3A2E2B]">{selectedTime}</strong> ngày <strong className="text-[#3A2E2B]">{format(new Date(selectedDate), 'dd/MM/yyyy')}</strong> đã được hệ thống Min ghi nhận.
+                   </p>
+                   <button 
+                     onClick={() => router.push('/')}
+                     className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors"
+                   >
+                     Xem Bảng Giá Khác
+                   </button>
+                    </>
+                   )}
+                </div>
+             )}
+           </div>
 
           {/* Right Column: Premium Dynamic Booking Summary & Estimator (PC Design Extra Value) */}
           <div className="hidden lg:flex lg:w-2/5 flex-col bg-[#FAF8F5] border-t lg:border-t-0 lg:border-l border-[#EADDCD] p-6 lg:p-8 shrink-0">
@@ -854,6 +994,58 @@ export default function BookingPage() {
         </div>
 
       </div>
+
+      {/* Mobile Sticky Invoice Summary */}
+      {step < 3 && selectedItemsData.length > 0 && (
+        <div className="lg:hidden fixed bottom-16 inset-x-0 z-40 bg-white border-t border-[#EADDCD] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+          <button
+            onClick={() => setShowMobileInvoice(!showMobileInvoice)}
+            className="w-full px-4 py-3 flex items-center justify-between"
+          >
+            <div className="text-left">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{selectedServices.length} dịch vụ</p>
+              {!showMobileInvoice && (
+                <p className="text-xs text-gray-500 font-medium truncate max-w-[180px]">
+                  {selectedItemsData.map(s => s.name).join(', ')}
+                </p>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-lg font-black text-[#5C4033]">{finalTotal.toLocaleString('vi')}đ</p>
+              {discountAmount > 0 && (
+                <p className="text-[11px] text-emerald-600 font-bold">-{discountAmount.toLocaleString('vi')}đ</p>
+              )}
+            </div>
+          </button>
+          {showMobileInvoice && (
+            <div className="px-4 pb-4 space-y-3 border-t border-[#EADDCD]/50 pt-3">
+              {selectedItemsData.map(item => (
+                <div key={item.id} className="flex justify-between text-xs">
+                  <span className="text-gray-600 font-medium">{item.name}</span>
+                  <span className="font-bold text-[#3A2E2B]">{(item.price).toLocaleString('vi')}đ</span>
+                </div>
+              ))}
+              <div className="border-t border-[#EADDCD]/30 pt-2 space-y-1">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Tạm tính</span>
+                  <span>{rawTotal.toLocaleString('vi')}đ</span>
+                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-xs text-emerald-600 font-semibold">
+                    <span>Giảm giá (-{discountSettings.percent}%)</span>
+                    <span>-{discountAmount.toLocaleString('vi')}đ</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-black text-[#5C4033] pt-1">
+                  <span>Tổng cộng</span>
+                  <span>{finalTotal.toLocaleString('vi')}đ</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <BottomNavigation />
       <LoadingOverlay isVisible={isSubmitting} message="Đang gửi lịch hẹn..." />
     </div>

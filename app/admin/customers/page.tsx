@@ -11,7 +11,7 @@ export default function CustomersPage() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="max-w-7xl xxl:max-w-[1500px] mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link
               href="/admin"
@@ -23,7 +23,7 @@ export default function CustomersPage() {
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl xxl:max-w-[1500px] mx-auto px-4 py-6">
         <CustomerCRM />
       </div>
     </div>

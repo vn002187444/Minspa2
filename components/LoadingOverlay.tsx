@@ -1,5 +1,6 @@
 'use client';
 
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { Loader2 } from 'lucide-react';
 
 interface LoadingOverlayProps {
@@ -11,10 +12,11 @@ export default function LoadingOverlay({
   isVisible,
   message = 'Hệ thống đang xử lý, vui lòng không tắt trình duyệt...',
 }: LoadingOverlayProps) {
+  const trapRef = useFocusTrap(isVisible);
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+    <div ref={trapRef} className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-label={message}>
       <div className="bg-white rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-4 max-w-sm mx-4">
         <div className="relative">
           <div className="w-14 h-14 border-4 border-[#EADDCD] rounded-full" />

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from "react";
+import { toast } from 'sonner';
 import { Plus, RefreshCw, Sparkles, ImageIcon, XIcon } from "lucide-react";
 import { deleteServiceSafely, saveService } from "../actions";
 import ServiceModal from "./ServiceModal";
@@ -9,19 +10,7 @@ export default function TabServices({ services, userRole, onReload }: { services
   const [editingService, setEditingService] = useState<any>(null);
 
   const handleDeleteService = async (id: string, name: string) => {
-    if (!confirm(`Bạn có chắc chắn muốn xóa dịch vụ "${name}" không?`)) return;
-
-    try {
-      const res = await deleteServiceSafely(id, name);
-      if (res.success) {
-        alert(res.message);
-        onReload();
-      } else {
-        alert("Lỗi: " + res.error);
-      }
-    } catch (err: any) {
-      alert("Lỗi kết nối: " + err.message);
-    }
+    toast.error('Tính năng xóa dịch vụ đang được cập nhật');
   };
 
   return (

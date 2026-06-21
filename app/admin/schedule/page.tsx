@@ -2,10 +2,14 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import MasterSchedule from '@/components/MasterSchedule';
 import BottomNavigation from '@/components/BottomNavigation';
+
+const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
+  loading: () => <div className="animate-pulse space-y-4 p-4"><div className="h-64 bg-gray-200 rounded-xl" /></div>,
+});
 
 export default function MasterSchedulePage() {
   const router = useRouter();
@@ -13,7 +17,7 @@ export default function MasterSchedulePage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] p-4 sm:p-6 text-[#3A2E2B]">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-7xl xxl:max-w-[1500px] mx-auto space-y-6">
         <button 
           onClick={() => router.push('/admin')} 
           className="flex items-center gap-2 text-xs font-bold tracking-wider uppercase text-[#8D6E53] hover:text-[#5C4033] transition-colors"

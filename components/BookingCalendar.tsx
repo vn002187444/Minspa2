@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Clock, Users, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { SlotInfo } from '@/app/booking/actions/slots';
 import { addDays, format, subDays } from 'date-fns';
@@ -18,7 +18,7 @@ interface BookingCalendarProps {
 const START_HOUR = 9;
 const END_HOUR = 20;
 
-export default function BookingCalendar({
+export default memo(function BookingCalendar({
   slotAvailability,
   selectedDate,
   selectedTime,
@@ -122,7 +122,7 @@ export default function BookingCalendar({
                 type="button"
                 disabled={isFull}
                 onClick={() => !isFull && onSelectTime(slot.time)}
-                className={`relative py-2.5 px-1 text-xs font-bold rounded-xl border transition-all duration-150 ${cellStyle} ${
+                className={`relative py-2.5 px-2 text-xs font-bold rounded-xl border transition-all duration-150 min-h-[44px] ${cellStyle} ${
                   !isFull ? 'hover:shadow-sm active:scale-95 cursor-pointer' : 'cursor-not-allowed'
                 }`}
                 title={
@@ -137,7 +137,7 @@ export default function BookingCalendar({
                   <span className="absolute -top-2 -right-2 text-[10px] drop-shadow-sm">⭐</span>
                 )}
                 {slot.availableStaff > 0 && !isFull && (
-                  <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 text-[7px] font-bold rounded-full flex items-center justify-center shadow-xs ${
+                  <span className={`absolute -top-1.5 -right-1.5 w-5 h-5 text-[9px] font-bold rounded-full flex items-center justify-center shadow-xs ${
                     isRecommended ? 'bg-amber-500 text-white' : 'bg-emerald-500 text-white'
                   }`}>
                     {slot.availableStaff}
@@ -192,4 +192,4 @@ export default function BookingCalendar({
       )}
     </div>
   );
-}
+});

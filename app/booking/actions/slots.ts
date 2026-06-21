@@ -26,35 +26,40 @@ function doRangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): bo
 export async function getAvailableStaff(date: string, time: string, durationMinutes: number = 60) {
   const supabase = await createClient();
 
-  const { data: allStaff } = await supabase
-    .from('users')
-    .select('id, full_name')
-    .in('role', ['STAFF', 'MANAGER'])
-    .eq('is_active', true);
+  const dayStart = new Date(`${date}T00:00:00+07:00`).toISOString();
+  const dayEnd = new Date(`${date}T23:59:59.999+07:00`).toISOString();
 
-  if (!allStaff || allStaff.length === 0) {
+  const [allStaffResult, attendanceResult, busyAppointmentsResult] = await Promise.all([
+    supabase
+      .from('users')
+      .select('id, full_name')
+      .in('role', ['STAFF', 'MANAGER'])
+      .eq('is_active', true),
+    supabase
+      .from('attendance')
+      .select('staff_id')
+      .eq('date', date)
+      .eq('status', 'PRESENT'),
+    supabase
+      .from('appointments')
+      .select('staff_id, start_time, end_time, actual_start_time, actual_end_time')
+      .in('status', ['CONFIRMED', 'IN_PROGRESS', 'PENDING_RANDOM'])
+      .not('staff_id', 'is', null)
+      .gte('start_time', dayStart)
+      .lte('start_time', dayEnd),
+  ]);
+
+  const allStaff = allStaffResult?.data || [];
+  if (allStaff.length === 0) {
     return [];
   }
 
-  const { data: attendance } = await supabase
-    .from('attendance')
-    .select('staff_id')
-    .eq('date', date)
-    .eq('status', 'PRESENT');
-  const presentStaffIds = new Set((attendance || []).map((a: any) => a.staff_id));
+  const presentStaffIds = new Set((attendanceResult?.data || []).map((a: any) => a.staff_id));
 
   const slotStart = new Date(`${date}T${time}:00+07:00`);
   const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
 
-  const dayStart = new Date(`${date}T00:00:00+07:00`).toISOString();
-  const dayEnd = new Date(`${date}T23:59:59.999+07:00`).toISOString();
-  const { data: busyAppointments } = await supabase
-    .from('appointments')
-    .select('staff_id, start_time, end_time, actual_start_time, actual_end_time')
-    .in('status', ['CONFIRMED', 'IN_PROGRESS', 'PENDING_RANDOM'])
-    .not('staff_id', 'is', null)
-    .gte('start_time', dayStart)
-    .lte('start_time', dayEnd);
+  const busyAppointments = busyAppointmentsResult?.data || [];
 
   const busyStaffIds = new Set<string>();
   for (const appt of (busyAppointments || [])) {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import { motion } from "motion/react";
 import { getDashboardData } from "../actions";
 import TodayMonitoringWidget from "./TodayMonitoringWidget";
 import dynamic from "next/dynamic";
@@ -377,31 +378,55 @@ export default function TabDashboard() {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5">Tổng Doanh số</p>
-              <p className="text-lg md:text-xl font-black text-gray-900 font-mono">
-                {data.totalRevenue.toLocaleString("vi")} đ
-              </p>
-            </div>
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold font-mono">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng Hoa hồng</p>
-              <p className="text-lg md:text-xl font-black text-emerald-600">
-                {data.totalCommission.toLocaleString("vi")} đ
-              </p>
-            </div>
-            <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold font-mono">
-              <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng Tiền Tip</p>
-              <p className="text-lg md:text-xl font-black text-pink-600">
-                {data.totalTip.toLocaleString("vi")} đ
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 rounded-2xl shadow-sm text-center text-white font-semibold flex flex-col justify-center font-mono">
-              <p className="text-gray-300 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng số ca làm</p>
-              <p className="text-lg md:text-xl font-black">{data.totalCompleted} ca</p>
-            </div>
-          </div>
+           {/* Stats Cards */}
+           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-300">
+             <motion.div 
+               key={`rev-${data.totalRevenue}`}
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4 }}
+               className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold"
+             >
+               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5">Tổng Doanh số</p>
+               <p className="text-lg md:text-xl font-black text-gray-900 font-mono">
+                 {data.totalRevenue.toLocaleString("vi")} đ
+               </p>
+             </motion.div>
+             <motion.div 
+               key={`com-${data.totalCommission}`}
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4, delay: 0.1 }}
+               className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold font-mono"
+             >
+               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng Hoa hồng</p>
+               <p className="text-lg md:text-xl font-black text-emerald-600">
+                 {data.totalCommission.toLocaleString("vi")} đ
+               </p>
+             </motion.div>
+             <motion.div 
+               key={`tip-${data.totalTip}`}
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4, delay: 0.2 }}
+               className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold font-mono"
+             >
+               <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng Tiền Tip</p>
+               <p className="text-lg md:text-xl font-black text-pink-600">
+                 {data.totalTip.toLocaleString("vi")} đ
+               </p>
+             </motion.div>
+             <motion.div 
+               key={`comp-${data.totalCompleted}`}
+               initial={{ opacity: 0, y: 10 }}
+               animate={{ opacity: 1, y: 0 }}
+               transition={{ duration: 0.4, delay: 0.3 }}
+               className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 rounded-2xl shadow-sm text-center text-white font-semibold flex flex-col justify-center font-mono"
+             >
+               <p className="text-gray-300 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng số ca làm</p>
+               <p className="text-lg md:text-xl font-black">{data.totalCompleted} ca</p>
+             </motion.div>
+           </div>
 
           {/* Today's Monitoring Widget */}
           <TodayMonitoringWidget 

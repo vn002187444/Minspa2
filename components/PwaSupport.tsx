@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Bell, BellOff, CheckCircle, X } from 'lucide-react';
+import { toast } from 'sonner';
 import InstallPWA from './InstallPWA';
+import OfflineIndicator from './OfflineIndicator';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
@@ -49,37 +51,8 @@ export default function PwaSupport() {
         .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
     }
 
-    // 3. Background poll for automated salon reminders and notification triggers
-    if (typeof window !== 'undefined') {
-      const triggerRemindersCheck = () => {
-        fetch('/api/cron-check', { method: 'POST' })
-          .then(async res => {
-            if (!res.ok) {
-              throw new Error(`HTTP error! status: ${res.status}`);
-            }
-            const contentType = res.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-              return res.json();
-            } else {
-              await res.text(); // swallow text response safely
-              return { success: true, info: 'Check triggered successfully' };
-            }
-          })
-          .then(data => console.log('[Cron Reminders] Auto check evaluated:', data))
-          .catch(err => console.warn('[Cron Reminders] Auto check processed cleanly:', err.message || err));
-      };
-
-      // Trigger initially on mount
-      const initTimer = setTimeout(triggerRemindersCheck, 2000);
-
-      // Setup interval to evaluate every 30 seconds
-      const pollInterval = setInterval(triggerRemindersCheck, 30000);
-
-      return () => {
-        clearTimeout(initTimer);
-        clearInterval(pollInterval);
-      };
-    }
+    // 3. Notification triggers — via DB Webhook + background-tasks, không cần polling
+    // (Đã xoá client-side 30s polling để giảm ~6.700 requests/ngày)
   }, []);
 
   // Helper method to sync token to Backend database
@@ -124,7 +97,7 @@ export default function PwaSupport() {
 
   const requestNotificationPermission = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
-      alert('Trình duyệt này không hỗ trợ hiển thị thông báo.');
+      toast.error('Trình duyệt này không hỗ trợ hiển thị thông báo.');
       return;
     }
 
@@ -162,9 +135,12 @@ export default function PwaSupport() {
       {/* 1. Custom Installation Prompt component */}
       <InstallPWA />
 
-      {/* 2. Notification Subscription Widget */}
+      {/* 2. Offline Sync Indicator */}
+      <OfflineIndicator />
+
+      {/* 3. Notification Subscription Widget */}
       {showNotificationWidget && (
-        <div id="push-notification-widget" className="fixed bottom-6 right-4 md:right-6 md:max-w-sm bg-[#FAF6F0] text-[#3A2E2B] border-2 border-[#EADDCD] p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3 animate-in slide-in-from-bottom duration-300">
+        <div id="push-notification-widget" className="fixed bottom-24 md:bottom-6 right-4 md:right-6 md:max-w-sm bg-[#FAF6F0] text-[#3A2E2B] border-2 border-[#EADDCD] p-4 rounded-2xl shadow-xl z-50 flex items-start gap-3 animate-in slide-in-from-bottom duration-300">
           <div className="w-9 h-9 rounded-full bg-[#A87C5C] flex items-center justify-center shrink-0">
             {notificationPermission === 'denied' ? (
               <BellOff className="w-4.5 h-4.5 text-white" />

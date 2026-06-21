@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { lockTimeSlots } from "@/lib/booking-engine";
 import { getPublicSeoSettings } from "./public";
+import { runRemindersCheck } from "@/utils/reminders";
+import { sendEmail } from "@/lib/notify";
 
 export async function submitBooking(formData: any) {
   const supabase = await createClient();
@@ -25,26 +27,26 @@ export async function submitBooking(formData: any) {
         await supabase.from('customers').update({ full_name: formData.name }).eq('id', customerId);
     }
     
-    let custPkg: any = null;
-    if (formData.usePackageId) {
-      const { data } = await supabase
-        .from('customer_packages')
-        .select('id, customer_id, package_id, total_sessions, remaining_sessions, status, treatment_packages!package_id(service_id, name)')
-        .eq('id', formData.usePackageId)
-        .single();
-      custPkg = data;
-    }
+    const [seoSettings, dbServicesResult, custPkgResult] = await Promise.all([
+      getPublicSeoSettings(),
+      formData.serviceIds?.length
+        ? supabase.from('services').select('id, price, duration').in('id', formData.serviceIds)
+        : Promise.resolve({ data: [] }),
+      formData.usePackageId
+        ? supabase
+            .from('customer_packages')
+            .select('id, customer_id, package_id, total_sessions, remaining_sessions, status, treatment_packages!package_id(service_id, name)')
+            .eq('id', formData.usePackageId)
+            .single()
+        : Promise.resolve({ data: null }),
+    ]);
+
+    let custPkg = custPkgResult?.data || null;
+    const dbServices = dbServicesResult?.data || [];
 
     let totalAmount = 0;
     let totalDuration = 60;
-    const seoSettings = await getPublicSeoSettings();
-    if (formData.serviceIds && formData.serviceIds.length > 0) {
-      const { data: dbServices } = await supabase
-        .from('services')
-        .select('id, price, duration')
-        .in('id', formData.serviceIds);
-
-      if (dbServices && dbServices.length > 0) {
+    if (dbServices.length > 0) {
         let rawTotal = 0;
         dbServices.forEach((s: any) => {
           let svcPrice = s.price || 0;
@@ -59,7 +61,6 @@ export async function submitBooking(formData: any) {
         totalAmount = rawTotal - discountAmount;
         totalDuration = dbServices.reduce((sum: number, s: any) => sum + (s.duration || 30), 0);
       }
-    }
 
     const startTimeISO = new Date(`${formData.date}T${formData.time}:00+07:00`).toISOString();
     const endDateTime = new Date(new Date(startTimeISO).getTime() + totalDuration * 60000).toISOString();
@@ -84,10 +85,21 @@ export async function submitBooking(formData: any) {
         })
         .select('id')
         .single();
-        
+
     if (apptErr) throw new Error("Không thể tạo lịch hẹn: " + apptErr.message);
-    
-    if (staffIdToUse) {
+
+    if (!staffIdToUse && formData.serviceIds && formData.serviceIds.length > 0) {
+      const { autoAssignStaff } = await import('@/lib/scheduling');
+      const autoStaffId = await autoAssignStaff(formData.serviceIds, startTimeISO, endDateTime, customerId);
+      if (autoStaffId) {
+        await supabase
+          .from('appointments')
+          .update({ staff_id: autoStaffId, status: 'CONFIRMED' })
+          .eq('id', appt.id)
+          .is('staff_id', null);
+        await lockTimeSlots(appt.id, autoStaffId, startTimeISO, endDateTime);
+      }
+    } else if (staffIdToUse) {
       await lockTimeSlots(appt.id, staffIdToUse, startTimeISO, endDateTime);
     }
     
@@ -99,7 +111,13 @@ export async function submitBooking(formData: any) {
         await supabase.from('appointment_services').insert(insertData);
     }
 
-    const staffId = formData.staffId;
+    const { data: finalAppt } = await supabase
+      .from('appointments')
+      .select('staff_id')
+      .eq('id', appt.id)
+      .single();
+
+    const assignedStaffId = finalAppt?.staff_id || formData.staffId;
     const bgTasks: Promise<any>[] = [
       sendPushNotification(
         customerId,
@@ -107,11 +125,16 @@ export async function submitBooking(formData: any) {
         `Lịch hẹn của bạn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')} đã được ghi nhận thành công.`,
         '/booking'
       ).catch(() => {}),
+      sendEmail({
+        to: formData.email || formData.phone + '@example.com', // Fallback if email missing
+        subject: 'Xác nhận đặt lịch hẹn tại Min Nail & Hair',
+        html: `<p>Chào <b>${formData.name}</b>,</p><p>Lịch hẹn của bạn lúc <b>${formData.time}</b> ngày <b>${format(new Date(formData.date), 'dd/MM/yyyy')}</b> đã được xác nhận thành công.</p><p>Hẹn gặp bạn tại salon!</p>`
+      }).catch(() => {}),
     ];
-    if (staffId && staffId !== 'Ngẫu nhiên') {
+    if (assignedStaffId && assignedStaffId !== 'Ngẫu nhiên') {
       bgTasks.push(
         sendPushNotification(
-          staffId,
+          assignedStaffId,
           'Lịch hẹn mới! 📅',
           `Khách hàng ${formData.name} đã đặt lịch hẹn trực tuyến với bạn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
           '/staff'
@@ -132,7 +155,10 @@ export async function submitBooking(formData: any) {
     });
 
     Promise.all(bgTasks).catch(() => {});
-    
+
+    // Fire-and-forget: kích hoạt reminders check (random booking rules)
+    runRemindersCheck().catch(() => {});
+
     return { success: true, customerId: customerId };
   } catch (error: any) {
     return { success: false, error: error.message };

@@ -44,7 +44,7 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
   const renderItem = (icon: React.ReactNode, label: string, onClick: () => void, isActive: boolean) => (
     <button
       onClick={onClick}
-      className={`flex flex-col items-center justify-center flex-1 min-w-0 py-1 transition-all duration-300 relative ${
+      className={`flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1.5 transition-all duration-300 relative ${
         isActive 
           ? 'text-[#5C4033] font-bold scale-105' 
           : 'text-stone-400 hover:text-stone-600'
@@ -63,7 +63,7 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
   const renderLinkItem = (icon: React.ReactNode, label: string, href: string, isActive: boolean) => (
     <Link
       href={href}
-      className={`flex flex-col items-center justify-center flex-1 min-w-0 py-1 transition-all duration-300 relative ${
+      className={`flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1.5 transition-all duration-300 relative ${
         isActive 
           ? 'text-[#5C4033] font-bold scale-105' 
           : 'text-stone-400 hover:text-stone-600'

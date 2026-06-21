@@ -1,15 +1,34 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import type { Metadata } from 'next';
 import { getBlogPosts } from './actions';
-import { BookOpen, Calendar, ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { BookOpen, Calendar, ArrowLeft, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import BottomNavigation from '@/components/BottomNavigation';
 
 export const revalidate = 60; // Revalidate every minute
 
-export default async function BlogListPage() {
-  const posts = await getBlogPosts();
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
+    description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body tại Min Nail & Hair. Bí quyết làm đẹp cho phái nữ.',
+    alternates: { canonical: 'https://min-nail-hair.vercel.app/blog' },
+    openGraph: {
+      title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
+      description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body.',
+      url: 'https://min-nail-hair.vercel.app/blog',
+      siteName: 'Min Nail & Hair',
+      locale: 'vi_VN',
+      type: 'website',
+    },
+  };
+}
+
+export default async function BlogListPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const { page: pageStr } = await searchParams;
+  const currentPage = parseInt(pageStr || '1', 10);
+  const { posts, totalPages, page } = await getBlogPosts(currentPage, 6);
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] text-[#3A2E2B] font-sans pb-16">
@@ -78,11 +97,11 @@ export default async function BlogListPage() {
                   className="bg-white rounded-3xl overflow-hidden border border-[#EADDCD]/60 shadow-sm hover:shadow-xl hover:border-[#8D6E53]/40 transition-all flex flex-col group h-full"
                 >
                   <Link href={`/blog/${post.slug}`} className="block relative h-52 overflow-hidden bg-stone-100">
-                    <img
+                    <Image
                       src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
                       alt={post.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute top-4 left-4 bg-[#8D6E53] text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-full shadow-sm">
                       Làm Đẹp
@@ -117,6 +136,41 @@ export default async function BlogListPage() {
                 </article>
               );
             })}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 pb-8">
+            {page > 1 && (
+              <Link
+                href={`/blog?page=${page - 1}`}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
+              >
+                <ChevronLeft className="w-4 h-4" /> Trước
+              </Link>
+            )}
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <Link
+                key={p}
+                href={`/blog?page=${p}`}
+                className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all ${
+                  p === page
+                    ? 'bg-[#8D6E53] text-white shadow-md'
+                    : 'bg-white border border-[#EADDCD] text-stone-600 hover:bg-stone-50'
+                }`}
+              >
+                {p}
+              </Link>
+            ))}
+            {page < totalPages && (
+              <Link
+                href={`/blog?page=${page + 1}`}
+                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
+              >
+                Sau <ChevronRight className="w-4 h-4" />
+              </Link>
+            )}
           </div>
         )}
       </main>

@@ -1,5 +1,23 @@
-import { GoogleGenAI } from "@google/genai";
+import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
+
+const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
+
+QUY TẮC:
+- Chỉ viết về chăm sóc sắc đẹp, không tư vấn y tế.
+- Luôn trả về JSON đúng schema yêu cầu.
+- Giọng văn thân thiện, chuyên nghiệp, tự nhiên.
+- Tiếng Việt có dấu đầy đủ.`;
+
+const ARTICLE_SCHEMA = {
+  type: "object",
+  properties: {
+    title: { type: "string", description: "Tiêu đề bài viết, tối đa 70 ký tự, chứa từ khóa chính" },
+    metaDescription: { type: "string", description: "Thẻ mô tả ngắn gọn, tối đa 160 ký tự" },
+    content: { type: "string", description: "Nội dung Markdown gồm 3-4 phần H2, kèm CTA đặt lịch" },
+  },
+  required: ["title", "metaDescription", "content"],
+};
 
 export async function POST(req: NextRequest) {
   let topic = "";
@@ -13,39 +31,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Topic is required" }, { status: 400 });
     }
 
-    const key = process.env.GEMINI_API_KEY;
-    if (!key) {
-      throw new Error("GEMINI_API_KEY is not defined");
+    const prompt = `Viết bài SEO về chủ đề: "${topic}"
+Từ khóa phụ: "${keywords || "Không có"}"
+Địa điểm: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức.
+Thương hiệu: Min Nail & Hair`;
+
+    const result = await callGemini({
+      systemInstruction: SYSTEM_INSTRUCTION,
+      prompt,
+      jsonSchema: ARTICLE_SCHEMA,
+      useCache: true,
+    });
+
+    if (result.text) {
+      const parsed = JSON.parse(result.text);
+      return NextResponse.json({
+        article: parsed.content || result.text,
+        title: parsed.title || topic,
+        summary: parsed.metaDescription || "",
+        fromCache: result.fromCache,
+      });
     }
-    const ai = new GoogleGenAI({
-      apiKey: key,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
-    
-    // Formulate a structured prompt for high quality SEO content
-    const prompt = `Bạn là một chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail.
-Hãy viết một bài viết SEO chuẩn chất lượng cao về chủ đề: "${topic}"
-Các từ khóa phụ cần đưa vào bài viết một cách tự nhiên: "${keywords || "Không có"}"
 
-Bài viết phải chuẩn cấu trúc SEO bao gồm:
-1. TIÊU ĐỀ BÀI VIẾT (Hấp dẫn, chứa từ khóa chính, tối đa 70 ký tự)
-2. SƠ LƯỢC nội dung (Thẻ mô tả ngắn gọn, thu hút)
-3. NỘI DUNG chi tiết bao gồm 3-4 phần chính có tiêu đề phụ (H2) rõ ràng. Thể hiện sự chuyên nghiệp, an tâm, tận tụy của tiệm "Min Nail & Hair" (Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức).
-4. Lời khuyên/Kêu gọi đặt lịch (Call to Action - kêu gọi khách đặt lịch qua công cụ Online của Min).
-
-Hãy viết tự nhiên, giọng văn lôi cuốn, mượt mà và thân thiện bằng tiếng Việt.
-Trả về bài viết chuẩn định dạng Markdown để hiển thị đẹp mắt.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite",
-      contents: prompt,
-    });
-
-    return NextResponse.json({ article: response.text });
+    throw new Error("Gemini returned empty");
   } catch (error: any) {
     console.warn("[GEMINI ARTICLE GENERATOR ERROR] Using high-quality fallback content.", error);
     

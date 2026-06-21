@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { createStaff } from "../actions";
 
 export default function AddStaffModal({ onClose, onReload }: any) {
+  const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
     fullName: "",
     username: "",
@@ -29,7 +31,7 @@ export default function AddStaffModal({ onClose, onReload }: any) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Thêm nhân viên mới">
       <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95">
         <h3 className="font-display font-bold text-lg text-gray-900 mb-6">
           Thêm nhân viên mới

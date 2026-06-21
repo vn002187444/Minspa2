@@ -50,16 +50,16 @@ export default function TabPassword() {
           <div className={`p-4 rounded-xl text-sm font-semibold ${msg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>{msg.text}</div>
         )}
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mật khẩu cũ</label>
-          <input type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} placeholder="Nhập mật khẩu hiện tại" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
+          <label htmlFor="pwd_old" className="block text-sm font-semibold text-gray-700 mb-1.5">Mật khẩu cũ</label>
+          <input id="pwd_old" type="password" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} placeholder="Nhập mật khẩu hiện tại" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Mật khẩu mới</label>
-          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nhập mật khẩu mới" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
+          <label htmlFor="pwd_new" className="block text-sm font-semibold text-gray-700 mb-1.5">Mật khẩu mới</label>
+          <input id="pwd_new" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Nhập mật khẩu mới" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">Xác nhận mật khẩu mới</label>
-          <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Xác nhận lại mật khẩu mới" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
+          <label htmlFor="pwd_confirm" className="block text-sm font-semibold text-gray-700 mb-1.5">Xác nhận mật khẩu mới</label>
+          <input id="pwd_confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Xác nhận lại mật khẩu mới" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
         </div>
         <div className="pt-4 border-t border-gray-100 flex justify-end">
           <button type="submit" disabled={loading} className="px-8 py-3.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer font-semibold">

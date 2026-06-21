@@ -1,7 +1,8 @@
 const CACHE_NAME = 'min-salon-cache-v1';
 const ASSETS_TO_CACHE = [
   '/',
-  '/manifest.json'
+  '/manifest.json',
+  '/offline'
 ];
 
 self.addEventListener('install', (e) => {
@@ -73,7 +74,12 @@ self.addEventListener('fetch', (e) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // If accessing index other page but not in cache and offline, show friendly notice/page if desired
+          // Serve offline page for navigation requests
+          if (e.request.mode === 'navigate') {
+            return caches.open(CACHE_NAME).then((cache) => {
+              return cache.match('/offline');
+            });
+          }
         });
       })
   );

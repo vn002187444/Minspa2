@@ -55,20 +55,20 @@ export default function TabBank({ data, onReload }: { data: any; onReload: () =>
       <form onSubmit={handleSubmit} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Chọn Ngân hàng</label>
-            <select value={bankId} onChange={(e) => setBankId(e.target.value)} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] outline-none transition-all font-semibold text-sm appearance-none">
+            <label htmlFor="bank_select" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Chọn Ngân hàng</label>
+            <select id="bank_select" value={bankId} onChange={(e) => setBankId(e.target.value)} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] outline-none transition-all font-semibold text-sm appearance-none">
               {VIETNAMESE_BANKS.map((bank) => (
                 <option key={bank.id} value={bank.id}>{bank.name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Số tài khoản ngân hàng</label>
-            <input type="text" required placeholder="Nhập số tài khoản (ví dụ: 102938812...)" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] outline-none transition-all font-semibold text-sm" />
+            <label htmlFor="bank_account" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Số tài khoản ngân hàng</label>
+            <input id="bank_account" type="text" required placeholder="Nhập số tài khoản (ví dụ: 102938812...)" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] outline-none transition-all font-semibold text-sm" />
           </div>
           <div className="flex flex-col gap-1.5 md:col-span-2">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Tên chủ tài khoản (Viết hoa không dấu)</label>
-            <input type="text" required placeholder="Ví dụ: NGUYEN VAN A" value={accountOwner} onChange={(e) => setAccountOwner(e.target.value)} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] outline-none transition-all font-semibold text-sm" />
+            <label htmlFor="bank_owner" className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">Tên chủ tài khoản (Viết hoa không dấu)</label>
+            <input id="bank_owner" type="text" required placeholder="Ví dụ: NGUYEN VAN A" value={accountOwner} onChange={(e) => setAccountOwner(e.target.value)} className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] outline-none transition-all font-semibold text-sm" />
           </div>
         </div>
         <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 flex flex-col md:flex-row gap-4 items-center">

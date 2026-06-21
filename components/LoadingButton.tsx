@@ -1,6 +1,7 @@
 'use client';
 
 import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { motion } from 'motion/react';
 import { Loader2 } from 'lucide-react';
 
 interface LoadingButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -42,18 +43,22 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
     ref
   ) => {
     return (
-      <button
+      <motion.button
         ref={ref}
         disabled={disabled || isLoading}
+        whileHover={!disabled && !isLoading ? { scale: 1.02 } : {}}
+        whileTap={!disabled && !isLoading ? { scale: 0.95 } : {}}
+        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
         className={`
           inline-flex items-center justify-center gap-2
-          font-bold rounded-xl transition-all
+          font-bold rounded-xl transition-colors duration-200
+          active:scale-95
           ${variantStyles[variant] || variantStyles.primary}
           ${sizeStyles[size] || sizeStyles.md}
           select-none
           ${className}
         `}
-        {...props}
+        {...(props as any)}
       >
         {isLoading ? (
           <>
@@ -63,7 +68,7 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
         ) : (
           children
         )}
-      </button>
+      </motion.button>
     );
   }
 );

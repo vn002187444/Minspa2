@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getBlogPostBySlug, getBlogPosts } from '../actions';
 import ShareButton from './ShareButton';
 import { notFound } from 'next/navigation';
@@ -6,6 +7,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { Star, ArrowLeft, Calendar, Share, Sparkles, ChevronRight, User, BookOpen, Clock } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
+import ViewTracker from '@/components/ViewTracker';
 
 export const revalidate = 60; // Revalidate every minute
 
@@ -38,7 +40,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
     notFound();
   }
 
-  const allPosts = await getBlogPosts();
+  const { posts: allPosts } = await getBlogPosts();
   const recentPosts = allPosts
     .filter((p: any) => p.id !== post.id)
     .slice(0, 3); // top 3 other posts
@@ -51,6 +53,8 @@ export default async function BlogPostDetailPage({ params }: Props) {
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
   return (
+    <>
+      <ViewTracker postId={post.id} />
     <div className="min-h-screen bg-[#FAF6F0] text-[#3A2E2B] font-sans pb-16">
       {/* Blog Detail Header */}
       <header className="sticky top-0 z-50 bg-[#FAF6F0]/90 backdrop-blur-md border-b border-[#EADDCD] px-4 py-4 md:px-8">
@@ -89,10 +93,12 @@ export default async function BlogPostDetailPage({ params }: Props) {
           >
             {/* Banner image */}
             <div className="relative h-48 sm:h-60 md:h-[400px] w-full max-w-full rounded-xl md:rounded-2xl overflow-hidden bg-stone-100 border border-[#EADDCD]/20 shadow-inner">
-              <img
+              <Image
                 src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
                 alt={post.title}
-                className="w-full h-full object-cover max-w-full"
+                fill
+                className="object-cover"
+                priority
               />
             </div>
 
@@ -286,12 +292,12 @@ export default async function BlogPostDetailPage({ params }: Props) {
                       href={`/blog/${post.slug}`}
                       className="flex items-center gap-3 group border-b border-stone-50/50 pb-3 last:border-0 last:pb-0 block"
                     >
-                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0">
-                        <img
+                      <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0">
+                        <Image
                           src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
                           alt={post.title}
-                          className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                          loading="lazy"
+                          fill
+                          className="object-cover transition-transform group-hover:scale-105"
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -313,5 +319,6 @@ export default async function BlogPostDetailPage({ params }: Props) {
       </main>
       <BottomNavigation />
     </div>
+    </>
   );
 }

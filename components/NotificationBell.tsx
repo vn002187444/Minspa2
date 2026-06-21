@@ -21,6 +21,7 @@ interface Notification {
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isBouncing, setIsBouncing] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [authenticated, setAuthenticated] = useState<boolean | null>(null);
@@ -87,24 +88,28 @@ export default function NotificationBell() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
-      const channel: any = supabase
-        .channel('notifications_bell')
-        .on(
-          'postgres_changes' as any,
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `recipient_type=eq.user`,
-          },
-          (payload: any) => {
-            const newNotif = payload.new as Notification;
-            if (newNotif.recipient_id !== userIdRef.current) return;
-            setUnreadCount((prev) => prev + 1);
-            setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
-          }
-        )
-        .on(
+       const channel: any = supabase
+         .channel('notifications_bell')
+         .on(
+           'postgres_changes' as any,
+           {
+             event: 'INSERT',
+             schema: 'public',
+             table: 'notifications',
+             filter: `recipient_type=eq.user`,
+           },
+           (payload: any) => {
+             const newNotif = payload.new as Notification;
+             if (newNotif.recipient_id !== userIdRef.current) return;
+             setUnreadCount((prev) => prev + 1);
+             setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
+             
+             // Trigger bounce animation
+             setIsBouncing(true);
+             setTimeout(() => setIsBouncing(false), 1000);
+           }
+         )
+         .on(
           'postgres_changes' as any,
           {
             event: 'UPDATE',
@@ -190,11 +195,11 @@ export default function NotificationBell() {
         title="Thông báo"
       >
         <Bell className="w-5 h-5" />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-sm">
-            {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
-        )}
+         {unreadCount > 0 && (
+           <span className={`absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-sm ${isBouncing ? 'animate-bounce' : ''}`}>
+             {unreadCount > 99 ? '99+' : unreadCount}
+           </span>
+         )}
       </button>
 
       {isOpen && (

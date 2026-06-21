@@ -87,10 +87,23 @@ export interface CustomerPackage {
   id: string;
   customer_id: string;
   package_id: string;
+  total_sessions: number;
   remaining_sessions: number;
   status: PackageStatus;
+  purchased_at: string;
+  expires_at: string;
   sold_by_staff_id?: string;
+  commission_amount?: number;
   created_at: string;
+  treatment_packages?: {
+    id: string;
+    name: string;
+    service_id: string;
+    services?: {
+      name: string;
+      price: number;
+    };
+  };
 }
 
 export interface BlogPost {
@@ -102,6 +115,21 @@ export interface BlogPost {
   image_url?: string;
   created_at: string;
   updated_at?: string;
+}
+
+export interface BlogView {
+  id: string;
+  post_id: string;
+  viewed_at: string;
+  ip_hash?: string;
+  user_agent?: string;
+}
+
+export interface BlogStat {
+  id: string;
+  post_id: string;
+  date: string;
+  views: number;
 }
 
 export interface SeoSettings {
