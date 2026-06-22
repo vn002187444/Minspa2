@@ -47,6 +47,16 @@ export default function PwaSupport() {
           if (Notification.permission === 'granted') {
             syncSubscriptionToken(reg).catch(err => console.error('[PWA] Auto-sync token failed:', err));
           }
+          // Listen for background sync trigger from SW
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'trigger-sync') {
+              window.dispatchEvent(new Event('online'));
+            }
+          });
+          // Register background sync for offline queue if supported
+          if ('sync' in reg) {
+            (reg as any).sync.register('sync-queue').catch(() => {});
+          }
         })
         .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
     }

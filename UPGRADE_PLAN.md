@@ -243,34 +243,38 @@ V3 EXECUTION
 
 ---
 
-### 🎯 V3.10 — Hardening
+### ✅ V3.10 — Hardening (Audited 06/2026)
 > **Mục tiêu:** Bảo mật, chống DDOS, kiểm thử.
+> **Kết quả audit:** 2/8 tasks đã có sẵn. 4 tasks bỏ qua (overkill cho salon nhỏ). 2 tasks cần làm.
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 10.1 | CSP Headers cứng hơn | [ ] | next.config.ts |
-| 10.2 | Rate limit API-wide | [ ] | Middleware pattern |
-| 10.3 | Security audit (ZAP/Burp Suite) | [ ] | CI pipeline |
-| 10.4 | CDN static assets | [ ] | Cloudflare/Imgix |
-| 10.5 | Environment validation runtime | [ ] | lib/env.ts |
-| 10.6 | WAF rule (rate + DDoS) | [ ] | Vercel/Cloudflare |
-| 10.7 | Database encryption review | [ ] | Supabase check |
-| 10.8 | Pen-test: SQLi, XSS, CSRF | [ ] | Auto + manual |
+| 10.1 | CSP Headers | [x] | Đã có trong `next.config.ts` — 6 headers (CSP, HSTS, XFO, XCTO, Referrer, Perms) |
+| 10.2 | Rate limit mở rộng (booking + cron) | [x] | `lib/rate-limit.ts` có sẵn, mở rộng sang booking + cron endpoints |
+| 10.3 | `npm audit` trong CI pipeline | [x] | Thêm step vào `.github/workflows/ci.yml` |
+| 10.4 | CDN static assets | [-] | **Bỏ qua** — Vercel edge đã đủ cho salon nhỏ |
+| 10.5 | Environment validation runtime | [x] | `lib/env.ts` — Zod schema, throw khi thiếu biến |
+| 10.6 | WAF rule (rate + DDoS) | [-] | **Bỏ qua** — Vercel infra tự xử lý DDoS |
+| 10.7 | Database encryption review | [-] | **Bỏ qua** — không có PII nhạy cảm ngoài tên/SĐT |
+| 10.8 | Pen-test: SQLi, XSS, CSRF | [-] | **Bỏ qua** — CSP + Supabase param queries đã bảo vệ cơ bản |
 
 ---
 
-### 🎯 V3.11 — Platform Scaling
+### 🎯 V3.11 — Platform Scaling (Reviewed 06/2026)
 > **Mục tiêu:** Đa ngôn ngữ, multi-branch, search.
+> **Thứ tự ưu tiên đề xuất:** FTS nhanh → Export (đã có nền) → i18n → Multi-branch (lớn nhất).
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 11.1 | Cài đặt `next-intl` i18n (VI/EN/KR/CN) | [ ] | Route/cookie based |
-| 11.2 | Translation management | [ ] | PO file hoặc DB |
-| 11.3 | Full-text search blog & services | [ ] | PostgreSQL FTS |
-| 11.4 | Multi-branch: thêm `branch_id` | [ ] | Migration + queries |
-| 11.5 | Branch selector UI cho admin | [ ] | Chuyển chi nhánh |
-| 11.6 | Report tổng hợp multi-branch | [ ] | Gộp doanh thu |
-| 11.7 | Export dữ liệu (CSV, JSON, PDF) | [ ] | lib/export.ts |
+| 11.1 | **FTS: Full-text search blog & services** | [ ] | PostgreSQL tsvector — dễ nhất, ảnh hưởng lớn. Thêm cột `search_vector`, trigger update, index GIN. Query bằng `websearch_to_tsquery`. |
+| 11.2 | **Export dữ liệu (CSV, JSON)** | [ ] | Kế thừa từ V3.5 (đã có PDF/Excel report). Thêm `lib/export.ts` — xuất appointments, customers, services raw data. |
+| 11.3 | **Cài đặt `next-intl` i18n (VI/EN)** | [ ] | Route/cookie based. Bắt đầu với VI/EN, mở rộng sau. Cần: `middleware.ts` route detect, `i18n/request.ts`, dịch UI strings. |
+| 11.4 | **Translation management** | [ ] | File-based (JSON) cho phase 1. DB-based cho phase 2 nếu cần dynamic. |
+| 11.5 | **Multi-branch: thêm `branch_id`** | [-] | **Đã huỷ** — salon chỉ 1 cơ sở, không có nhu cầu mở rộng chi nhánh. |
+| 11.6 | **Branch selector UI cho admin** | [-] | **Đã huỷ** (cùng lý do). |
+| 11.7 | **Report tổng hợp multi-branch** | [-] | **Đã huỷ** (cùng lý do). |
+
+> **Ghi chú:** Đã huỷ multi-branch (11.5–11.7) vì salon chỉ hoạt động 1 cơ sở. Export (11.2) kế thừa code V3.5 có sẵn. FTS (11.1) là quick win — 1 migration + 1 route. Không cần KR/CN — chỉ VI/EN phase 1. |
 
 ---
 

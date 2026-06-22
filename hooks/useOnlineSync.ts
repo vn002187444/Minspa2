@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useState } from 'react';
-import { getPendingItems, markDone, markFailed, getQueueCount } from '@/lib/offline-queue';
+import { getPendingItems, markDone, markFailed, getQueueCount, clearDone } from '@/lib/offline-queue';
 
 interface SyncState {
   isSyncing: boolean;
@@ -32,6 +32,8 @@ export function useOnlineSync() {
             } else {
               await markFailed(item.id!, res.error || 'Unknown error');
             }
+          } else if (item.type === 'review') {
+            await markFailed(item.id!, 'Review module chưa được cài đặt');
           } else {
             await markFailed(item.id!, 'Unknown queue type: ' + item.type);
           }
@@ -41,6 +43,7 @@ export function useOnlineSync() {
       }
       setState(prev => ({ ...prev, lastSync: new Date() }));
       await refreshCount();
+      clearDone().catch(() => {});
     } finally {
       setState(prev => ({ ...prev, isSyncing: false }));
     }

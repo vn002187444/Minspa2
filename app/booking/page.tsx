@@ -10,6 +10,7 @@ import { getCustomerCareSuggestion } from './actions/suggestions';
 import { getAvailableStaff, getSlotAvailability } from './actions/slots';
 import type { SlotInfo } from './actions/slots';
 import { submitBooking } from './actions/booking';
+import { enqueue } from '@/lib/offline-queue';
 import { trackEvent, trackMascotEvent } from '@/lib/analytics';
 import { stripHtml } from '@/lib/sanitize';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, CloudOff, AlertTriangle } from 'lucide-react';
@@ -339,6 +340,12 @@ export default function BookingPage() {
        }
      } catch (err: any) {
        setIsSubmitting(false);
+       if (typeof navigator !== 'undefined' && !navigator.onLine) {
+         await enqueue('booking', payload);
+         toast.success('Đã lưu lịch hẹn vào hàng chờ. Hệ thống sẽ tự động đồng bộ khi có mạng.');
+         setStep(3);
+         return;
+       }
        setErrorMsg('Lỗi hệ thống: ' + err.message);
        toast.error('Lỗi hệ thống khi đặt lịch');
      }

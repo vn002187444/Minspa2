@@ -3,12 +3,17 @@ import { getSession } from "@/utils/auth";
 import { handleCancelAndUnlock } from "@/lib/booking-engine";
 import { sendPushNotification } from "@/utils/push";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
     const session = await getSession();
     if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+    const rl = await rateLimit(`cancel:${session.user.id}`, 20, 60);
+    if (!rl.allowed) {
+      return NextResponse.json({ success: false, error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }, { status: 429 });
     }
 
     const { appointmentId } = await request.json();

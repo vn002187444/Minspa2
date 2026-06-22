@@ -1,17 +1,19 @@
 const CACHE_NAME = 'min-salon-cache-v3';
 const STATIC_CACHE = 'min-salon-static-v3';
+const OFFLINE_CACHE = 'min-salon-offline-v1';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
-  '/offline'
 ];
+const OFFLINE_PAGE = '/offline';
 
 const STATIC_EXTENSIONS = /\.(js|css|svg|ico|woff2?|png|jpg|jpeg|gif|webp)$/;
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    }).then(() => self.skipWaiting())
+    Promise.all([
+      caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE)),
+      caches.open(OFFLINE_CACHE).then((cache) => cache.addAll([OFFLINE_PAGE])),
+    ]).then(() => self.skipWaiting())
   );
 });
 
@@ -20,7 +22,7 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME && key !== STATIC_CACHE) {
+          if (key !== CACHE_NAME && key !== STATIC_CACHE && key !== OFFLINE_CACHE) {
             return caches.delete(key);
           }
         })
@@ -91,13 +93,26 @@ self.addEventListener('fetch', (e) => {
       return caches.match(e.request).then((cachedResponse) => {
         if (cachedResponse) return cachedResponse;
         if (e.request.mode === 'navigate') {
-          return caches.open(CACHE_NAME).then((cache) => {
-            return cache.match('/offline');
+          return caches.open(OFFLINE_CACHE).then((cache) => {
+            return cache.match(OFFLINE_PAGE);
           });
         }
       });
     })
   );
+});
+
+// Background sync: retry failed queue items when online
+self.addEventListener('sync', (e) => {
+  if (e.tag === 'sync-queue') {
+    e.waitUntil(
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'trigger-sync' });
+        });
+      })
+    );
+  }
 });
 
 // Capture native push notification from the server
