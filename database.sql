@@ -348,6 +348,172 @@ CREATE TABLE blog_stats (
 
 CREATE INDEX idx_blog_stats_date ON blog_stats(date);
 
+-- ========================================
+-- Migration Tables (added after initial schema)
+-- ========================================
+
+-- Rate limits (V3.10)
+CREATE TABLE IF NOT EXISTS rate_limits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key TEXT NOT NULL UNIQUE,
+  count INT NOT NULL DEFAULT 0,
+  window_start TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- AI cache (V3.11)
+CREATE TABLE IF NOT EXISTS ai_cache (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  prompt_hash VARCHAR(64) NOT NULL UNIQUE,
+  response TEXT NOT NULL,
+  model VARCHAR(50) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Staff skills & certificates (V3.3)
+CREATE TABLE IF NOT EXISTS staff_skills (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  staff_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  service_id UUID NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  skill_level INT DEFAULT 3 CHECK (skill_level BETWEEN 1 AND 5),
+  certificate_name VARCHAR(255),
+  certificate_url VARCHAR(500),
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  UNIQUE(staff_id, service_id)
+);
+
+-- Auto-assign history logs (V3.3)
+CREATE TABLE IF NOT EXISTS auto_assign_logs (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  appointment_id UUID NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
+  assigned_staff_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  previous_staff_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  reason VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+-- Slot booking limits (V3.3)
+CREATE TABLE IF NOT EXISTS slot_limits (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  lock_date DATE NOT NULL,
+  time_slot VARCHAR(5) NOT NULL,
+  max_bookings INT NOT NULL DEFAULT 1,
+  current_bookings INT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  UNIQUE(lock_date, time_slot)
+);
+
+-- Tasks (V3.4)
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
+  assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+  priority VARCHAR(10) NOT NULL DEFAULT 'medium'
+    CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+  due_date TIMESTAMP WITH TIME ZONE,
+  completed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+-- Auto SEO config (V3.12)
+CREATE TABLE IF NOT EXISTS auto_seo_config (
+  id BIGINT PRIMARY KEY DEFAULT 1,
+  enabled BOOLEAN NOT NULL DEFAULT false,
+  schedule_day VARCHAR(10) NOT NULL DEFAULT 'THU',
+  schedule_hour INTEGER NOT NULL DEFAULT 20,
+  topic_pool JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK (id = 1)
+);
+
+-- ========================================
+-- Row Level Security (RLS) for ALL tables
+-- ========================================
+ALTER TABLE ai_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointment_services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+ALTER TABLE attendance_reminders_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auto_assign_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auto_seo_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bank_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE banner_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE blog_stats ENABLE ROW LEVEL SECURITY;
+ALTER TABLE blog_views ENABLE ROW LEVEL SECURITY;
+ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customer_packages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE package_usage_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE random_booking_reminders_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seo_articles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE seo_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE slot_limits ENABLE ROW LEVEL SECURITY;
+ALTER TABLE staff_skills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE time_slot_locks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE treatment_packages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE unaccepted_booking_reminders_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE uncompleted_booking_reminders_log ENABLE ROW LEVEL SECURITY;
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- ========================================
+-- Realtime publication membership
+-- ========================================
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication WHERE pubname = 'supabase_realtime') THEN
+    CREATE PUBLICATION supabase_realtime;
+  END IF;
+END $$;
+
+DO $$
+DECLARE
+  tbl text;
+  tables text[] := ARRAY[
+    'appointments', 'appointment_services', 'attendance',
+    'auto_assign_logs', 'notifications', 'staff_skills',
+    'tasks', 'time_slot_locks'
+  ];
+BEGIN
+  FOREACH tbl IN ARRAY tables
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_publication p
+      JOIN pg_publication_rel pr ON pr.prpubid = p.oid
+      WHERE p.pubname = 'supabase_realtime'
+        AND pr.prrelid = quote_ident(tbl)::regclass
+    ) THEN
+      EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE %I', tbl);
+    END IF;
+  END LOOP;
+END $$;
+
+-- ========================================
+-- Database Review Summary (June 2026)
+-- ========================================
+-- TOTAL TABLES: 31 (all ✅ RLS enabled)
+--
+-- Bảng có Realtime (8): appointments, appointment_services, attendance,
+--   auto_assign_logs, notifications, staff_skills, tasks, time_slot_locks
+--
+-- Bảng KHÔNG có Realtime (23): ai_cache, attendance_reminders_log,
+--   audit_logs, auto_seo_config, bank_settings, banner_settings, blog_stats,
+--   blog_views, blogs, customer_packages, customers, package_usage_logs,
+--   random_booking_reminders_log, rate_limits, reviews, seo_articles,
+--   seo_settings, services, slot_limits, treatment_packages,
+--   unaccepted_booking_reminders_log, uncompleted_booking_reminders_log, users
+
 CREATE OR REPLACE FUNCTION increment_blog_view(p_post_id UUID)
 RETURNS void AS $$
 BEGIN

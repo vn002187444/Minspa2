@@ -205,7 +205,7 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 | `PLAN.md` | Đánh dấu `[x]` mục PX.Y đã hoàn thành |
 | `UPGRADE_PLAN.md` | Thêm mục mới hoặc đánh dấu hoàn thành |
 | `AI_MAP.md` | Cập nhật nếu: thêm table, thêm route, đổi dependencies, đổi auth flow |
-| `database.sql` | **KHÔNG sửa** — giữ nguyên schema gốc |
+| `database.sql` | **Cập nhật** khi thêm bảng/cột qua migration — là schema tổng hợp duy nhất |
 | `scripts/migrate_v*.sql` | Tạo file mới nếu cần ALTER TABLE |
 | `.env.example` | Thêm biến môi trường mới nếu có |
 
@@ -253,4 +253,27 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 
 ---
 
-*Tài liệu này sẽ liên tục được cập nhật song hành cùng sự tiến bộ của dự án!*
+### 9. Bài học rút ra (Lessons Learned — cập nhật sau mỗi session)
+
+| # | Bài học | Nguyên nhân | Fix |
+|---|---------|------------|-----|
+| 1 | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` KHÔNG chạy qua PgBouncer | `IF NOT EXISTS` không được PgBouncer hỗ trợ cho publication | Dùng DO block với `pg_publication` + `pg_publication_rel` check |
+| 2 | `database.sql` bị thiếu 7 bảng từ migrations | Rule "NEVER edit database.sql" cũ quá cứng nhắc | Đổi rule thành "database.sql là schema tổng hợp — cập nhật khi thêm bảng" |
+| 3 | Quên kiểm tra RLS + Realtime sau migrations | Không có quy trình verify hậu migration | Thêm rule #15 vào SKILL.md — audit RLS + Realtime + database.sql sau mỗi migration |
+| 4 | Số table trong SKILL.md sai (ghi 18, thực tế 31) | Không cập nhật SKILL.md khi thêm bảng | Cập nhật section 4 mỗi khi thay đổi schema |
+| 5 | Multi-statement SQL không đáng tin qua PgBouncer | Pooler transaction mode xử lý multi-statement không ổn định | Dùng DO block thay vì `;`-separated statements; script `run-migrations.mjs` chạy từng câu riêng |
+
+### 10. Quy tắc bổ sung cho migrations
+
+```
+□ Kiểm tra table có cần RLS không? → ALTER TABLE ... ENABLE ROW LEVEL SECURITY;
+□ Table có cần realtime không? → Thêm vào DO block trong supabase_realtime
+□ Cập nhật database.sql (thêm CREATE TABLE + RLS + realtime)
+□ Xoá file migrate cũ sau khi đã gộp vào database.sql
+□ Dùng DO block thay IF NOT EXISTS cho publication
+□ Kiểm tra syntax qua pooler (chạy thử 1 lần) trước khi apply
+```
+
+---
+
+*Tài liệu này sẽ liên tục được cập nhật song hành cùng sự tiến bộ của dự án!**

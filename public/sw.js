@@ -1,5 +1,5 @@
-const CACHE_NAME = 'min-salon-cache-v2';
-const STATIC_CACHE = 'min-salon-static-v2';
+const CACHE_NAME = 'min-salon-cache-v3';
+const STATIC_CACHE = 'min-salon-static-v3';
 const ASSETS_TO_CACHE = [
   '/manifest.json',
   '/offline'
@@ -74,10 +74,10 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Network-first for pages and other same-origin requests
+  // Network-first for pages with iOS-safe timeout
   e.respondWith(
-    fetch(e.request)
-      .then((response) => {
+    Promise.race([
+      fetch(e.request).then((response) => {
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -85,17 +85,18 @@ self.addEventListener('fetch', (e) => {
           });
         }
         return response;
-      })
-      .catch(() => {
-        return caches.match(e.request).then((cachedResponse) => {
-          if (cachedResponse) return cachedResponse;
-          if (e.request.mode === 'navigate') {
-            return caches.open(CACHE_NAME).then((cache) => {
-              return cache.match('/offline');
-            });
-          }
-        });
-      })
+      }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000))
+    ]).catch(() => {
+      return caches.match(e.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        if (e.request.mode === 'navigate') {
+          return caches.open(CACHE_NAME).then((cache) => {
+            return cache.match('/offline');
+          });
+        }
+      });
+    })
   );
 });
 
@@ -113,8 +114,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/icons/icon-192.svg',
-    badge: '/icons/icon-192.svg',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
     vibrate: [100, 50, 100],
     data: data.data || {},
     actions: [

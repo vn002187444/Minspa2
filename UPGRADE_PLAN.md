@@ -1,7 +1,7 @@
 # 🚀 KẾ HOẠCH NÂNG CẤP V3 (EXECUTION PLAN)
 
 > **Mục tiêu:** Nâng cấp hệ thống lên chuẩn doanh nghiệp, ưu tiên core operations trước, trải nghiệm & mở rộng sau.
-> **Trạng thái:** V3.1–V3.8, V3.12 ✅ | Tiếp theo: V3.9 (Financials & Payment)
+> **Trạng thái:** V3.1–V3.8, V3.12 ✅ | Migrations consolidated → `database.sql` | Tiếp theo: V3.9 (Financials & Payment)
 
 ---
 
@@ -35,6 +35,16 @@ V3 EXECUTION
 | 3 | **Thiếu Accessibility** | Forms thiếu htmlFor/id, modals thiếu trap | Dùng checklist (htmlFor, id, useFocusTrap) |
 | 4 | **Any types** | Lỗi type cascade khi refactor | Define interface trước khi code |
 | 5 | **Migration messy** | 15+ SQL files trong scripts/ | Move applied → `scripts/archive/` |
+
+## 🧠 V3 Post-Mortem: Lessons Learned (cập nhật 06/2026)
+
+| # | Bài học | Nguyên nhân | Fix áp dụng |
+|---|---------|------------|-------------|
+| 1 | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` KHÔNG chạy qua PgBouncer | PgBouncer transaction mode không pass syntax này | DO block với `pg_publication` + `pg_publication_rel` check |
+| 2 | `database.sql` lỗi thời — thiếu 7 bảng so với thực tế | Rule "NEVER edit database.sql" quá cứng nhắc | Đổi rule → database.sql là schema tổng hợp, cập nhật khi thêm bảng |
+| 3 | Không verify RLS + Realtime sau migrations | Thiếu quy trình hậu migration | Audit RLS + Realtime + database.sql ngay sau mỗi migration |
+| 4 | SKILL.md sai số table (ghi 18 nhưng thực tế 31) | Không cập nhật SKILL.md cùng schema | Cập nhật SKILL.md section 4 + 9 mỗi khi thay đổi DB |
+| 5 | Multi-statement SQL không ổn định qua pooler | PgBouncer xử lý `;`-separated statements không đáng tin | Dùng DO block; `run-migrations.mjs` chạy từng câu riêng |
 
 ---
 
@@ -261,3 +271,28 @@ V3 EXECUTION
 | 11.5 | Branch selector UI cho admin | [ ] | Chuyển chi nhánh |
 | 11.6 | Report tổng hợp multi-branch | [ ] | Gộp doanh thu |
 | 11.7 | Export dữ liệu (CSV, JSON, PDF) | [ ] | lib/export.ts |
+
+---
+
+## 📋 NGUYÊN TẮC MIGRATION DATABASE (áp dụng cho mọi V3.x)
+
+### Checklist khi thêm bảng mới
+```
+□ Viết CREATE TABLE trong migration file + database.sql
+□ Thêm ALTER TABLE ... ENABLE ROW LEVEL SECURITY
+□ Nếu cần realtime → thêm vào supabase_realtime publication (dùng DO block)
+□ Thêm GRANT quyền cho service_role + authenticated (nếu cần)
+□ Kiểm tra syntax qua pooler trước khi apply
+□ Sau khi apply → archive migration → xoá file migrate cũ
+□ Cập nhật SKILL.md (section 4 + section 9)
+□ Cập nhật PLAN.md + UPGRADE_PLAN.md
+```
+
+### PgBouncer-safe SQL patterns
+
+| Pattern | Không dùng | Thay bằng |
+|---------|-----------|-----------|
+| Publication | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` | DO block với `pg_publication` check |
+| Conditional DDL | `CREATE TABLE IF NOT EXISTS` (safe) | Giữ nguyên (safe) |
+| Multi-statement | `stmt1; stmt2; stmt3` trong 1 query | Tách từng câu hoặc DO block |
+| Index | `CREATE INDEX IF NOT EXISTS` (safe) | Giữ nguyên (safe) |

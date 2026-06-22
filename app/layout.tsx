@@ -40,7 +40,7 @@ export async function generateMetadata(): Promise<Metadata> {
     manifest: "/manifest.json",
     alternates: { canonical: baseUrl },
     icons: {
-      apple: { url: "/icons/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
+      apple: { url: "/icons/icon-192.png", sizes: "192x192" },
     },
     openGraph: {
       type: "website",
@@ -75,7 +75,7 @@ export async function generateMetadata(): Promise<Metadata> {
         manifest: "/manifest.json",
         alternates: { canonical: baseUrl },
         icons: {
-          apple: { url: "/icons/icon-512.svg", sizes: "512x512", type: "image/svg+xml" },
+          apple: { url: "/icons/icon-192.png", sizes: "192x192" },
         },
         keywords: data.meta_keywords || "",
         appleWebApp: {
@@ -119,7 +119,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        <link rel="preload" href="/icons/icon-192.svg" as="image" />
+        <link rel="preload" href="/icons/icon-192.png" as="image" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Min Salon" />
       </head>
       <body className="antialiased font-sans text-gray-900 bg-gray-50 overflow-x-hidden">
          <SkipLink />
