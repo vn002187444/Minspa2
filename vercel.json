@@ -1,3 +1,6 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD~1 -- '*.md' 'docs/**' '.agents/**' '.github/**' LICENSE 2>/dev/null && exit 0 || exit 1"
+  "ignoreCommand": "git diff --quiet HEAD~1 -- '*.md' 'docs/**' '.agents/**' '.github/**' LICENSE 2>/dev/null && exit 0 || exit 1",
+  "env": {
+    "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+  }
 }
