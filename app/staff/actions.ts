@@ -6,7 +6,7 @@ import { verifyPassword, hashPassword } from "@/lib/password";
 import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { runRemindersCheck } from "@/utils/reminders";
-import { lockTimeSlots, unlockTimeSlots, cascadeShiftForward, handleCancelAndUnlock } from "@/lib/booking-engine";
+import { lockTimeSlots, unlockTimeSlots, cascadeShiftForward, handleCancelAndUnlock, incrementSlotLimit } from "@/lib/booking-engine";
 
 export async function getStaffData() {
   const session = await getSession();
@@ -469,6 +469,16 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
     }
   }
 
+  // Track slot limit for tomorrow
+  if (dbAppt?.start_time) {
+    const bookingDate = new Date(dbAppt.start_time).toISOString().split('T')[0];
+    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    if (bookingDate === tomorrowStr) {
+      const timeStr = new Date(dbAppt.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' });
+      incrementSlotLimit(bookingDate, timeStr).catch(() => {});
+    }
+  }
+
   // Fire-and-forget: push notifications + reminders (non-blocking background tasks)
   if (dbAppt) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -698,6 +708,38 @@ export async function changePassword(oldPassword: string, newPassword: string) {
   }
   
   return { success: true };
+}
+
+export async function updateTip(appointmentId: string, newTipAmount: number) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) {
+    return { success: false, error: 'Bạn không có quyền thực hiện việc này.' };
+  }
+
+  const supabase = await createClient();
+  const staffId = session.user.id;
+
+  const { data: appt } = await supabase
+    .from('appointments')
+    .select('id, staff_id, start_time, status')
+    .eq('id', appointmentId)
+    .single();
+
+  if (!appt) return { success: false, error: 'Không tìm thấy đơn hàng.' };
+  if (appt.status !== 'COMPLETED') return { success: false, error: 'Chỉ được sửa tip cho đơn đã hoàn thành.' };
+  if (appt.staff_id !== staffId) return { success: false, error: 'Bạn chỉ được sửa tip cho đơn của mình.' };
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const apptDate = new Date(appt.start_time).toISOString().split('T')[0];
+  if (apptDate !== todayStr) return { success: false, error: 'Chỉ được sửa tip trong ngày hôm nay.' };
+
+  const { error } = await supabase
+    .from('appointments')
+    .update({ tip_amount: newTipAmount })
+    .eq('id', appointmentId);
+
+  if (error) return { success: false, error: error.message };
+  return { success: true, newTip: newTipAmount };
 }
 
 export async function getCustomerPackagesDetailed(customerId: string) {

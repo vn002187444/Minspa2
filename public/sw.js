@@ -1,9 +1,11 @@
-const CACHE_NAME = 'min-salon-cache-v1';
+const CACHE_NAME = 'min-salon-cache-v2';
+const STATIC_CACHE = 'min-salon-static-v2';
 const ASSETS_TO_CACHE = [
-  '/',
   '/manifest.json',
   '/offline'
 ];
+
+const STATIC_EXTENSIONS = /\.(js|css|svg|ico|woff2?|png|jpg|jpeg|gif|webp)$/;
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -18,7 +20,7 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          if (key !== CACHE_NAME && key !== STATIC_CACHE) {
             return caches.delete(key);
           }
         })
@@ -28,7 +30,6 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Parse request to see if it qualifies for caching
   if (e.request.method !== 'GET') {
     e.respondWith(fetch(e.request));
     return;
@@ -42,12 +43,12 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Pass-through strategy to avoid breaking Supabase or any live network/auth APIs
+  // Pass-through for API, Supabase, WebSocket, Next.js static chunks
   if (
     url.origin !== self.location.origin ||
     url.pathname.startsWith('/api') ||
+    url.pathname.includes('/_next/') ||
     url.pathname.includes('supabase') ||
-    url.pathname.includes('_next') ||
     url.pathname.includes('ws') ||
     e.request.headers.get('accept')?.includes('text/event-stream')
   ) {
@@ -55,11 +56,28 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Network-First strategy with fallback to Cache for regular pages and static resources
+  // Cache-first for static assets (JS, CSS, images, fonts)
+  if (STATIC_EXTENSIONS.test(url.pathname)) {
+    e.respondWith(
+      caches.open(STATIC_CACHE).then((cache) => {
+        return cache.match(e.request).then((cached) => {
+          if (cached) return cached;
+          return fetch(e.request).then((response) => {
+            if (response && response.status === 200) {
+              cache.put(e.request, response.clone());
+            }
+            return response;
+          });
+        });
+      })
+    );
+    return;
+  }
+
+  // Network-first for pages and other same-origin requests
   e.respondWith(
     fetch(e.request)
       .then((response) => {
-        // If valid response, clone and cache it
         if (response && response.status === 200 && response.type === 'basic') {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -69,12 +87,8 @@ self.addEventListener('fetch', (e) => {
         return response;
       })
       .catch(() => {
-        // Fallback to cache if offline
         return caches.match(e.request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          // Serve offline page for navigation requests
+          if (cachedResponse) return cachedResponse;
           if (e.request.mode === 'navigate') {
             return caches.open(CACHE_NAME).then((cache) => {
               return cache.match('/offline');
@@ -99,8 +113,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/logo.png',
-    badge: '/badge.png',
+    icon: '/icons/icon-192.svg',
+    badge: '/icons/icon-192.svg',
     vibrate: [100, 50, 100],
     data: data.data || {},
     actions: [

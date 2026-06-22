@@ -11,6 +11,10 @@ import {
   AlertTriangle,
   Palette,
   Send,
+  Sparkles,
+  Volume2,
+  VolumeX,
+  CloudSun,
 } from "lucide-react";
 import {
   getSystemHealth,
@@ -19,7 +23,13 @@ import {
   getCronJobStatuses,
   getBannerSettings,
   saveBannerSettings,
+  getMascotSettings,
+  saveMascotSettings,
+  getThemeSettings,
+  saveThemeSettings,
 } from "../actions";
+import { THEME_LIST } from "@/lib/themes";
+import { MASCOT_CHARACTERS } from "@/lib/mascot-themes";
 
 export default function TabSettings() {
   const [health, setHealth] = useState<any>(null);
@@ -33,6 +43,19 @@ export default function TabSettings() {
   const [bannerLoading, setBannerLoading] = useState(false);
   const [bannerSaving, setBannerSaving] = useState(false);
   const [bannerMsg, setBannerMsg] = useState<string | null>(null);
+
+  // Mascot
+  const [mascot, setMascot] = useState<any>(null);
+  const [mascotLoading, setMascotLoading] = useState(false);
+  const [mascotSaving, setMascotSaving] = useState(false);
+  const [mascotMsg, setMascotMsg] = useState<string | null>(null);
+
+  // Theme
+  const [theme, setTheme] = useState<any>(null);
+  const [themeLoading, setThemeLoading] = useState(false);
+  const [themeSaving, setThemeSaving] = useState(false);
+  const [themeMsg, setThemeMsg] = useState<string | null>(null);
+  const [themePreview, setThemePreview] = useState<string>('default');
 
   // Notification
   const [notifRole, setNotifRole] = useState("STAFF");
@@ -58,6 +81,34 @@ export default function TabSettings() {
     const res = await triggerCronJob(job);
     setCronResult(`${job}: ${res.success ? "Thành công" : "Thất bại"}`);
     if (res.success) loadCronStatuses();
+  };
+
+  const loadMascot = async () => {
+    setMascotLoading(true);
+    setMascot(await getMascotSettings());
+    setMascotLoading(false);
+  };
+
+  const handleSaveMascot = async () => {
+    setMascotSaving(true);
+    setMascotMsg(null);
+    const res = await saveMascotSettings(mascot);
+    setMascotMsg(res.success ? "Đã lưu cấu hình Mascot!" : "Lỗi: " + res.error);
+    setMascotSaving(false);
+  };
+
+  const loadTheme = async () => {
+    setThemeLoading(true);
+    setTheme(await getThemeSettings());
+    setThemeLoading(false);
+  };
+
+  const handleSaveTheme = async () => {
+    setThemeSaving(true);
+    setThemeMsg(null);
+    const res = await saveThemeSettings(theme);
+    setThemeMsg(res.success ? "Đã lưu theme!" : "Lỗi: " + res.error);
+    setThemeSaving(false);
   };
 
   const loadBanner = async () => {
@@ -181,6 +232,159 @@ export default function TabSettings() {
             );
           })}
         </div>
+      </div>
+
+      {/* Mascot Settings (V3.6) */}
+      <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-gray-600" />
+            <h3 className="font-bold text-gray-900">Mascot tương tác</h3>
+          </div>
+          <button
+            onClick={loadMascot}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+          >
+            {mascotLoading ? "Đang tải..." : "Tải"}
+          </button>
+        </div>
+
+        {mascot && (
+          <div className="space-y-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={mascot.enabled}
+                onChange={(e) => setMascot({ ...mascot, enabled: e.target.checked })}
+                className="rounded border-gray-300 text-[#8D6E53] focus:ring-[#8D6E53]"
+              />
+              <span className="text-sm font-medium text-gray-700">Hiển thị Mascot toàn trang</span>
+            </label>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-2 block">Kiểu nhân vật</label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                {MASCOT_CHARACTERS.map((char) => (
+                  <button
+                    key={char.key}
+                    type="button"
+                    onClick={() => setMascot({ ...mascot, character: char.key })}
+                    className={`p-2 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                      mascot.character === char.key ? 'border-pink-500 bg-pink-50 ring-2 ring-pink-200' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <p className="text-lg">{char.emoji}</p>
+                    <p className="text-[10px] font-bold mt-0.5">{char.label.split(' ')[0]}</p>
+                    <p className="text-[9px] text-gray-400">{char.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={mascot.soundEnabled}
+                onChange={(e) => setMascot({ ...mascot, soundEnabled: e.target.checked })}
+                className="rounded border-gray-300 text-[#8D6E53] focus:ring-[#8D6E53]"
+              />
+              {mascot.soundEnabled ? (
+                <Volume2 className="w-4 h-4 text-gray-500" />
+              ) : (
+                <VolumeX className="w-4 h-4 text-gray-500" />
+              )}
+              <span className="text-sm font-medium text-gray-700">Hiệu ứng âm thanh</span>
+            </label>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveMascot}
+                disabled={mascotSaving}
+                className="px-4 py-2 bg-[#8D6E53] text-white rounded-lg text-sm font-semibold hover:bg-[#7A5F47] transition-colors disabled:opacity-50"
+              >
+                {mascotSaving ? "Đang lưu..." : "Lưu cấu hình"}
+              </button>
+              {mascotMsg && (
+                <span className={`text-xs font-medium ${mascotMsg.startsWith("Đã") ? "text-green-600" : "text-red-600"}`}>
+                  {mascotMsg}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Theme Settings (V3.8) */}
+      <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <CloudSun className="w-5 h-5 text-gray-600" />
+            <h3 className="font-bold text-gray-900">Theme & Giao diện</h3>
+          </div>
+          <button
+            onClick={loadTheme}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+          >
+            {themeLoading ? "Đang tải..." : "Tải"}
+          </button>
+        </div>
+
+        {theme && (
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-gray-500 mb-2 block">Chủ đề</label>
+              <select
+                value={theme.override || 'auto'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTheme({ ...theme, override: val === 'auto' ? null : val });
+                  setThemePreview(val === 'auto' ? 'default' : val);
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent"
+              >
+                <option value="auto">🎯 Tự động (theo mùa)</option>
+                {THEME_LIST.map((t) => (
+                  <option key={t.name} value={t.name}>{t.label} — {t.description}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Preview */}
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-gray-200" style={{ backgroundColor: `rgb(var(--color-bg))` }}>
+              <div className="w-8 h-8 rounded-full" style={{ backgroundColor: `rgb(var(--color-accent))` }} />
+              <div className="flex-1 space-y-1">
+                <div className="h-2 rounded w-3/4" style={{ backgroundColor: `rgb(var(--color-text-primary))` }} />
+                <div className="h-2 rounded w-1/2" style={{ backgroundColor: `rgb(var(--color-text-secondary))` }} />
+              </div>
+              <div className="w-12 h-6 rounded" style={{ backgroundColor: `rgb(var(--color-gold))` }} />
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={theme.particlesEnabled}
+                onChange={(e) => setTheme({ ...theme, particlesEnabled: e.target.checked })}
+                className="rounded border-gray-300 text-[#8D6E53] focus:ring-[#8D6E53]"
+              />
+              <span className="text-sm font-medium text-gray-700">Hiệu ứng nền (tuyết/lá/hoa)</span>
+            </label>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveTheme}
+                disabled={themeSaving}
+                className="px-4 py-2 bg-[#8D6E53] text-white rounded-lg text-sm font-semibold hover:bg-[#7A5F47] transition-colors disabled:opacity-50"
+              >
+                {themeSaving ? "Đang lưu..." : "Lưu theme"}
+              </button>
+              {themeMsg && (
+                <span className={`text-xs font-medium ${themeMsg.startsWith("Đã") ? "text-green-600" : "text-red-600"}`}>
+                  {themeMsg}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Banner Settings */}

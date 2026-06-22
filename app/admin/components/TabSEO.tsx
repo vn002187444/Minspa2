@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import TabAutoSEO from "./TabAutoSEO";
 import Image from "next/image";
 import { Globe, Sparkles, Search, PenTool, ImageIcon, FileText, CheckCircle2, Facebook, Twitter, Send, Trash2, RefreshCw } from "lucide-react";
 import {
@@ -13,11 +14,14 @@ import {
   saveSeoArticle,
   deleteSeoArticle,
   publishSeoArticleToBlog,
+  getAutoSeoConfig,
+  saveAutoSeoConfig,
+  getAutoSeoHistory,
 } from "../actions";
 
 export default function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onReload: () => void }) {
   const router = useRouter();
-  const [subTab, setSubTab] = useState<"METADATA" | "AI_WRITER" | "SAVED_ARTICLES" | "BANNER">("METADATA");
+  const [subTab, setSubTab] = useState<"METADATA" | "AI_WRITER" | "SAVED_ARTICLES" | "BANNER" | "AUTO_SEO">("METADATA");
   
   // Banner States
   const [bannerForm, setBannerForm] = useState({
@@ -394,6 +398,14 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
             }`}
           >
             Cấu hình Banner 📣
+          </button>
+          <button
+            onClick={() => setSubTab("AUTO_SEO")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              subTab === "AUTO_SEO" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            Auto SEO 🤖
           </button>
         </div>
       </div>
@@ -1052,6 +1064,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
           )}
         </div>
       )}
+
+      {/* AUTO SEO SUBTAB */}
+      {subTab === "AUTO_SEO" && <TabAutoSEO />}
 
       {/* BANNER SUBTAB */}
       {subTab === "BANNER" && (

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { insertNotification } from "@/utils/notifications";
 import { format } from "date-fns";
+import { getCached, setCache, buildSlotCacheKey, invalidateCache } from "@/lib/slot-cache";
 
 export interface TimeLock {
   id: string;
@@ -273,11 +274,74 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
   }
 }
 
+export async function findNextAvailableDate(
+  serviceIds: string[],
+  services: { id: string; duration: number }[],
+  preferredStaffId?: string,
+  maxDays: number = 30
+): Promise<{ date: string; slots: SlotAvailability[] } | null> {
+  const today = new Date();
+  const totalDuration = calculateProgressiveDuration(serviceIds, services);
+  const durationMinutes = totalDuration > 0 ? totalDuration : 60;
+
+  for (let i = 0; i < maxDays; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    const dateStr = d.toISOString().split('T')[0];
+
+    const slots = await getSlotAvailabilityWithNames(dateStr, serviceIds, services, true);
+    if (preferredStaffId) {
+      const goodSlots = slots.filter(
+        (s) => s.status !== 'past' && s.status !== 'no_staff_present' && s.status !== 'fully_booked' &&
+        s.availableStaffNames.some((name) => name === preferredStaffId)
+      );
+      if (goodSlots.length > 0) return { date: dateStr, slots: goodSlots };
+    } else {
+      const goodSlots = slots.filter(
+        (s) => s.status === 'all_available' || s.status === 'some_available'
+      );
+      if (goodSlots.length > 0) return { date: dateStr, slots: goodSlots };
+    }
+  }
+  return null;
+}
+
+export async function incrementSlotLimit(date: string, time: string): Promise<void> {
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from('slot_limits')
+    .select('id, current_bookings')
+    .eq('lock_date', date)
+    .eq('time_slot', time)
+    .single();
+
+  if (existing) {
+    await supabase
+      .from('slot_limits')
+      .update({ current_bookings: existing.current_bookings + 1 })
+      .eq('id', existing.id);
+  } else {
+    await supabase.from('slot_limits').insert({
+      lock_date: date,
+      time_slot: time,
+      max_bookings: 1,
+      current_bookings: 1,
+    });
+  }
+
+  invalidateCache(date);
+}
+
 export async function getSlotAvailabilityWithNames(
   date: string,
   selectedServiceIds: string[] = [],
-  services: { id: string; duration: number }[] = []
+  services: { id: string; duration: number }[] = [],
+  skipAttendanceCheck: boolean = false
 ): Promise<SlotAvailability[]> {
+  const cacheKey = buildSlotCacheKey(date, selectedServiceIds);
+  const cached = getCached<SlotAvailability[]>(cacheKey);
+  if (cached) return cached;
+
   const supabase = await createClient();
 
   const { data: allStaff } = await supabase
@@ -288,11 +352,16 @@ export async function getSlotAvailabilityWithNames(
 
   if (!allStaff || allStaff.length === 0) return [];
 
-  const { data: attendance } = await supabase
-    .from('attendance')
-    .select('staff_id')
-    .eq('date', date)
-    .eq('status', 'PRESENT');
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isTomorrowOrLater = date > todayStr;
+
+  const { data: attendance } = skipAttendanceCheck || isTomorrowOrLater
+    ? { data: allStaff.map((s: { id: string; full_name: string }) => ({ staff_id: s.id })) }
+    : await supabase
+        .from('attendance')
+        .select('staff_id')
+        .eq('date', date)
+        .eq('status', 'PRESENT');
 
   const presentStaffIds = new Set((attendance || []).map((a: { staff_id: string }) => a.staff_id));
   const presentStaff = allStaff.filter((s: { id: string; full_name: string }) => presentStaffIds.has(s.id));
@@ -314,6 +383,16 @@ export async function getSlotAvailabilityWithNames(
     .select('staff_id, start_time, end_time')
     .eq('lock_date', date)
     .eq('is_active', true);
+
+  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const { data: slotLimits } = isTomorrowOrLater && date === tomorrowStr
+    ? await supabase.from('slot_limits').select('time_slot, current_bookings, max_bookings').eq('lock_date', date)
+    : { data: [] };
+
+  const slotLimitMap = new Map<string, { current: number; max: number }>();
+  for (const sl of (slotLimits || [])) {
+    slotLimitMap.set(sl.time_slot, { current: sl.current_bookings, max: sl.max_bookings });
+  }
 
   const totalDuration = calculateProgressiveDuration(selectedServiceIds, services);
   const durationMinutes = totalDuration > 0 ? totalDuration : 30;
@@ -364,8 +443,13 @@ export async function getSlotAvailabilityWithNames(
       }
 
       const availableStaff = presentStaff.filter((s: { id: string; full_name: string }) => !busyStaffIdsForSlot.has(s.id));
-      const availableCount = availableStaff.length;
+      let availableCount = availableStaff.length;
       const availableStaffNames = availableStaff.map((s: { id: string; full_name: string }) => s.full_name);
+
+      const limit = slotLimitMap.get(time);
+      if (limit && limit.current >= limit.max) {
+        availableCount = 0;
+      }
 
       let status: SlotAvailability['status'];
       if (availableCount === 0) {
@@ -382,5 +466,6 @@ export async function getSlotAvailabilityWithNames(
     }
   }
 
+  setCache(cacheKey, slots, selectedServiceIds.length > 0 ? 15_000 : 30_000);
   return slots;
 }

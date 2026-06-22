@@ -6,8 +6,10 @@ export function sanitizeHtml(dirty: string): string {
   return dirty
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-    .replace(/on\w+\s*=\s*"[^"]*"/gi, '')
-    .replace(/on\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
+    .replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
+    .replace(/\s+\w+\s*=\s*"(?:[^"]*javascript\s*:[^"]*)"/gi, '')
+    .replace(/\s+\w+\s*=\s*'(?:[^']*javascript\s*:[^']*)'/gi, '')
     .replace(/javascript\s*:/gi, '')
     .replace(/<(\/?)(\w+)([^>]*)>/g, (match, close, tag, attrs) => {
       if (ALLOWED_TAGS.has(tag.toLowerCase())) {

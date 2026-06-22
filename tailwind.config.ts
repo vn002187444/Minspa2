@@ -21,6 +21,7 @@ const config: Config = {
         float: "float 5s ease-in-out infinite",
         "float-delayed": "float 6s ease-in-out infinite 2s",
         shimmer: "shimmer 1.5s infinite",
+        ripple: "ripple 0.6s ease-out forwards",
       },
       screens: {
         'xxl': '1600px',
@@ -55,6 +56,10 @@ const config: Config = {
         shimmer: {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
+        },
+        ripple: {
+          from: { transform: "scale(0)", opacity: "0.5" },
+          to: { transform: "scale(4)", opacity: "0" },
         },
       },
     },

@@ -14,12 +14,7 @@ export async function POST(req: NextRequest) {
 
     await Promise.all([
       supabase.from('blog_views').insert({ post_id: postId, ip_hash: ipHash, user_agent: userAgent }),
-      supabase.from('blog_stats').upsert(
-        { post_id: postId, date: new Date().toISOString().split('T')[0] },
-        { onConflict: 'post_id,date', ignoreDuplicates: false }
-      ).then(() =>
-        supabase.rpc('increment_blog_view', { p_post_id: postId })
-      ),
+      supabase.rpc('increment_blog_view', { p_post_id: postId }),
     ]);
 
     return NextResponse.json({ success: true });

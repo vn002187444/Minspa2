@@ -26,6 +26,7 @@ import {
   Package,
   User,
   Activity,
+  ListTodo,
 } from "lucide-react";
 import {
   getStaffs,
@@ -37,18 +38,22 @@ import {
   getAdminSessionInfo,
 } from "./actions";
 import TodayMonitoringWidget from "./components/TodayMonitoringWidget";
-import TabDashboard from "./components/TabDashboard";
-import TabStaff from "./components/TabStaff";
-import TabServices from "./components/TabServices";
-import TabReviews from "./components/TabReviews";
-import TabSEO from "./components/TabSEO";
-import TabBank from "./components/TabBank";
-import TabPassword from "./components/TabPassword";
-import TabCommission from "./components/TabCommission";
-import TabPackages from "./components/TabPackages";
-import TabSellAndProgress from "./components/TabSellAndProgress";
-import TabAttendance from "./components/TabAttendance";
-import TabSettings from "./components/TabSettings";
+import dynamic from 'next/dynamic';
+
+const TabDashboard = dynamic(() => import('./components/TabDashboard'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabStaff = dynamic(() => import('./components/TabStaff'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabServices = dynamic(() => import('./components/TabServices'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabReviews = dynamic(() => import('./components/TabReviews'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabSEO = dynamic(() => import('./components/TabSEO'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabBank = dynamic(() => import('./components/TabBank'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabPassword = dynamic(() => import('./components/TabPassword'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabCommission = dynamic(() => import('./components/TabCommission'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabPackages = dynamic(() => import('./components/TabPackages'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabSellAndProgress = dynamic(() => import('./components/TabSellAndProgress'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabAttendance = dynamic(() => import('./components/TabAttendance'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabSettings = dynamic(() => import('./components/TabSettings'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabTasks = dynamic(() => import('./components/TabTasks'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabReports = dynamic(() => import('./components/TabReports'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -97,7 +102,7 @@ export default function AdminDashboard() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
-      if (tabParam && ["DASHBOARD", "STAFF", "SERVICES", "PACKAGES", "COMMISSION", "REVIEWS", "SEO", "BANK", "PASSWORD", "ATTENDANCE", "SETTINGS"].includes(tabParam)) {
+      if (tabParam && ["DASHBOARD", "STAFF", "SERVICES", "PACKAGES", "COMMISSION", "REVIEWS", "SEO", "BANK", "PASSWORD", "ATTENDANCE", "SETTINGS", "TASKS", "REPORTS"].includes(tabParam)) {
         setActiveTab(tabParam);
       }
     }
@@ -194,6 +199,7 @@ export default function AdminDashboard() {
                 { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
                 { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
                 { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
+                { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
                 { id: "STAFF", label: "Nhân sự", icon: Users },
                 { id: "SERVICES", label: "Dịch vụ", icon: Settings },
                 { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
@@ -283,11 +289,13 @@ export default function AdminDashboard() {
             { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
             { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
             { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
+            { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
             { id: "STAFF", label: "Nhân sự", icon: Users },
             { id: "SERVICES", label: "Dịch vụ", icon: Settings },
             { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
-            { id: "COMMISSION", label: "Báo cáo Hoa hồng", icon: FileText },
-            { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
+              { id: "COMMISSION", label: "Báo cáo Hoa hồng", icon: FileText },
+                { id: "TASKS", label: "Công việc", icon: ListTodo },
+                { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
             { id: "REVIEWS", label: "Đánh giá", icon: Star },
             { id: "SEO", label: "Cấu hình SEO", icon: Globe },
             { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
@@ -383,6 +391,8 @@ export default function AdminDashboard() {
               />
             )}
             {activeTab === "ATTENDANCE" && <TabAttendance />}
+            {activeTab === "TASKS" && <TabTasks />}
+            {activeTab === "REPORTS" && <TabReports />}
             {activeTab === "SETTINGS" && <TabSettings />}
           </motion.div>
         )}

@@ -10,7 +10,7 @@ import { getCustomerCareSuggestion } from './actions/suggestions';
 import { getAvailableStaff, getSlotAvailability } from './actions/slots';
 import type { SlotInfo } from './actions/slots';
 import { submitBooking } from './actions/booking';
-import { trackEvent } from '@/lib/analytics';
+import { trackEvent, trackMascotEvent } from '@/lib/analytics';
 import { stripHtml } from '@/lib/sanitize';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, CloudOff, AlertTriangle } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
@@ -325,6 +325,7 @@ export default function BookingPage() {
              localStorage.setItem('min_salon_customer_id', res.customerId);
            }
          }
+         trackMascotEvent('booking_after_suggestion', {});
          trackEvent('booking_success', {
            value: finalTotal,
            currency: 'VND',
@@ -424,7 +425,18 @@ export default function BookingPage() {
               </div>
             )}
 
-            <BookingMascotGuide step={step} />
+            <BookingMascotGuide
+              step={step}
+              currentCategory={activeCategory}
+              onSuggestionClick={(name) => {
+                const match = services.find((s: any) => s.name.includes(name));
+                if (match && !selectedServices.includes(match.id)) {
+                  setSelectedServices((prev: string[]) => [...prev, match.id]);
+                  toast.success(`Đã thêm "${match.name}" vào danh sách`);
+                  trackEvent('mascot_suggestion_click', { service: match.name });
+                }
+              }}
+            />
 
             {step === 1 && (
               <div className="space-y-6 flex-1 animate-in fade-in slide-in-from-right-4 duration-500">

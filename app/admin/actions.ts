@@ -1503,6 +1503,212 @@ export async function saveBannerSettings(payload: BannerInput) {
   }
 }
 
+export async function adminUpdateTip(appointmentId: string, newTipAmount: number) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    return { success: false, error: 'Chỉ admin mới có quyền này.' };
+  }
+
+  const supabase = await createClient();
+
+  const { data: appt } = await supabase
+    .from('appointments')
+    .select('id, tip_amount, status, start_time')
+    .eq('id', appointmentId)
+    .single();
+
+  if (!appt) return { success: false, error: 'Không tìm thấy đơn hàng.' };
+  if (appt.status !== 'COMPLETED') return { success: false, error: 'Chỉ được sửa tip cho đơn đã hoàn thành.' };
+
+  const oldTip = appt.tip_amount;
+
+  const { error } = await supabase
+    .from('appointments')
+    .update({ tip_amount: newTipAmount })
+    .eq('id', appointmentId);
+
+  if (error) return { success: false, error: error.message };
+
+  logAuditAction(session.user.id, 'EDIT_TIP',
+    `Admin sửa tip đơn '${appointmentId}': ${oldTip}đ → ${newTipAmount}đ`
+  ).catch(() => {});
+
+  return { success: true, oldTip, newTip: newTipAmount };
+}
+
+export async function getTasks(filters?: { assigneeId?: string; status?: string; taskType?: string; search?: string }) {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+  let query = supabase
+    .from('tasks')
+    .select('*, assignee:users!assignee_id(id, full_name), creator:users!created_by(id, full_name)')
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  if (filters?.assigneeId) query = query.eq('assignee_id', filters.assigneeId);
+  if (filters?.status) query = query.eq('status', filters.status);
+  if (filters?.taskType) query = query.eq('task_type', filters.taskType);
+  if (filters?.search) query = query.ilike('title', `%${filters.search}%`);
+
+  const { data } = await query;
+  return data || [];
+}
+
+export async function getTaskStats() {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+  const now = new Date().toISOString();
+
+  const { count: total } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
+  const { count: pending } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'PENDING');
+  const { count: inProgress } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'IN_PROGRESS');
+  const { count: completed } = await supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'COMPLETED');
+  const { count: overdue } = await supabase.from('tasks').select('*', { count: 'exact', head: true })
+    .not('status', 'in', '("COMPLETED","CANCELLED")')
+    .lt('deadline', now);
+
+  return { total: total || 0, pending: pending || 0, inProgress: inProgress || 0, completed: completed || 0, overdue: overdue || 0 };
+}
+
+export async function getTasksForStaff() {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) {
+    return [];
+  }
+  const supabase = await createClient();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const { data } = await supabase
+    .from('tasks')
+    .select('*, creator:users!created_by(id, full_name)')
+    .or(`assignee_id.eq.${session.user.id},assignee_type.eq.all`)
+    .not('status', 'in', '("CANCELLED")')
+    .gte('created_at', todayStart.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(100);
+
+  return data || [];
+}
+
+export async function createTask(taskData: {
+  title: string;
+  description?: string;
+  taskType: 'daily' | 'one_time';
+  assigneeId?: string | null;
+  assigneeType: 'specific' | 'all';
+  deadline?: string;
+  timeSlot?: string;
+  priority?: string;
+}) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from('tasks').insert({
+    title: taskData.title,
+    description: taskData.description || null,
+    task_type: taskData.taskType,
+    assignee_id: taskData.assigneeType === 'specific' ? taskData.assigneeId : null,
+    assignee_type: taskData.assigneeType,
+    deadline: taskData.deadline || null,
+    time_slot: taskData.timeSlot || null,
+    priority: taskData.priority || 'medium',
+    created_by: session.user.id,
+  });
+
+  if (error) return { success: false, error: error.message };
+  logAuditAction(session.user.id, 'CREATE_TASK', `Tạo công việc: ${taskData.title}`);
+  return { success: true };
+}
+
+export async function updateTaskStatus(taskId: string, status: string) {
+  const session = await getSession();
+  if (!session) return { success: false, error: 'Unauthorized' };
+
+  const supabase = await createClient();
+  const updateData: Record<string, any> = { status };
+  if (status === 'COMPLETED') {
+    updateData.completed_at = new Date().toISOString();
+  }
+  updateData.updated_at = new Date().toISOString();
+
+  const { data: task } = await supabase.from('tasks').select('assignee_id, title').eq('id', taskId).single();
+  if (!task) return { success: false, error: 'Không tìm thấy công việc' };
+
+  if (session.user.role === 'STAFF' && task.assignee_id !== session.user.id) {
+    return { success: false, error: 'Bạn không có quyền cập nhật công việc này' };
+  }
+
+  const { error } = await supabase.from('tasks').update(updateData).eq('id', taskId);
+  if (error) return { success: false, error: error.message };
+
+  if (status === 'COMPLETED' || status === 'REJECTED') {
+    const { data: admins } = await supabase
+      .from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true);
+    for (const admin of (admins || [])) {
+      const notifTitle = status === 'COMPLETED' ? '✅ Nhân viên hoàn thành việc' : '❌ Nhân viên từ chối việc';
+      const notifBody = `Công việc "${task.title}" đã được cập nhật: ${status}`;
+      void supabase.from('notifications').insert({
+        recipient_type: 'user', recipient_id: admin.id,
+        title: notifTitle, content: notifBody, link: '/admin?tab=TASKS',
+      }).then(() => {}, () => {});
+    }
+  }
+
+  logAuditAction(session.user.id, 'UPDATE_TASK', `Cập nhật công việc '${task.title}' → ${status}`);
+  return { success: true };
+}
+
+export async function deleteTask(taskId: string) {
+  await checkAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+  if (error) return { success: false, error: error.message };
+  return { success: true };
+}
+
+export async function cloneDailyTasks() {
+  const supabase = await createClient();
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date();
+  todayEnd.setHours(23, 59, 59, 999);
+
+  const { data: yesterdayTasks } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('task_type', 'daily')
+    .lt('created_at', todayStart.toISOString())
+    .gte('created_at', new Date(todayStart.getTime() - 86400000).toISOString());
+
+  if (!yesterdayTasks || yesterdayTasks.length === 0) return { success: true, cloned: 0 };
+
+  let cloned = 0;
+  for (const task of yesterdayTasks) {
+    const { error } = await supabase.from('tasks').insert({
+      title: task.title,
+      description: task.description,
+      task_type: 'daily',
+      assignee_id: task.assignee_id,
+      assignee_type: task.assignee_type,
+      deadline: task.deadline,
+      time_slot: task.time_slot,
+      priority: task.priority,
+      created_by: task.created_by,
+      original_task_id: task.original_task_id || task.id,
+    });
+    if (!error) cloned++;
+  }
+
+  return { success: true, cloned };
+}
+
 export async function getCustomerPackageProgress(phone: string) {
   const session = await getSession();
   if (!session) throw new Error('Unauthorized');
@@ -1579,5 +1785,297 @@ export async function getCustomerPackageProgress(phone: string) {
   };
 }
 
+export async function getAdvancedRevenueReport(startDate: string, endDate: string) {
+  await checkAdminOrManager();
+  const supabase = await createClient();
 
+  const { data: appointments } = await supabase
+    .from('appointments')
+    .select(`
+      id, start_time, total_amount, discount_amount, tip_amount, commission_amount, status, staff_id,
+      users!appointments_staff_id_fkey(full_name),
+      customers(full_name, phone),
+      appointment_services(
+        id, price, discount_amount,
+        services(id, name)
+      )
+    `)
+    .gte('start_time', startDate)
+    .lte('start_time', endDate)
+    .eq('status', 'COMPLETED')
+    .limit(5000);
 
+  if (!appointments) {
+    return { revenueByDay: [], revenueByService: [], revenueByStaff: [], totalRevenue: 0, totalAppointments: 0 };
+  }
+
+  const revenueByDayMap: Record<string, number> = {};
+  const revenueByServiceMap: Record<string, { name: string; revenue: number; count: number }> = {};
+  const revenueByStaffMap: Record<string, { name: string; revenue: number; tip: number; count: number }> = {};
+  let totalRevenue = 0;
+  let totalTip = 0;
+  let totalDiscount = 0;
+
+  for (const appt of appointments) {
+    const day = appt.start_time?.slice(0, 10);
+    const netRevenue = (appt.total_amount || 0) - (appt.discount_amount || 0);
+    totalRevenue += netRevenue;
+    totalTip += appt.tip_amount || 0;
+    totalDiscount += appt.discount_amount || 0;
+
+    if (day) revenueByDayMap[day] = (revenueByDayMap[day] || 0) + netRevenue;
+
+    const usersArr = (appt.users as any) || [];
+    const staffName = Array.isArray(usersArr) ? (usersArr[0]?.full_name || 'N/A') : (usersArr?.full_name || 'N/A');
+    if (!revenueByStaffMap[appt.staff_id]) {
+      revenueByStaffMap[appt.staff_id] = { name: staffName, revenue: 0, tip: 0, count: 0 };
+    }
+    revenueByStaffMap[appt.staff_id].revenue += netRevenue;
+    revenueByStaffMap[appt.staff_id].tip += appt.tip_amount || 0;
+    revenueByStaffMap[appt.staff_id].count += 1;
+
+    for (const as of (appt.appointment_services || [])) {
+      const svc = as.services as any;
+      if (!svc?.name) continue;
+      if (!revenueByServiceMap[svc.name]) {
+        revenueByServiceMap[svc.name] = { name: svc.name, revenue: 0, count: 0 };
+      }
+      revenueByServiceMap[svc.name].revenue += (as.price || 0) - (as.discount_amount || 0);
+      revenueByServiceMap[svc.name].count += 1;
+    }
+  }
+
+  const revenueByDay = Object.entries(revenueByDayMap)
+    .map(([date, value]) => ({ date, value: Math.round(value) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  const revenueByService = Object.values(revenueByServiceMap)
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const revenueByStaff = Object.values(revenueByStaffMap)
+    .sort((a, b) => b.revenue - a.revenue);
+
+  return {
+    revenueByDay,
+    revenueByService,
+    revenueByStaff,
+    totalRevenue: Math.round(totalRevenue),
+    totalTip: Math.round(totalTip),
+    totalDiscount: Math.round(totalDiscount),
+    totalAppointments: appointments.length,
+  };
+}
+
+export async function getCustomerAnalytics(startDate: string, endDate: string) {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+
+  const { data: appointments } = await supabase
+    .from('appointments')
+    .select(`
+      id, total_amount, discount_amount, tip_amount, status, start_time,
+      customers!inner(id, full_name, phone, created_at)
+    `)
+    .gte('start_time', startDate)
+    .lte('start_time', endDate)
+    .eq('status', 'COMPLETED')
+    .limit(5000);
+
+  if (!appointments) {
+    return { topCustomers: [], customerStats: { total: 0, newCount: 0, returningCount: 0, avgVisits: 0 } };
+  }
+
+  const customerMap: Record<string, { id: string; name: string; phone: string; totalSpent: number; visits: number; firstVisit: string }> = {};
+  const newCustomers = new Set<string>();
+
+  for (const appt of appointments) {
+    const c = appt.customers as any;
+    if (!c?.id) continue;
+    if (!customerMap[c.id]) {
+      customerMap[c.id] = { id: c.id, name: c.full_name || 'N/A', phone: c.phone || '', totalSpent: 0, visits: 0, firstVisit: c.created_at || appt.start_time };
+    }
+    customerMap[c.id].totalSpent += (appt.total_amount || 0) - (appt.discount_amount || 0);
+    customerMap[c.id].visits += 1;
+  }
+
+  const now = new Date();
+  for (const c of Object.values(customerMap)) {
+    const created = new Date(c.firstVisit);
+    const daysSinceCreated = Math.floor((now.getTime() - created.getTime()) / 86400000);
+    if (daysSinceCreated <= 30) newCustomers.add(c.id);
+  }
+
+  const topCustomers = Object.values(customerMap)
+    .sort((a, b) => b.totalSpent - a.totalSpent)
+    .slice(0, 20)
+    .map(c => ({ ...c, totalSpent: Math.round(c.totalSpent) }));
+
+  const uniqueCustomers = Object.keys(customerMap).length;
+
+  return {
+    topCustomers,
+    customerStats: {
+      total: uniqueCustomers,
+      newCount: newCustomers.size,
+      returningCount: uniqueCustomers - newCustomers.size,
+      avgVisits: uniqueCustomers > 0 ? Math.round((appointments.length / uniqueCustomers) * 10) / 10 : 0,
+    },
+  };
+}
+
+export async function getGrowthComparison(startDate: string, endDate: string, compareStartDate: string, compareEndDate: string) {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+
+  const fetchPeriod = async (s: string, e: string) => {
+    const { data } = await supabase
+      .from('appointments')
+      .select('id, total_amount, discount_amount, tip_amount, start_time, status')
+      .gte('start_time', s)
+      .lte('start_time', e)
+      .eq('status', 'COMPLETED')
+      .limit(5000);
+    if (!data) return { revenue: 0, count: 0, tip: 0, byDay: [] as { date: string; value: number }[] };
+    let rev = 0;
+    let tip = 0;
+    const dayMap: Record<string, number> = {};
+    for (const a of data) {
+      rev += (a.total_amount || 0) - (a.discount_amount || 0);
+      tip += a.tip_amount || 0;
+      const d = a.start_time?.slice(0, 10);
+      if (d) dayMap[d] = (dayMap[d] || 0) + (a.total_amount || 0) - (a.discount_amount || 0);
+    }
+    const byDay = Object.entries(dayMap).map(([date, value]) => ({ date, value: Math.round(value) })).sort((a, b) => a.date.localeCompare(b.date));
+    return { revenue: Math.round(rev), count: data.length, tip: Math.round(tip), byDay };
+  };
+
+  const [current, previous] = await Promise.all([
+    fetchPeriod(startDate, endDate),
+    fetchPeriod(compareStartDate, compareEndDate),
+  ]);
+
+  const revenueChange = previous.revenue > 0 ? Math.round(((current.revenue - previous.revenue) / previous.revenue) * 100 * 10) / 10 : 0;
+  const countChange = previous.count > 0 ? Math.round(((current.count - previous.count) / previous.count) * 100 * 10) / 10 : 0;
+
+  return {
+    current,
+    previous,
+    revenueChange,
+    countChange,
+  };
+}
+
+export async function getThemeSettings() {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from('seo_settings').select('theme_override, theme_particles_enabled').eq('id', 1).single();
+    return {
+      override: data?.theme_override || null,
+      particlesEnabled: data?.theme_particles_enabled ?? true,
+    };
+  } catch {
+    return { override: null, particlesEnabled: true };
+  }
+}
+
+export async function saveThemeSettings(payload: { override: string | null; particlesEnabled: boolean }) {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from('seo_settings').upsert({
+      id: 1,
+      theme_override: payload.override || null,
+      theme_particles_enabled: payload.particlesEnabled,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+export async function getMascotSettings() {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from('seo_settings').select('mascot_enabled, mascot_character, mascot_sound').eq('id', 1).single();
+    return {
+      enabled: data?.mascot_enabled ?? true,
+      character: data?.mascot_character || 'min',
+      soundEnabled: data?.mascot_sound ?? true,
+    };
+  } catch {
+    return { enabled: true, character: 'min', soundEnabled: true };
+  }
+}
+
+export async function saveMascotSettings(payload: { enabled: boolean; character: string; soundEnabled: boolean }) {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from('seo_settings').upsert({
+      id: 1,
+      mascot_enabled: payload.enabled,
+      mascot_character: payload.character,
+      mascot_sound: payload.soundEnabled,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+export async function getAutoSeoConfig() {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from('auto_seo_config').select('*').eq('id', 1).single();
+    return data || { enabled: false, schedule_day: 'THU', schedule_hour: 20, topic_pool: [] };
+  } catch {
+    return { enabled: false, schedule_day: 'THU', schedule_hour: 20, topic_pool: [] };
+  }
+}
+
+export async function saveAutoSeoConfig(payload: {
+  enabled: boolean; schedule_day: string; schedule_hour: number; topic_pool: string[];
+}) {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from('auto_seo_config').upsert({
+      id: 1, ...payload, updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    return { success: true };
+  } catch (e: any) {
+    return { success: false, error: e.message };
+  }
+}
+
+export async function getAutoSeoHistory() {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('seo_articles')
+      .select('id, created_at, topic, keywords, status, topic_source, blog_slug, published_at')
+      .eq('topic_source', 'auto_seo')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return (data || []).map((a: any) => ({
+      id: a.id,
+      createdAt: a.created_at,
+      topic: a.topic,
+      keywords: a.keywords,
+      status: a.status,
+      topicSource: a.topic_source,
+      blogSlug: a.blog_slug,
+      publishedAt: a.published_at,
+    }));
+  } catch {
+    return [];
+  }
+}

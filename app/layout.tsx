@@ -4,6 +4,8 @@ import "./globals.css";
 import PwaSupport from "@/components/PwaSupport";
 import SkipLink from "@/components/SkipLink";
 import ThemeProvider from "@/components/ThemeProvider";
+import ThemeBanner from "@/components/ThemeBanner";
+import MascotProvider from "@/components/MascotProvider";
 import { Toaster } from 'sonner';
 import Script from 'next/script';
 
@@ -112,6 +114,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={`${inter.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
+        <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="preload" href="/icons/icon-192.svg" as="image" />
+      </head>
       <body className="antialiased font-sans text-gray-900 bg-gray-50 overflow-x-hidden">
          <SkipLink />
          <Script
@@ -152,10 +161,13 @@ export default function RootLayout({
             })
           }}
         />
-         <ThemeProvider>
-           <main id="main-content">{children}</main>
-           <PwaSupport />
-         </ThemeProvider>
+          <ThemeProvider>
+             <ThemeBanner />
+             <MascotProvider>
+              <main id="main-content">{children}</main>
+              <PwaSupport />
+            </MascotProvider>
+          </ThemeProvider>
       </body>
     </html>
   );

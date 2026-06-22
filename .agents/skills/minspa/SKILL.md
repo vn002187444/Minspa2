@@ -27,6 +27,7 @@ description: >-
 10. **Form accessibility checklist:** Every form must have `htmlFor` on label + matching `id` on input. Every modal must have `useFocusTrap` with `ref={trapRef}` on the dialog container.
 11. **No orphan migrations:** After applying a migration to Supabase, move the file to `scripts/archive/` or add `.applied` suffix — don't leave hanging files that create confusion about what has been applied.
 12. **Single source of truth:** PLAN.md is the permanent project plan. UPGRADE_PLAN.md is the active execution plan. After completing a session, merge the results into PLAN.md and remove from UPGRADE_PLAN.md.
+13. **Supabase features first:** Before writing code for any new feature, check `SUPABASE_FEATURES.md` (root) + `.agents/skills/minspa/SUPABASE_FEATURES.md` to see if Supabase đã có sẵn giải pháp. Ưu tiên pg_cron (schedule), pgmq (queue), Realtime (live update), Storage (file), pg_net (webhook) thay vì tự viết mới.
 
 ## 3. Auth System
 - **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)

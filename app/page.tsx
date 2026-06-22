@@ -19,6 +19,7 @@ import StatsCounter from '@/components/StatsCounter';
 import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 import { getBannerSettings } from './admin/actions';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
+import HomeMascotBanner from '@/components/HomeMascotBanner';
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => (
@@ -201,6 +202,9 @@ export default async function Home() {
           </div>
         </div>
       </header>
+
+      {/* Mascot Service Introduction (V3.6) */}
+      <HomeMascotBanner />
 
       {/* Unique AI Highlight Section */}
       <section className="py-8 max-w-7xl xxl:max-w-[1500px] mx-auto px-4">

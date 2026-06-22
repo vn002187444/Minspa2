@@ -17,7 +17,7 @@ AS $$
 DECLARE
   app_url text := 'https://minhair.vercel.app';
 BEGIN
-  PERFORM extensions.http_post(
+  PERFORM extensions.net.http_post(
     url := app_url || '/api/cron/reminders',
     headers := '{"Content-Type": "application/json", "x-supabase-cron": "true"}'::jsonb,
     body := '{}'::jsonb

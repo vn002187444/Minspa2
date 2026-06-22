@@ -3,7 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { format } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
-import { lockTimeSlots } from "@/lib/booking-engine";
+import { lockTimeSlots, incrementSlotLimit } from "@/lib/booking-engine";
 import { getPublicSeoSettings } from "./public";
 import { runRemindersCheck } from "@/utils/reminders";
 import { sendEmail } from "@/lib/notify";
@@ -102,7 +102,13 @@ export async function submitBooking(formData: any) {
     } else if (staffIdToUse) {
       await lockTimeSlots(appt.id, staffIdToUse, startTimeISO, endDateTime);
     }
-    
+
+    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const bookingDate = formData.date;
+    if (bookingDate === tomorrowStr && formData.time) {
+      incrementSlotLimit(bookingDate, formData.time).catch(() => {});
+    }
+
     if (formData.serviceIds && formData.serviceIds.length > 0) {
         const insertData = formData.serviceIds.map((sid: string) => ({
             appointment_id: appt.id,

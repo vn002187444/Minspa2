@@ -2,10 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  poweredByHeader: false,
+  compress: true,
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [480, 768, 1024, 1280, 1600],
     imageSizes: [48, 80, 120, 192, 256],
+    minimumCacheTTL: 86400,
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: '**.supabase.co' },

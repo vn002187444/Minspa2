@@ -12,17 +12,15 @@ import {
   getStaffData,
   checkIn,
   getCustomerHistory,
-  getCustomerActivePackages,
   takeRandomAppointment,
   swapAppointment,
   updateAppointmentStatus,
   completeAppointment,
-  submitReview,
   getStaffStats,
   changePassword,
+  updateTip,
 } from "./actions";
 import {
-  getBankSettings,
   getDashboardData,
   getStaffs,
   createStaff,
@@ -41,6 +39,7 @@ import {
   DollarSign,
   Star,
   History,
+  Info,
   LogOut,
   ArrowRight,
   Activity,
@@ -60,6 +59,7 @@ import {
   Sparkles,
   Bell,
   Package,
+  ListTodo,
 } from "lucide-react";
 import MasterSchedule from "@/components/MasterSchedule";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -67,11 +67,14 @@ import PushNotificationManager from "@/components/PushNotificationManager";
 import LoadingButton from "@/components/LoadingButton";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import NotificationBell from "@/components/NotificationBell";
+import CheckoutModal from "@/components/staff/CheckoutModal";
+import SwapModal from "@/components/staff/SwapModal";
+import StaffBookingTab from "@/components/staff/StaffBookingTab";
 
 export default function StaffDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "ATTENDANCE" | "SCHEDULE" | "MASTER" | "REPORTS" | "PASSWORD" | "MANAGEMENT" | "SELL_PACKAGE"
+    "ATTENDANCE" | "SCHEDULE" | "MASTER" | "REPORTS" | "PASSWORD" | "MANAGEMENT" | "SELL_PACKAGE" | "BOOKING" | "TASKS"
   >("SCHEDULE");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -102,21 +105,18 @@ export default function StaffDashboard() {
     isOpen: boolean;
     appt: any;
   }>({ isOpen: false, appt: null });
-  const [reviewModal, setReviewModal] = useState<{
-    isOpen: boolean;
-    apptId: string;
-  }>({ isOpen: false, apptId: "" });
-  const [qrModal, setQrModal] = useState<{
-    isOpen: boolean;
-    appt: any;
-    finalAmount: number;
-    extraServices: string[];
-    bankConfig: any;
-  }>({ isOpen: false, appt: null, finalAmount: 0, extraServices: [], bankConfig: null });
   const [swapModal, setSwapModal] = useState<{ isOpen: boolean; appt: any }>({
     isOpen: false,
     appt: null,
   });
+  const [completedDetailModal, setCompletedDetailModal] = useState<{
+    isOpen: boolean;
+    appt: any;
+  }>({ isOpen: false, appt: null });
+  const [editTipModal, setEditTipModal] = useState<{
+    isOpen: boolean;
+    appt: any;
+  }>({ isOpen: false, appt: null });
 
   const loadData = async (silent = false) => {
     if (!silent) setIsLoading(true);
@@ -133,7 +133,7 @@ export default function StaffDashboard() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
-      if (tabParam && ["ATTENDANCE", "SCHEDULE", "MASTER", "REPORTS", "PASSWORD", "MANAGEMENT", "SELL_PACKAGE"].includes(tabParam)) {
+      if (tabParam && ["ATTENDANCE", "SCHEDULE", "MASTER", "REPORTS", "PASSWORD", "MANAGEMENT", "SELL_PACKAGE", "BOOKING", "TASKS"].includes(tabParam)) {
         setActiveTab(tabParam as any);
       }
     }
@@ -480,7 +480,9 @@ export default function StaffDashboard() {
               icon: CalendarCheck,
             },
             { id: "REPORTS", label: "Hiệu suất & Báo cáo", icon: DollarSign },
+            { id: "BOOKING", label: "Đặt lịch hộ", icon: CalendarCheck },
             { id: "SELL_PACKAGE", label: "Bán Gói Liệu Trình", icon: Package },
+            { id: "TASKS", label: "Công việc", icon: ListTodo },
             { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
             ...((data?.profile?.role === "MANAGER" || data?.profile?.role === "ADMIN")
               ? [{ id: "MANAGEMENT", label: "Ban Quản lý 👑", icon: ShieldCheck }]
@@ -553,6 +555,8 @@ export default function StaffDashboard() {
                           onAction={handleAction}
                           setCompleteModal={setCompleteModal}
                           setSwapModal={setSwapModal}
+                          setCompletedDetailModal={setCompletedDetailModal}
+                          setEditTipModal={setEditTipModal}
                           isMine={true}
                         />
                       ))
@@ -592,6 +596,8 @@ export default function StaffDashboard() {
                           onAction={handleAction}
                           setCompleteModal={setCompleteModal}
                           setSwapModal={setSwapModal}
+                          setCompletedDetailModal={setCompletedDetailModal}
+                          setEditTipModal={setEditTipModal}
                           isMine={false}
                           isNew={newAppointmentIds.includes(appt.id)}
                         />
@@ -657,12 +663,25 @@ export default function StaffDashboard() {
 
             {activeTab === "MANAGEMENT" && <ManagementTab />}
 
+            {activeTab === "BOOKING" && data && (
+              <div className="py-6">
+                <StaffBookingTab
+                  staffId={data.staffId}
+                  allServices={data.allServices}
+                  staffList={[data.profile, ...(data.otherStaff || [])]}
+                  onBookingCreated={() => loadData()}
+                />
+              </div>
+            )}
+
             {activeTab === "SELL_PACKAGE" && data && (
               <TabSellPackage
                 treatmentPackages={data?.treatmentPackages || []}
                 onReload={loadData}
               />
             )}
+
+            {activeTab === "TASKS" && <StaffTasksTab />}
           </div>
         )}
       </main>
@@ -674,6 +693,7 @@ export default function StaffDashboard() {
           { id: "SCHEDULE", label: "Lịch trình", icon: Clock },
           { id: "MASTER", label: "Lịch Tiệm", icon: Activity },
           { id: "REPORTS", label: "Hiệu suất", icon: DollarSign },
+          { id: "TASKS", label: "Công việc", icon: ListTodo },
           ...((data?.profile?.role === "MANAGER" || data?.profile?.role === "ADMIN")
             ? [{ id: "MANAGEMENT", label: "Quản lý 👑", icon: ShieldCheck }]
             : [])
@@ -713,82 +733,26 @@ export default function StaffDashboard() {
       )}
 
       {completeModal.isOpen && (
-        <CompleteModal
+        <CheckoutModal
           appt={completeModal.appt}
           allServices={data.allServices}
           onClose={() => setCompleteModal({ appt: null, isOpen: false })}
-           onComplete={async (extraServices: string[], tip: number, discountPercent: number, paymentMethod: "CASH" | "BANK") => {
-             setCompleteModal({ appt: null, isOpen: false }); // Optimistic: Close modal immediately
-             setOverlayLoading(true);
-             setIsLoading(true);
-             try {
-               const res = await completeAppointment(completeModal.appt.id, extraServices, tip, discountPercent);
-               if (res.success) {
-                 triggerStaffToast(
-                   'success',
-                   `🎉 Đơn hàng của khách ${completeModal.appt.customers?.full_name || 'Khách lẻ'} đã hoàn tất & checkout thành công lúc ${format(new Date(), "HH:mm")}!`
-                 );
-                 await loadData(); // refresh parent dashboards
-
-                 // Send Zalo Thank You Notification
-                 sendZalo({
-                   phone: completeModal.appt.customers?.phone || '',
-                   message: `Cảm ơn ${completeModal.appt.customers?.full_name || 'quý khách'} đã sử dụng dịch vụ tại Min Nail & Hair! Chúc bạn một ngày tuyệt vời. ✨`
-                 }).catch(() => {});
-
-                 if (paymentMethod === "CASH") {
-                   setReviewModal({ isOpen: true, apptId: completeModal.appt.id });
-                 } else {
-                   const bankConfig = await getBankSettings();
-                   setQrModal({
-                     isOpen: true,
-                     appt: completeModal.appt,
-                     finalAmount: res.total || 0,
-                     extraServices,
-                     bankConfig,
-                   });
-                 }
-               } else {
-                 toast.error("Lỗi khi hoàn thành đơn: " + res.error);
-                 setCompleteModal({ appt: completeModal.appt, isOpen: true }); // Rollback: Re-open modal
-               }
-             } catch (error: any) {
-               console.error(error);
-               toast.error("Lỗi hệ thống: " + (error.message || "Không thể thực hiện hoàn thành đơn"));
-               setCompleteModal({ appt: completeModal.appt, isOpen: true }); // Rollback
-             } finally {
-               setIsLoading(false);
-               setOverlayLoading(false);
-             }
-           }}
-        />
-      )}
-
-      {qrModal.isOpen && (
-        <PaymentQRModal
-          appt={qrModal.appt}
-          finalAmount={qrModal.finalAmount}
-          extraServices={qrModal.extraServices}
-          allServices={data?.allServices}
-          bankConfig={qrModal.bankConfig}
-          onClose={() => setQrModal({ isOpen: false, appt: null, finalAmount: 0, extraServices: [], bankConfig: null })}
-          onPaid={() => {
-            const savedApptId = qrModal.appt?.id;
-            setQrModal({ isOpen: false, appt: null, finalAmount: 0, extraServices: [], bankConfig: null });
-            if (savedApptId) {
-              setReviewModal({ isOpen: true, apptId: savedApptId });
+          onComplete={async (extraServices: string[], tip: number, discountPercent: number, paymentMethod: "CASH" | "BANK") => {
+            const res = await completeAppointment(completeModal.appt.id, extraServices, tip, discountPercent)
+            if (res.success) {
+              triggerStaffToast(
+                'success',
+                `🎉 Đơn hàng của khách ${completeModal.appt.customers?.full_name || 'Khách lẻ'} đã hoàn tất & checkout thành công lúc ${format(new Date(), "HH:mm")}!`
+              )
+              await loadData()
+              sendZalo({
+                phone: completeModal.appt.customers?.phone || '',
+                message: `Cảm ơn ${completeModal.appt.customers?.full_name || 'quý khách'} đã sử dụng dịch vụ tại Min Nail & Hair! Chúc bạn một ngày tuyệt vời. ✨`
+              }).catch(() => {})
+            } else {
+              toast.error("Lỗi khi hoàn thành đơn: " + res.error)
             }
-          }}
-        />
-      )}
-
-      {reviewModal.isOpen && (
-        <ReviewModal
-          apptId={reviewModal.apptId}
-          onSubmit={async (rating: number, tags: string[], comment: string) => {
-            await submitReview(reviewModal.apptId, rating, tags, comment);
-            setReviewModal({ isOpen: false, apptId: "" });
-            loadData();
+            return res
           }}
         />
       )}
@@ -810,6 +774,22 @@ export default function StaffDashboard() {
                setSwapModal({ appt: swapModal.appt, isOpen: true }); // Rollback
              }
            }}
+        />
+      )}
+
+      {completedDetailModal.isOpen && (
+        <CompletedDetailModal
+          appt={completedDetailModal.appt}
+          allServices={data?.allServices || []}
+          onClose={() => setCompletedDetailModal({ isOpen: false, appt: null })}
+        />
+      )}
+
+      {editTipModal.isOpen && (
+        <EditTipModal
+          appt={editTipModal.appt}
+          onClose={() => setEditTipModal({ isOpen: false, appt: null })}
+          onSaved={() => { loadData(); setEditTipModal({ isOpen: false, appt: null }); }}
         />
       )}
 
@@ -858,6 +838,8 @@ function AppointmentCard({
   onAction,
   setCompleteModal,
   setSwapModal,
+  setCompletedDetailModal,
+  setEditTipModal,
   isMine,
   isNew,
 }: any) {
@@ -1007,6 +989,22 @@ function AppointmentCard({
               Hoàn thành báo cáo (Hoàn thành)
             </button>
           )}
+          {(optimisticStatus === 'COMPLETED' || appt.status === "COMPLETED") && (
+            <div className="flex flex-col gap-2 w-full">
+              <button
+                onClick={() => setCompletedDetailModal({ isOpen: true, appt })}
+                className="w-full bg-white border border-gray-200 active:scale-95 transition-transform hover:bg-gray-50 text-gray-700 py-3 rounded-xl text-sm font-semibold cursor-pointer text-center"
+              >
+                <Info className="w-4 h-4 inline mr-1.5" />Xem chi tiết đơn hàng
+              </button>
+              <button
+                onClick={() => setEditTipModal({ isOpen: true, appt })}
+                className="w-full bg-amber-50 border border-amber-200 active:scale-95 transition-transform hover:bg-amber-100 text-amber-700 py-2.5 rounded-xl text-sm font-semibold cursor-pointer text-center"
+              >
+                <DollarSign className="w-4 h-4 inline mr-1.5" />Sửa tiền Tip
+              </button>
+            </div>
+          )}
         </div>
       ) : (
         <LoadingButton
@@ -1076,600 +1074,6 @@ function HistoryModal({ history, customerName, onClose }: any) {
           >
             Đóng lịch sử
           </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function CompleteModal({ appt, allServices, onClose, onComplete }: any) {
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  const [extraServices, setExtraServices] = useState<string[]>([]);
-  const [tip, setTip] = useState("");
-  const [discountPercent, setDiscountPercent] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "BANK">("BANK");
-
-  const [packageName, setPackageName] = useState("");
-  const [coveredServiceId, setCoveredServiceId] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadPkgInfo() {
-      if (appt.is_package_session && appt.use_package_id && appt.customer_id) {
-        const pkgs = await getCustomerActivePackages(appt.customer_id);
-        const pkg = pkgs.find((p: any) => p.id === appt.use_package_id);
-        if (pkg) {
-          const tp = pkg.treatment_packages?.[0];
-          setPackageName(tp?.name || "Gói liệu trình");
-          setCoveredServiceId(tp?.service_id || null);
-        }
-      }
-    }
-    loadPkgInfo();
-  }, [appt]);
-
-  const baseTotal = appt.appointment_services
-    ?.map((as: any) => {
-      const isCovered = appt.is_package_session && coveredServiceId && String(as.service_id || as.services?.id) === String(coveredServiceId);
-      return isCovered ? 0 : (Number(as.services?.price) || 0);
-    })
-    .reduce((a: number, b: number) => a + b, 0) || 0;
-
-  const extraTotal = allServices
-    ?.filter((s: any) => extraServices.includes(s.id))
-    .reduce((sum: number, s: any) => sum + (Number(s.price) || 0), 0) || 0;
-
-  const subtotal = baseTotal + extraTotal;
-  const discValue = Number(discountPercent) || 0;
-  const discountAmount = Math.round(subtotal * (discValue / 100));
-  const grandTotal = Math.max(0, subtotal - discountAmount);
-
-  return (
-    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
-        <div className="p-6 bg-emerald-500 text-white shrink-0 flex justify-between items-center">
-          <div>
-            <h3 className="font-display font-bold text-xl">
-              Xác nhận hoàn thành
-            </h3>
-            <p className="text-emerald-100 text-sm mt-1">
-              {appt.customers?.full_name}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white font-bold text-2xl p-2"
-          >
-            &times;
-          </button>
-        </div>
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 pb-24 md:pb-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2.5">
-              Thêm dịch vụ phát sinh (Upsell)
-            </label>
-            <div className="max-h-60 overflow-y-auto border border-gray-150 rounded-2xl p-3 space-y-2 bg-gray-50">
-              {allServices?.map((s: any) => (
-                <label
-                  key={s.id}
-                  className="flex items-center gap-3 p-3 bg-white border border-gray-150 rounded-xl cursor-pointer hover:bg-emerald-50/20 active:scale-[0.98] transition-all"
-                >
-                  <input
-                    type="checkbox"
-                    className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300"
-                    checked={extraServices.includes(s.id)}
-                    onChange={(e) => {
-                      if (e.target.checked)
-                        setExtraServices([...extraServices, s.id]);
-                      else
-                        setExtraServices(
-                          extraServices.filter((id) => id !== s.id),
-                        );
-                    }}
-                  />
-                  <span className="text-sm font-semibold text-gray-700 flex-1">
-                    {s.name}
-                  </span>
-                  <span className="text-sm font-bold text-emerald-600">
-                    {s.price.toLocaleString("vi")}đ
-                  </span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Tiền mặt khách Tip (Tùy chọn)
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">
-                ₫
-              </span>
-              <input
-                type="number"
-                value={tip}
-                onChange={(e) => setTip(e.target.value)}
-                placeholder="Nhập số tiền hoặc 0"
-                className="w-full pl-10 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-semibold"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Giảm giá / Chiết khấu (%) toàn bộ đơn hàng
-            </label>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-base">
-                %
-              </span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                value={discountPercent}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "" || (Number(val) >= 0 && Number(val) <= 100)) {
-                    setDiscountPercent(val);
-                  }
-                }}
-                placeholder="Ví dụ: 10 đại diện cho giảm 10%"
-                className="w-full pl-10 pr-4 py-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all font-semibold"
-              />
-            </div>
-          </div>
-
-          {/* Payment Method Selector */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Phương thức thanh toán
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("CASH")}
-                className={`py-3 px-4 rounded-xl font-bold border transition-all active:scale-[0.98] flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                  paymentMethod === "CASH"
-                    ? "border-emerald-500 bg-emerald-50/50 text-emerald-700 shadow-sm"
-                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <span className="text-xl">💵</span>
-                <span className="text-xs font-semibold">Tiền mặt</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setPaymentMethod("BANK")}
-                className={`py-3 px-4 rounded-xl font-bold border transition-all active:scale-[0.98] flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                  paymentMethod === "BANK"
-                    ? "border-emerald-500 bg-emerald-50/50 text-emerald-700 shadow-sm"
-                    : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                <span className="text-xl">💳</span>
-                <span className="text-xs font-semibold">Chuyển khoản</span>
-              </button>
-            </div>
-          </div>
-
-          {appt.buy_package_id && (
-            <div className="p-4 bg-pink-50 border border-pink-200 text-pink-950 rounded-2xl flex gap-3 text-xs leading-relaxed font-sans shadow-xs mb-3">
-              <span className="text-xl shrink-0">🎁</span>
-              <div>
-                <p className="font-extrabold text-[#9D174D] uppercase tracking-wider text-[10px] mb-0.5">YÊU CẦU MUA GÓI MỚI</p>
-                <p className="font-medium text-gray-800">
-                  Khách hàng hiện tại có nhu cầu đăng ký mua gói: <span className="font-extrabold text-pink-700 text-sm">“{appt.buy_package_id === 'pkg-1' ? 'Combo 5 Buổi Gội An Yên' : appt.buy_package_id === 'pkg-2' ? 'Combo 10 Buổi Massage Body 60p' : 'Gói liệu trình VIP'}”</span>.
-                </p>
-                <p className="text-gray-500 mt-1">
-                  Chị nhớ thanh toán, thu tiền và kích hoạt gói cho khách thông qua Tab <b>Bán Gói</b> sau ca làm nha!
-                </p>
-              </div>
-            </div>
-          )}
-
-          {appt.is_package_session && (
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex gap-3 text-amber-950 text-xs leading-relaxed font-sans shadow-xs">
-              <span className="text-xl shrink-0">⚠️</span>
-              <div>
-                <p className="font-extrabold text-[#78350F] uppercase tracking-wider text-[10px] mb-0.5">XÁC NHẬN HOÀN THÀNH LIỆU TRÌNH</p>
-                <p>
-                  Đơn hàng này được đánh dấu là <b>Buổi Liệu Trình</b>. Khi bạn hoàn thành, hệ thống sẽ tự động khấu trừ <b>01 buổi</b> từ gói <span className="font-bold text-[#78350F]">“{packageName || 'Gói liệu trình của khách'}”</span>.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Live Receipt Breakdown */}
-          <div className="bg-gray-50 border border-gray-150 rounded-2xl p-4 space-y-2 text-sm font-semibold">
-            <div className="flex justify-between text-gray-500">
-              <span>Giá gốc dịch vụ:</span>
-              <span>{baseTotal.toLocaleString("vi")}đ</span>
-            </div>
-            {extraTotal > 0 && (
-              <div className="flex justify-between text-gray-500">
-                <span>Dịch vụ phát sinh:</span>
-                <span>+{extraTotal.toLocaleString("vi")}đ</span>
-              </div>
-            )}
-            {discountAmount > 0 && (
-              <div className="flex justify-between text-pink-600">
-                <span>Giảm giá ({discValue}%):</span>
-                <span>-{discountAmount.toLocaleString("vi")}đ</span>
-              </div>
-            )}
-            <div className="border-t border-gray-200 pt-2 flex justify-between text-base font-black text-gray-900">
-              <span>Tổng thanh toán:</span>
-              <span className="text-emerald-600">{grandTotal.toLocaleString("vi")}đ</span>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 border-t border-gray-100 bg-white shrink-0 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-4 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer"
-          >
-            Hủy
-          </button>
-          <LoadingButton
-            onClick={async () => {
-              setConfirmLoading(true);
-              await onComplete(extraServices, Number(tip) || 0, Number(discountPercent) || 0, paymentMethod);
-              setConfirmLoading(false);
-            }}
-            isLoading={confirmLoading}
-            loadingText="Đang hoàn thành..."
-            className="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-150 active:scale-95 transition-transform cursor-pointer"
-          >
-            Xác nhận
-          </LoadingButton>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function removeVietnameseTones(str: string) {
-  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
-  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
-  str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
-  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
-  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
-  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
-  str = str.replace(/đ/g, "d");
-  str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
-  str = str.replace(/È|É|Ạ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
-  str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
-  str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
-  str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
-  str = str.replace(/Ỳ|Ý|Ỵ|Ỷ|Ỹ/g, "Y");
-  str = str.replace(/Đ/g, "D");
-  // Normalize decomp
-  str = str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  return str;
-}
-
-function PaymentQRModal({ appt, finalAmount, extraServices, allServices, bankConfig, onClose, onPaid }: any) {
-  // Determine service names to formulate memo text
-  const coreServiceNames = appt?.appointment_services?.map((as: any) => as.services?.name).filter(Boolean) || [];
-  const extraServiceNames = allServices?.filter((s: any) => extraServices?.includes(s.id)).map((s: any) => s.name) || [];
-  const allNames = [...coreServiceNames, ...extraServiceNames];
-  
-  const rawMemo = allNames.length > 0 ? allNames.join(" ") : "Thanh toan";
-  const memoText = removeVietnameseTones(rawMemo)
-    .replace(/[^A-Za-z0-9\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toUpperCase()
-    .substring(0, 25); // Limit memo length for bank transfer compatibility
-
-  const hasConfig = bankConfig && bankConfig.bank_id && bankConfig.account_number;
-
-  // Render VietQR compact2 URL format
-  const qrUrl = hasConfig 
-    ? `https://img.vietqr.io/image/${bankConfig.bank_id}-${bankConfig.account_number}-compact2.png?amount=${finalAmount}&addInfo=${encodeURIComponent(memoText)}&accountName=${encodeURIComponent(bankConfig.account_owner || "")}`
-    : "";
-
-  const [paidLoading, setPaidLoading] = useState(false);
-  const [copiedId, setCopiedId] = useState("");
-  const copyText = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(""), 2000);
-  };
-
-  return (
-    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-150 animate-in slide-in-from-bottom-5 duration-300">
-        <div className="p-6 bg-pink-600 text-white shrink-0 flex justify-between items-center">
-          <div>
-            <h3 className="font-display font-bold text-xl">
-              Quét mã chuyển khoản
-            </h3>
-            <p className="text-pink-100 text-sm mt-1">
-              {appt?.customers?.full_name || "Khách hàng"}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-white/80 hover:text-white font-bold text-2xl p-2"
-          >
-            &times;
-          </button>
-        </div>
-
-        <div className="p-6 space-y-6 overflow-y-auto flex-1 pb-24 md:pb-6">
-          {!hasConfig ? (
-            <div className="bg-amber-50 rounded-2xl border border-amber-100 p-5 space-y-3 text-sm text-center">
-              <p className="font-bold text-amber-800 text-lg">Chưa cấu hình tài khoản nhận!</p>
-              <p className="text-amber-700 font-medium leading-relaxed">
-                Quản trị viên cần vào <strong className="text-gray-900">Admin Portal &gt; Tài khoản Bank</strong> để cài đặt ngân hàng và số tài khoản nhận tiền thì mã QR mới hiển thị ở đây.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-5">
-              {/* QR Image Container */}
-              <div className="bg-gray-50 border border-gray-100 rounded-3xl p-4 flex flex-col items-center justify-center text-center relative overflow-hidden shadow-sm">
-                <div className="bg-white p-3 rounded-2xl border border-gray-150 shadow-sm max-w-[240px] aspect-square relative flex items-center justify-center">
-                  <Image
-                    src={qrUrl}
-                    alt="VietQR code"
-                    fill
-                    className="object-contain animate-in zoom-in-95 duration-500"
-                    referrerPolicy="no-referrer"
-                    unoptimized
-                  />
-                </div>
-                <p className="text-[10px] text-gray-400 font-semibold mt-3 uppercase tracking-wider">
-                  Mã VietQR tự động tạo theo đơn hàng
-                </p>
-              </div>
-
-              {/* Bank Details Table */}
-              <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100 shadow-sm">
-                <div className="p-3.5 flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Ngân hàng</p>
-                    <p className="text-sm font-semibold text-gray-800">{bankConfig.bank_name}</p>
-                  </div>
-                </div>
-
-                <div className="p-3.5 flex justify-between items-center">
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Số tài khoản</p>
-                    <p className="text-sm font-extrabold text-gray-900 font-mono tracking-wide">{bankConfig.account_number}</p>
-                  </div>
-                  <button
-                    onClick={() => copyText(bankConfig.account_number, "acc")}
-                    className="text-xs px-3 py-1.5 font-bold rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors cursor-pointer"
-                  >
-                    {copiedId === "acc" ? "Đã chép" : "Sao chép"}
-                  </button>
-                </div>
-
-                {bankConfig.account_owner && (
-                  <div className="p-3.5 flex justify-between items-center">
-                    <div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tên chủ tài khoản</p>
-                      <p className="text-sm font-extrabold text-gray-800 uppercase">{bankConfig.account_owner}</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="p-3.5 flex justify-between items-center bg-emerald-50/20">
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Số tiền thanh toán</p>
-                    <p className="text-base font-black text-emerald-600 font-mono">{finalAmount.toLocaleString("vi")}đ</p>
-                  </div>
-                  <button
-                    onClick={() => copyText(String(finalAmount), "amount")}
-                    className="text-xs px-3 py-1.5 font-bold rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors cursor-pointer"
-                  >
-                    {copiedId === "amount" ? "Đã chép" : "Sao chép"}
-                  </button>
-                </div>
-
-                <div className="p-3.5 flex justify-between items-center">
-                  <div className="flex-1 min-w-0 pr-2">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Nội dung chuyển khoản</p>
-                    <p className="text-sm font-bold text-pink-600 truncate font-mono">{memoText}</p>
-                  </div>
-                  <button
-                    onClick={() => copyText(memoText, "memo")}
-                    className="text-xs px-3 py-1.5 font-bold rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors shrink-0 cursor-pointer"
-                  >
-                    {copiedId === "memo" ? "Đã chép" : "Sao chép"}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-gray-100 bg-white shrink-0 flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 py-4 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer"
-          >
-            Đóng
-          </button>
-          {hasConfig && (
-            <LoadingButton
-              onClick={async () => {
-                setPaidLoading(true);
-                await onPaid();
-                setPaidLoading(false);
-              }}
-              isLoading={paidLoading}
-              loadingText="Đang xác nhận..."
-              className="flex-1 py-4 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded-xl shadow-lg shadow-pink-100 active:scale-95 transition-transform cursor-pointer flex items-center justify-center gap-2"
-            >
-              <CheckCircle2 className="w-5 h-5" />
-              Khách đã trả
-            </LoadingButton>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ReviewModal({ apptId, onSubmit }: any) {
-  const [rating, setRating] = useState(5);
-  const [tags, setTags] = useState<string[]>([]);
-  const [comment, setComment] = useState("");
-  const [submitLoading, setSubmitLoading] = useState(false);
-
-  const SUGGESTIONS = [
-    "Thợ làm kỹ",
-    "Rất nhiệt tình",
-    "Không gian sạch đẹp",
-    "Móng bền",
-    "Gội êm",
-    "Giao tiếp vui vẻ",
-  ];
-
-  return (
-    <div className="fixed inset-0 bg-white z-[120] flex flex-col items-center justify-center p-6 overflow-y-auto animate-in slide-in-from-bottom-8 duration-500">
-      <div className="max-w-md w-full space-y-6 text-center flex flex-col justify-center py-6">
-        <div>
-          <div className="w-20 h-20 bg-pink-100 text-pink-500 rounded-[2rem] mx-auto flex items-center justify-center mb-4">
-            <Star className="w-10 h-10 fill-current" />
-          </div>
-          <h2 className="text-3xl font-display font-bold text-gray-900 mb-2">
-            Đánh giá trải nghiệm
-          </h2>
-          <p className="text-gray-500 text-sm">
-            Xin cảm ơn quý khách. Hãy cho chúng tôi biết mức độ hài lòng của
-            bạn.
-          </p>
-        </div>
-
-        <div className="flex justify-center gap-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <button
-              key={i}
-              onClick={() => setRating(i)}
-              className={`p-2 transition-transform hover:scale-110 active:scale-90 cursor-pointer ${i <= rating ? "text-yellow-400" : "text-gray-200"}`}
-            >
-              <Star className="w-12 h-12 fill-current" />
-            </button>
-          ))}
-        </div>
-
-        <div>
-          <p className="text-xs font-bold text-gray-400 mb-3 uppercase tracking-wider">
-            Gợi ý nhanh
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {SUGGESTIONS.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() =>
-                  setTags(
-                    tags.includes(tag)
-                      ? tags.filter((t) => t !== tag)
-                      : [...tags, tag],
-                  )
-                }
-                className={`px-4 py-2 rounded-full text-sm font-semibold transition-all active:scale-95 cursor-pointer ${
-                  tags.includes(tag)
-                    ? "bg-pink-500 text-white shadow-md"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-250"
-                }`}
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Custom Text Comment Box */}
-        <div className="w-full text-left space-y-2">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider block">
-            Nội dung ý kiến đóng góp (Nếu có)
-          </p>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Phương diện phục vụ nào làm quý khách hài lòng nhất? Nhập ý kiến tại đây..."
-            rows={3}
-            className="w-full p-4 border border-gray-200 rounded-2xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none text-sm font-semibold transition-all resize-none shadow-inner"
-          />
-        </div>
-
-        <LoadingButton
-          onClick={async () => {
-            setSubmitLoading(true);
-            await onSubmit(rating, tags, comment);
-            setSubmitLoading(false);
-          }}
-          isLoading={submitLoading}
-          loadingText="Đang gửi..."
-          className="w-full py-4 bg-gray-950 text-white font-bold rounded-2xl shadow-xl shadow-gray-950/10 hover:bg-black active:scale-95 transition-all flex justify-center items-center gap-2 cursor-pointer mt-2"
-        >
-          Hoàn tất <ArrowRight className="w-5 h-5" />
-        </LoadingButton>
-      </div>
-    </div>
-  );
-}
-
-function SwapModal({ appt, otherStaff, onClose, onSwap }: any) {
-  const [selected, setSelected] = useState("");
-  const [swapLoading, setSwapLoading] = useState(false);
-  return (
-    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full h-full md:h-auto md:max-w-sm p-6 shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300 flex flex-col justify-between md:justify-start">
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="font-display font-medium text-lg text-gray-900">
-              Chuyển giao đơn
-            </h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-900 font-bold text-2xl p-2"
-            >
-              &times;
-            </button>
-          </div>
-          <p className="text-sm text-gray-500 mb-4 font-normal">
-            Chọn đối tác Kỹ thuật viên rảnh để tiến hành đổi đơn hàng này.
-          </p>
-          <select
-            value={selected}
-            onChange={(e) => setSelected(e.target.value)}
-            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl mb-6 outline-none focus:bg-white focus:ring-2 focus:ring-pink-500 font-semibold text-sm cursor-pointer"
-          >
-            <option value="">Chọn thợ nhận ca...</option>
-            {otherStaff?.map((s: any) => (
-              <option key={s.id} value={s.id}>
-                {s.full_name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="flex gap-3 pb-8 md:pb-0">
-          <button
-            onClick={onClose}
-            className="flex-1 py-4 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer"
-          >
-            Hủy
-          </button>
-          <LoadingButton
-            disabled={!selected}
-            onClick={async () => {
-              setSwapLoading(true);
-              await onSwap(selected);
-              setSwapLoading(false);
-            }}
-            isLoading={swapLoading}
-            loadingText="Đang chuyển..."
-            className="flex-1 py-4 bg-pink-600 text-white font-bold rounded-xl disabled:opacity-50 active:scale-95 transition-transform cursor-pointer"
-          >
-            Chuyển
-          </LoadingButton>
         </div>
       </div>
     </div>
@@ -1809,6 +1213,163 @@ function TabPassword() {
           Nhận thông báo khi có lịch đặt mới, thông báo thay đổi thời gian hoặc sắp đến giờ làm khách.
         </p>
         <PushNotificationManager />
+      </div>
+    </div>
+  );
+}
+
+function CompletedDetailModal({ appt, allServices, onClose }: any) {
+  const services = appt?.appointment_services?.map((as: any) => as.services).filter(Boolean) || [];
+  const total = appt?.total_amount || 0;
+  const tip = appt?.tip_amount || 0;
+
+  return (
+    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
+      <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+          <h3 className="font-display font-medium text-lg text-gray-900">Chi tiết đơn hàng</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 font-bold text-lg">
+              {appt?.customers?.full_name?.charAt(0) || 'K'}
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">{appt?.customers?.full_name || 'Khách lẻ'}</h4>
+              <p className="text-sm text-gray-500">{appt?.customers?.phone}</p>
+            </div>
+          </div>
+
+          <div className="bg-gray-50 rounded-xl p-4 space-y-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Dịch vụ đã thực hiện</p>
+            {services.length === 0 ? (
+              <p className="text-sm text-gray-400">Không có dịch vụ</p>
+            ) : services.map((s: any, i: number) => (
+              <div key={i} className="flex justify-between text-sm">
+                <span className="text-gray-700">{s.name}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-gray-100 pt-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Tổng tiền dịch vụ</span>
+              <span className="font-semibold">{Number(total + (appt?.total_amount ? 0 : 0)).toLocaleString("vi")}đ</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Giảm giá</span>
+              <span className="font-semibold text-red-500">-{((appt?.total_amount ? (appt._discount || 0) : 0)).toLocaleString("vi")}đ</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Tip</span>
+              <span className="font-semibold text-pink-600">{tip.toLocaleString("vi")}đ</span>
+            </div>
+            <div className="flex justify-between text-base font-bold border-t border-gray-200 pt-2">
+              <span>Khách thanh toán</span>
+              <span>{(total).toLocaleString("vi")}đ</span>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 border-t border-gray-100 shrink-0">
+          <button
+            onClick={onClose}
+            className="w-full py-3 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black cursor-pointer text-sm"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditTipModal({ appt, onClose, onSaved }: any) {
+  const [tipAmount, setTipAmount] = useState(appt?.tip_amount || 0);
+  const [customTip, setCustomTip] = useState('');
+  const [saving, setSaving] = useState(false);
+  const TIP_AMOUNTS = [10000, 20000, 30000, 50000];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const finalTip = customTip ? parseInt(customTip.replace(/\D/g, '')) : tipAmount;
+      const res = await updateTip(appt.id, finalTip);
+      if (res.success) {
+        toast.success('Đã cập nhật tip thành công!');
+        onSaved();
+      } else {
+        toast.error(res.error || 'Lỗi khi cập nhật tip');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi không xác định');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
+      <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+          <h3 className="font-display font-medium text-lg text-gray-900">Sửa tiền Tip</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center text-pink-600 font-bold text-lg">
+              {appt?.customers?.full_name?.charAt(0) || 'K'}
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">{appt?.customers?.full_name || 'Khách lẻ'}</h4>
+              <p className="text-sm text-gray-500">Tip hiện tại: <span className="font-bold text-pink-600">{(appt?.tip_amount || 0).toLocaleString("vi")}đ</span></p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {TIP_AMOUNTS.map((amount) => (
+              <button
+                key={amount}
+                type="button"
+                onClick={() => { setTipAmount(amount); setCustomTip(''); }}
+                className={`py-4 px-4 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${
+                  tipAmount === amount && !customTip
+                    ? 'border-pink-500 bg-pink-50 text-pink-700'
+                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {amount.toLocaleString("vi")}đ
+              </button>
+            ))}
+            <div className="col-span-2">
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Số tiền khác</label>
+              <input
+                type="text"
+                value={customTip}
+                onChange={(e) => { setCustomTip(e.target.value); setTipAmount(0); }}
+                placeholder="Nhập số tiền tip..."
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold focus:border-pink-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+        <div className="p-4 border-t border-gray-100 shrink-0 flex gap-3">
+          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 cursor-pointer text-sm">
+            Hủy
+          </button>
+          <LoadingButton
+            onClick={handleSave}
+            isLoading={saving}
+            loadingText="Đang lưu..."
+            className="flex-1 py-3 bg-pink-600 text-white font-semibold rounded-xl hover:bg-pink-700 cursor-pointer text-sm"
+          >
+            Lưu tip
+          </LoadingButton>
+        </div>
       </div>
     </div>
   );
@@ -2086,6 +1647,140 @@ function TabSellPackage({
       </form>
     </div>
   );
+}
+
+function StaffTasksTab() {
+  const [tasks, setTasks] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState<string>('ALL')
+
+  const loadTasks = async () => {
+    setLoading(true)
+    const { getTasksForStaff } = await import('@/app/admin/actions')
+    const t = await getTasksForStaff()
+    setTasks(t)
+    setLoading(false)
+  }
+
+  useEffect(() => { loadTasks() }, [])
+
+  const handleStatusUpdate = async (taskId: string, status: string) => {
+    const { updateTaskStatus } = await import('@/app/admin/actions')
+    const res = await updateTaskStatus(taskId, status)
+    if (res.success) {
+      toast.success(status === 'COMPLETED' ? '✅ Đã hoàn thành công việc!' : status === 'IN_PROGRESS' ? '⏳ Đang thực hiện...' : status === 'REJECTED' ? '❌ Đã từ chối' : '⏸ Đã tạm dừng')
+      loadTasks()
+    } else {
+      toast.error(res.error || 'Lỗi')
+    }
+  }
+
+  const filteredTasks = statusFilter === 'ALL' ? tasks : tasks.filter(t => t.status === statusFilter)
+
+  const statusColors: Record<string, string> = {
+    PENDING: 'bg-amber-100 text-amber-800',
+    IN_PROGRESS: 'bg-blue-100 text-blue-800',
+    COMPLETED: 'bg-emerald-100 text-emerald-800',
+    CANCELLED: 'bg-gray-100 text-gray-500',
+    REJECTED: 'bg-red-100 text-red-700',
+  }
+
+  const priorityColors: Record<string, string> = {
+    low: 'text-gray-400', medium: 'text-amber-500', high: 'text-orange-500', urgent: 'text-red-500',
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <ListTodo className="w-5 h-5 text-pink-500" /> Công việc của tôi
+        </h3>
+        <button onClick={loadTasks} className="p-2 text-gray-400 hover:text-pink-500 cursor-pointer" title="Làm mới">
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        {['ALL', 'PENDING', 'IN_PROGRESS', 'COMPLETED'].map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+              statusFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {s === 'ALL' ? 'Tất cả' : s === 'PENDING' ? '🔔 Chưa nhận' : s === 'IN_PROGRESS' ? '⏳ Đang làm' : '✅ Hoàn thành'}
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="text-center py-12 text-gray-400">Đang tải...</div>
+      ) : filteredTasks.length === 0 ? (
+        <div className="text-center py-12 text-gray-400 bg-white rounded-2xl border border-gray-100">
+          <ListTodo className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="font-semibold">Không có công việc nào</p>
+          <p className="text-sm mt-1">Hãy kiểm tra lại sau</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredTasks.map((task) => (
+            <div key={task.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${statusColors[task.status]}`}>
+                      {task.status === 'PENDING' ? '🔔 Chưa nhận' : task.status === 'IN_PROGRESS' ? '⏳ Đang làm' : task.status === 'COMPLETED' ? '✅ Hoàn thành' : task.status === 'REJECTED' ? '❌ Từ chối' : '❌ Đã hủy'}
+                    </span>
+                    {task.task_type === 'daily' && <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">Hàng ngày</span>}
+                    <span className={`text-[10px] font-bold ${priorityColors[task.priority]}`}>
+                      {task.priority === 'urgent' ? '🔴 Khẩn cấp' : task.priority === 'high' ? '🟠 Cao' : task.priority === 'medium' ? '🟡 TB' : '🟢 Thấp'}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-gray-900">{task.title}</h4>
+                  {task.description && <p className="text-sm text-gray-500 mt-1">{task.description}</p>}
+                </div>
+              </div>
+
+              {task.creator && (
+                <div className="text-xs text-gray-400">Giao bởi: {task.creator.full_name}</div>
+              )}
+
+              {task.deadline && (
+                <div className="text-xs text-gray-400">Hạn: {new Date(task.deadline).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</div>
+              )}
+
+              <div className="flex gap-2 pt-1">
+                {task.status === 'PENDING' && (
+                  <>
+                    <button onClick={() => handleStatusUpdate(task.id, 'IN_PROGRESS')} className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                      Nhận việc
+                    </button>
+                    <button onClick={() => handleStatusUpdate(task.id, 'REJECTED')} className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                      Từ chối
+                    </button>
+                  </>
+                )}
+                {task.status === 'IN_PROGRESS' && (
+                  <button onClick={() => handleStatusUpdate(task.id, 'COMPLETED')} className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                    Hoàn thành
+                  </button>
+                )}
+                {task.status === 'COMPLETED' && (
+                  <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
+                    <CheckCircle2 className="w-4 h-4" /> Hoàn thành {task.completed_at ? `lúc ${new Date(task.completed_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                  </span>
+                )}
+                {task.status === 'REJECTED' && (
+                  <span className="text-xs text-red-500 font-bold">Đã từ chối</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 function ReportsTab() {

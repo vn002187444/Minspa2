@@ -13,6 +13,7 @@ export async function enqueueTask(task: BackgroundTask) {
   });
   if (error) {
     console.error('[Queue] Failed to enqueue:', error);
+    throw new Error(`Enqueue failed: ${error.message}`);
   }
 }
 

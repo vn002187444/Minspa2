@@ -3,12 +3,13 @@ import BottomNavigation from '@/components/BottomNavigation';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { 
   ArrowLeft, Search, Filter, Calendar, ClipboardCheck, Trash2, 
-  User, CheckCircle2, Clock, X, AlertTriangle, Play, Check, Ban, ShieldAlert, Star
+  User, CheckCircle2, Clock, X, AlertTriangle, Play, Check, Ban, ShieldAlert, Star, DollarSign
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getFilteredAppointments, deleteAppointment, getAdminSessionInfo } from '../actions';
+import { getFilteredAppointments, deleteAppointment, getAdminSessionInfo, adminUpdateTip } from '../actions';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
 
@@ -30,6 +31,7 @@ export default function AdminOrdersPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [editTipModal, setEditTipModal] = useState<{ isOpen: boolean; appt: any }>({ isOpen: false, appt: null });
 
   // Load session user and fetch initial data
   useEffect(() => {
@@ -318,6 +320,7 @@ export default function AdminOrdersPage() {
                     <th className="p-4">Dịch vụ đã chọn</th>
                     <th className="p-4">Kỹ thuật viên</th>
                     <th className="p-4 text-right">Tổng Tiền</th>
+                    <th className="p-4 text-right">Tip</th>
                     <th className="p-4">Đánh giá</th>
                     <th className="p-4 text-center">Trạng thái</th>
                     <th className="p-4 text-right">Thao tác nâng cao</th>
@@ -359,6 +362,12 @@ export default function AdminOrdersPage() {
                       {/* Amount */}
                       <td className="p-4 text-right font-mono font-black text-[#5C4033] text-sm">
                         {(appt.total_amount || 0).toLocaleString('vi')} đ
+                      </td>
+                      {/* Tip */}
+                      <td className="p-4 text-right">
+                        <span className="font-mono font-bold text-pink-600 text-sm">
+                          {(appt.tip_amount || 0).toLocaleString('vi')} đ
+                        </span>
                       </td>
                       {/* Review */}
                       <td className="p-4 max-w-[200px]">
@@ -451,7 +460,16 @@ export default function AdminOrdersPage() {
                               </>
                             )}
                             {appt.status === 'COMPLETED' && (
-                              <span className="text-gray-400 text-[10px] font-bold">Xong</span>
+                              <div className="flex items-center gap-1">
+                                <span className="text-gray-400 text-[10px] font-bold">Xong</span>
+                                <button
+                                  onClick={() => setEditTipModal({ isOpen: true, appt })}
+                                  className="px-2 py-1 bg-pink-50 text-pink-600 rounded hover:bg-pink-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  title="Sửa tiền tip"
+                                >
+                                  <DollarSign className="w-3 h-3 inline" /> Tip
+                                </button>
+                              </div>
                             )}
                             {appt.status === 'CANCELLED' && (
                               <span className="text-gray-400 text-[10px] font-bold">Đã hủy</span>
@@ -523,6 +541,20 @@ export default function AdminOrdersPage() {
                       </div>
                     </div>
 
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-xs text-gray-400 font-bold uppercase">Tiền Tip</span>
+                      <span className="font-mono font-bold text-pink-600 text-sm">
+                        {(appt.tip_amount || 0).toLocaleString('vi')} đ
+                        {appt.status === 'COMPLETED' && (
+                          <button
+                            onClick={() => setEditTipModal({ isOpen: true, appt })}
+                            className="ml-2 px-2 py-0.5 bg-pink-50 text-pink-600 rounded hover:bg-pink-100 text-[9px] font-extrabold cursor-pointer"
+                          >
+                            <DollarSign className="w-2.5 h-2.5 inline" /> Sửa
+                          </button>
+                        )}
+                      </span>
+                    </div>
                     <div className="flex justify-between items-center gap-2 pt-1 border-t border-gray-150/50">
                       <span className="text-xs text-gray-400 font-bold uppercase">Tổng dự tính</span>
                       <span className="font-black text-rose-800 font-mono text-base">
@@ -680,8 +712,95 @@ export default function AdminOrdersPage() {
           </div>
         </div>
       )}
+      {editTipModal.isOpen && (
+        <AdminEditTipModal
+          appt={editTipModal.appt}
+          onClose={() => setEditTipModal({ isOpen: false, appt: null })}
+          onSaved={() => {
+            handleFetch();
+            setEditTipModal({ isOpen: false, appt: null });
+          }}
+        />
+      )}
       <LoadingOverlay isVisible={deleteLoading} message="Đang xóa dữ liệu, vui lòng chờ..." />
       <BottomNavigation />
+    </div>
+  );
+}
+
+function AdminEditTipModal({ appt, onClose, onSaved }: any) {
+  const [tipAmount, setTipAmount] = useState(appt?.tip_amount || 0);
+  const [customTip, setCustomTip] = useState('');
+  const [saving, setSaving] = useState(false);
+  const TIP_AMOUNTS = [10000, 20000, 30000, 50000];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const finalTip = customTip ? parseInt(customTip.replace(/\D/g, '')) : tipAmount;
+      const res = await adminUpdateTip(appt.id, finalTip);
+      if (res.success) {
+        toast.success(`Đã cập nhật tip: ${res.oldTip}đ → ${res.newTip}đ`);
+        onSaved();
+      } else {
+        toast.error(res.error || 'Lỗi khi cập nhật tip');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi không xác định');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-md w-full border border-gray-150 p-6 space-y-4 animate-in zoom-in-95 duration-200">
+        <h3 className="font-extrabold text-lg text-gray-900">Sửa tiền Tip</h3>
+        <p className="text-sm text-gray-600">
+          Đơn của <strong>{appt?.customers?.full_name || 'Khách lẻ'}</strong> — Tip hiện tại: <strong className="text-pink-600">{(appt?.tip_amount || 0).toLocaleString('vi')}đ</strong>
+        </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          {TIP_AMOUNTS.map((amount) => (
+            <button
+              key={amount}
+              type="button"
+              onClick={() => { setTipAmount(amount); setCustomTip(''); }}
+              className={`py-3 px-4 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${
+                tipAmount === amount && !customTip
+                  ? 'border-pink-500 bg-pink-50 text-pink-700'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {amount.toLocaleString('vi')}đ
+            </button>
+          ))}
+          <div className="col-span-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Số tiền khác</label>
+            <input
+              type="text"
+              value={customTip}
+              onChange={(e) => { setCustomTip(e.target.value); setTipAmount(0); }}
+              placeholder="Nhập số tiền tip..."
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold focus:border-pink-500 focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-bold text-gray-700 cursor-pointer">
+            Hủy
+          </button>
+          <LoadingButton
+            onClick={handleSave}
+            isLoading={saving}
+            loadingText="Đang lưu..."
+            className="flex-1 py-3 bg-pink-600 hover:bg-pink-700 rounded-xl text-sm font-bold text-white cursor-pointer"
+          >
+            Lưu tip
+          </LoadingButton>
+        </div>
+      </div>
     </div>
   );
 }
