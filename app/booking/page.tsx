@@ -19,6 +19,7 @@ import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import BookingCalendar from '@/components/BookingCalendar';
 import BookingMascotGuide from '@/components/BookingMascotGuide';
+import GlobalSearch from '@/components/GlobalSearch';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -686,19 +687,23 @@ export default function BookingPage() {
                    </div>
                  )}
 
-                 {aiSuggestion && !isAiLoading && (
-                   <div className="p-4 bg-[#FAF0E6] flex gap-3 origin-left animate-in fade-in zoom-in-95 duration-500 border border-[#EADDCD] rounded-2xl">
-                      <div className="mt-0.5"><Sparkles className="w-4 h-4 text-[#8D6E53]" /></div>
-                      <div>
-                        <p className="text-[10px] font-bold text-[#8D6E53] mb-1 uppercase tracking-widest flex items-center gap-1">✨ Gợi ý dành riêng cho bạn</p>
-                        <p className="text-xs text-[#3A2E2B] leading-relaxed font-semibold italic">{aiSuggestion}</p>
-                      </div>
-                   </div>
-                 )}
+                  {aiSuggestion && !isAiLoading && (
+                    <div className="p-4 bg-[#FAF0E6] flex gap-3 origin-left animate-in fade-in zoom-in-95 duration-500 border border-[#EADDCD] rounded-2xl">
+                       <div className="mt-0.5"><Sparkles className="w-4 h-4 text-[#8D6E53]" /></div>
+                       <div>
+                         <p className="text-[10px] font-bold text-[#8D6E53] mb-1 uppercase tracking-widest flex items-center gap-1">✨ Gợi ý dành riêng cho bạn</p>
+                         <p className="text-xs text-[#3A2E2B] leading-relaxed font-semibold italic">{aiSuggestion}</p>
+                       </div>
+                    </div>
+                  )}
+                  
+                  <div className="mb-6">
+                    <GlobalSearch />
+                  </div>
 
-                 {/* Categorized Filter Tabs (UX Upgrade for selecting from grouped lists easily) */}
-                 <div>
-                   <label className="block text-xs font-bold tracking-wider uppercase text-gray-400 mb-2">Xem theo chuyên mục</label>
+                  {/* Categorized Filter Tabs (UX Upgrade for selecting from grouped lists easily) */}
+                  <div>
+                    <label className="block text-xs font-bold tracking-wider uppercase text-gray-400 mb-2">Xem theo chuyên mục</label>
                    <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none snap-x mb-3">
                      {['Tất cả', 'Deal Chấn Động', 'Gội dưỡng sinh', 'Chà Gót Chân', 'Massage', 'Chăm Sóc & Trang Trí Móng'].map(cat => (
                        <button

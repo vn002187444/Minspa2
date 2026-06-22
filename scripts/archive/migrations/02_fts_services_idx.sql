@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS idx_services_search_vector ON services USING GIN (search_vector);

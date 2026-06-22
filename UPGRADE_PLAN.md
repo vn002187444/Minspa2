@@ -266,8 +266,8 @@ V3 EXECUTION
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 11.1 | **FTS: Full-text search blog & services** | [ ] | PostgreSQL tsvector — dễ nhất, ảnh hưởng lớn. Thêm cột `search_vector`, trigger update, index GIN. Query bằng `websearch_to_tsquery`. |
-| 11.2 | **Export dữ liệu (CSV, JSON)** | [ ] | Kế thừa từ V3.5 (đã có PDF/Excel report). Thêm `lib/export.ts` — xuất appointments, customers, services raw data. |
+| 11.1 | **FTS: Full-text search blog & services** | [x] | PostgreSQL tsvector + GIN index + /api/search |
+| 11.2 | **Export dữ liệu (CSV, JSON)** | [x] | `lib/export.ts` + `/api/export` + UI trong TabReports |
 | 11.3 | **Cài đặt `next-intl` i18n (VI/EN)** | [ ] | Route/cookie based. Bắt đầu với VI/EN, mở rộng sau. Cần: `middleware.ts` route detect, `i18n/request.ts`, dịch UI strings. |
 | 11.4 | **Translation management** | [ ] | File-based (JSON) cho phase 1. DB-based cho phase 2 nếu cần dynamic. |
 | 11.5 | **Multi-branch: thêm `branch_id`** | [-] | **Đã huỷ** — salon chỉ 1 cơ sở, không có nhu cầu mở rộng chi nhánh. |

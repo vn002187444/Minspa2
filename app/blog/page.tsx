@@ -6,6 +6,7 @@ import { BookOpen, Calendar, ArrowLeft, ArrowRight, Sparkles, ChevronLeft, Chevr
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import BottomNavigation from '@/components/BottomNavigation';
+import GlobalSearch from '@/components/GlobalSearch';
 
 export const revalidate = 60; // Revalidate every minute
 
@@ -72,6 +73,9 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           <p className="text-sm md:text-base text-[#FAF0E6] max-w-xl mx-auto leading-relaxed">
             Chia sẻ chân thực về xu hướng thiết kế móng tân thời, các combo gội dưỡng sinh đả thông kinh lạc và chăm sóc cơ thể trọn vẹn từ đội ngũ chuyên gia giàu kinh nghiệm.
           </p>
+          <div className="mt-8 flex justify-center">
+            <GlobalSearch />
+          </div>
         </div>
       </section>
 

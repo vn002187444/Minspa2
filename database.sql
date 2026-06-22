@@ -45,7 +45,8 @@ CREATE TABLE services (
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   discount_percentage DECIMAL(5, 2) DEFAULT 0,
   commission_percentage DECIMAL(5,2) DEFAULT 0,
-  commission_amount DECIMAL(10,2) DEFAULT 0
+  commission_amount DECIMAL(10,2) DEFAULT 0,
+  search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(name, '') || ' ' || coalesce(description, ''))) STORED
 );
 
 -- Appointments Table
@@ -148,8 +149,11 @@ CREATE TABLE blogs (
   content TEXT,
   image_url VARCHAR(255),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(summary, '') || ' ' || coalesce(content, ''))) STORED
 );
+
+CREATE INDEX IF NOT EXISTS idx_blogs_search_vector ON blogs USING GIN (search_vector);
 
 -- Time Slot Locks Table (Dynamic Locking for Booking System)
 CREATE TABLE time_slot_locks (
@@ -219,7 +223,8 @@ CREATE TABLE seo_articles (
   topic VARCHAR(100) DEFAULT '',
   keywords TEXT DEFAULT '',
   article TEXT DEFAULT '',
-  image_url VARCHAR(500) DEFAULT ''
+  image_url VARCHAR(500) DEFAULT '',
+  search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(topic, '') || ' ' || coalesce(keywords, '') || ' ' || coalesce(article, ''))) STORED
 );
 
 -- Banner Settings Table (single-row config)
@@ -295,6 +300,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created
 -- Performance indexes
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 CREATE INDEX IF NOT EXISTS idx_services_is_active ON services(is_active);
+CREATE INDEX IF NOT EXISTS idx_services_search_vector ON services USING GIN (search_vector);
 CREATE INDEX IF NOT EXISTS idx_treatment_packages_is_active ON treatment_packages(is_active);
 CREATE INDEX IF NOT EXISTS idx_attendance_date_status ON attendance(date, status);
 CREATE INDEX IF NOT EXISTS idx_appointments_start_time_status ON appointments(start_time, status);
@@ -456,6 +462,7 @@ ALTER TABLE random_booking_reminders_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE rate_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE seo_articles ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_seo_articles_search_vector ON seo_articles USING GIN (search_vector);
 ALTER TABLE seo_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
 ALTER TABLE slot_limits ENABLE ROW LEVEL SECURITY;

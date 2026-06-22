@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import {
   BarChart3, TrendingUp, Users, DollarSign, ShoppingBag,
   User, Activity, ChevronDown, RefreshCw,
-  ArrowUpRight, ArrowDownRight, FileText, FileSpreadsheet,
+  ArrowUpRight, ArrowDownRight, FileText, FileSpreadsheet, Download,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -143,6 +143,26 @@ export default function TabReports() {
     toast.success('Đã xuất Excel')
   }
 
+  const handleRawExport = async (type: string, format: 'csv' | 'json') => {
+    try {
+      const response = await fetch(`/api/export?type=${type}&format=${format}`);
+      if (!response.ok) throw new Error('Lỗi khi tải dữ liệu');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `min_salon_${type}_${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(`Đã xuất ${type} (${format.toUpperCase()})`);
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi xuất dữ liệu');
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -150,17 +170,41 @@ export default function TabReports() {
           <BarChart3 className="w-6 h-6 text-pink-500" />
           Báo cáo & Thống kê
         </h2>
-        <div className="flex items-center gap-2">
-          <button onClick={exportPDF} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer">
-            <FileText className="w-4 h-4" /> PDF
-          </button>
-          <button onClick={exportExcel} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer">
-            <FileSpreadsheet className="w-4 h-4" /> Excel
-          </button>
-          <button onClick={loadData} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-600 cursor-pointer" title="Làm mới">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-        </div>
+         <div className="flex items-center gap-2">
+           <button onClick={exportPDF} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer">
+             <FileText className="w-4 h-4" /> PDF
+           </button>
+           <button onClick={exportExcel} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer">
+             <FileSpreadsheet className="w-4 h-4" /> Excel
+           </button>
+           <div className="relative group">
+             <button className="px-3 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-black transition-colors shadow-sm">
+               <Download className="w-4 h-4" /> Export Raw
+             </button>
+             <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 hidden group-hover:block p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+               <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Appointments</div>
+               <div className="grid grid-cols-2 gap-1">
+                 <button onClick={() => handleRawExport('appointments', 'csv')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
+                 <button onClick={() => handleRawExport('appointments', 'json')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
+               </div>
+               <div className="border-t border-gray-100 my-1"></div>
+               <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Customers</div>
+               <div className="grid grid-cols-2 gap-1">
+                 <button onClick={() => handleRawExport('customers', 'csv')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
+                 <button onClick={() => handleRawExport('customers', 'json')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
+               </div>
+               <div className="border-t border-gray-100 my-1"></div>
+               <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Services</div>
+               <div className="grid grid-cols-2 gap-1">
+                 <button onClick={() => handleRawExport('services', 'csv')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
+                 <button onClick={() => handleRawExport('services', 'json')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
+               </div>
+             </div>
+           </div>
+           <button onClick={loadData} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-600 cursor-pointer" title="Làm mới">
+             <RefreshCw className="w-4 h-4" />
+           </button>
+         </div>
       </div>
 
       {/* Date Range Filter (5.7) */}
