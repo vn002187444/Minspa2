@@ -5,7 +5,7 @@
     "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
   },
   "functions": {
-    "api/cron/*.ts": {
+    "app/api/cron/**/route.ts": {
       "memory": 256,
       "maxDuration": 60
     }
