@@ -27,7 +27,17 @@ export const createClient = async () => {
     return createMockClient();
   }
 
-  const client = createRealClient(supabaseUrl, supabaseKey);
+  const client = createRealClient(supabaseUrl, supabaseKey, {
+    global: {
+      fetch: (input, init) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url && url.startsWith('https://api.supabase.com/')) {
+          return Promise.resolve(new Response(null, { status: 200 }));
+        }
+        return fetch(input, init);
+      },
+    },
+  });
 
   // Override auth.getUser to resolve from our custom JWT cookie session,
   // since we manage users via a custom `users` table, not Supabase Auth.
