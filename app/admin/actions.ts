@@ -1,6 +1,5 @@
 'use server'
 
-import sharp from 'sharp';
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { format, startOfDay, endOfDay, subDays, eachDayOfInterval, startOfMonth, endOfMonth, startOfYear } from "date-fns";
@@ -691,6 +690,7 @@ export async function getSeoArticles() {
 
 async function uploadBase64ToStorage(base64Url: string): Promise<string> {
   if (!base64Url || !base64Url.startsWith('data:')) return base64Url;
+  const sharp = (await import('sharp')).default;
   const matches = base64Url.match(/^data:image\/(\w+);base64,(.+)$/);
   if (!matches) return base64Url;
   const base64Data = matches[2];
