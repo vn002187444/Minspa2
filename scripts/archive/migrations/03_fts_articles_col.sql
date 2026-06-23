@@ -1,0 +1,1 @@
+ALTER TABLE seo_articles ADD COLUMN IF NOT EXISTS search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(topic, '') || ' ' || coalesce(keywords, '') || ' ' || coalesce(article, ''))) STORED;

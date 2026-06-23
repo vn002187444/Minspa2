@@ -6,6 +6,7 @@ import SkipLink from "@/components/SkipLink";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeBanner from "@/components/ThemeBanner";
 import MascotProvider from "@/components/MascotProvider";
+import GoogleTranslate from "@/components/GoogleTranslate";
 import { Toaster } from 'sonner';
 import Script from 'next/script';
 
@@ -126,8 +127,11 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
       </head>
-      <body className="antialiased font-sans text-gray-900 bg-gray-50 overflow-x-hidden">
-         <SkipLink />
+       <body className="antialiased font-sans text-gray-900 bg-gray-50 overflow-x-hidden">
+          <div className="fixed top-2 right-2 z-[9999]">
+            <GoogleTranslate />
+          </div>
+          <SkipLink />
          <Script
            src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
            strategy="afterInteractive"

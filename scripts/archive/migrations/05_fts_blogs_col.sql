@@ -1,0 +1,2 @@
+ALTER TABLE blogs ADD COLUMN IF NOT EXISTS search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(summary, '') || ' ' || coalesce(content, ''))) STORED;
+CREATE INDEX IF NOT EXISTS idx_blogs_search_vector ON blogs USING GIN (search_vector);

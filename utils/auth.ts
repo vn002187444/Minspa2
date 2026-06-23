@@ -36,7 +36,6 @@ export async function decrypt(input: string): Promise<SessionPayload | null> {
 }
 
 export async function createSession(user: { id: string; role: string; username: string }) {
-  console.log(`[AUTH] createSession called for user: ${user.username}, role: ${user.role}`);
   const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   const session = await encrypt({ user, expires });
   const cookieStore = await cookies();
@@ -48,22 +47,13 @@ export async function createSession(user: { id: string; role: string; username: 
     sameSite: 'lax',
     path: '/',
   });
-  console.log(`[AUTH] createSession successfully set cookie for: ${user.username}`);
 }
 
 export async function getSession() {
   const cookieStore = await cookies();
   const session = cookieStore.get('session')?.value;
-  if (!session) {
-    console.log(`[AUTH] getSession: No session cookie found.`);
-    return null;
-  }
+  if (!session) return null;
   const parsed = await decrypt(session);
-  if (parsed) {
-    console.log(`[AUTH] getSession: Session valid. User ID: ${parsed.user.id}, Role: ${parsed.user.role}`);
-  } else {
-    console.error(`[AUTH] getSession: Session decryption failed!`);
-  }
   return parsed;
 }
 

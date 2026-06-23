@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CheckCircle2, Star, ArrowRight, X, Plus, Minus, Copy } from "lucide-react"
+import { CheckCircle2, Star, ArrowRight, X, Plus, Minus, Copy, FileText } from "lucide-react"
+import { downloadInvoicePDF, shareInvoicePDF } from "@/lib/invoice-pdf"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
 import Image from "next/image"
@@ -622,6 +623,71 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
   // Step 6: Thank you
   function renderStep6() {
     const finalTip = customTip ? Number(customTip) : tip
+
+    function handleDownloadInvoice() {
+      const allSvc = [
+        ...baseServices,
+        ...extraServiceList.map((s: any) => ({ ...s, isCovered: false } as any)),
+      ]
+      const processedServices = allSvc.map((svc: any) => {
+        const itemDisc = discountType === "per-item" ? (itemDiscounts[svc.id] || 0) : 0
+        return {
+          name: svc.name || "Dịch vụ",
+          price: Number(svc.price) || 0,
+          discount: svc.isCovered ? 100 : itemDisc || (discountType === "per-order" ? discValue : 0),
+          note: svc.isCovered ? "Liệu trình" : undefined,
+        }
+      })
+
+      const staffName = appt.users?.full_name || appt.staff?.full_name || ""
+
+      downloadInvoicePDF({
+        invoiceNumber: appt.id?.substring(0, 8).toUpperCase() || "N/A",
+        date: format(new Date(), "dd/MM/yyyy HH:mm", { locale: vi }),
+        customerName: appt.customers?.full_name || "Khách hàng",
+        customerPhone: appt.customers?.phone || "",
+        staffName,
+        services: processedServices,
+        subtotal,
+        discountAmount: totalDiscountAmount,
+        tip: finalTip,
+        grandTotal: totalWithTip,
+        paymentMethod,
+      })
+    }
+
+    function handleShareInvoice() {
+      const allSvc = [
+        ...baseServices,
+        ...extraServiceList.map((s: any) => ({ ...s, isCovered: false } as any)),
+      ]
+      const processedServices = allSvc.map((svc: any) => {
+        const itemDisc = discountType === "per-item" ? (itemDiscounts[svc.id] || 0) : 0
+        return {
+          name: svc.name || "Dịch vụ",
+          price: Number(svc.price) || 0,
+          discount: svc.isCovered ? 100 : itemDisc || (discountType === "per-order" ? discValue : 0),
+          note: svc.isCovered ? "Liệu trình" : undefined,
+        }
+      })
+
+      const staffName = appt.users?.full_name || appt.staff?.full_name || ""
+
+      shareInvoicePDF({
+        invoiceNumber: appt.id?.substring(0, 8).toUpperCase() || "N/A",
+        date: format(new Date(), "dd/MM/yyyy HH:mm", { locale: vi }),
+        customerName: appt.customers?.full_name || "Khách hàng",
+        customerPhone: appt.customers?.phone || "",
+        staffName,
+        services: processedServices,
+        subtotal,
+        discountAmount: totalDiscountAmount,
+        tip: finalTip,
+        grandTotal: totalWithTip,
+        paymentMethod,
+      })
+    }
+
     return (
       <div className="space-y-6 text-center">
         <div className="py-4">
@@ -651,6 +717,25 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
             <span>Đã thu</span>
             <span className="text-emerald-600">{totalWithTip.toLocaleString("vi")}đ</span>
           </div>
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={handleShareInvoice}
+            className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Xem hoá đơn
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadInvoice}
+            className="flex-1 py-3 text-sm font-bold text-emerald-700 bg-emerald-50 rounded-xl hover:bg-emerald-100 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <FileText className="w-4 h-4" />
+            Tải PDF
+          </button>
         </div>
       </div>
     )

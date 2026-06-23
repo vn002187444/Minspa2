@@ -66,7 +66,7 @@ export default function TabStaff({
     };
   };
 
-  const filteredStaffs = staffs.filter((staff) => {
+  const filteredStaffs = (staffs || []).filter((staff) => {
     const term = searchTerm.toLowerCase();
     const name = (staff.full_name || "").toLowerCase();
     const cccd = (staff.cccd || "").toLowerCase();

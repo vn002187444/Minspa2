@@ -3,7 +3,7 @@
 import sharp from 'sharp';
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
-import { format, startOfDay, endOfDay, subDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfDay, endOfDay, subDays, eachDayOfInterval, startOfMonth, endOfMonth, startOfYear } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { logAuditAction } from "@/utils/audit";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -1667,7 +1667,7 @@ export async function updateTaskStatus(taskId: string, status: string) {
 export async function deleteTask(taskId: string) {
   await checkAdmin();
   const supabase = await createClient();
-  const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+  const { error } = await supabase.from('tasks').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', taskId);
   if (error) return { success: false, error: error.message };
   return { success: true };
 }
@@ -2078,4 +2078,183 @@ export async function getAutoSeoHistory() {
   } catch {
     return [];
   }
+}
+
+// ===== V3.9 — Financial Dashboard (P&L, Cash Flow) =====
+
+export async function getFinancialDashboard(startDateStr?: string, endDateStr?: string) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+  const now = new Date();
+
+  const start = startDateStr ? new Date(startDateStr).toISOString() : startOfMonth(now).toISOString();
+  const end = endDateStr ? new Date(endDateStr).toISOString() : endOfMonth(now).toISOString();
+
+  const { data: appts } = await supabase
+    .from('appointments')
+    .select('total_amount, commission_amount, tip_amount, discount_amount, start_time, status')
+    .eq('status', 'COMPLETED')
+    .gte('start_time', start)
+    .lte('start_time', end)
+    .limit(5000);
+
+  const totalRevenue = (appts || []).reduce((s, a: any) => s + (Number(a.total_amount) || 0), 0);
+  const totalCommission = (appts || []).reduce((s, a: any) => s + (Number(a.commission_amount) || 0), 0);
+  const totalTip = (appts || []).reduce((s, a: any) => s + (Number(a.tip_amount) || 0), 0);
+  const totalDiscount = (appts || []).reduce((s, a: any) => s + (Number(a.discount_amount) || 0), 0);
+  const totalOrders = (appts || []).length;
+  const netProfit = totalRevenue - totalCommission - totalDiscount;
+
+  // Monthly breakdown for cash flow chart
+  const monthlyMap: Record<string, { revenue: number; commission: number; orders: number }> = {};
+  (appts || []).forEach((a: any) => {
+    const m = format(new Date(a.start_time), 'yyyy-MM');
+    if (!monthlyMap[m]) monthlyMap[m] = { revenue: 0, commission: 0, orders: 0 };
+    monthlyMap[m].revenue += Number(a.total_amount) || 0;
+    monthlyMap[m].commission += Number(a.commission_amount) || 0;
+    monthlyMap[m].orders += 1;
+  });
+
+  const monthlyCashFlow = Object.entries(monthlyMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, data]) => ({
+      month,
+      revenue: data.revenue,
+      commission: data.commission,
+      netCashflow: data.revenue - data.commission,
+      orders: data.orders,
+    }));
+
+  return { totalRevenue, totalCommission, totalTip, totalDiscount, totalOrders, netProfit, monthlyCashFlow };
+}
+
+// ===== V3.9 — Tax Report =====
+
+export async function getTaxReport(year?: number) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+  const yearVal = year || new Date().getFullYear();
+
+  const startISO = new Date(`${yearVal}-01-01T00:00:00+07:00`).toISOString();
+  const endISO = new Date(`${yearVal}-12-31T23:59:59+07:00`).toISOString();
+
+  const { data: appts } = await supabase
+    .from('appointments')
+    .select('total_amount, commission_amount, tip_amount, start_time, status')
+    .eq('status', 'COMPLETED')
+    .gte('start_time', startISO)
+    .lte('start_time', endISO)
+    .limit(10000);
+
+  const monthlyData: Record<string, { revenue: number; orders: number; commission: number; tip: number }> = {};
+  for (let m = 1; m <= 12; m++) {
+    const key = `${yearVal}-${String(m).padStart(2, '0')}`;
+    monthlyData[key] = { revenue: 0, orders: 0, commission: 0, tip: 0 };
+  }
+
+  (appts || []).forEach((a: any) => {
+    const m = format(new Date(a.start_time), 'yyyy-MM');
+    if (monthlyData[m]) {
+      monthlyData[m].revenue += Number(a.total_amount) || 0;
+      monthlyData[m].orders += 1;
+      monthlyData[m].commission += Number(a.commission_amount) || 0;
+      monthlyData[m].tip += Number(a.tip_amount) || 0;
+    }
+  });
+
+  const months = Object.entries(monthlyData)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, data]) => ({ month, ...data }));
+
+  const totalRevenue = months.reduce((s, m) => s + m.revenue, 0);
+  const totalOrders = months.reduce((s, m) => s + m.orders, 0);
+
+  return { year: yearVal, months, totalRevenue, totalOrders };
+}
+
+// ===== V3.9 — Cash Register (Sổ quỹ) =====
+
+interface CashInput {
+  type: 'THU' | 'CHI';
+  category: string;
+  amount: number;
+  description?: string;
+  reference_type?: string;
+  reference_id?: string;
+}
+
+export async function getCashRegisterTransactions(month?: string) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+  const now = new Date();
+  const ym = month || format(now, 'yyyy-MM');
+  const startISO = new Date(`${ym}-01T00:00:00+07:00`).toISOString();
+  const endISO = new Date(new Date(startISO).getFullYear(), new Date(startISO).getMonth() + 1, 1).toISOString();
+
+  const { data: rows, error } = await supabase
+    .from('cash_register')
+    .select('*, users(full_name)')
+    .gte('recorded_at', startISO)
+    .lt('recorded_at', endISO)
+    .eq('is_active', true)
+    .order('recorded_at', { ascending: false })
+    .limit(500);
+
+  if (error) throw error;
+
+  const items = (rows || []).map((r: any) => ({
+    id: r.id,
+    type: r.type,
+    category: r.category,
+    amount: r.amount,
+    description: r.description,
+    referenceType: r.reference_type,
+    referenceId: r.reference_id,
+    recordedBy: r.users?.full_name || '',
+    recordedAt: r.recorded_at,
+  }));
+
+  const totalThu = items.filter((i) => i.type === 'THU').reduce((s, i) => s + i.amount, 0);
+  const totalChi = items.filter((i) => i.type === 'CHI').reduce((s, i) => s + i.amount, 0);
+  const balance = totalThu - totalChi;
+
+  return { items, totalThu, totalChi, balance };
+}
+
+export async function addCashTransaction(data: CashInput) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+
+  const { error } = await supabase.from('cash_register').insert({
+    type: data.type,
+    category: data.category,
+    amount: data.amount,
+    description: data.description || '',
+    reference_type: data.reference_type || null,
+    reference_id: data.reference_id || null,
+    recorded_by: session.user.id,
+  });
+
+  if (error) throw error;
+}
+
+export async function deleteCashTransaction(id: string) {
+  const session = await getSession();
+  if (!session || session.user.role !== 'ADMIN') {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+  await supabase.from('cash_register').update({ is_active: false }).eq('id', id);
 }

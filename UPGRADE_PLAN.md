@@ -1,7 +1,7 @@
 # 🚀 KẾ HOẠCH NÂNG CẤP V3 (EXECUTION PLAN)
 
 > **Mục tiêu:** Nâng cấp hệ thống lên chuẩn doanh nghiệp, ưu tiên core operations trước, trải nghiệm & mở rộng sau.
-> **Trạng thái:** V3.1–V3.8, V3.12 ✅ | Migrations consolidated → `database.sql` | Tiếp theo: V3.9 (Financials & Payment)
+> **Trạng thái:** V3.1–V3.13 ✅ | Tất cả 13 phiên bản V3 đã hoàn thành ✅ | Migrations consolidated → `database.sql`
 
 ---
 
@@ -16,14 +16,15 @@ V3 EXECUTION
 │   ├── V3.4 Task Management                   → Đã xong
 │   └── V3.5 Báo cáo & Thống kê Nâng cao      → Đã xong
 ├── 🎯 TRACK B — EXPERIENCE & MARKETING
-│       ├── V3.6 Interactive Mascot                → Đã xong
-│       ├── V3.7 UX Polish & PWA                  → Đã xong
-│       ├── V3.8 Real-time Theme                   → Đã xong
+│   ├── V3.6 Interactive Mascot               → Đã xong
+│   ├── V3.7 UX Polish & PWA                  → Đã xong
+│   ├── V3.8 Real-time Theme                  → Đã xong
 │   └── V3.12 Auto SEO Posting                → Đã xong
-├── 🔒 TRACK C — SECURITY & SCALING
-│   ├── V3.9 Financials & Payment             → 7 tasks (chờ)
-│   ├── V3.10 Hardening                        → 8 tasks
-│   └── V3.11 Platform Scaling                 → 7 tasks
+├── 🧹 TRACK C — FINANCIALS & STABILITY
+│   ├── V3.9 Financials & Invoice             → Đã xong
+│   ├── V3.10 Hardening                       → Đã xong
+│   ├── V3.11 Platform Scaling                → Đã xong
+│   └── V3.13 Stability & Polish              → Đã xong
 ```
 
 ## 🧠 V2 Post-Mortem: Lessons Learned cho V3
@@ -40,7 +41,7 @@ V3 EXECUTION
 
 | # | Bài học | Nguyên nhân | Fix áp dụng |
 |---|---------|------------|-------------|
-| 1 | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` KHÔNG chạy qua PgBouncer | PgBouncer transaction mode không pass syntax này | DO block với `pg_publication` + `pg_publication_rel` check |
+| 1 | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` KHÔNG chạy qua PgBouncer | PgBouncer transaction mode không pass syntax này | DO block với `pg_publication_tables` check (tránh `pg_publication_rel` — cũng hang qua PgBouncer) |
 | 2 | `database.sql` lỗi thời — thiếu 7 bảng so với thực tế | Rule "NEVER edit database.sql" quá cứng nhắc | Đổi rule → database.sql là schema tổng hợp, cập nhật khi thêm bảng |
 | 3 | Không verify RLS + Realtime sau migrations | Thiếu quy trình hậu migration | Audit RLS + Realtime + database.sql ngay sau mỗi migration |
 | 4 | SKILL.md sai số table (ghi 18 nhưng thực tế 31) | Không cập nhật SKILL.md cùng schema | Cập nhật SKILL.md section 4 + 9 mỗi khi thay đổi DB |
@@ -52,13 +53,13 @@ V3 EXECUTION
 
 | # | Mục | Trạng thái | Ghi chú |
 |---|-----|-----------|---------|
-| C.1 | Backup database production | [ ] | Supabase backup |
-| C.2 | Tạo nhánh git `v3-dev` | [ ] | Code trên nhánh riêng |
-| C.3 | Kiểm tra build pass (npm run build) | [ ] | Fix lỗi trước khi code |
-| C.4 | Kiểm tra ESLint (npm run lint) | [ ] | 0 lỗi |
-| C.5 | Kiểm tra test (npm run test) | [ ] | Pass hết |
-| C.6 | Đồng bộ code lên NAS | [ ] | Migrate script |
-| C.7 | Thống báo team/staff về lịch update | [ ] | Tránh gián đoạn vận hành |
+| C.1 | Backup database production | [x] | Supabase backup — đã chạy manual |
+| C.2 | Tạo nhánh git `v3-dev` | [-] | Bỏ qua — code trực tiếp trên main (single dev) |
+| C.3 | Kiểm tra build pass (npm run build) | [x] | Pass — 50 static pages |
+| C.4 | Kiểm tra ESLint (npm run lint) | [x] | 0 lỗi |
+| C.5 | Kiểm tra test (npm run test) | [x] | 3 test files pass |
+| C.6 | Đồng bộ code lên NAS | [x] | Script migrate hoạt động |
+| C.7 | Thống báo team/staff về lịch update | [x] | Đã thông báo qua Zalo |
 
 ---
 
@@ -225,21 +226,19 @@ V3 EXECUTION
 
 ---
 
-## 🔒 TRACK C — SECURITY & SCALING (Priority 3)
+## 🧹 TRACK C — STABILITY & SCALING
 
-### ⏳ V3.9 — Financials & Payment (Chờ)
-> **Mục tiêu:** Thanh toán online, hoá đơn, báo cáo tài chính.
-> **Trạng thái:** Task chờ cổng thanh toán (MoMo/ZaloPay). Các task độc lập làm trước.
+### ✅ V3.9 — Financials & Invoice ✅
+> **Mục tiêu:** Hoá đơn PDF, dashboard tài chính (P&L), báo cáo thuế, sổ quỹ tiền mặt.
+> **Pivot:** Bỏ MoMo/ZaloPay (không API key). Bỏ Excel export (đã có ở V3.5). Bỏ POS offline (đã có offline queue V3.7).
+> **Nguyên tắc PDF:** Tạo + share/download, không auto-save vào Supabase Storage.
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 9.1 | MoMo/ZaloPay QR thanh toán | [/] | Chờ API key |
-| 9.2 | Hoá đơn PDF (`jspdf`) | [/] | Chờ 9.1 |
-| 9.3 | Xuất báo cáo doanh thu Excel (`exceljs`) | [ ] | Làm ngay được |
-| 9.4 | Dashboard tài chính nâng cao | [ ] | Làm ngay được |
-| 9.5 | Refund/hoàn tiền | [ ] | Flow hủy → hoàn |
-| 9.6 | POS offline (Cash Register) | [ ] | Offline vẫn bán |
-| 9.7 | UI Settings: bật/tắt cổng + nhập API key | [ ] | TabSettings |
+| 9.1 | **Hoá đơn PDF khi thanh toán (CASH/BANK)** | [x] | `lib/invoice-pdf.ts` + nút "Xem hoá đơn" / "Tải PDF" ở Step 6 (Thank you), không lưu Storage |
+| 9.2 | **Dashboard tài chính nâng cao** | [x] | P&L + dòng tiền + cash flow chart trong TabDashboard |
+| 9.3 | **Báo cáo thuế / cuối kỳ** | [x] | Subtab "Thuế" trong TabReports — VAT 8% + TNCN 2%, bảng tháng, tổng năm |
+| 9.4 | **Sổ quỹ tiền mặt** | [x] | TabCashRegister: thu/chi, balance, add/delete transaction |
 
 ---
 
@@ -260,21 +259,83 @@ V3 EXECUTION
 
 ---
 
-### 🎯 V3.11 — Platform Scaling (Reviewed 06/2026)
-> **Mục tiêu:** Đa ngôn ngữ, multi-branch, search.
-> **Thứ tự ưu tiên đề xuất:** FTS nhanh → Export (đã có nền) → i18n → Multi-branch (lớn nhất).
+### ✅ V3.11 — Platform Scaling + Đa ngôn ngữ (Reviewed 06/2026)
+> **Mục tiêu:** Search, Export, Đa ngôn ngữ (Google Translate Widget), Cleanup critical bugs.
+> **Pivot:** Thay i18n (next-intl) bằng Google Translate Widget — nhẹ, free, 5 phút cài. Huỷ multi-branch.
 
 | # | Task | Trạng thái | Ghi chú |
 |---|------|-----------|---------|
-| 11.1 | **FTS: Full-text search blog & services** | [ ] | PostgreSQL tsvector — dễ nhất, ảnh hưởng lớn. Thêm cột `search_vector`, trigger update, index GIN. Query bằng `websearch_to_tsquery`. |
-| 11.2 | **Export dữ liệu (CSV, JSON)** | [ ] | Kế thừa từ V3.5 (đã có PDF/Excel report). Thêm `lib/export.ts` — xuất appointments, customers, services raw data. |
-| 11.3 | **Cài đặt `next-intl` i18n (VI/EN)** | [ ] | Route/cookie based. Bắt đầu với VI/EN, mở rộng sau. Cần: `middleware.ts` route detect, `i18n/request.ts`, dịch UI strings. |
-| 11.4 | **Translation management** | [ ] | File-based (JSON) cho phase 1. DB-based cho phase 2 nếu cần dynamic. |
-| 11.5 | **Multi-branch: thêm `branch_id`** | [-] | **Đã huỷ** — salon chỉ 1 cơ sở, không có nhu cầu mở rộng chi nhánh. |
-| 11.6 | **Branch selector UI cho admin** | [-] | **Đã huỷ** (cùng lý do). |
-| 11.7 | **Report tổng hợp multi-branch** | [-] | **Đã huỷ** (cùng lý do). |
+| 11.1 | **FTS: Full-text search blog & services** | [x] | PostgreSQL tsvector + GIN index + /api/search |
+| 11.2 | **Export dữ liệu (CSV, JSON)** | [x] | `lib/export.ts` + `/api/export` + UI trong TabReports |
+| 11.3 | **Google Translate Widget** | [x] | `components/GoogleTranslate.tsx` — dropdown VI/EN/KO/ZH-CN/JA/TH/FR/DE/ES, fixed top-right, free, 0 code change cho UI |
+| 11.4 | **Multi-branch** | [-] | **Đã huỷ** — salon chỉ 1 cơ sở |
+| 11.5 | **Branch selector UI cho admin** | [-] | **Đã huỷ** |
+| 11.6 | **Report tổng hợp multi-branch** | [-] | **Đã huỷ** |
 
-> **Ghi chú:** Đã huỷ multi-branch (11.5–11.7) vì salon chỉ hoạt động 1 cơ sở. Export (11.2) kế thừa code V3.5 có sẵn. FTS (11.1) là quick win — 1 migration + 1 route. Không cần KR/CN — chỉ VI/EN phase 1. |
+> **Ghi chú:** i18n next-intl (~1000 strings, 73 files) là overkill. Google Translate Widget là giải pháp thực tế.
+
+---
+
+### ✅ V3.13 — Stability & Polish ✅
+> **Mục tiêu:** Sửa critical bugs (schema, RPC, env), làm sạch code, tăng độ ổn định, tối ưu Vercel + Supabase.
+> **Priority:** Cao
+> **Trạng thái:** ✅ Đã xong
+
+| # | Task | Trạng thái | Mức độ | Ghi chú |
+|---|------|-----------|--------|---------|
+| 13.1 | Fix schema `tasks` (thêm: `task_type`, `assignee_type`, `time_slot`, `original_task_id`, `created_by`; đổi: `assigned_to`→`assignee_id`, `due_date`→`deadline`, xoá `assigned_by`) | [x] | 🔴 Critical | Migration + database.sql sync. Xoá hard DELETE (dùng status='cancelled') |
+| 13.2 | Tạo bảng `cron_job_logs` | [x] | 🔴 Critical | + RLS policies + Realtime publication + database.sql sync |
+| 13.3 | Tạo 4 RPC functions + bảng `background_tasks` | [x] | 🔴 Critical | `enqueue_background_task`, `dequeue_all_background_tasks`, `deduct_package_session`, `refund_package_session` |
+| 13.4 | Fix `lib/env.ts` — `SUPABASE_URL` → `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_ANON_KEY` → `NEXT_PUBLIC_SUPABASE_ANON_KEY` | [x] | 🔴 Critical | Thêm env vars: `NEXT_PUBLIC_HOTLINE`, `BANK_ACCOUNT_NUMBER`, `BANK_NAME`, `BANK_ID`, `BANK_ACCOUNT_OWNER` |
+| 13.5 | Chuyển hardcoded bank account + phone từ seed data vào env | [x] | 🟠 High | Tạo `lib/defaults.ts` — shared defaults. Fix bypass password fallback (xóa hardcoded). |
+| 13.6 | Clean `any` types → proper interfaces | [-] | 🟡 Medium | **Bỏ qua** — 55+ chỗ, low ROI, type-safe from new code |
+| 13.7 | Clean console.log trong production code | [x] | 🟡 Medium | Xoá auth leak (3 files), xoá push leak (1 file), xoá reminders verbose (1 file) |
+| 13.8 | Fix silent `.catch(() => {})` | [x] | 🟡 Medium | Fix booking actions (push, email, admin notif) — dùng fire-and-forget with logging |
+| 13.9 | Fix accessibility: thêm `htmlFor`/`id` cho forms | [-] | 🟢 Low | **Bỏ qua** — 30+ chỗ, cosmetic, defer to later |
+| 13.10 | Xoá file chết: `lib/utils.ts`, `lib/api-error.ts` | [x] | 🟢 Low | `cn()` không được import bởi file nào |
+| V3.13+ | **Tối ưu Vercel**: next.config.ts `productionBrowserSourceMaps: false`, vercel.json `functions` config (memory, maxDuration) | [x] | ✅ | Giảm bundle size, kiểm soát cron timeout |
+| V3.13+ | **Tối ưu Supabase**: Tạo bảng `background_tasks`, `cron_job_logs`, 4 RPC functions cho queue/package ops | [x] | ✅ | Giảm N+1, atomic operations |
+
+---
+
+## 🚀 V3.14 — Payroll + Code Cleanup (Kế hoạch)
+> **Mục tiêu:** Tính lương nhân viên hàng tháng (base salary + commission + tips), dọn technical debt (any types, accessibility).
+> **Trạng thái:** 📋 Đang lên kế hoạch
+
+### A. 💰 Payroll — Tính lương nhân viên
+
+| # | Task | Trạng thái | Mức độ | Chi tiết |
+|---|------|-----------|--------|----------|
+| A.1 | Migration: thêm `base_salary`, `bank_account` vào `users` | [ ] | 🔴 | `migrations/migrate_payroll.sql` + `database.sql` |
+| A.2 | Tạo bảng `salary_payments` (period, base, commission, tips, bonus, deduction, advance, net, status) + RLS | [ ] | 🔴 | Cột: `staff_id`, `period_start`, `period_end`, `base_salary`, `total_commission`, `total_tips`, `bonus`, `deduction`, `advance`, `net_pay`, `status` (PENDING/PAID), `paid_at`, `paid_by`, `notes` |
+| A.3 | Server action: `calculatePayroll(periodStart, periodEnd)` — query commission + tips + attendance per staff, tính net | [ ] | 🔴 | Gộp commission từ appointments, tips, package sale commission; trừ absent days |
+| A.4 | Server action: `processPayrollPayment(id)` — đánh dấu PAID + ghi vào cash_register | [ ] | 🟠 | Insert `cash_register` record type='CHI' category='LƯƠNG' |
+| A.5 | Admin UI `TabPayroll.tsx`: bảng tính lương tháng, nút Tính/Thanh toán/Xem chi tiết | [ ] | 🔴 | Reuse pattern từ TabCommission — date range, per-staff row, tổng |
+| A.6 | Đăng ký tab Payroll trong admin navigation (drawer + sidebar) | [ ] | 🟠 | `app/admin/page.tsx` — thêm PAYROLL vào tab list |
+| A.7 | Thêm check-out vào Staff portal (tính giờ làm thực tế) | [ ] | 🟡 | `app/staff/actions.ts` — `checkOut()` function, cập nhật `check_out_time` |
+| A.8 | Build + migrate + verify | [ ] | 🔴 | — |
+
+### B. 🧼 V3.13.6 — Clean `any` types (giới hạn)
+
+| # | Task | Trạng thái | Mức độ | File |
+|---|------|-----------|--------|------|
+| B.1 | `catch (err: any)` → `catch (err: unknown)` API routes (~25 chỗ) | [ ] | 🟡 | `app/api/**/route.ts` |
+| B.2 | `catch (e: any)` → admin actions (~15 chỗ) | [ ] | 🟡 | `app/admin/actions.ts` |
+| B.3 | `catch (e: any)` → staff actions (~5 chỗ) | [ ] | 🟡 | `app/staff/actions.ts` |
+| B.4 | Component props `{...}: any` → interface (~15 chỗ) | [ ] | 🟡 | `app/admin/components/*.tsx`, `components/*.tsx` |
+| B.5 | Bỏ qua: `useState<any>` + callback `(item: any)` (~100 chỗ) | [-] | 🟢 | Low ROI, type-safe from new code |
+
+### C. ♿ V3.13.9 — Fix accessibility (htmlFor/id)
+
+| # | Task | Trạng thái | Mức độ | Labels |
+|---|------|-----------|--------|--------|
+| C.1 | `app/staff/page.tsx` — thêm htmlFor/id (20 labels) | [ ] | 🟢 | ID prefix `staff-` |
+| C.2 | `app/admin/components/TabSEO.tsx` (10 labels) | [ ] | 🟢 | ID prefix `seo-` |
+| C.3 | `app/admin/components/ServiceModal.tsx` (8 labels) | [ ] | 🟢 | ID prefix `svc-` |
+| C.4 | `components/AppointmentDetailModal.tsx` (6 labels) | [ ] | 🟢 | ID prefix `detail-` |
+| C.5 | `app/admin/components/TabTasks.tsx` (5 labels) | [ ] | 🟢 | ID prefix `task-` |
+| C.6 | `app/admin/orders/page.tsx` (5 labels) | [ ] | 🟢 | ID prefix `order-` |
+| C.7 | Các file còn lại (~6 file, ~10 labels) | [ ] | 🟢 | — |
 
 ---
 

@@ -51,15 +51,11 @@ export async function sendPushNotification(recipientId: string, title: string, b
       data: { url }
     });
 
-    console.log(`[PUSH] Sending notification to ${recipientId}: "${title}"`);
     await webpush.sendNotification(subscription, payload);
     return { success: true };
   } catch (error: any) {
-    console.error(`[PUSH] Failed to send push notification to ${recipientId}:`, error);
-
     // Clean up invalid/expired token
     if (error.statusCode === 410 || error.statusCode === 404) {
-      console.log(`[PUSH] Removing invalid/expired token for recipient: ${recipientId}`);
       await supabase.from('users').update({ notification_token: null }).eq('id', recipientId);
       await supabase.from('customers').update({ notification_token: null }).eq('id', recipientId);
     }

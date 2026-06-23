@@ -1,3 +1,13 @@
 {
-  "ignoreCommand": "git diff --quiet HEAD~1 -- '*.md' 'docs/**' '.agents/**' '.github/**' LICENSE 2>/dev/null && exit 0 || exit 1"
+  "installCommand": "npm install --include=optional",
+  "ignoreCommand": "git diff --quiet HEAD~1 -- '*.md' 'docs/**' '.agents/**' '.github/**' LICENSE 2>/dev/null && exit 0 || exit 1",
+  "env": {
+    "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+  },
+  "functions": {
+    "app/api/cron/**/route.ts": {
+      "memory": 256,
+      "maxDuration": 60
+    }
+  }
 }

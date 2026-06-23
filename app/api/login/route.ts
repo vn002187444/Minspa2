@@ -26,15 +26,15 @@ export async function POST(req: NextRequest) {
     let userPayload: { id: string; role: string; username: string } | null = null;
     let routeDest = '';
 
-    // Emergency bypass (dùng env vars để tránh lộ credentials)
-    const bypassAdminUser = process.env.BYPASS_ADMIN_USER || 'admin';
-    const bypassAdminPass = process.env.BYPASS_ADMIN_PASS || 'Admin';
-    const bypassStaffUser = process.env.BYPASS_STAFF1_USER || 'staff1';
-    const bypassStaffPass = process.env.BYPASS_STAFF1_PASS || 'Staff@1';
-    if (normUsername === bypassAdminUser && (normPassword === bypassAdminPass || normPassword === bypassAdminUser)) {
+    // Emergency bypass (bắt buộc set env trong production)
+    const bypassAdminUser = process.env.BYPASS_ADMIN_USER;
+    const bypassAdminPass = process.env.BYPASS_ADMIN_PASS;
+    const bypassStaffUser = process.env.BYPASS_STAFF1_USER;
+    const bypassStaffPass = process.env.BYPASS_STAFF1_PASS;
+    if (bypassAdminUser && bypassAdminPass && normUsername === bypassAdminUser && (normPassword === bypassAdminPass || normPassword === bypassAdminUser)) {
       userPayload = { id: '00000000-0000-0000-0000-000000000000', role: 'ADMIN', username: 'admin' };
       routeDest = '/admin';
-    } else if (normUsername === bypassStaffUser && (normPassword === bypassStaffPass || normPassword === bypassStaffUser)) {
+    } else if (bypassStaffUser && bypassStaffPass && normUsername === bypassStaffUser && (normPassword === bypassStaffPass || normPassword === bypassStaffUser)) {
       userPayload = { id: '00000000-0000-0000-0000-000000000001', role: 'STAFF', username: 'staff1' };
       routeDest = '/staff';
     } else {
