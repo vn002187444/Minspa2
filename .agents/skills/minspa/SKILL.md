@@ -40,8 +40,35 @@ description: >-
     - Move validation inside functions (lazy init pattern — see `utils/auth.ts` `getKey()`, `utils/reminders.ts` `getSupabase()`)
     - For `createClient()`, make it return a **mock client** when env vars are missing instead of throwing (see `utils/supabase/server.ts` `createMockClient()`) — this prevents ALL static pages from crashing during prerendering
     - Never use `process.env.XXX!` non-null assertions at module level (see `app/api/background-worker/route.ts` fix)
+19. **Never set `SHARP_IGNORE_GLOBAL_LIBVIPS=1`** — trong build script hay Vercel env vars. Env var này bảo sharp bỏ qua prebuilt binary (`@img/sharp-linux-x64`) và tìm libvips hệ thống, mà Vercel không có → runtime crash `ERR_DLOPEN_FAILED`. Fix:
+    - `@img/sharp-linux-x64` và `@img/sharp-libvips-linux-x64` trong `optionalDependencies` (npm install mặc định cài optional deps, không cài được trên Windows vì platform mismatch)
+    - Build script: `npx next build` (không có env var)
+    - Xoá `"SHARP_IGNORE_GLOBAL_LIBVIPS"` khỏi `vercel.json` env nếu có
+20. **Vercel deploy — project name phải set trong `vercel.json`:** Nếu thiếu `"name"`, Vercel CLI auto-create project với name từ git URL chứa `---` → bị reject (400). Luôn thêm `"name": "minhair"` vào `vercel.json`.
+21. **Block Supabase Management API calls trên Vercel:** `@supabase/supabase-js` v2.107+ tự động gọi `api.supabase.com/v1/projects/{ref}/network-restrictions` và `config/storage` khi khởi tạo `createClient()`. Trên Vercel network không reach được `api.supabase.com` → timeout. Fix: override `global.fetch` trong createClient options:
+    ```ts
+    createRealClient(url, key, {
+      global: {
+        fetch: (input, init) => {
+          const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+          if (url && url.startsWith('https://api.supabase.com/')) {
+            return Promise.resolve(new Response(null, { status: 200 }));
+          }
+          return fetch(input, init);
+        },
+      },
+    });
+    ```
+    Xem `utils/supabase/server.ts` implementation hiện tại.
+22. **Full CI pipeline test:** Sau khi sửa CI, không chỉ verify build local — đợi GitHub Actions run hoàn tất (bao gồm cả Deploy step). Lỗi có thể xuất hiện ở bất kỳ step nào (lint, test, build, deploy). Dùng GitHub API kiểm tra kết quả từng job.
 
-## 3. Auth System
+## 3. CI/CD & Vercel Deployment Lessons (Learned Jun 2026)
+- **sharp runtime error:** `SHARP_IGNORE_GLOBAL_LIBVIPS=1` causes Vercel crash (libvips not found). Remove from build script + vercel.json env. Keep `@img/sharp-linux-x64` in `optionalDependencies`.
+- **Vercel project name:** `vercel.json` needs `"name": "minhair"` or CLI fails with `---` in auto-generated name.
+- **Supabase Management API timeout:** v2.107+ calls `api.supabase.com/v1/projects/{ref}/...` on init. Block via custom `global.fetch` in `createClient` options.
+- **Always verify full CI pipeline:** lint → test → build → deploy. Don't stop at build success.
+
+## 4. Auth System
 - **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)
 - **Middleware:** `middleware.ts` — protects `/admin/*` routes with JWT verification
 - **Login:** `/app/login/actions.ts` — server actions that return JWT
