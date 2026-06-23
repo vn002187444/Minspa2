@@ -41,7 +41,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes
+      - run: if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes; else echo "VERCEL_TOKEN not set — skipping deploy"; fi
 
   build:
     name: Build
