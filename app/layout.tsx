@@ -9,7 +9,7 @@ import MascotProvider from "@/components/MascotProvider";
 import GoogleTranslate from "@/components/GoogleTranslate";
 import { Toaster } from 'sonner';
 import Script from 'next/script';
-import { SpeedInsights } from "@vercel/speed-insights";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
@@ -115,6 +115,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
   return (
     <html lang="vi" className={`${inter.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable}`}>
       <head>
