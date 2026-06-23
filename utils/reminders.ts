@@ -1,14 +1,17 @@
 import { sendPushNotification } from './push';
 import { format } from 'date-fns';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client using environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase environment variables are not set.');
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    const u = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const k = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!u || !k) throw new Error('Supabase environment variables are not set.');
+    _supabase = createClient(u, k);
+  }
+  return _supabase;
 }
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
  * Runs background reminder checks.
@@ -22,13 +25,13 @@ export async function runRemindersCheck() {
   const [{ data: users }, { data: appointments }, { data: attendance },
     { data: attendanceReminders }, { data: randomBookingReminders },
     { data: unacceptedBookingReminders }, { data: uncompletedBookingReminders }] = await Promise.all([
-    supabase.from('users').select('*'),
-    supabase.from('appointments').select('*'),
-    supabase.from('attendance').select('*'),
-    supabase.from('attendance_reminders_log').select('*'),
-    supabase.from('random_booking_reminders_log').select('*'),
-    supabase.from('unaccepted_booking_reminders_log').select('*'),
-    supabase.from('uncompleted_booking_reminders_log').select('*')
+    getSupabase().from('users').select('*'),
+    getSupabase().from('appointments').select('*'),
+    getSupabase().from('attendance').select('*'),
+    getSupabase().from('attendance_reminders_log').select('*'),
+    getSupabase().from('random_booking_reminders_log').select('*'),
+    getSupabase().from('unaccepted_booking_reminders_log').select('*'),
+    getSupabase().from('uncompleted_booking_reminders_log').select('*')
   ]);
 
   interface ReminderUser { id: string; role: string; full_name: string }
@@ -158,10 +161,11 @@ export async function runRemindersCheck() {
   }
 
   // Upsert logs back to Supabase
-  await supabase.from('attendance_reminders_log').upsert(db.attendance_reminders_log);
-  await supabase.from('random_booking_reminders_log').upsert(db.random_booking_reminders_log);
-  await supabase.from('unaccepted_booking_reminders_log').upsert(db.unaccepted_booking_reminders_log);
-  await supabase.from('uncompleted_booking_reminders_log').upsert(db.uncompleted_booking_reminders_log);
+  const sb = getSupabase();
+  await sb.from('attendance_reminders_log').upsert(db.attendance_reminders_log);
+  await sb.from('random_booking_reminders_log').upsert(db.random_booking_reminders_log);
+  await sb.from('unaccepted_booking_reminders_log').upsert(db.unaccepted_booking_reminders_log);
+  await sb.from('uncompleted_booking_reminders_log').upsert(db.uncompleted_booking_reminders_log);
 
   console.log('[Reminders] Reminders check run complete.');
 }
