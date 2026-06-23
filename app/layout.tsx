@@ -9,6 +9,7 @@ import MascotProvider from "@/components/MascotProvider";
 import GoogleTranslate from "@/components/GoogleTranslate";
 import { Toaster } from 'sonner';
 import Script from 'next/script';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -177,8 +178,8 @@ export default function RootLayout({
               <PwaSupport />
             </MascotProvider>
           </ThemeProvider>
+          <Analytics />
       </body>
     </html>
   );
 }
-
