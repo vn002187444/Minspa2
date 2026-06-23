@@ -136,22 +136,35 @@ export default function TabReports() {
   }
 
   const exportExcel = async () => {
-    const XLSX = await import('xlsx')
-    const wb = XLSX.utils.book_new()
+    const ExcelJS = await import('exceljs')
+    const wb = new ExcelJS.Workbook()
     const { start, end } = getDateRange()
     if (revenueData) {
-      const ws1 = XLSX.utils.json_to_sheet(revenueData.revenueByDay.map((d: any) => ({ Ngày: d.date, DoanhThu: d.value })))
-      XLSX.utils.book_append_sheet(wb, ws1, 'TheoNgay')
-      const ws2 = XLSX.utils.json_to_sheet(revenueData.revenueByService.map((s: any) => ({ DichVu: s.name, DoanhThu: s.revenue, SoLuot: s.count })))
-      XLSX.utils.book_append_sheet(wb, ws2, 'TheoDichVu')
-      const ws3 = XLSX.utils.json_to_sheet(revenueData.revenueByStaff.map((s: any) => ({ NhanVien: s.name, DoanhThu: s.revenue, Tip: s.tip, SoDon: s.count })))
-      XLSX.utils.book_append_sheet(wb, ws3, 'TheoNhanVien')
+      const ws1 = wb.addWorksheet('TheoNgay')
+      ws1.columns = [{ header: 'Ngày', key: 'date' }, { header: 'DoanhThu', key: 'value' }]
+      ws1.addRows(revenueData.revenueByDay)
+      const ws2 = wb.addWorksheet('TheoDichVu')
+      ws2.columns = [{ header: 'DichVu', key: 'name' }, { header: 'DoanhThu', key: 'revenue' }, { header: 'SoLuot', key: 'count' }]
+      ws2.addRows(revenueData.revenueByService)
+      const ws3 = wb.addWorksheet('TheoNhanVien')
+      ws3.columns = [{ header: 'NhanVien', key: 'name' }, { header: 'DoanhThu', key: 'revenue' }, { header: 'Tip', key: 'tip' }, { header: 'SoDon', key: 'count' }]
+      ws3.addRows(revenueData.revenueByStaff)
     }
     if (customerData) {
-      const ws4 = XLSX.utils.json_to_sheet(customerData.topCustomers.map((c: any) => ({ Ten: c.name, SDT: c.phone, TongChiTieu: c.totalSpent, SoLanDen: c.visits })))
-      XLSX.utils.book_append_sheet(wb, ws4, 'KhachHang')
+      const ws4 = wb.addWorksheet('KhachHang')
+      ws4.columns = [{ header: 'Ten', key: 'name' }, { header: 'SDT', key: 'phone' }, { header: 'TongChiTieu', key: 'totalSpent' }, { header: 'SoLanDen', key: 'visits' }]
+      ws4.addRows(customerData.topCustomers)
     }
-    XLSX.writeFile(wb, `baocao_minspa_${start}_${end}.xlsx`)
+    const buf = await wb.xlsx.writeBuffer()
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `baocao_minspa_${start}_${end}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
     toast.success('Đã xuất Excel')
   }
 
