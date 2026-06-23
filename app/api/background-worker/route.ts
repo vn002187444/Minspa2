@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { sendPushNotification } from '@/utils/push';
 import { runRemindersCheck } from '@/utils/reminders';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (!_supabase) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!url || !key) throw new Error('Supabase env vars not set');
+    _supabase = createClient(url, key);
+  }
+  return _supabase;
+}
 
 export const maxDuration = 60;
 
@@ -40,7 +46,7 @@ async function processTask(task: { type: string; payload: Record<string, unknown
 
       promises.push(
         (async () => {
-          const { data: admins } = await supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true);
+          const { data: admins } = await getSupabase().from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true);
           if (admins) {
             await Promise.allSettled(admins.map(admin =>
               sendPushNotification(
@@ -69,7 +75,7 @@ async function processTask(task: { type: string; payload: Record<string, unknown
 
 export async function GET() {
   try {
-    const { data: messages, error } = await supabase.rpc('dequeue_all_background_tasks');
+    const { data: messages, error } = await getSupabase().rpc('dequeue_all_background_tasks');
 
     if (error) {
       throw error;

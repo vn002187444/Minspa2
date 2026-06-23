@@ -44,37 +44,51 @@ function slugify(text: string) {
 }
 
 export default async function Home() {
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch {
+    // Build/SSR without Supabase env vars — render gracefully
+  }
   const bannerSettings = await getBannerSettings();
   
-  const { data: seoRow } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
-  const hotline = seoRow?.hotline || '0934 323 878';
+  let hotline = '0934 323 878';
+  if (supabase) {
+    try {
+      const { data: seoRow } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
+      if (seoRow?.hotline) hotline = seoRow.hotline;
+    } catch {
+      // ignore
+    }
+  }
   
   let services: any[] = [];
-  try {
-    const { data, error } = await supabase
-      .from('services')
-      .select('id, name, category, price, duration, description, image_url, is_active')
-      .eq('is_active', true)
-      .order('price', { ascending: true });
-      
-    if (!error && data) {
-      services = data;
-    }
-  } catch (err) {
-    console.error("Lỗi lấy danh sách dịch vụ trang chủ:", err);
-  }
-
   let treatmentPackages: any[] = [];
-  try {
-    const { data: tpData } = await supabase
-      .from('treatment_packages')
-      .select('id, name, buy_count, free_count, price, total_sessions, service_id, services(name, price)')
-      .eq('is_active', true)
-      .order('price', { ascending: true });
-    treatmentPackages = tpData || [];
-  } catch (err) {
-    console.error("Lỗi lấy gói liệu trình trang chủ:", err);
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('services')
+        .select('id, name, category, price, duration, description, image_url, is_active')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+        
+      if (!error && data) {
+        services = data;
+      }
+    } catch (err) {
+      console.error("Lỗi lấy danh sách dịch vụ trang chủ:", err);
+    }
+
+    try {
+      const { data: tpData } = await supabase
+        .from('treatment_packages')
+        .select('id, name, buy_count, free_count, price, total_sessions, service_id, services(name, price)')
+        .eq('is_active', true)
+        .order('price', { ascending: true });
+      treatmentPackages = tpData || [];
+    } catch (err) {
+      console.error("Lỗi lấy gói liệu trình trang chủ:", err);
+    }
   }
 
   // Ensure and override standard values if needed to map perfectly to the categories

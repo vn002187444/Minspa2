@@ -19,11 +19,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1.0 : 0.8,
   }));
 
-  const supabase = await createClient();
-
   // 2. Fetch all services
   let servicesRoutes: any[] = [];
   try {
+    const supabase = await createClient();
     const { data: services } = await supabase
       .from('services')
       .select('id, category')
@@ -44,6 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 3. Fetch all blog posts
   let blogsRoutes: any[] = [];
   try {
+    const supabase = await createClient();
     const { data: blogs } = await supabase
       .from('blogs')
       .select('slug, created_at')

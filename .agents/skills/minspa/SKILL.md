@@ -36,6 +36,10 @@ description: >-
     - Archive directory is cleaned (delete old migration files once merged into `database.sql`)
 16. **Verify SQL before running:** Test DDL syntax in a safe way before applying to production. `CREATE INDEX IF NOT EXISTS`, `ALTER TABLE ... IF NOT EXISTS` are safe but `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` is NOT universally supported (fails through PgBouncer). When in doubt, use a DO block with existence checks.
 17. **database.sql must include RLS policies for every table:** Don't just add `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` — also add CREATE POLICY statements. Without policies, RLS-enable tables deny ALL access by default. Scan `scripts/archive/` for migration CREATE POLICY lines and consolidate them into `database.sql`.
+18. **No top-level env validation that throws in production:** During `next build`, Next.js evaluates all imported modules with `NODE_ENV=production`. Any `throw new Error(...)` or `process.exit()` at module level crashes the build. Fixes:
+    - Move validation inside functions (lazy init pattern — see `utils/auth.ts` `getKey()`, `utils/reminders.ts` `getSupabase()`)
+    - For `createClient()`, make it return a **mock client** when env vars are missing instead of throwing (see `utils/supabase/server.ts` `createMockClient()`) — this prevents ALL static pages from crashing during prerendering
+    - Never use `process.env.XXX!` non-null assertions at module level (see `app/api/background-worker/route.ts` fix)
 
 ## 3. Auth System
 - **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)

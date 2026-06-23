@@ -1,8 +1,19 @@
 import { createClient as createRealClient } from '@supabase/supabase-js';
 
+function createMockClient() {
+  const noop = async () => ({ data: null, error: null });
+  const builder = new Proxy(noop, { get(t, prop) {
+    if (prop === 'auth') return { getUser: async () => ({ data: { user: null }, error: null }) };
+    if (prop === 'rpc') return async () => ({ data: null, error: null });
+    if (prop === 'from' || prop === 'select' || prop === 'eq' || prop === 'in' || prop === 'order' || prop === 'limit' || prop === 'single' || prop === 'insert' || prop === 'upsert' || prop === 'update' || prop === 'delete' || prop === 'match' || prop === 'filter' || prop === 'or' || prop === 'contains' || prop === 'textSearch' || prop === 'not' || prop === 'gte' || prop === 'lte' || prop === 'gt' || prop === 'lt' || prop === 'is' || prop === 'returns') return () => builder;
+    return Reflect.get(t, prop);
+  }});
+  return builder as unknown as ReturnType<typeof createRealClient>;
+}
+
 /**
  * Creates and returns a real Supabase client using environment variables.
- * Throws an error if the required environment variables are not set.
+ * Returns a mock client when env vars are missing (e.g. during build).
  *
  * auth.getUser is overridden to use our custom JWT cookie-based session
  * (stored in the 'session' cookie) rather than Supabase's native auth,
@@ -12,11 +23,8 @@ export const createClient = async () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl) {
-    throw new Error('Supabase URL (NEXT_PUBLIC_SUPABASE_URL) is missing. Please set it in your .env file.');
-  }
-  if (!supabaseKey) {
-    throw new Error('Supabase KEY is missing. Set either SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.');
+  if (!supabaseUrl || !supabaseKey) {
+    return createMockClient();
   }
 
   const client = createRealClient(supabaseUrl, supabaseKey);
