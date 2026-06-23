@@ -62,9 +62,9 @@ export default function AppointmentDetailModal({
   setNewStaffId,
   getVNTimeStr,
 }: AppointmentModalProps) {
-  if (!selectedAppt) return null;
-
   const trapRef = useFocusTrap(!!selectedAppt);
+
+  if (!selectedAppt) return null;
 
   return (
     <div

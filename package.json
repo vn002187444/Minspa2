@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "cross-env SHARP_IGNORE_GLOBAL_LIBVIPS=1 next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "migrate": "npx tsx scripts/migrate.ts",
     "backup": "bash scripts/backup.sh",
     "verify-backup": "bash scripts/verify-backup.sh",
