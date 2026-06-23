@@ -11,15 +11,15 @@ description: >-
 - **Stack:** Next.js 16 (React 19) + Supabase (PostgreSQL) + TypeScript
 - **Deploy:** Vercel (free tier)
 - **Auth:** Custom JWT (NOT Supabase Auth) — `app/login/` + middleware
-- **AI Tools:** Google Gemini (`gemini-3.1-flash-lite`) via `@google/genai`
+- **AI Tools:** Google Gemini (`gemini-2.5-flash-lite`) via `@google/genai`
 - **Styling:** Tailwind CSS v4 + Framer Motion (`framer-motion`) for animations
 
 ## 2. Critical Rules
 1. **`database.sql` is the schema source of truth** — keep it in sync with all migration files. When adding tables/columns via migrations, also add them to `database.sql` (tables → RLS → Realtime). See section 10 for the sync checklist.
-2. **Soft delete only** — use `is_active` or `deleted_at` columns, never DELETE FROM
+2. **Soft delete only** — use `is_active` or `status='cancelled'` columns, never DELETE FROM
 3. **No SELECT \*** — always specify columns in queries
 4. **Cycle Protocol (revised):** Audit first → Read UPGRADE_PLAN.md + AI_MAP.md → Read existing files for conventions → Code → Update docs (PLAN.md, UPGRADE_PLAN.md, SKILL.md) → `npm run build` verify → Commit
-5. **Build check:** Must pass `npm run build` before any commit (TypeScript + 41 static pages). Run after EVERY batch of changes.
+5. **Build check:** Must pass `npm run build` before any commit (TypeScript + 50 static pages). Run after EVERY batch of changes.
 6. **File management:** Prefer editing existing files over creating new ones. Check git log / git diff before creating new files.
 7. **Initial audit required:** At the start of any session, first audit the existing codebase to find orphan features (BE without FE UI), mojibake/encoding issues, and types that don't match reality.
 8. **Batch parallel reads:** Read all relevant files in parallel at the start of a task to understand conventions and avoid type cascading errors.
@@ -28,13 +28,14 @@ description: >-
 11. **No orphan migrations:** After applying a migration to Supabase, move the file to `scripts/archive/` or add `.applied` suffix — don't leave hanging files that create confusion about what has been applied.
 12. **Single source of truth:** PLAN.md is the permanent project plan. UPGRADE_PLAN.md is the active execution plan. After completing a session, merge the results into PLAN.md and remove from UPGRADE_PLAN.md.
 13. **Supabase features first:** Before writing code for any new feature, check `SUPABASE_FEATURES.md` (root) + `.agents/skills/minspa/SUPABASE_FEATURES.md` to see if Supabase đã có sẵn giải pháp. Ưu tiên pg_cron (schedule), pgmq (queue), Realtime (live update), Storage (file), pg_net (webhook) thay vì tự viết mới.
-14. **PgBouncer compatibility:** Supabase pooler (port 6543) uses PgBouncer transaction mode. Multi-statement SQL may fail silently. Always use `DO $$ ... END $$;` blocks instead of multiple `;`-separated statements for complex operations (publication membership, conditional DDL, etc.). The `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` syntax does NOT pass through PgBouncer — use a DO block with `pg_publication` + `pg_publication_rel` check instead.
+14. **PgBouncer compatibility:** Supabase pooler (port 6543) uses PgBouncer transaction mode. Multi-statement SQL may fail silently. Always use `DO $$ ... END $$;` blocks instead of multiple `;`-separated statements for complex operations (publication membership, conditional DDL, etc.). The `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` syntax does NOT pass through PgBouncer — use a DO block with `pg_publication_tables` check instead (NOT `pg_publication_rel` which also hangs through PgBouncer). For running migrations, use `POSTGRES_URL_NON_POOLING` (port 5432) instead of `POSTGRES_URL` (port 6543 pooler) to avoid catalog query issues.
 15. **RLS + Realtime audit after migrations:** After applying any migration that adds new tables, immediately verify:
     - All new tables have `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`
-    - Tables that need realtime subscriptions are added to `supabase_realtime` publication
+    - Tables that need realtime subscriptions are added to `supabase_realtime` publication (via DO block with `pg_publication_tables` check)
     - `database.sql` is updated to reflect the new schema + RLS + Realtime status
     - Archive directory is cleaned (delete old migration files once merged into `database.sql`)
 16. **Verify SQL before running:** Test DDL syntax in a safe way before applying to production. `CREATE INDEX IF NOT EXISTS`, `ALTER TABLE ... IF NOT EXISTS` are safe but `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` is NOT universally supported (fails through PgBouncer). When in doubt, use a DO block with existence checks.
+17. **database.sql must include RLS policies for every table:** Don't just add `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` — also add CREATE POLICY statements. Without policies, RLS-enable tables deny ALL access by default. Scan `scripts/archive/` for migration CREATE POLICY lines and consolidate them into `database.sql`.
 
 ## 3. Auth System
 - **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)
@@ -44,10 +45,10 @@ description: >-
 - **Admin bypass:** Route handler `/api/auth/me` as fallback
 - **Password:** bcrypt hash via `lib/password.ts` stored in `users.password_hash` column
 
-## 4. Database Quick Ref (31 tables)
-Main tables: `users`, `services`, `appointments`, `appointment_services`, `audit_logs`, `blogs`, `blog_views`, `blog_stats`, `customers`, `treatment_packages`, `customer_packages`, `package_usage_logs`, `notifications`, `time_slot_locks`, `reviews`, `seo_settings`, `seo_articles`, `banner_settings`, `bank_settings`, `attendance`, `attendance_reminders_log`, `random_booking_reminders_log`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache`
+## 4. Database Quick Ref (34 tables)
+Main tables: `users`, `services`, `appointments`, `appointment_services`, `audit_logs`, `blogs`, `blog_views`, `blog_stats`, `customers`, `treatment_packages`, `customer_packages`, `package_usage_logs`, `notifications`, `time_slot_locks`, `reviews`, `seo_settings`, `seo_articles`, `banner_settings`, `bank_settings`, `attendance`, `attendance_reminders_log`, `random_booking_reminders_log`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache`, `cash_register`, `cron_job_logs`, `background_tasks`
 
-Migration-only tables (not in original `database.sql`): `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache` — these were added via migration files and synced back to `database.sql`.
+Tables added in V3.9/V3.13: `cash_register` (V3.9 — sổ quỹ tiền mặt), `cron_job_logs` (V3.13 — cron execution log), `background_tasks` (V3.13 — job queue for async operations)
 
 Key conventions:
 - `created_at`/`updated_at` timestamps (prefer `timezone('utc', now())`)
@@ -101,7 +102,7 @@ Key logic (`lib/booking-engine.ts`):
 
 ## 9. RLS & Realtime Reference
 
-All 31 tables have RLS enabled ✅. Realtime publication `supabase_realtime` includes 8 tables:
+All 34 tables have RLS enabled ✅. Realtime publication `supabase_realtime` includes 9 tables:
 
 | Table | Realtime | Why |
 |-------|----------|-----|
@@ -109,19 +110,21 @@ All 31 tables have RLS enabled ✅. Realtime publication `supabase_realtime` inc
 | `appointment_services` | ✅ | Booking service details |
 | `attendance` | ✅ | Staff check-in/out live updates |
 | `auto_assign_logs` | ✅ | Auto-assignment events for staff UI |
+| `cron_job_logs` | ✅ | Admin monitoring of cron execution |
 | `notifications` | ✅ | In-app notification bell |
 | `staff_skills` | ✅ | Staff skill/certificate assignments |
 | `tasks` | ✅ | Staff task assignments |
 | `time_slot_locks` | ✅ | Slot availability for booking |
 
-Remaining 23 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audit_logs`, `auto_seo_config`, `bank_settings`, `banner_settings`, `blog_stats`, `blog_views`, `blogs`, `customer_packages`, `customers`, `package_usage_logs`, `random_booking_reminders_log`, `rate_limits`, `reviews`, `seo_articles`, `seo_settings`, `services`, `slot_limits`, `treatment_packages`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `users`
+Remaining 25 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audit_logs`, `auto_seo_config`, `background_tasks`, `bank_settings`, `banner_settings`, `blog_stats`, `blog_views`, `blogs`, `cash_register`, `customer_packages`, `customers`, `package_usage_logs`, `random_booking_reminders_log`, `rate_limits`, `reviews`, `seo_articles`, `seo_settings`, `services`, `slot_limits`, `treatment_packages`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `users`
 
 ## 10. Current Status
-- **All migrations consolidated** into `database.sql` (31 tables, all RLS enabled, 8 realtime)
+- **All migrations consolidated** into `database.sql` (34 tables, all RLS enabled, 9 realtime)
 - **No orphan migration files** — archive cleared, `migrations/` directory empty
-- `scripts/run-migrations.mjs` — robust runner with per-statement execution + idempotent error tolerance
+- `scripts/run-migrations.mjs` — robust runner with per-statement execution + idempotent error tolerance (uses `POSTGRES_URL_NON_POOLING` for system catalog queries)
 - `scripts/tools/monitor_queries.sql` — EXPLAIN ANALYZE perf tool (not a table to create)
 - **All 86 items completed** across Sessions 1–16 (4 Khối chiến lược)
+- **V3.1–V3.13 completed** (Financials + Stability & Polish)
 - **Khối 1 (Cleanup)** — 10/10 items ✅
 - **Khối 2 (Security & Data)** — 18/18 items ✅ (incl. RLS, rate-limit, env validation, testing, analytics, notifications, backup, CI/CD)
 - **Khối 3 (AI & Performance)** — 18/18 items ✅ (incl. Gemini schema, caching, Realtime, pg_cron migration, pgmq queue)

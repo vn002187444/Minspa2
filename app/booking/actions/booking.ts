@@ -132,7 +132,7 @@ export async function submitBooking(formData: any) {
         '/booking'
       ).catch(() => {}),
       sendEmail({
-        to: formData.email || formData.phone + '@example.com', // Fallback if email missing
+        to: formData.email || formData.phone + '@example.com',
         subject: 'Xác nhận đặt lịch hẹn tại Min Nail & Hair',
         html: `<p>Chào <b>${formData.name}</b>,</p><p>Lịch hẹn của bạn lúc <b>${formData.time}</b> ngày <b>${format(new Date(formData.date), 'dd/MM/yyyy')}</b> đã được xác nhận thành công.</p><p>Hẹn gặp bạn tại salon!</p>`
       }).catch(() => {}),
@@ -147,7 +147,7 @@ export async function submitBooking(formData: any) {
         ).catch(() => {})
       );
     }
-    void supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true).then(({ data: admins }) => {
+    supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true).then(({ data: admins }) => {
       if (admins) {
         Promise.all(admins.map(admin =>
           sendPushNotification(
@@ -156,14 +156,11 @@ export async function submitBooking(formData: any) {
             `Khách hàng ${formData.name} vừa đặt lịch hẹn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
             '/admin/orders'
           ).catch(() => {})
-        )).catch(() => {});
+        ));
       }
     });
 
-    Promise.all(bgTasks).catch(() => {});
-
-    // Fire-and-forget: kích hoạt reminders check (random booking rules)
-    runRemindersCheck().catch(() => {});
+    Promise.all(bgTasks);
 
     return { success: true, customerId: customerId };
   } catch (error: any) {

@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
   logging: {
     fetches: { fullUrl: process.env.NODE_ENV === 'development' },
   },
+  productionBrowserSourceMaps: false,
   async headers() {
     return [
       {

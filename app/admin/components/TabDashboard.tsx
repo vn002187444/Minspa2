@@ -15,12 +15,16 @@ const YAxis = dynamic(() => import("recharts").then((mod) => mod.YAxis), { ssr: 
 const CartesianGrid = dynamic(() => import("recharts").then((mod) => mod.CartesianGrid), { ssr: false });
 const Tooltip = dynamic(() => import("recharts").then((mod) => mod.Tooltip), { ssr: false });
 const ResponsiveContainer = dynamic(() => import("recharts").then((mod) => mod.ResponsiveContainer), { ssr: false });
+import { getFinancialDashboard } from "../actions"
 import {
   CalendarCheck,
   Activity,
   Globe,
   Sparkles,
   CheckCircle2,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
 } from "lucide-react";
 
 export default function TabDashboard() {
@@ -30,6 +34,8 @@ export default function TabDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [finData, setFinData] = useState<any>(null);
+  const [finLoading, setFinLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [toasts, setToasts] = useState<{ id: string; type: "success" | "danger" | "info"; message: string }[]>([]);
   
@@ -132,6 +138,17 @@ export default function TabDashboard() {
     if (!silent) setLoading(false);
   };
 
+  const fetchFinancialData = async (startISO: string, endISO: string) => {
+    setFinLoading(true);
+    try {
+      const res = await getFinancialDashboard(startISO, endISO);
+      setFinData(res);
+    } catch (e) {
+      // Non-critical, silently fail
+    }
+    setFinLoading(false);
+  };
+
   // Compare updates for real-time notifications
   useEffect(() => {
     if (data?.todayAppointments) {
@@ -173,6 +190,7 @@ export default function TabDashboard() {
       setStartDate(dates.startInput);
       setEndDate(dates.endInput);
       fetchDashboardData(dates.start, dates.end);
+      fetchFinancialData(dates.start, dates.end);
     }
   }, [rangeType]);
 
@@ -246,6 +264,7 @@ export default function TabDashboard() {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
     fetchDashboardData(start.toISOString(), end.toISOString());
+    fetchFinancialData(start.toISOString(), end.toISOString());
   };
 
   return (
@@ -596,6 +615,98 @@ export default function TabDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+
+          {/* P&L Financials Section */}
+          <div className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm space-y-5">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-emerald-600" /> Báo cáo lợi nhuận (P&L)
+              </h3>
+              {finLoading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
+              )}
+            </div>
+
+            {finData ? (
+              <>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-gray-50 rounded-2xl p-4 text-center">
+                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Doanh thu</p>
+                    <p className="text-lg font-black text-gray-900 font-mono">
+                      {finData.totalRevenue.toLocaleString("vi")} đ
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-4 text-center">
+                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Hoa hồng</p>
+                    <p className="text-lg font-black text-rose-600 font-mono">
+                      -{finData.totalCommission.toLocaleString("vi")} đ
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl p-4 text-center">
+                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Giảm giá</p>
+                    <p className="text-lg font-black text-amber-600 font-mono">
+                      -{finData.totalDiscount.toLocaleString("vi")} đ
+                    </p>
+                  </div>
+                  <div className="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
+                    <p className="text-emerald-700 text-[10px] font-bold uppercase tracking-wider mb-1">Lợi nhuận ròng</p>
+                    <p className="text-lg font-black text-emerald-700 font-mono">
+                      {finData.netProfit.toLocaleString("vi")} đ
+                    </p>
+                  </div>
+                </div>
+
+                {finData.monthlyCashFlow && finData.monthlyCashFlow.length > 1 && (
+                  <div className="pt-2">
+                    <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-3">
+                      Dòng tiền theo tháng (thu - chi)
+                    </h4>
+                    <div className="w-full h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={finData.monthlyCashFlow} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#059669" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                            </linearGradient>
+                            <linearGradient id="colorNet" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#8D6E53" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="#8D6E53" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          {!isMobile && <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />}
+                          <XAxis
+                            dataKey="month"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#9ca3af", fontSize: 10 }}
+                            dy={10}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: "#9ca3af", fontSize: 10 }}
+                            dx={-10}
+                            tickFormatter={(val) => `${(val / 1000).toFixed(0)}k`}
+                          />
+                          <Tooltip
+                            contentStyle={{ borderRadius: "12px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}
+                            formatter={(value: any) => [`${(value).toLocaleString("vi")} đ`]}
+                          />
+                          <Area type="monotone" dataKey="revenue" stroke="#059669" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" name="Doanh thu" />
+                          <Area type="monotone" dataKey="netCashflow" stroke="#8D6E53" strokeWidth={2} fillOpacity={1} fill="url(#colorNet)" name="Dòng tiền ròng" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-6 text-gray-400 text-xs italic">
+                {finLoading ? "Đang tải..." : "Không có dữ liệu tài chính."}
               </div>
             )}
           </div>

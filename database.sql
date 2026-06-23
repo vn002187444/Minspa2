@@ -409,18 +409,24 @@ CREATE TABLE IF NOT EXISTS slot_limits (
   UNIQUE(lock_date, time_slot)
 );
 
--- Tasks (V3.4)
+-- Tasks (V3.4, fixed V3.13)
 CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
-  assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  task_type VARCHAR(20) NOT NULL DEFAULT 'one_time'
+    CHECK (task_type IN ('daily', 'one_time')),
+  assignee_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  assignee_type VARCHAR(10) NOT NULL DEFAULT 'specific'
+    CHECK (assignee_type IN ('specific', 'all')),
+  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   status VARCHAR(20) NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
+    CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled', 'REJECTED')),
   priority VARCHAR(10) NOT NULL DEFAULT 'medium'
     CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-  due_date TIMESTAMP WITH TIME ZONE,
+  deadline TIMESTAMP WITH TIME ZONE,
+  time_slot VARCHAR(20),
+  original_task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
@@ -438,6 +444,42 @@ CREATE TABLE IF NOT EXISTS auto_seo_config (
   CHECK (id = 1)
 );
 
+CREATE TABLE IF NOT EXISTS cash_register (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type VARCHAR(10) NOT NULL CHECK (type IN ('THU', 'CHI')),
+  category VARCHAR(50) NOT NULL,
+  amount INTEGER NOT NULL CHECK (amount > 0),
+  description TEXT DEFAULT '',
+  reference_type VARCHAR(30),
+  reference_id UUID,
+  recorded_by UUID REFERENCES users(id),
+  recorded_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
+  created_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc', now())
+);
+
+-- Cron job logs (V3.13)
+CREATE TABLE IF NOT EXISTS cron_job_logs (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  job_name VARCHAR(100) NOT NULL,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  finished_at TIMESTAMPTZ,
+  success BOOLEAN NOT NULL DEFAULT false,
+  error TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Background tasks queue (V3.13)
+CREATE TABLE IF NOT EXISTS background_tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  task_type VARCHAR(100) NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ========================================
 -- Row Level Security (RLS) for ALL tables
 -- ========================================
@@ -449,6 +491,22 @@ ALTER TABLE attendance_reminders_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auto_assign_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auto_seo_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cash_register ENABLE ROW LEVEL SECURITY;
+ALTER TABLE cron_job_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE background_tasks ENABLE ROW LEVEL SECURITY;
+
+-- RLS policies for new tables added via V3.9/V3.13
+CREATE POLICY cash_register_admin_all ON cash_register
+  FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "service_role_all" ON cron_job_logs
+  FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "authenticated_select" ON cron_job_logs
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "service_role_all" ON background_tasks
+  FOR ALL USING (true) WITH CHECK (true);
 ALTER TABLE bank_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE banner_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_stats ENABLE ROW LEVEL SECURITY;
@@ -509,16 +567,16 @@ END $$;
 -- ========================================
 -- Database Review Summary (June 2026)
 -- ========================================
--- TOTAL TABLES: 31 (all ✅ RLS enabled)
+-- TOTAL TABLES: 34 (all ✅ RLS enabled)
 --
 -- Bảng có Realtime (8): appointments, appointment_services, attendance,
---   auto_assign_logs, notifications, staff_skills, tasks, time_slot_locks
+--   auto_assign_logs, cron_job_logs, notifications, staff_skills, tasks, time_slot_locks
 --
--- Bảng KHÔNG có Realtime (23): ai_cache, attendance_reminders_log,
---   audit_logs, auto_seo_config, bank_settings, banner_settings, blog_stats,
---   blog_views, blogs, customer_packages, customers, package_usage_logs,
---   random_booking_reminders_log, rate_limits, reviews, seo_articles,
---   seo_settings, services, slot_limits, treatment_packages,
+-- Bảng KHÔNG có Realtime (26): ai_cache, attendance_reminders_log,
+--   audit_logs, auto_seo_config, background_tasks, bank_settings, banner_settings,
+--   blog_stats, blog_views, blogs, cash_register, customer_packages, customers,
+--   package_usage_logs, random_booking_reminders_log, rate_limits, reviews,
+--   seo_articles, seo_settings, services, slot_limits, treatment_packages,
 --   unaccepted_booking_reminders_log, uncompleted_booking_reminders_log, users
 
 CREATE OR REPLACE FUNCTION increment_blog_view(p_post_id UUID)
@@ -532,3 +590,105 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql;
+
+-- ========================================
+-- RPC Functions (V3.13)
+-- ========================================
+
+-- enqueue_background_task: Insert a task into background_tasks queue
+CREATE OR REPLACE FUNCTION enqueue_background_task(
+  task_type TEXT,
+  task_payload JSONB
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  task_id UUID;
+BEGIN
+  INSERT INTO background_tasks (task_type, payload, status)
+  VALUES (task_type, task_payload, 'pending')
+  RETURNING id INTO task_id;
+  RETURN task_id;
+END;
+$$;
+
+-- dequeue_all_background_tasks: Claim all pending tasks atomically
+CREATE OR REPLACE FUNCTION dequeue_all_background_tasks()
+RETURNS SETOF background_tasks
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  UPDATE background_tasks
+  SET status = 'processing', updated_at = NOW()
+  WHERE status = 'pending'
+  RETURNING *;
+END;
+$$;
+
+-- deduct_package_session: Atomically deduct a session from customer_packages
+CREATE OR REPLACE FUNCTION deduct_package_session(
+  p_customer_package_id UUID,
+  p_appointment_id UUID,
+  p_staff_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_remaining INTEGER;
+  v_result JSONB;
+BEGIN
+  UPDATE customer_packages
+  SET remaining_sessions = remaining_sessions - 1,
+      updated_at = NOW()
+  WHERE id = p_customer_package_id
+    AND remaining_sessions > 0
+  RETURNING remaining_sessions INTO v_remaining;
+
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'No remaining sessions');
+  END IF;
+
+  INSERT INTO package_usage_logs (customer_package_id, appointment_id, deducted_by)
+  VALUES (p_customer_package_id, p_appointment_id, p_staff_id);
+
+  RETURN jsonb_build_object('success', true, 'remaining', v_remaining);
+END;
+$$;
+
+-- refund_package_session: Refund a session when appointment is cancelled
+CREATE OR REPLACE FUNCTION refund_package_session(
+  p_customer_package_id UUID,
+  p_appointment_id UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_remaining INTEGER;
+  v_total_sessions INTEGER;
+BEGIN
+  SELECT tp.session_count INTO v_total_sessions
+  FROM customer_packages cp
+  JOIN treatment_packages tp ON tp.id = cp.package_id
+  WHERE cp.id = p_customer_package_id;
+
+  UPDATE customer_packages
+  SET remaining_sessions = LEAST(remaining_sessions + 1, v_total_sessions),
+      updated_at = NOW()
+  WHERE id = p_customer_package_id
+  RETURNING remaining_sessions INTO v_remaining;
+
+  DELETE FROM package_usage_logs
+  WHERE customer_package_id = p_customer_package_id
+    AND appointment_id = p_appointment_id;
+
+  RETURN jsonb_build_object('success', true, 'remaining', v_remaining);
+END;
+$$;

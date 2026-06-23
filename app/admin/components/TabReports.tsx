@@ -11,9 +11,9 @@ import {
   ResponsiveContainer, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend,
 } from 'recharts'
-import { getAdvancedRevenueReport, getCustomerAnalytics, getGrowthComparison } from '../actions'
+import { getAdvancedRevenueReport, getCustomerAnalytics, getGrowthComparison, getTaxReport } from '../actions'
 
-const SUBTABS = ['TỔNG_QUAN', 'DOANH_THU', 'DICH_VU', 'NHAN_VIEN', 'KHACH_HANG', 'TANG_TRUONG'] as const
+const SUBTABS = ['TỔNG_QUAN', 'DOANH_THU', 'DICH_VU', 'NHAN_VIEN', 'KHACH_HANG', 'TANG_TRUONG', 'THUE'] as const
 type SubTab = typeof SUBTABS[number]
 
 const COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#a855f7']
@@ -30,6 +30,9 @@ export default function TabReports() {
   const [revenueData, setRevenueData] = useState<any>(null)
   const [customerData, setCustomerData] = useState<any>(null)
   const [growthData, setGrowthData] = useState<any>(null)
+  const [taxYear, setTaxYear] = useState(new Date().getFullYear())
+  const [taxData, setTaxData] = useState<any>(null)
+  const [taxLoading, setTaxLoading] = useState(false)
   const [drillDown, setDrillDown] = useState<{ type: string; label: string; data: any[] } | null>(null)
 
   const getDateRange = useCallback(() => {
@@ -92,6 +95,15 @@ export default function TabReports() {
   }, [getDateRange, compareEnabled, getCompareRange])
 
   useEffect(() => { loadData() }, [loadData])
+
+  useEffect(() => {
+    if (activeSubTab !== 'THUE') return
+    setTaxLoading(true)
+    getTaxReport(taxYear)
+      .then(setTaxData)
+      .catch((err: any) => toast.error(err.message || 'Lỗi tải báo cáo thuế'))
+      .finally(() => setTaxLoading(false))
+  }, [activeSubTab, taxYear])
 
   const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n)
   const fmtCurrency = (n: number) => `${fmt(n)}₫`
@@ -245,7 +257,7 @@ export default function TabReports() {
               activeSubTab === st ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
             }`}
           >
-            {st === 'TỔNG_QUAN' ? '📊 Tổng quan' : st === 'DOANH_THU' ? '📈 Doanh thu' : st === 'DICH_VU' ? '💇 Dịch vụ' : st === 'NHAN_VIEN' ? '👤 Nhân viên' : st === 'KHACH_HANG' ? '👥 Khách hàng' : '📈 Tăng trưởng'}
+            {st === 'TỔNG_QUAN' ? '📊 Tổng quan' : st === 'DOANH_THU' ? '📈 Doanh thu' : st === 'DICH_VU' ? '💇 Dịch vụ' : st === 'NHAN_VIEN' ? '👤 Nhân viên' : st === 'KHACH_HANG' ? '👥 Khách hàng' : st === 'TANG_TRUONG' ? '📈 Tăng trưởng' : '🧾 Thuế'}
           </button>
         ))}
       </div>
@@ -271,6 +283,9 @@ export default function TabReports() {
           )}
           {activeSubTab === 'TANG_TRUONG' && growthData && (
             <GrowthTab growthData={growthData} fmt={fmt} fmtCurrency={fmtCurrency} />
+          )}
+          {activeSubTab === 'THUE' && (
+            <TaxTab taxData={taxData} taxYear={taxYear} setTaxYear={setTaxYear} taxLoading={taxLoading} fmt={fmt} fmtCurrency={fmtCurrency} />
           )}
         </>
       )}
@@ -558,6 +573,113 @@ function GrowthTab({ growthData, fmt, fmtCurrency }: any) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+    </div>
+  )
+}
+
+function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: any) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <label className="text-xs font-bold text-gray-500">Năm:</label>
+        <select
+          value={taxYear}
+          onChange={(e) => setTaxYear(Number(e.target.value))}
+          className="px-3 py-1.5 border border-gray-200 rounded-xl text-sm font-semibold bg-white"
+        >
+          {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+      </div>
+
+      {taxLoading ? (
+        <div className="text-center py-16 text-gray-400">
+          <RefreshCw className="w-8 h-8 mx-auto mb-3 animate-spin" />
+          Đang tải báo cáo thuế...
+        </div>
+      ) : taxData ? (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tổng doanh thu năm</p>
+              <p className="text-xl font-extrabold text-gray-900 mt-1">{fmtCurrency(taxData.totalRevenue)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Tổng số đơn</p>
+              <p className="text-xl font-extrabold text-gray-900 mt-1">{fmt(taxData.totalOrders)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm bg-emerald-50/30">
+              <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Thuế GTGT ước tính (8%)</p>
+              <p className="text-xl font-extrabold text-emerald-700 mt-1">
+                {fmtCurrency(Math.round(taxData.totalRevenue * 0.08))}
+              </p>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-amber-100 shadow-sm bg-amber-50/30">
+              <p className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Thuế TNCN ước tính (2%)</p>
+              <p className="text-xl font-extrabold text-amber-700 mt-1">
+                {fmtCurrency(Math.round(taxData.totalRevenue * 0.02))}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+            <h4 className="font-bold text-gray-900 mb-3 text-sm">Doanh thu & Thuế theo tháng</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left p-2 font-bold text-gray-500">Tháng</th>
+                    <th className="text-right p-2 font-bold text-gray-500">Doanh thu</th>
+                    <th className="text-right p-2 font-bold text-gray-500">Số đơn</th>
+                    <th className="text-right p-2 font-bold text-gray-500">Hoa hồng</th>
+                    <th className="text-right p-2 font-bold text-gray-500">Tip</th>
+                    <th className="text-right p-2 font-bold text-gray-500">Thuế GTGT (8%)</th>
+                    <th className="text-right p-2 font-bold text-gray-500">Thuế TNCN (2%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {taxData.months.map((m: any) => (
+                    <tr key={m.month} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="p-2 font-bold text-gray-800">
+                        {new Date(m.month + '-01').toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
+                      </td>
+                      <td className="p-2 text-right font-bold text-gray-900">{fmtCurrency(m.revenue)}</td>
+                      <td className="p-2 text-right font-semibold text-gray-600">{fmt(m.orders)}</td>
+                      <td className="p-2 text-right font-semibold text-gray-600">{fmtCurrency(m.commission)}</td>
+                      <td className="p-2 text-right font-semibold text-pink-600">{fmtCurrency(m.tip)}</td>
+                      <td className="p-2 text-right font-bold text-emerald-700">{fmtCurrency(Math.round(m.revenue * 0.08))}</td>
+                      <td className="p-2 text-right font-bold text-amber-700">{fmtCurrency(Math.round(m.revenue * 0.02))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
+                    <td className="p-2 text-gray-900">Tổng năm</td>
+                    <td className="p-2 text-right text-gray-900">{fmtCurrency(taxData.totalRevenue)}</td>
+                    <td className="p-2 text-right text-gray-900">{fmt(taxData.totalOrders)}</td>
+                    <td className="p-2 text-right text-gray-900">—</td>
+                    <td className="p-2 text-right text-gray-900">—</td>
+                    <td className="p-2 text-right text-emerald-800">{fmtCurrency(Math.round(taxData.totalRevenue * 0.08))}</td>
+                    <td className="p-2 text-right text-amber-800">{fmtCurrency(Math.round(taxData.totalRevenue * 0.02))}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800">
+            <p className="font-bold mb-1">⚠️ Lưu ý về thuế</p>
+            <p>Các con số trên chỉ mang tính chất tham khảo. Vui lòng tham khảo ý kiến kế toán viên để biết nghĩa vụ thuế chính xác. 
+            Thuế GTGT (VAT) 8% áp dụng cho dịch vụ làm đẹp theo Nghị định 44/2023/NĐ-CP. 
+            Thuế TNCN 2% là mức ước tính cho hộ kinh doanh cá thể.</p>
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-16 text-gray-400 italic">
+          Không có dữ liệu thuế.
+        </div>
+      )}
     </div>
   )
 }

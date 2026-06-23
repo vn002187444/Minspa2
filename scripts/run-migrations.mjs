@@ -1,6 +1,9 @@
 /**
- * Robust migration runner — splits SQL into individual statements,
+ * Robust migration runner — runs each migration SQL file as a single query,
  * tolerates "already exists" errors, and archives on full success.
+ *
+ * Uses POSTGRES_URL_NON_POOLING (port 5432) to avoid PgBouncer limitations
+ * with DO blocks, system catalog queries, and multi-statement SQL.
  *
  * Usage: node scripts/run-migrations.mjs
  */
@@ -18,27 +21,15 @@ const MIGRATIONS_DIR = join(process.cwd(), 'migrations');
 const ARCHIVE_DIR = join(process.cwd(), 'scripts', 'archive', 'migrations');
 
 const ALREADY_EXISTS_PATTERNS = [
-  'relation "',         // "relation "foo" already exists"
+  'relation "',
   'already exists',
   'is already a member',
   'is already member',
-  'policy "',           // "policy "foo" for table "bar" already exists"
+  'policy "',
 ];
 
 function isIdempotentError(msg) {
   return ALREADY_EXISTS_PATTERNS.some(p => msg.includes(p));
-}
-
-function splitStatements(sql) {
-  const statements = [];
-  const parts = sql.split(';');
-  for (const part of parts) {
-    const trimmed = part.trim();
-    if (trimmed && !trimmed.startsWith('--')) {
-      statements.push(trimmed + ';');
-    }
-  }
-  return statements;
 }
 
 if (!existsSync(ARCHIVE_DIR)) mkdirSync(ARCHIVE_DIR, { recursive: true });
@@ -46,9 +37,17 @@ if (!existsSync(ARCHIVE_DIR)) mkdirSync(ARCHIVE_DIR, { recursive: true });
 const pending = readdirSync(MIGRATIONS_DIR).filter(f => f.endsWith('.sql')).sort();
 console.log(`Found ${pending.length} pending migration(s):\n`);
 
+// Use NON_POOLING URL (port 5432) to avoid PgBouncer issues with DO blocks / system catalogs
+const url = process.env.POSTGRES_URL_NON_POOLING || process.env.POSTGRES_URL;
+if (!url) {
+  console.error('ERROR: POSTGRES_URL_NON_POOLING or POSTGRES_URL not set in .env.local');
+  process.exit(1);
+}
+
 const client = new Client({
-  connectionString: process.env.POSTGRES_URL,
+  connectionString: url,
   connectionTimeoutMillis: 30000,
+  ssl: { rejectUnauthorized: false },
 });
 await client.connect();
 
@@ -56,42 +55,32 @@ let allSucceeded = true;
 
 for (const file of pending) {
   const fp = join(MIGRATIONS_DIR, file);
-  const sql = readFileSync(fp, 'utf8');
-  const statements = splitStatements(sql);
-  let failed = 0;
-
-  process.stdout.write(`→ ${file} (${statements.length} stmts) … `);
-
-  for (const stmt of statements) {
-    if (stmt.length < 10) continue;
-    try {
-      await client.query(stmt);
-    } catch (err) {
-      if (isIdempotentError(err.message)) {
-        failed++;
-      } else {
-        console.log(); // newline from the inline write above
-        console.error(`  ✗ ${file}: ${err.message}`);
-        console.error(`    Statement: ${stmt.substring(0, 100)}...`);
-        failed = -1; // mark as non-recoverable
-        break;
-      }
-    }
+  const sql = readFileSync(fp, 'utf8').trim();
+  if (!sql) {
+    console.log(`→ ${file} … (empty, skipped)`);
+    copyFileSync(fp, join(ARCHIVE_DIR, file));
+    unlinkSync(fp);
+    continue;
   }
+  process.stdout.write(`→ ${file} … `);
 
-  if (failed === 0) {
+  try {
+    await client.query(sql);
     console.log('✓');
     copyFileSync(fp, join(ARCHIVE_DIR, file));
     unlinkSync(fp);
-  } else if (failed > 0) {
-    console.log(`✓ (${failed} skippable warnings)`);
-    copyFileSync(fp, join(ARCHIVE_DIR, file));
-    unlinkSync(fp);
-  } else {
-    console.log('✗ FAILED');
-    allSucceeded = false;
+  } catch (err) {
+    if (isIdempotentError(err.message)) {
+      console.log('✓ (skipped: already exists)');
+      copyFileSync(fp, join(ARCHIVE_DIR, file));
+      unlinkSync(fp);
+    } else {
+      console.log(`✗ ${err.message}`);
+      allSucceeded = false;
+    }
   }
 }
 
 await client.end();
 console.log(allSucceeded ? '\nAll migrations applied successfully.' : '\nSome migrations failed. See above.');
+process.exit(allSucceeded ? 0 : 1);

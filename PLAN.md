@@ -60,9 +60,28 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
   - [x] **Nhắc hoàn thành lịch (Uncompleted Booking Reminders)**: Tự động cảnh báo các đơn đặt lịch đã qua thời gian hẹn nhưng nhân viên chưa chuyển thành COMPLETED.
 
 ### 🟢 Giai đoạn 7: Hệ Thống KPI, Chấm Công Nâng Cao & Tối Ưu Hiệu Năng
-- [/] Tinh chỉnh hệ thống log reminders background để tối ưu hóa tần suất chạy hạn chế quá tải bộ nhớ.
+- [x] Tinh chỉnh hệ thống log reminders background để tối ưu hóa tần suất chạy hạn chế quá tải bộ nhớ.
 - [x] Quản lý bảng chấm công (`attendance`) theo ngày cho toàn bộ nhân sự spa.
-- [ ] Tích hợp tính toán nợ lương/thưởng nâng cao tự động gửi báo cáo cuối tháng hóa đơn.
+- [-] Tích hợp tính toán nợ lương/thưởng nâng cao tự động gửi báo cáo cuối tháng hóa đơn *(chuyển sang phase sau V3 — không critical, salon nhỏ tự tính bằng Excel)*
+
+### 🟢 V3.11 — Đa ngôn ngữ (Google Translate Widget)
+- [x] Cài Google Translate Widget (VI/EN/KO/ZH-CN/JA/TH/FR/DE/ES) — dropdown top-right
+- [-] Huỷ i18n next-intl (overkill cho salon 1 cơ sở)
+- [-] Huỷ multi-branch (salon chỉ 1 cơ sở)
+
+### 🟢 V3.9 — Financials & Invoice
+- [x] Bỏ MoMo/ZaloPay (không có API key)
+- [x] Hoá đơn PDF khi thanh toán (tạo + nút Xem/Tải, không lưu Storage)
+- [x] Dashboard tài chính nâng cao (P&L, dòng tiền)
+- [x] Báo cáo thuế cuối kỳ
+- [x] Sổ quỹ tiền mặt (thu/chi ngoài booking)
+
+### 🟢 V3.13 — Stability & Polish ✅
+- [x] Fix 4 critical bugs: tasks schema, cron_job_logs table, 4 RPCs, env.ts env var names
+- [x] Clean code: removed auth console.log (security leak), removed dead files (lib/utils.ts, lib/api-error.ts), fixed silent catch handlers in booking actions
+- [x] Security: removed hardcoded bypass password fallbacks, added env vars for bank/hotline
+- [x] Vercel optimization: next.config.ts (productionBrowserSourceMaps: false), vercel.json (function configs, memory/duration limits)
+- [x] Supabase optimization: created background_tasks table, cron_job_logs table, 4 RPC functions for queue/package ops
 
 ---
 
@@ -257,10 +276,10 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 
 | # | Bài học | Nguyên nhân | Fix |
 |---|---------|------------|-----|
-| 1 | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` KHÔNG chạy qua PgBouncer | `IF NOT EXISTS` không được PgBouncer hỗ trợ cho publication | Dùng DO block với `pg_publication` + `pg_publication_rel` check |
+| 1 | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` KHÔNG chạy qua PgBouncer | `IF NOT EXISTS` không được PgBouncer hỗ trợ cho publication | Dùng DO block với `pg_publication_tables` check (tránh `pg_publication_rel` — cũng hang qua PgBouncer) |
 | 2 | `database.sql` bị thiếu 7 bảng từ migrations | Rule "NEVER edit database.sql" cũ quá cứng nhắc | Đổi rule thành "database.sql là schema tổng hợp — cập nhật khi thêm bảng" |
 | 3 | Quên kiểm tra RLS + Realtime sau migrations | Không có quy trình verify hậu migration | Thêm rule #15 vào SKILL.md — audit RLS + Realtime + database.sql sau mỗi migration |
-| 4 | Số table trong SKILL.md sai (ghi 18, thực tế 31) | Không cập nhật SKILL.md khi thêm bảng | Cập nhật section 4 mỗi khi thay đổi schema |
+| 4 | Số table trong SKILL.md sai (ghi 18, thực tế 34) | Không cập nhật SKILL.md khi thêm bảng | Cập nhật section 4 + 9 mỗi khi thay đổi schema |
 | 5 | Multi-statement SQL không đáng tin qua PgBouncer | Pooler transaction mode xử lý multi-statement không ổn định | Dùng DO block thay vì `;`-separated statements; script `run-migrations.mjs` chạy từng câu riêng |
 
 ### 10. Quy tắc bổ sung cho migrations

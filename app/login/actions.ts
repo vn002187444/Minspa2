@@ -17,12 +17,12 @@ export async function loginUser(prevState: any, formData: FormData) {
     const normUsername = username.trim().toLowerCase();
     const normPassword = password.trim();
 
-    // 1. EMERGENCY BYPASS via env vars (tránh lộ credentials trong code)
-    const bypassAdminUser = process.env.BYPASS_ADMIN_USER || 'admin';
-    const bypassAdminPass = process.env.BYPASS_ADMIN_PASS || 'Admin';
-    const bypassStaffUser = process.env.BYPASS_STAFF1_USER || 'staff1';
-    const bypassStaffPass = process.env.BYPASS_STAFF1_PASS || 'Staff@1';
-    if (normUsername === bypassAdminUser && (normPassword === bypassAdminPass || normPassword === bypassAdminUser)) {
+    // 1. EMERGENCY BYPASS via env vars (bắt buộc set trong production)
+    const bypassAdminUser = process.env.BYPASS_ADMIN_USER;
+    const bypassAdminPass = process.env.BYPASS_ADMIN_PASS;
+    const bypassStaffUser = process.env.BYPASS_STAFF1_USER;
+    const bypassStaffPass = process.env.BYPASS_STAFF1_PASS;
+    if (bypassAdminUser && bypassAdminPass && normUsername === bypassAdminUser && (normPassword === bypassAdminPass || normPassword === bypassAdminUser)) {
       const adminId = '00000000-0000-0000-0000-000000000000';
       
       try {
@@ -42,7 +42,7 @@ export async function loginUser(prevState: any, formData: FormData) {
       redirect('/admin');
     }
 
-    if (normUsername === bypassStaffUser && (normPassword === bypassStaffPass || normPassword === bypassStaffUser)) {
+    if (bypassStaffUser && bypassStaffPass && normUsername === bypassStaffUser && (normPassword === bypassStaffPass || normPassword === bypassStaffUser)) {
       const staffId = '00000000-0000-0000-0000-000000000001';
       
       try {
@@ -62,10 +62,8 @@ export async function loginUser(prevState: any, formData: FormData) {
       redirect('/staff');
     }
 
-    console.log(`[AUTH] Starting authentication attempt in database for user: "${normUsername}"`);
     const supabase = await createClient();
 
-    // 2. Logic kiểm tra tài khoản thuật toán từ Database
     const { data: user, error } = await supabase
       .from('users')
       .select('id, role, username, password_hash, full_name, is_active')
@@ -73,29 +71,22 @@ export async function loginUser(prevState: any, formData: FormData) {
       .single();
 
     if (error) {
-      console.error("[AUTH ERROR] Supabase DB read failed for users:", error);
-      return { success: false, message: `Lỗi kết nối bảng Users: ${error.message} (Mã lỗi: ${error.code})` };
+      console.error("[DB] Users query failed:", error.message);
+      return { success: false, error: 'Sai tên đăng nhập hoặc mật khẩu' };
     }
-
     if (!user) {
-      console.warn(`[AUTH WARNING] No user found matching username: "${normUsername}"`);
       return { success: false, error: 'Sai tên đăng nhập hoặc mật khẩu' };
     }
 
     if (user.is_active === false) {
-      console.warn(`[AUTH WARNING] Account is disabled: "${normUsername}"`);
       return { success: false, error: 'Tài khoản đã bị vô hiệu hóa' };
     }
 
-    console.log(`[AUTH] DB match found for user: "${user.username}". Registered Role: "${user.role}"`);
-
-    // Ensure we handle both upper/lower case comparisons if database has different casing
     const userRoleNormalized = (user.role || '').trim().toUpperCase();
 
     const isPasswordCorrect = await verifyPassword(normPassword, user.password_hash) || user.password_hash === normPassword;
 
     if (!isPasswordCorrect) {
-      console.warn(`[AUTH WARNING] Password mismatch for username: "${normUsername}"`);
       return { success: false, error: 'Sai tên đăng nhập hoặc mật khẩu' };
     }
 
@@ -103,12 +94,8 @@ export async function loginUser(prevState: any, formData: FormData) {
     if (user.password_hash === normPassword) {
       const hashed = await hashPassword(normPassword);
       await supabase.from('users').update({ password_hash: hashed }).eq('id', user.id);
-      console.log(`[AUTH] Migrated user ${user.username} to hashed password.`);
     }
 
-    console.log(`[AUTH] Password verification successful for user: "${user.username}". Creating session...`);
-
-    // Force role payload properties to match uppercase ADMIN/STAFF/MANAGER for middleware.ts
     await createSession({
       id: user.id,
       role: userRoleNormalized,
@@ -116,14 +103,12 @@ export async function loginUser(prevState: any, formData: FormData) {
     });
 
     const routeDest = (userRoleNormalized === 'ADMIN' || userRoleNormalized === 'MANAGER') ? '/admin' : '/staff';
-    console.log(`[AUTH] Login successful! Redirecting user "${user.username}" to: "${routeDest}"`);
 
     redirect(routeDest);
   } catch (error: any) {
     if (error?.digest?.startsWith('NEXT_REDIRECT')) {
       throw error;
     }
-    console.error("[AUTH CRITICAL SYSTEM ERROR]:", error);
     return { success: false, error: error?.message || 'Hệ thống đang gặp sự cố kết nối, vui lòng thử lại sau.' };
   }
 }
