@@ -1,15 +1,20 @@
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 
-const secretKey = process.env.JWT_SECRET;
-if (!secretKey) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('[AUTH] JWT_SECRET is required in production environment');
+let _key: Uint8Array | null = null;
+function getKey(): Uint8Array {
+  if (!_key) {
+    const secretKey = process.env.JWT_SECRET;
+    if (!secretKey) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('[AUTH] JWT_SECRET is required in production environment');
+      }
+      console.warn('[AUTH] JWT_SECRET not set — using fallback key for development only');
+    }
+    _key = new TextEncoder().encode(secretKey || 'min-nail-hair-dev-secret-key-2026');
   }
-  console.warn('[AUTH] JWT_SECRET not set — using fallback key for development only');
+  return _key;
 }
-const safeKey = secretKey || 'min-nail-hair-dev-secret-key-2026';
-const key = new TextEncoder().encode(safeKey);
 
 export interface SessionPayload {
   user: { id: string; role: string; username: string };
@@ -21,12 +26,12 @@ export async function encrypt(payload: SessionPayload) {
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('30d')
-    .sign(key);
+    .sign(getKey());
 }
 
 export async function decrypt(input: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(input, key, {
+    const { payload } = await jwtVerify(input, getKey(), {
       algorithms: ['HS256'],
     });
     return payload as unknown as SessionPayload;
