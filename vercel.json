@@ -1,5 +1,5 @@
 {
-  "name": "minhair",
+  "name": "min-nail-hair-setup-v134",
   "installCommand": "npm install --include=optional",
   "ignoreCommand": "git diff --quiet HEAD~1 -- '*.md' 'docs/**' '.agents/**' '.github/**' LICENSE 2>/dev/null && exit 0 || exit 1",
   "functions": {

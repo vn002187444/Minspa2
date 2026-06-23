@@ -9,6 +9,8 @@ import MascotProvider from "@/components/MascotProvider";
 import GoogleTranslate from "@/components/GoogleTranslate";
 import { Toaster } from 'sonner';
 import Script from 'next/script';
+import { SpeedInsights } from "@vercel/speed-insights";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,7 +36,7 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = "https://min-nail-hair.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
   const defaultMeta: Metadata = {
     title: "Min Nail & Hair - Salon Booking",
     description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
@@ -50,13 +52,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
       url: baseUrl,
-      images: [{ url: "https://min-nail-hair.vercel.app/icons/icon-512.svg" }],
+      images: [{ url: `${baseUrl}/icons/icon-512.svg` }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
-      images: ["https://min-nail-hair.vercel.app/icons/icon-512.svg"],
+      images: [`${baseUrl}/icons/icon-512.svg`],
     },
     appleWebApp: {
       capable: true,
@@ -91,13 +93,13 @@ export async function generateMetadata(): Promise<Metadata> {
           title: data.page_title || (defaultMeta.openGraph as any).title,
           description: data.meta_description || (defaultMeta.openGraph as any).description,
           url: baseUrl,
-          images: [{ url: data.og_image_url || "https://min-nail-hair.vercel.app/icons/icon-512.svg" }],
+          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.svg` }],
         },
         twitter: {
           card: "summary_large_image",
           title: data.page_title || (defaultMeta.twitter as any).title,
           description: data.meta_description || (defaultMeta.twitter as any).description,
-          images: [data.og_image_url || "https://min-nail-hair.vercel.app/icons/icon-512.svg"],
+          images: [data.og_image_url || `${baseUrl}/icons/icon-512.svg`],
         },
       };
     }
@@ -152,8 +154,8 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
               "name": "Min Nail & Hair",
-              "image": "https://min-nail-hair.vercel.app/icons/icon-512.svg",
-              "url": "https://min-nail-hair.vercel.app",
+              "image": `${baseUrl}/icons/icon-512.svg`,
+              "url": baseUrl,
               "telephone": "+84934323878",
               "address": {
                 "@type": "PostalAddress",
@@ -170,7 +172,9 @@ export default function RootLayout({
             })
           }}
         />
-          <ThemeProvider>
+           <Analytics />
+           <SpeedInsights />
+           <ThemeProvider>
              <ThemeBanner />
              <MascotProvider>
               <main id="main-content">{children}</main>

@@ -78,7 +78,7 @@ Từ khóa bổ sung: "${keywords || "Không có"}"`;
       outline: fbOutline,
       headlineTips: fbHeadlineTips,
       sources: [
-        { title: "Báo cáo xu hướng Hair & Spa 2026", uri: "https://minnailhair.vn/reports/beauty-trends" },
+        { title: "Báo cáo xu hướng Hair & Spa 2026", uri: `${process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app'}/reports/beauty-trends` },
       ],
       isFallback: true,
     });

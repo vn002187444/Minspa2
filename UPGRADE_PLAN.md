@@ -339,6 +339,45 @@ V3 EXECUTION
 
 ---
 
+## 🛠️ V3.15 — OpenCode Custom Tools & Agents (Developer Experience)
+> **Mục tiêu:** Tạo custom tools + subagents cho OpenCode để tự động hoá CI/CD, migration, build check, env check.
+> **Trạng thái:** 📋 Đang lên kế hoạch
+
+### A. 🔧 Custom Tools (`<root>/.opencode/tools/`)
+
+| # | Tool | Mô tả | Args |
+|---|------|-------|------|
+| A.1 | `ci_check` | Chạy full CI pipeline: lint → typecheck → build. Trả về kết quả từng step + exit code + thời gian. | `step?`: "all" \| "lint" \| "typecheck" \| "build" (default: all) |
+| A.2 | `build_check` | Chạy `npm run build`, report output + thời gian. | Không args |
+| A.3 | `deploy_vercel` | Deploy lên Vercel production. Kiểm tra `vercel.json` tồn tại, dùng token từ args hoặc env `VERCEL_TOKEN`. | `token?`: string |
+| A.4 | `migrate_db` | Chạy migration script an toàn dùng `POSTGRES_URL_NON_POOLING`. | `verify?`: boolean (dry-run) |
+| A.5 | `check_env` | Đọc `.env.example`, so sánh vs `process.env`, báo cáo biến thiếu. | `strict?`: boolean (default: false) |
+
+**Implement:** Mỗi tool là 1 file `.ts` export `{ description, args, execute }`, dùng `child_process.execSync` — không cần thêm dependency.
+
+### B. 🤖 Custom Subagents (`<root>/opencode.json` hoặc `.opencode/agents/`)
+
+| # | Agent | Mode | Prompt | Tools gọi |
+|---|-------|------|--------|-----------|
+| B.1 | `ci-fix` | subagent | Chuyên CI/CD — phân tích lỗi CI, chạy kiểm tra, deploy | `ci_check`, `build_check`, `deploy_vercel`, `check_env` |
+| B.2 | `db-admin` | subagent | Chuyên database — migration, SQL, Supabase | `migrate_db`, `check_env` |
+
+### C. 📋 Implementation Steps
+
+| # | Task | Trạng thái | Chi tiết |
+|---|------|-----------|----------|
+| C.1 | Tạo thư mục `.opencode/tools/` | [ ] | — |
+| C.2 | Viết `ci_check.ts` | [ ] | Dùng `execSync`, chạy lint → tsc → build, parse output |
+| C.3 | Viết `build_check.ts` | [ ] | Đơn giản: `execSync("npm run build", {cwd: worktree})` |
+| C.4 | Viết `deploy_vercel.ts` | [ ] | Kiểm tra token, chạy `npx vercel --prod --yes` |
+| C.5 | Viết `migrate_db.ts` | [ ] | Chạy `npx tsx scripts/migrate.ts` hoặc `scripts/run-migrations.mjs` |
+| C.6 | Viết `check_env.ts` | [ ] | Parse `.env.example`, so sánh process.env, báo cáo |
+| C.7 | Tạo `.opencode/agents/ci-fix.md` | [ ] | Subagent prompt + permission chỉ cho tools cần |
+| C.8 | Tạo `.opencode/agents/db-admin.md` | [ ] | Subagent prompt + permission |
+| C.9 | Verify: test từng tool bằng `@tool_name` | [ ] | — |
+
+---
+
 ## 📋 NGUYÊN TẮC MIGRATION DATABASE (áp dụng cho mọi V3.x)
 
 ### Checklist khi thêm bảng mới

@@ -140,7 +140,7 @@ export async function saveArticleRecord(supabase: any, article: {
 }
 
 export async function notifyAdmin(article: { title: string; slug: string }) {
-  const url = `https://minnailhair.vn/blog/${article.slug}`;
+  const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app'}/blog/${article.slug}`;
   await Promise.allSettled([
     sendEmail({
       to: process.env.ADMIN_EMAIL || 'minnailhair@gmail.com',

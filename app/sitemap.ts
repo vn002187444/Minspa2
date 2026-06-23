@@ -5,7 +5,7 @@ export const revalidate = 3600; // Cache sitemap for 1 hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Use development URL if variable is not available
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://min-nail-hair.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
 
   // 1. Static Routes
   const routes = [

@@ -39,9 +39,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
-      - run: if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }} --yes; else echo "VERCEL_TOKEN not set — skipping deploy"; fi
+      - run: |
+          if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
+            npx vercel --prod --token=${{ secrets.VERCEL_TOKEN}} --yes
+          else
+            echo "VERCEL_TOKEN not set — skipping deploy"
+          fi
 
   build:
     name: Build

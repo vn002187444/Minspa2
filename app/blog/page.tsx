@@ -11,14 +11,15 @@ import GlobalSearch from '@/components/GlobalSearch';
 export const revalidate = 60; // Revalidate every minute
 
 export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
   return {
     title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
     description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body tại Min Nail & Hair. Bí quyết làm đẹp cho phái nữ.',
-    alternates: { canonical: 'https://min-nail-hair.vercel.app/blog' },
+    alternates: { canonical: `${baseUrl}/blog` },
     openGraph: {
       title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
       description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body.',
-      url: 'https://min-nail-hair.vercel.app/blog',
+      url: `${baseUrl}/blog`,
       siteName: 'Min Nail & Hair',
       locale: 'vi_VN',
       type: 'website',

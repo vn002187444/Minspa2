@@ -76,7 +76,7 @@ ${summary}
 
 ## ${t} là gì?
 
-${t} là một trong những dịch vụ chăm sóc sắc đẹp được yêu thích nhất hiện nay${kw}. Tại [Min Nail & Hair](https://minnailhair.vn), chúng tôi tự hào mang đến cho khách hàng những trải nghiệm làm đẹp đẳng cấp với đội ngũ chuyên viên giàu kinh nghiệm.
+${t} là một trong những dịch vụ chăm sóc sắc đẹp được yêu thích nhất hiện nay${kw}. Tại [Min Nail & Hair](${process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app'}), chúng tôi tự hào mang đến cho khách hàng những trải nghiệm làm đẹp đẳng cấp với đội ngũ chuyên viên giàu kinh nghiệm.
 
 ### Lợi ích khi sử dụng dịch vụ
 
