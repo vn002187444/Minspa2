@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "cross-env SHARP_IGNORE_GLOBAL_LIBVIPS=1 next build",
+    "build": "npx next build",
     "start": "next start",
     "lint": "eslint .",
     "migrate": "npx tsx scripts/migrate.ts",
