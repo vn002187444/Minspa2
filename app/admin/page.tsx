@@ -207,28 +207,30 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="h-dvh bg-gray-50 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
-      <header className="md:hidden h-16 bg-gray-900 text-white flex items-center justify-between px-6 shadow-md border-b border-gray-800 shrink-0">
-        <span className="font-display font-extrabold text-base tracking-wider">
-          ADMIN PORTAL
-        </span>
+      <header className="md:hidden h-14 bg-gray-900 text-white flex items-center justify-between px-4 shadow-md border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2">
-          <NotificationBell />
-          <Link
-            href="/"
-            aria-label="Về trang chủ"
-            className="text-gray-400 hover:text-white p-1.5 rounded-lg"
-          >
-            <Home className="w-5 h-5" />
-          </Link>
           <button
             onClick={() => setIsDrawerOpen(true)}
             aria-label="Mở menu"
             className="text-gray-300 hover:text-white p-1.5 focus:outline-none cursor-pointer"
           >
-            <MenuIcon className="w-6 h-6" />
+            <MenuIcon className="w-5 h-5" />
           </button>
+          <span className="font-display font-extrabold text-sm tracking-wider">
+            ADMIN
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/"
+            aria-label="Về trang chủ"
+            className="text-gray-400 hover:text-white p-1.5 rounded-lg"
+          >
+            <Home className="w-4 h-4" />
+          </Link>
+          <NotificationBell />
         </div>
       </header>
 
@@ -318,7 +320,7 @@ export default function AdminDashboard() {
       </AnimatePresence>
 
         {/* Desktop Sidebar */}
-        <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 min-h-screen flex-col shrink-0 font-sans">
+        <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 flex-col shrink-0 font-sans">
         <div className="h-16 flex items-center justify-between px-6 bg-black/20 text-white font-display font-bold text-lg">
           <span>ADMIN PORTAL</span>
           <Link
@@ -374,7 +376,7 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 max-h-[100dvh] overflow-y-auto relative">
+      <main className="flex-1 min-h-0 p-4 md:p-8 overflow-y-auto relative">
         <div className="hidden md:flex absolute top-4 right-4 z-20">
           <NotificationBell />
         </div>
