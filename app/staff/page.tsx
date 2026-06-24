@@ -158,12 +158,12 @@ export default function StaffDashboard() {
 
     const staffId = data.staffId;
 
-    import('@supabase/supabase-js').then(({ createClient }) => {
+    import('@supabase/supabase-js').then(async ({ createClient }) => {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-
+ 
       const channel: any = supabase
         .channel('staff_appointments')
         .on(
@@ -189,9 +189,15 @@ export default function StaffDashboard() {
           () => {
             loadData(true);
           }
-        )
-        .subscribe();
-
+        );
+ 
+      try {
+        const { safeSubscribe } = await import('@/lib/realtime');
+        await safeSubscribe(channel);
+      } catch (e) {
+        console.warn('[Realtime] staff page subscription failed:', e);
+      }
+ 
       return () => {
         supabase.removeChannel(channel);
       };

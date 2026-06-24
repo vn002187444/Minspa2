@@ -1,6 +1,15 @@
 import { useEffect, useRef } from 'react';
 import { createClient, RealtimeChannel } from '@supabase/supabase-js';
 
+export async function safeSubscribe(channel: RealtimeChannel) {
+  try {
+    return await channel.subscribe();
+  } catch (e) {
+    console.warn('[Realtime] Subscription failed (possibly blocked by browser security policy):', e);
+    return { status: 'CHANNEL_ERROR' as const };
+  }
+}
+
 interface UseScheduleRealtimeOptions {
   date: string;
   onDataChanged: () => void;
@@ -32,15 +41,25 @@ export function useScheduleRealtime({ date, onDataChanged, enabled = true }: Use
           onDataChanged();
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'time_slot_locks' }, (payload) => {
-        const newRecord = payload.new as Record<string, unknown> | undefined;
-        const lockDate = (newRecord?.lock_date) as string | undefined;
+       .on('postgres_changes', { event: '*', schema: 'public', table: 'time_slot_locks' }, (payload) => {
+         const newRecord = payload.new as Record<string, unknown> | undefined;
+         const lockDate = (newRecord?.lock_date) as string | undefined;
+ 
+         if (lockDate === date) {
+           onDataChanged();
+         }
+       });
+ 
+     (async () => {
+       try {
+         await safeSubscribe(channel);
+       } catch (e) {
+         console.warn('[Realtime] Safe subscription failed:', e);
+       }
+     })();
 
-        if (lockDate === date) {
-          onDataChanged();
-        }
-      })
-      .subscribe();
+
+
 
     channelRef.current = channel as unknown as RealtimeChannel;
 

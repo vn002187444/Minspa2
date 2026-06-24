@@ -82,51 +82,58 @@ export default function NotificationBell() {
     if (typeof window === 'undefined') return;
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
 
-    import('@supabase/supabase-js').then(({ createClient }) => {
+    import('@supabase/supabase-js').then(async ({ createClient }) => {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-
+ 
        const channel: any = supabase
-         .channel('notifications_bell')
-         .on(
-           'postgres_changes' as any,
-           {
-             event: 'INSERT',
-             schema: 'public',
-             table: 'notifications',
-             filter: `recipient_type=eq.user`,
-           },
-           (payload: any) => {
-             const newNotif = payload.new as Notification;
-             if (newNotif.recipient_id !== userIdRef.current) return;
-             setUnreadCount((prev) => prev + 1);
-             setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
-             
-             // Trigger bounce animation
-             setIsBouncing(true);
-             setTimeout(() => setIsBouncing(false), 1000);
-           }
-         )
-         .on(
-          'postgres_changes' as any,
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'notifications',
-            filter: `recipient_type=eq.user`,
-          },
-          (payload: any) => {
-            const updated = payload.new as Notification;
-            if (updated.recipient_id !== userIdRef.current) return;
-            setNotifications((prev) =>
-              prev.map((n) => (n.id === updated.id ? { ...n, is_read: updated.is_read } : n))
-            );
-            setUnreadCount((prev) => Math.max(0, prev - (updated.is_read ? 1 : 0)));
+          .channel('notifications_bell')
+          .on(
+            'postgres_changes' as any,
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `recipient_type=eq.user`,
+            },
+            (payload: any) => {
+              const newNotif = payload.new as Notification;
+              if (newNotif.recipient_id !== userIdRef.current) return;
+              setUnreadCount((prev) => prev + 1);
+              setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
+              
+              // Trigger bounce animation
+              setIsBouncing(true);
+              setTimeout(() => setIsBouncing(false), 1000);
+            }
+          )
+          .on(
+            'postgres_changes' as any,
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'notifications',
+              filter: `recipient_type=eq.user`,
+            },
+            (payload: any) => {
+              const updated = payload.new as Notification;
+              if (updated.recipient_id !== userIdRef.current) return;
+              setNotifications((prev) =>
+                prev.map((n) => (n.id === updated.id ? { ...n, is_read: updated.is_read } : n))
+              );
+              setUnreadCount((prev) => Math.max(0, prev - (updated.is_read ? 1 : 0)));
+            }
+          );
+ 
+          try {
+            const { safeSubscribe } = await import('@/lib/realtime');
+            await safeSubscribe(channel);
+          } catch (e) {
+            console.warn('[Realtime] NotificationBell subscription failed:', e);
           }
-        )
-        .subscribe();
+
 
       return () => {
         supabase.removeChannel(channel);

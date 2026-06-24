@@ -189,7 +189,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
       </head>
-        <body className="antialiased font-sans text-gray-900 bg-gray-50">
+        <body className="antialiased font-sans text-gray-900 bg-gray-50" suppressHydrationWarning>
           <div id="early-error-display" style={{display:'none',position:'fixed',bottom:0,left:0,right:0,zIndex:99999,backgroundColor:'rgba(0,0,0,0.9)',color:'#fff',padding:'10px',fontSize:'11px',fontFamily:'monospace',maxHeight:'50vh',overflowY:'auto',borderTop:'3px solid red'}}></div>
           <script dangerouslySetInnerHTML={{
             __html: `

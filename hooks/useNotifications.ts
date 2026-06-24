@@ -75,9 +75,17 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId ?? ''}` },
         () => { fetchUnreadCount(); if (open) fetchNotifications(); }
-      )
-      .subscribe();
-
+      );
+ 
+    (async () => {
+      try {
+        const { safeSubscribe } = await import('@/lib/realtime');
+        await safeSubscribe(channel);
+      } catch (e) {
+        console.warn('[Realtime] useNotifications subscription failed:', e);
+      }
+    })();
+ 
     const pollingInterval = setInterval(fetchUnreadCount, 300000);
 
     return () => {

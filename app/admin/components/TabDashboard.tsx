@@ -210,12 +210,12 @@ export default function TabDashboard() {
     if (typeof window === 'undefined') return;
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
 
-    import('@supabase/supabase-js').then(({ createClient }) => {
+    import('@supabase/supabase-js').then(async ({ createClient }) => {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
-
+ 
       const channel: any = supabase
         .channel('dashboard_updates')
         .on(
@@ -245,8 +245,15 @@ export default function TabDashboard() {
               fetchDashboardData(dates.start, dates.end, true);
             }
           }
-        )
-        .subscribe();
+        );
+ 
+      try {
+        const { safeSubscribe } = await import('@/lib/realtime');
+        await safeSubscribe(channel);
+      } catch (e) {
+        console.warn('[Realtime] dashboard subscription failed:', e);
+      }
+
 
       return () => {
         supabase.removeChannel(channel);
