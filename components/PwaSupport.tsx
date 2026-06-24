@@ -44,10 +44,6 @@ export default function PwaSupport() {
       navigator.serviceWorker.register('/sw.js')
         .then((reg) => {
           console.log('[PWA] Service Worker registered:', reg.scope);
-          // If already granted, sync subscription token automatically on mount
-          if (Notification.permission === 'granted') {
-            syncSubscriptionToken(reg).catch(err => console.error('[PWA] Auto-sync token failed:', err));
-          }
           // Listen for background sync trigger from SW
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'trigger-sync') {
@@ -67,23 +63,36 @@ export default function PwaSupport() {
   }, []);
 
   // Helper method to sync token to Backend database
-  const syncSubscriptionToken = async (reg: ServiceWorkerRegistration) => {
+  const syncSubscriptionToken = async (reg: ServiceWorkerRegistration, forceSubscribe = false) => {
     try {
-      // Fetch public VAPID key
-      const keyRes = await fetch('/api/vapid');
-      if (!keyRes.ok) throw new Error('Failed to retrieve VAPID public key');
-      const keys = await keyRes.json();
-      
-      if (!keys.publicKey) {
-        throw new Error('VAPID public key not found in API response');
-      }
+      // Check for existing subscription first
+      const existingSub = await reg.pushManager.getSubscription();
+      let subscription = existingSub;
 
-      // Subscribe using the application public key
-      const applicationServerKey = urlBase64ToUint8Array(keys.publicKey);
-      const subscription = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey
-      });
+      if (!subscription) {
+        // If no existing subscription and we are not forcing it (e.g. auto-sync on mount),
+        // do not call subscribe() as it throws SecurityError on iOS without user interaction.
+        if (!forceSubscribe) {
+          console.log('[PWA] No active subscription found, skipping auto-subscribe on mount to avoid SecurityError');
+          return false;
+        }
+
+        // Fetch public VAPID key
+        const keyRes = await fetch('/api/vapid');
+        if (!keyRes.ok) throw new Error('Failed to retrieve VAPID public key');
+        const keys = await keyRes.json();
+        
+        if (!keys.publicKey) {
+          throw new Error('VAPID public key not found in API response');
+        }
+
+        // Subscribe using the application public key
+        const applicationServerKey = urlBase64ToUint8Array(keys.publicKey);
+        subscription = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey
+        });
+      }
 
       // Post subscription payload to backend
       const customerId = storage.get('min_salon_customer_id') || undefined;
@@ -121,7 +130,7 @@ export default function PwaSupport() {
 
       if (permission === 'granted') {
         const reg = await navigator.serviceWorker.ready;
-        await syncSubscriptionToken(reg);
+        await syncSubscriptionToken(reg, true);
         setNotificationStatusMsg('Đăng ký thông báo thành công!');
         
         // Hide widget after 2.5 seconds

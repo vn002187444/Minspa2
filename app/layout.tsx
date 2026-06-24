@@ -8,7 +8,7 @@ import ThemeBanner from "@/components/ThemeBanner";
 import MascotProvider from "@/components/MascotProvider";
 import GoogleTranslate from "@/components/GoogleTranslate";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import IosErrorHandler from "@/components/IosErrorHandler";
+
 import { Toaster } from 'sonner';
 import Script from 'next/script';
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -122,6 +122,36 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${inter.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable}`}>
       <head>
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            window.__earlyErrors = [];
+            var origOnError = window.onerror;
+            window.onerror = function(msg, src, line, col, err) {
+              window.__earlyErrors.push({msg: String(msg), src: src || '', line: line, col: col, time: new Date().toISOString()});
+              if (origOnError) return origOnError.apply(window, arguments);
+              return false;
+            };
+            window.addEventListener('unhandledrejection', function(e) {
+              window.__earlyErrors.push({msg: String(e.reason?.message || e.reason || 'Unknown'), src: '', line: 0, col: 0, time: new Date().toISOString()});
+            });
+            // Detect iOS Private Browsing: getItem OK, but setItem throws SecurityError
+            try { window.localStorage.setItem('__test','1'); window.localStorage.removeItem('__test'); } catch(e) {
+              if (typeof Storage !== 'undefined') {
+                Storage.prototype.getItem = function(){return null};
+                Storage.prototype.setItem = function(){};
+                Storage.prototype.removeItem = function(){};
+                Storage.prototype.clear = function(){};
+                Storage.prototype.key = function(){return null};
+                Object.defineProperty(Storage.prototype, 'length', {get: function(){return 0}, configurable: true});
+              }
+            }
+            // Override indexedDB if blocked on iOS Private Browsing
+            try { window.indexedDB.open('__test'); } catch(e) {
+              var _safeReq = function(){this.result=null;this.error=null;this.onupgradeneeded=null;this.onsuccess=null;this.onerror=null;};
+              var _safeIDB = { open: function(){return new _safeReq()}, deleteDatabase: function(){return new _safeReq()} };
+              try { window.indexedDB = _safeIDB; } catch(e2) {}
+          `,
+        }} />
         <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <link rel="dns-prefetch" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
@@ -134,7 +164,29 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
       </head>
         <body className="antialiased font-sans text-gray-900 bg-gray-50">
-           <IosErrorHandler />
+          <div id="early-error-display" style={{display:'none',position:'fixed',bottom:0,left:0,right:0,zIndex:99999,backgroundColor:'rgba(220,38,38,0.95)',color:'white',padding:'8px 16px',fontSize:'12px',fontFamily:'monospace',maxHeight:'40vh',overflowY:'auto'}}></div>
+          <script dangerouslySetInnerHTML={{
+            __html: `
+              (function(){
+                var div = document.getElementById('early-error-display');
+                if (window.__earlyErrors && window.__earlyErrors.length > 0) {
+                  div.style.display = 'block';
+                  div.innerHTML = '<strong>⚠ ' + window.__earlyErrors.length + ' early error(s)</strong><br>' +
+                    window.__earlyErrors.map(function(e){ return '<div style=\"border-top:1px solid rgba(255,255,255,0.2);padding:4px 0;\">' + e.msg + (e.src ? '<br><span style=\"opacity:0.7;font-size:10px;\">' + e.src + ':' + e.line + '</span>' : '') + '<br><span style=\"opacity:0.5;font-size:10px;\">' + e.time + '</span></div>'; }).join('');
+                }
+                var origOnError = window.onerror;
+                window.onerror = function(msg, src, line, col, err) {
+                  if (div) {
+                    div.style.display = 'block';
+                    div.innerHTML = '<strong>⚠ Runtime Error</strong><br><div style=\"border-top:1px solid rgba(255,255,255,0.2);padding:4px 0;\">' + msg + (src ? '<br><span style=\"opacity:0.7;font-size:10px;\">' + src + ':' + line + '</span>' : '') + '</div>' + div.innerHTML;
+                  }
+                  if (origOnError) return origOnError.apply(window, arguments);
+                  return false;
+                };
+              })();
+            `,
+          }} />
+           <ErrorBoundary>
            <div className="fixed top-2 right-2 z-[9999]">
              <GoogleTranslate />
            </div>
@@ -180,16 +232,15 @@ export default function RootLayout({
         />
            <Analytics />
            <SpeedInsights />
-           <ThemeProvider>
-             <ThemeBanner />
-           <ErrorBoundary>
-             <MascotProvider>
-               <main id="main-content">{children}</main>
-               <PwaSupport />
-             </MascotProvider>
-           </ErrorBoundary>
-          </ThemeProvider>
-          </div>
+            <ThemeProvider>
+              <ThemeBanner />
+              <MascotProvider>
+                <main id="main-content">{children}</main>
+                <PwaSupport />
+              </MascotProvider>
+           </ThemeProvider>
+           </div>
+            </ErrorBoundary>
       </body>
     </html>
   );
