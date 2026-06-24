@@ -124,18 +124,37 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{
           __html: `
-            window.__earlyErrors = [];
+            window.__debugLogs = [];
+            function logDebug(msg, type='INFO') {
+              const entry = { msg, type, time: new Date().toISOString().split('T')[1].split('Z')[0] };
+              window.__debugLogs.push(entry);
+              console.log('[' + type + '] ' + msg);
+            }
+            logDebug('System Init Started');
+
             var origOnError = window.onerror;
             window.onerror = function(msg, src, line, col, err) {
-              window.__earlyErrors.push({msg: String(msg), src: src || '', line: line, col: col, time: new Date().toISOString()});
+              var stack = err ? err.stack : 'No stack available';
+              var fullMsg = msg + (src ? '\\nSrc: ' + src + ':' + line : '') + '\\nStack: ' + stack;
+              logDebug(fullMsg, 'ERROR');
               if (origOnError) return origOnError.apply(window, arguments);
               return false;
             };
             window.addEventListener('unhandledrejection', function(e) {
-              window.__earlyErrors.push({msg: String(e.reason?.message || e.reason || 'Unknown'), src: '', line: 0, col: 0, time: new Date().toISOString()});
+              var reason = e.reason;
+              var msg = reason instanceof Error ? reason.message : String(reason);
+              var stack = reason instanceof Error ? reason.stack : 'No stack';
+              logDebug('Promise Rejected: ' + msg + '\\nStack: ' + stack, 'ERROR');
             });
-            // Detect iOS Private Browsing: getItem OK, but setItem throws SecurityError
-            try { window.localStorage.setItem('__test','1'); window.localStorage.removeItem('__test'); } catch(e) {
+
+            // --- Storage Override with Tracing ---
+            try { 
+              logDebug('Testing localStorage...');
+              window.localStorage.setItem('__test','1'); 
+              window.localStorage.removeItem('__test'); 
+              logDebug('localStorage is OK');
+            } catch(e) {
+              logDebug('localStorage blocked! Applying prototype patch...', 'WARN');
               if (typeof Storage !== 'undefined') {
                 Storage.prototype.getItem = function(){return null};
                 Storage.prototype.setItem = function(){};
@@ -143,13 +162,20 @@ export default function RootLayout({
                 Storage.prototype.clear = function(){};
                 Storage.prototype.key = function(){return null};
                 Object.defineProperty(Storage.prototype, 'length', {get: function(){return 0}, configurable: true});
+                logDebug('Storage.prototype patched');
               }
             }
-            // Override indexedDB if blocked on iOS Private Browsing
-            try { window.indexedDB.open('__test'); } catch(e) {
+
+            try { 
+              logDebug('Testing indexedDB...');
+              window.indexedDB.open('__test'); 
+              logDebug('indexedDB is OK');
+            } catch(e) {
+              logDebug('indexedDB blocked! Applying override...', 'WARN');
               var _safeReq = function(){this.result=null;this.error=null;this.onupgradeneeded=null;this.onsuccess=null;this.onerror=null;};
               var _safeIDB = { open: function(){return new _safeReq()}, deleteDatabase: function(){return new _safeReq()} };
-              try { window.indexedDB = _safeIDB; } catch(e2) {}
+              try { window.indexedDB = _safeIDB; logDebug('window.indexedDB overridden'); } catch(e2) { logDebug('Failed to override window.indexedDB', 'ERROR'); }
+            }
           `,
         }} />
         <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
@@ -164,21 +190,32 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
       </head>
         <body className="antialiased font-sans text-gray-900 bg-gray-50">
-          <div id="early-error-display" style={{display:'none',position:'fixed',bottom:0,left:0,right:0,zIndex:99999,backgroundColor:'rgba(220,38,38,0.95)',color:'white',padding:'8px 16px',fontSize:'12px',fontFamily:'monospace',maxHeight:'40vh',overflowY:'auto'}}></div>
+          <div id="early-error-display" style={{display:'none',position:'fixed',bottom:0,left:0,right:0,zIndex:99999,backgroundColor:'rgba(0,0,0,0.9)',color:'#fff',padding:'10px',fontSize:'11px',fontFamily:'monospace',maxHeight:'50vh',overflowY:'auto',borderTop:'3px solid red'}}></div>
           <script dangerouslySetInnerHTML={{
             __html: `
               (function(){
                 var div = document.getElementById('early-error-display');
-                if (window.__earlyErrors && window.__earlyErrors.length > 0) {
-                  div.style.display = 'block';
-                  div.innerHTML = '<strong>⚠ ' + window.__earlyErrors.length + ' early error(s)</strong><br>' +
-                    window.__earlyErrors.map(function(e){ return '<div style=\"border-top:1px solid rgba(255,255,255,0.2);padding:4px 0;\">' + e.msg + (e.src ? '<br><span style=\"opacity:0.7;font-size:10px;\">' + e.src + ':' + e.line + '</span>' : '') + '<br><span style=\"opacity:0.5;font-size:10px;\">' + e.time + '</span></div>'; }).join('');
+                function updateDisplay() {
+                  if (window.__debugLogs && window.__debugLogs.length > 0) {
+                    div.style.display = 'block';
+                    var html = '<strong>🛠 iOS DEBUG CONSOLE</strong><br>';
+                    window.__debugLogs.forEach(function(l) {
+                      var color = l.type === 'ERROR' ? '#ff4d4d' : (l.type === 'WARN' ? '#ffcc00' : '#aaa');
+                      html += '<div style="margin-bottom:4px;border-bottom:1px solid #333;padding-bottom:2px">' +
+                               '<span style="color:#888">[' + l.time + ']</span> ' +
+                               '<span style="color:' + color + '">[' + l.type + ']</span> ' + l.msg + '</div>';
+                    });
+                    div.innerHTML = html;
+                  }
                 }
+                setInterval(updateDisplay, 500);
+                // Also override window.onerror again to ensure it's active
                 var origOnError = window.onerror;
                 window.onerror = function(msg, src, line, col, err) {
                   if (div) {
                     div.style.display = 'block';
-                    div.innerHTML = '<strong>⚠ Runtime Error</strong><br><div style=\"border-top:1px solid rgba(255,255,255,0.2);padding:4px 0;\">' + msg + (src ? '<br><span style=\"opacity:0.7;font-size:10px;\">' + src + ':' + line + '</span>' : '') + '</div>' + div.innerHTML;
+                    var stack = err ? err.stack : 'No stack';
+                    div.innerHTML = '<strong>⚠ CRASH DETECTED</strong><br>' + msg + '<br>' + stack + '<br>' + div.innerHTML;
                   }
                   if (origOnError) return origOnError.apply(window, arguments);
                   return false;

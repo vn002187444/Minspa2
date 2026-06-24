@@ -66,6 +66,8 @@ description: >-
     ```
     Xem `utils/supabase/server.ts` implementation hiện tại.
 22. **Full CI pipeline test:** Sau khi sửa CI, không chỉ verify build local — đợi GitHub Actions run hoàn tất (bao gồm cả Deploy step). Lỗi có thể xuất hiện ở bất kỳ step nào (lint, test, build, deploy). Dùng GitHub API kiểm tra kết quả từng job.
+23. **iOS SecurityError Prevention:** `navigator.serviceWorker.register()` and `indexedDB.open()` can throw synchronous SecurityError on iOS Safari Private Browsing. Wrap these calls in `try-catch` and ensure `pushManager.subscribe()` is only called during user gestures.
+24. **Deployment:** Only commit changes to GitHub. Do NOT automatically deploy to Vercel. Only report the deployment result if explicitly requested to deploy.
 
 ## 3. Schema Mismatch Lesson (Learned Jun 2026)
 - **Root cause:** Developers added columns in code `.select('col1, col2, ...')` without running migration to add those columns to the database. Error 42703 `column X does not exist` on Vercel.
