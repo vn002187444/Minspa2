@@ -4,14 +4,24 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
-export default function TodayMonitoringWidget({ appointments, onReload }: { appointments: any[], onReload: () => void }) {
+interface ApptItem {
+  id: string;
+  status: string;
+  start_time: string;
+  customers?: { full_name: string; phone: string } | null;
+  users?: { full_name: string } | null;
+  appointment_services?: { services?: { name: string } | null }[] | null;
+  total_amount?: number;
+}
+
+export default function TodayMonitoringWidget({ appointments, onReload }: { appointments: ApptItem[]; onReload: () => void }) {
   const [activeTab, setActiveTab] = useState<'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'>('PENDING');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const pending = appointments.filter((a: any) => a.status === 'PENDING_RANDOM' || a.status === 'CONFIRMED');
-  const inProgress = appointments.filter((a: any) => a.status === 'IN_PROGRESS');
-  const completed = appointments.filter((a: any) => a.status === 'COMPLETED');
-  const cancelled = appointments.filter((a: any) => a.status === 'CANCELLED');
+  const pending = appointments.filter((a) => a.status === 'PENDING_RANDOM' || a.status === 'CONFIRMED');
+  const inProgress = appointments.filter((a) => a.status === 'IN_PROGRESS');
+  const completed = appointments.filter((a) => a.status === 'COMPLETED');
+  const cancelled = appointments.filter((a) => a.status === 'CANCELLED');
 
   const getFilteredList = () => {
     switch (activeTab) {

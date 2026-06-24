@@ -6,7 +6,20 @@ import { Plus, RefreshCw, Sparkles, ImageIcon, XIcon } from "lucide-react";
 import { deleteServiceSafely, saveService } from "../actions";
 import ServiceModal from "./ServiceModal";
 
-export default function TabServices({ services, userRole, onReload }: { services: any[]; userRole: string; onReload: () => void }) {
+interface SvcItem2 {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  duration: number;
+  description?: string | null;
+  image_url?: string | null;
+  commission_percentage?: number | null;
+  commission_amount?: number | null;
+  is_active: boolean;
+}
+
+export default function TabServices({ services, userRole, onReload }: { services: SvcItem2[]; userRole: string; onReload: () => void }) {
   const [editingService, setEditingService] = useState<any>(null);
 
   const handleDeleteService = async (id: string, name: string) => {

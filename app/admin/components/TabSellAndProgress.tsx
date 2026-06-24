@@ -5,7 +5,19 @@ import { RefreshCw, Search, Package } from "lucide-react";
 import { format } from "date-fns";
 import { getCustomerByPhone, sellPackageToCustomer, getCustomerPackageProgress } from "../actions";
 
-export default function TabSellAndProgress({ packages, onReload }: { packages: any[]; onReload: () => void }) {
+interface PkgSellItem {
+  id: string;
+  name: string;
+  service_id: string;
+  buy_count: number;
+  free_count: number;
+  total_sessions: number;
+  price: number;
+  is_active: boolean;
+  services?: { name: string; price: number } | null;
+}
+
+export default function TabSellAndProgress({ packages, onReload }: { packages: PkgSellItem[]; onReload: () => void }) {
   const [subTab, setSubTab] = useState<"SEARCH" | "SELL">("SEARCH");
   
   // Search states

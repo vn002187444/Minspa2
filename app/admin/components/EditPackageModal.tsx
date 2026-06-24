@@ -66,13 +66,13 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: E
       } else {
         setErrorMsg("Lỗi: " + res.error);
       }
-    } catch (err: any) {
-      setErrorMsg("Lỗi: " + err.message);
+    } catch (err: unknown) {
+      setErrorMsg("Lỗi: " + (err instanceof Error ? err.message : 'Lỗi không xác định'));
     }
     setLoading(false);
   };
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({
       ...prev,

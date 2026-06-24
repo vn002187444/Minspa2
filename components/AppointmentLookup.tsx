@@ -51,7 +51,14 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; b
   }
 };
 
-function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }: { apptId: string; existingReview: any; onReviewSubmitted: (rating: number, tags: string[], comment?: string) => void }) {
+interface ExistingReview {
+  id: string;
+  rating: number;
+  quick_tags?: string[] | null;
+  comment?: string | null;
+}
+
+function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }: { apptId: string; existingReview: ExistingReview | null; onReviewSubmitted: (rating: number, tags: string[], comment?: string) => void }) {
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -110,7 +117,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
         </div>
         {existingReview.quick_tags && existingReview.quick_tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 pt-1">
-            {existingReview.quick_tags.map((tag: string, tid: number) => (
+            {existingReview.quick_tags.map((tag, tid) => (
               <span
                 key={tid}
                 className="px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg bg-white border border-[#EADDCD] text-[#8D6E53] shadow-sm"

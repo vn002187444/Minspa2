@@ -19,7 +19,18 @@ import {
   getAutoSeoHistory,
 } from "../actions";
 
-export default function TabSEO({ data, userRole, onReload }: { data: any; userRole: string; onReload: () => void }) {
+interface SeoData {
+  page_title: string;
+  meta_description: string;
+  meta_keywords: string;
+  og_image_url: string;
+  online_discount_enabled: boolean;
+  online_discount_percent: number;
+  default_commission_percent: number;
+  hotline: string;
+}
+
+export default function TabSEO({ data, userRole, onReload }: { data: SeoData | null; userRole: string; onReload: () => void }) {
   const router = useRouter();
   const [subTab, setSubTab] = useState<"METADATA" | "AI_WRITER" | "SAVED_ARTICLES" | "BANNER" | "AUTO_SEO">("METADATA");
   
@@ -267,26 +278,26 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
       } else {
         showToast("Lỗi: " + res.error);
       }
-    } catch (e: any) {
-      showToast("Lỗi hệ thống: " + e.message);
+    } catch (e: unknown) {
+      showToast("Lỗi hệ thống: " + (e instanceof Error ? e.message : 'Lỗi không xác định'));
     }
     setIsPublishingBlog(false);
   };
 
   const [publishingBlogId, setPublishingBlogId] = useState<string | null>(null);
 
-  const handlePublishSavedToBlog = async (art: any) => {
+  const handlePublishSavedToBlog = async (art: { id: string; article: string; imageUrl?: string | null }) => {
     setPublishingBlogId(art.id);
     try {
-      const res = await publishSeoArticleToBlog(art.article, art.imageUrl);
+      const res = await publishSeoArticleToBlog(art.article, art.imageUrl ?? '');
       if (res.success) {
         showToast("Đã đăng bài lên Blog thành công! 🎉");
         window.open('/blog/' + res.slug, '_blank');
       } else {
         showToast("Lỗi: " + res.error);
       }
-    } catch (e: any) {
-      showToast("Lỗi hệ thống: " + e.message);
+    } catch (e: unknown) {
+      showToast("Lỗi hệ thống: " + (e instanceof Error ? e.message : 'Lỗi không xác định'));
     }
     setPublishingBlogId(null);
   };

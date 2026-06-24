@@ -48,6 +48,7 @@ V3 EXECUTION
 | 3 | Không verify RLS + Realtime sau migrations | Thiếu quy trình hậu migration | Audit RLS + Realtime + database.sql ngay sau mỗi migration |
 | 4 | SKILL.md sai số table (ghi 18 nhưng thực tế 31) | Không cập nhật SKILL.md cùng schema | Cập nhật SKILL.md section 4 + 9 mỗi khi thay đổi DB |
 | 5 | Multi-statement SQL không ổn định qua pooler | PgBouncer xử lý `;`-separated statements không đáng tin | Dùng DO block; `run-migrations.mjs` chạy từng câu riêng |
+| 6 | **Schema mismatch: code tham chiếu column không tồn tại trong DB** | Code được viết dựa trên schema giả định, không verify với DB thật | **Rule mới:** Sau mỗi migration, chạy `schema_sync` tool; code review phải check `.select()` vs `database.sql`; thêm `IF NOT EXISTS` vào mọi ALTER TABLE |
 
 ---
 
@@ -414,6 +415,20 @@ V3 EXECUTION
 ---
 
 ---
+
+## 🛠️ V3.16+ — Schema Fix: Thêm columns thiếu vào database
+> **Mục tiêu:** Fix 6 schema mismatches giữa code và database gây lỗi 42703 trên Vercel.
+> **Migration:** `migrations/migrate_fix_schema_mismatches.sql` — tất cả `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+> **Trạng thái:** ✅ Đã chạy migration + cập nhật `database.sql`
+
+| # | Table | Column(s) thiếu | Vì sao thiếu | Fix |
+|---|-------|----------------|-------------|-----|
+| 1 | `attendance` | `note` | Code join `note` nhưng chưa có trong CREATE TABLE | `ALTER TABLE attendance ADD COLUMN IF NOT EXISTS note TEXT;` |
+| 2 | `cash_register` | `is_active` | Soft delete filter `.eq('is_active', true)` nhưng column chưa tồn tại | `ALTER TABLE cash_register ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;` |
+| 3 | `appointments` | `discount_amount` | Financial reports select `discount_amount` | `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0;` |
+| 4 | `appointment_services` | `id`, `price`, `discount_amount` | Revenue report join cần per-service pricing | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...` |
+| 5 | `seo_settings` | `theme_override`, `theme_particles_enabled`, `mascot_enabled`, `mascot_character`, `mascot_sound` | V3.6 (Mascot) + V3.8 (Theme) features thêm column trong code nhưng quên migration | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...` |
+| 6 | `seo_articles` | `status`, `topic_source`, `blog_slug`, `published_at` | V3.12 (Auto SEO) thêm column trong code nhưng quên migration | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...` |
 
 ## 📱 V3.16 — Responsive Optimization (Mobile 320px → 4K 3840px) + iOS Safari Fixes
 > **Mục tiêu:** Fix responsive issues, tối ưu iOS Safari, scale layout cho màn 4K — đảm bảo UI đẹp trên mọi thiết bị (320px → 3840px+).

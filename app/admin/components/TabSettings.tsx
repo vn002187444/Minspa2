@@ -27,6 +27,7 @@ import {
   saveMascotSettings,
   getThemeSettings,
   saveThemeSettings,
+  backupDatabase,
 } from "../actions";
 import { THEME_LIST } from "@/lib/themes";
 import { MASCOT_CHARACTERS } from "@/lib/mascot-themes";
@@ -56,6 +57,11 @@ export default function TabSettings() {
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeMsg, setThemeMsg] = useState<string | null>(null);
   const [themePreview, setThemePreview] = useState<string>('default');
+
+  // Backup
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [backupMsg, setBackupMsg] = useState<string | null>(null);
+  const [backupSql, setBackupSql] = useState<string | null>(null);
 
   // Notification
   const [notifRole, setNotifRole] = useState("STAFF");
@@ -123,6 +129,31 @@ export default function TabSettings() {
     const res = await saveBannerSettings(banner);
     setBannerMsg(res.success ? "Đã lưu banner thành công!" : "Lỗi: " + res.error);
     setBannerSaving(false);
+  };
+
+  const handleBackup = async () => {
+    setBackupLoading(true);
+    setBackupMsg(null);
+    setBackupSql(null);
+    const res = await backupDatabase();
+    if (res.success) {
+      setBackupMsg(`Đã backup ${res.count} bảng thành công!`);
+      setBackupSql(res.sql);
+    } else {
+      setBackupMsg('Lỗi backup: ' + (res as any).error);
+    }
+    setBackupLoading(false);
+  };
+
+  const downloadBackup = () => {
+    if (!backupSql) return;
+    const blob = new Blob([backupSql], { type: 'application/sql' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_${new Date().toISOString().split('T')[0]}.sql`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleSendNotification = async () => {
@@ -441,6 +472,39 @@ export default function TabSettings() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Database Backup */}
+      <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center gap-2 mb-4">
+          <Database className="w-5 h-5 text-gray-600" />
+          <h3 className="font-bold text-gray-900">Sao lưu dữ liệu</h3>
+        </div>
+        <p className="text-sm text-gray-500 mb-4">Xuất tất cả dữ liệu từ database thành file SQL để sao lưu.</p>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBackup}
+            disabled={backupLoading}
+            className="px-4 py-2 bg-[#8D6E53] text-white rounded-lg text-sm font-semibold hover:bg-[#7A5F47] transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            <Database className="w-4 h-4" />
+            {backupLoading ? "Đang backup..." : "Tạo backup"}
+          </button>
+          {backupSql && (
+            <button
+              onClick={downloadBackup}
+              className="px-4 py-2 bg-gray-950 text-white rounded-lg text-sm font-semibold hover:bg-black transition-colors flex items-center gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Tải file SQL
+            </button>
+          )}
+          {backupMsg && (
+            <span className={`text-xs font-medium ${backupMsg.startsWith("Đã") ? "text-green-600" : "text-red-600"}`}>
+              {backupMsg}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Push Notification */}

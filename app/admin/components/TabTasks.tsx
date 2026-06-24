@@ -38,7 +38,7 @@ export default function TabTasks() {
 
   useEffect(() => { loadTasks() }, [statusFilter, assigneeFilter, typeFilter])
 
-  const isOverdue = (task: any) => {
+  const isOverdue = (task: { status: string; deadline?: string | null }) => {
     if (task.status === 'COMPLETED' || task.status === 'CANCELLED') return false
     if (!task.deadline) return false
     return new Date(task.deadline) < new Date()
@@ -130,7 +130,7 @@ export default function TabTasks() {
           <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
             <select value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)} className="px-3 py-2 border-2 border-gray-200 rounded-xl text-xs font-semibold focus:border-pink-500 focus:outline-none">
               <option value="">Tất cả NV</option>
-              {staffs.filter((s: any) => s.role === 'STAFF' || s.role === 'MANAGER').map((s: any) => (
+                {staffs.filter((s) => s.role === 'STAFF' || s.role === 'MANAGER').map((s) => (
                 <option key={s.id} value={s.id}>{s.full_name}</option>
               ))}
             </select>
@@ -431,7 +431,7 @@ function CreateTaskModal({ staffs, onClose, onSaved }: CreateTaskModalProps) {
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold focus:border-pink-500 focus:outline-none"
               >
                 <option value="">Chọn nhân viên...</option>
-                {staffs.filter((s: any) => s.role === 'STAFF' || s.role === 'MANAGER').map((s: any) => (
+              {staffs.filter((s) => s.role === 'STAFF' || s.role === 'MANAGER').map((s) => (
                   <option key={s.id} value={s.id}>{s.full_name}</option>
                 ))}
               </select>

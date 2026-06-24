@@ -6,7 +6,33 @@ import { Package, PenTool, XIcon } from "lucide-react";
 import { saveTreatmentPackage, deleteTreatmentPackageSafely } from "../actions";
 import EditPackageModal from "./EditPackageModal";
 
-export default function TabPackages({ packages, services, userRole, onReload }: { packages: any[]; services: any[]; userRole?: string; onReload: () => void }) {
+interface PkgItem {
+  id: string;
+  name: string;
+  service_id: string;
+  buy_count: number;
+  free_count: number;
+  total_sessions: number;
+  price: number;
+  is_active: boolean;
+  commission_percentage?: number | null;
+  services?: { name: string; price: number } | null;
+}
+
+interface SvcItem {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  duration: number;
+  description?: string | null;
+  image_url?: string | null;
+  commission_percentage?: number | null;
+  commission_amount?: number | null;
+  is_active: boolean;
+}
+
+export default function TabPackages({ packages, services, userRole, onReload }: { packages: PkgItem[]; services: SvcItem[]; userRole?: string; onReload: () => void }) {
   const [editingPackage, setEditingPackage] = useState<any>(null);
 
   const handleDeletePackage = async (id: string, name: string) => {
@@ -18,8 +44,8 @@ export default function TabPackages({ packages, services, userRole, onReload }: 
       } else {
         toast.error("Lỗi: " + res.error);
       }
-    } catch (err: any) {
-      toast.error("Lỗi: " + err.message);
+    } catch (err: unknown) {
+      toast.error("Lỗi: " + (err instanceof Error ? err.message : 'Lỗi không xác định'));
     }
   };
 

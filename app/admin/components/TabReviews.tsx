@@ -3,7 +3,21 @@
 import { format } from 'date-fns';
 import { Star } from 'lucide-react';
 
-export default function TabReviews({ reviews }: { reviews: any[] }) {
+interface ReviewItem {
+  id: string;
+  rating: number;
+  quick_tags?: string[] | null;
+  comment?: string | null;
+  created_at: string;
+  appointments?: {
+    status: string;
+    start_time: string;
+    customers?: { full_name: string; phone: string } | null;
+    users?: { full_name: string } | null;
+  } | null;
+}
+
+export default function TabReviews({ reviews }: { reviews: ReviewItem[] }) {
   return (
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mt-2 md:mt-0">
@@ -71,7 +85,7 @@ export default function TabReviews({ reviews }: { reviews: any[] }) {
                   <p className="text-gray-900 font-bold">Khách: {review.appointments?.customers?.full_name || 'N/A'}<span className="font-mono text-xs text-gray-400 font-normal"> ({review.appointments?.customers?.phone || 'N/A'})</span></p>
                   <p className="text-gray-600">Phục vụ bởi: <strong className="text-gray-900">{review.appointments?.users?.full_name || 'Khác'}</strong></p>
                 </div>
-                {review.quick_tags?.length > 0 && (
+                {review.quick_tags != null && review.quick_tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {review.quick_tags.map((tag: string, i: number) => (
                       <span key={i} className="px-2.5 py-1 text-xs font-semibold bg-gray-50 border border-gray-100 rounded-lg text-gray-600">{tag}</span>

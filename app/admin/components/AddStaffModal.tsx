@@ -21,7 +21,7 @@ export default function AddStaffModal({ onClose, onReload }: AddStaffModalProps)
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);

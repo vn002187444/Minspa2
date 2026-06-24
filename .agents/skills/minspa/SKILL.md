@@ -18,7 +18,7 @@ description: >-
 1. **`database.sql` is the schema source of truth** — keep it in sync with all migration files. When adding tables/columns via migrations, also add them to `database.sql` (tables → RLS → Realtime). See section 10 for the sync checklist.
 2. **Soft delete only** — use `is_active` or `status='cancelled'` columns, never DELETE FROM
 3. **No SELECT \*** — always specify columns in queries
-4. **Cycle Protocol (revised):** Audit first → Read UPGRADE_PLAN.md + AI_MAP.md → Read existing files for conventions → Code → Update docs (PLAN.md, UPGRADE_PLAN.md, SKILL.md) → `npm run build` verify → Commit
+4. **Cycle Protocol (revised):** Audit first → Read UPGRADE_PLAN.md + AI_MAP.md → Read existing files for conventions → **Audit schema mismatches (grep .select() vs database.sql)** → Code → Update docs (PLAN.md, UPGRADE_PLAN.md, SKILL.md) → `npm run build` verify → Commit
 5. **Build check:** Must pass `npm run build` before any commit (TypeScript + 50 static pages). Run after EVERY batch of changes.
 6. **File management:** Prefer editing existing files over creating new ones. Check git log / git diff before creating new files.
 7. **Initial audit required:** At the start of any session, first audit the existing codebase to find orphan features (BE without FE UI), mojibake/encoding issues, and types that don't match reality.
@@ -26,6 +26,11 @@ description: >-
 9. **Types first:** Define interfaces/types before writing logic. Never use `any` as a function parameter type. If Supabase query returns unknown shape, define an interface.
 10. **Form accessibility checklist:** Every form must have `htmlFor` on label + matching `id` on input. Every modal must have `useFocusTrap` with `ref={trapRef}` on the dialog container.
 11. **No orphan migrations:** After applying a migration to Supabase, move the file to `scripts/archive/` or add `.applied` suffix — don't leave hanging files that create confusion about what has been applied.
+11b. **Schema mismatch prevention:** Before writing any Supabase `.select()` query, verify every column name against `database.sql` table definition. If a column doesn't exist in `database.sql`:
+    - Either add it to `database.sql` AND create an `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` migration
+    - Or remove the column reference from the select query
+    - Run `npm run build` to verify
+    - Common sources of mismatch: new features that add columns in code but forget migration files (V3.6 Mascot, V3.8 Theme, V3.12 Auto-SEO, V3.9 Financials all had this issue)
 12. **Single source of truth:** PLAN.md is the permanent project plan. UPGRADE_PLAN.md is the active execution plan. After completing a session, merge the results into PLAN.md and remove from UPGRADE_PLAN.md.
 13. **Supabase features first:** Before writing code for any new feature, check `SUPABASE_FEATURES.md` (root) + `.agents/skills/minspa/SUPABASE_FEATURES.md` to see if Supabase đã có sẵn giải pháp. Ưu tiên pg_cron (schedule), pgmq (queue), Realtime (live update), Storage (file), pg_net (webhook) thay vì tự viết mới.
 14. **PgBouncer compatibility:** Supabase pooler (port 6543) uses PgBouncer transaction mode. Multi-statement SQL may fail silently. Always use `DO $$ ... END $$;` blocks instead of multiple `;`-separated statements for complex operations (publication membership, conditional DDL, etc.). The `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` syntax does NOT pass through PgBouncer — use a DO block with `pg_publication_tables` check instead (NOT `pg_publication_rel` which also hangs through PgBouncer). For running migrations, use `POSTGRES_URL_NON_POOLING` (port 5432) instead of `POSTGRES_URL` (port 6543 pooler) to avoid catalog query issues.
@@ -61,6 +66,12 @@ description: >-
     ```
     Xem `utils/supabase/server.ts` implementation hiện tại.
 22. **Full CI pipeline test:** Sau khi sửa CI, không chỉ verify build local — đợi GitHub Actions run hoàn tất (bao gồm cả Deploy step). Lỗi có thể xuất hiện ở bất kỳ step nào (lint, test, build, deploy). Dùng GitHub API kiểm tra kết quả từng job.
+
+## 3. Schema Mismatch Lesson (Learned Jun 2026)
+- **Root cause:** Developers added columns in code `.select('col1, col2, ...')` without running migration to add those columns to the database. Error 42703 `column X does not exist` on Vercel.
+- **6 mismatches found:** `attendance.note`, `cash_register.is_active`, `appointments.discount_amount`, `appointment_services.{id,price,discount_amount}`, `seo_settings.{theme,mascot}`, `seo_articles.{status,topic_source,blog_slug,published_at}`.
+- **Fix:** Migration file uses `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` (idempotent, safe through pooler), then update `database.sql`.
+- **Prevention:** Rule 11b — always verify `.select()` columns against `database.sql` before writing code. Use `schema_sync` tool periodically. Add schema audit step to Cycle Protocol (Rule 4).
 
 ## 3. CI/CD & Vercel Deployment Lessons (Learned Jun 2026)
 - **sharp runtime error:** `SHARP_IGNORE_GLOBAL_LIBVIPS=1` causes Vercel crash (libvips not found). Remove from build script + vercel.json env. Keep `@img/sharp-linux-x64` in `optionalDependencies`.

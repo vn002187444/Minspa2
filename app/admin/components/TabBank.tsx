@@ -5,7 +5,14 @@ import { CheckCircle2, CreditCard } from 'lucide-react';
 import { saveBankSettings } from '../actions';
 import { VIETNAMESE_BANKS } from '../banks';
 
-export default function TabBank({ data, onReload }: { data: any; onReload: () => void }) {
+interface BankData {
+  bank_id: string;
+  bank_name: string;
+  account_number: string;
+  account_owner: string;
+}
+
+export default function TabBank({ data, onReload }: { data: BankData | null; onReload: () => void }) {
   const [bankId, setBankId] = useState(data?.bank_id || 'vcb');
   const [accountNumber, setAccountNumber] = useState(data?.account_number || '');
   const [accountOwner, setAccountOwner] = useState(data?.account_owner || '');

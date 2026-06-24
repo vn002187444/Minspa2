@@ -11,7 +11,7 @@ import {
 
 interface BottomNavigationProps {
   activeTab?: string;
-  setActiveTab?: (tab: any) => void;
+  setActiveTab?: (tab: string) => void;
 }
 
 export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavigationProps) {

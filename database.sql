@@ -64,6 +64,7 @@ CREATE TABLE appointments (
   status VARCHAR(50) NOT NULL CHECK (status IN ('PENDING_RANDOM', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
   tip_amount DECIMAL(10, 2) DEFAULT 0,
   total_amount DECIMAL(10, 2) DEFAULT 0,
+  discount_amount DECIMAL(10,2) DEFAULT 0,
   commission_amount DECIMAL(10, 2) DEFAULT 0,
   is_package_session BOOLEAN DEFAULT FALSE,
   use_package_id UUID,  -- FK to customer_packages (set after table is created)
@@ -73,8 +74,11 @@ CREATE TABLE appointments (
 
 -- Appointment Services Junction Table
 CREATE TABLE appointment_services (
+  id UUID DEFAULT gen_random_uuid(),
   appointment_id UUID REFERENCES appointments(id) ON DELETE CASCADE,
   service_id UUID REFERENCES services(id) ON DELETE CASCADE,
+  price DECIMAL(10,2),
+  discount_amount DECIMAL(10,2) DEFAULT 0,
   PRIMARY KEY (appointment_id, service_id)
 );
 
@@ -96,6 +100,7 @@ CREATE TABLE attendance (
   status VARCHAR(50) NOT NULL CHECK (status IN ('PRESENT', 'ABSENT')),
   check_in_time TIMESTAMP WITH TIME ZONE,
   check_out_time TIMESTAMP WITH TIME ZONE,
+  note TEXT,
   UNIQUE(staff_id, date)
 );
 
@@ -211,6 +216,11 @@ CREATE TABLE seo_settings (
   online_discount_percent DECIMAL(5,2) DEFAULT 5.00,
   default_commission_percent DECIMAL(5,2) DEFAULT 15.00,
   hotline VARCHAR(20) DEFAULT '0934 323 878',
+  theme_override VARCHAR(50),
+  theme_particles_enabled BOOLEAN DEFAULT TRUE,
+  mascot_enabled BOOLEAN DEFAULT TRUE,
+  mascot_character VARCHAR(50) DEFAULT 'min',
+  mascot_sound BOOLEAN DEFAULT TRUE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   CHECK (id = 1)
 );
@@ -227,6 +237,10 @@ CREATE TABLE seo_articles (
   keywords TEXT DEFAULT '',
   article TEXT DEFAULT '',
   image_url VARCHAR(500) DEFAULT '',
+  status VARCHAR(20) DEFAULT 'draft',
+  topic_source VARCHAR(50) DEFAULT 'manual',
+  blog_slug VARCHAR(255),
+  published_at TIMESTAMP WITH TIME ZONE,
   search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(topic, '') || ' ' || coalesce(keywords, '') || ' ' || coalesce(article, ''))) STORED
 );
 
@@ -458,7 +472,8 @@ CREATE TABLE IF NOT EXISTS cash_register (
   recorded_by UUID REFERENCES users(id),
   recorded_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
   created_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
-  updated_at TIMESTAMPTZ DEFAULT timezone('utc', now())
+  updated_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
+  is_active BOOLEAN DEFAULT TRUE
 );
 
 -- Cron job logs (V3.13)

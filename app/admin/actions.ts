@@ -1342,7 +1342,7 @@ export async function getAttendanceLogs(startDate: string, endDate: string) {
   const { data, error } = await supabase
     .from('attendance')
     .select(`
-      id, staff_id, date, status, check_in_time, check_out_time, note,
+      id, staff_id, date, status, check_in_time, check_out_time,
       users!attendance_staff_id_fkey(full_name, username)
     `)
     .gte('date', startDate)
@@ -2510,4 +2510,57 @@ export async function processPayrollPayment(id: string) {
     recorded_by: session.user.id,
   });
   if (cashError) throw cashError;
+}
+
+// Backup tables in FK-safe order
+const BACKUP_TABLES = [
+  'users', 'customers', 'services', 'treatment_packages', 'staff_skills',
+  'bank_settings', 'banner_settings', 'seo_settings', 'auto_seo_config',
+  'ai_cache', 'rate_limits', 'slot_limits',
+  'appointments', 'customer_packages', 'reviews', 'blogs', 'seo_articles',
+  'notifications', 'tasks', 'cash_register', 'appointment_services',
+  'package_usage_logs', 'audit_logs', 'blog_views', 'blog_stats',
+  'attendance', 'time_slot_locks', 'auto_assign_logs', 'cron_job_logs',
+  'background_tasks', 'salary_payments',
+  'attendance_reminders_log', 'random_booking_reminders_log',
+  'unaccepted_booking_reminders_log', 'uncompleted_booking_reminders_log',
+];
+
+export async function backupDatabase() {
+  await checkAdmin();
+  const supabase = await createClient();
+  const lines: string[] = [];
+  const now = new Date().toISOString();
+
+  lines.push('-- Min Nail & Hair Database Backup');
+  lines.push(`-- Generated: ${now}`);
+  lines.push('-- ================================================');
+  lines.push('');
+
+  for (const table of BACKUP_TABLES) {
+    const { data, error } = await supabase.from(table).select('*');
+    if (error) {
+      lines.push(`-- Skipping ${table}: ${error.message}`);
+      continue;
+    }
+    if (!data || data.length === 0) {
+      lines.push(`-- ${table}: 0 rows`);
+      continue;
+    }
+    lines.push(`-- ${table}: ${data.length} rows`);
+    for (const row of data) {
+      const cols = Object.keys(row);
+      const vals = cols.map(c => {
+        const v = row[c];
+        if (v === null || v === undefined) return 'NULL';
+        if (typeof v === 'boolean') return v ? 'TRUE' : 'FALSE';
+        if (typeof v === 'number') return String(v);
+        return `'${String(v).replace(/'/g, "''")}'`;
+      });
+      lines.push(`INSERT INTO ${table} (${cols.join(', ')}) VALUES (${vals.join(', ')});`);
+    }
+    lines.push('');
+  }
+
+  return { success: true, sql: lines.join('\n'), count: BACKUP_TABLES.length } as const;
 }

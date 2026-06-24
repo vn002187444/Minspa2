@@ -7,6 +7,8 @@ import ThemeProvider from "@/components/ThemeProvider";
 import ThemeBanner from "@/components/ThemeBanner";
 import MascotProvider from "@/components/MascotProvider";
 import GoogleTranslate from "@/components/GoogleTranslate";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import IosErrorHandler from "@/components/IosErrorHandler";
 import { Toaster } from 'sonner';
 import Script from 'next/script';
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -33,6 +35,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  viewportFit: "cover",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -131,6 +134,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
       </head>
         <body className="antialiased font-sans text-gray-900 bg-gray-50">
+           <IosErrorHandler />
            <div className="fixed top-2 right-2 z-[9999]">
              <GoogleTranslate />
            </div>
@@ -178,10 +182,12 @@ export default function RootLayout({
            <SpeedInsights />
            <ThemeProvider>
              <ThemeBanner />
+           <ErrorBoundary>
              <MascotProvider>
-              <main id="main-content">{children}</main>
-              <PwaSupport />
-            </MascotProvider>
+               <main id="main-content">{children}</main>
+               <PwaSupport />
+             </MascotProvider>
+           </ErrorBoundary>
           </ThemeProvider>
           </div>
       </body>

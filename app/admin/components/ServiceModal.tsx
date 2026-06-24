@@ -71,7 +71,7 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
     }
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);

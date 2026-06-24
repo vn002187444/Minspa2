@@ -225,9 +225,24 @@
   }
 }
 
-/* iOS Safari safe text sizing */
+/* iOS Safari safe text sizing & safe area insets */
 html {
   -webkit-text-size-adjust: 100%;
+}
+
+/* Safe area inset CSS variables for iOS notched devices */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Prevent any accidental hidden overflow on html/body */
+html, body {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
 }
 
 /* Smooth and natural scroll behaviors */

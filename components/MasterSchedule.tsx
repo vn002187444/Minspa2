@@ -41,12 +41,12 @@ function getVNTimeStr(dateStr: string) {
   }
 }
 
-function getEffectiveStart(appt: any): string {
+function getEffectiveStart(appt: { actual_start_time?: string | null; start_time: string }): string {
   return appt.actual_start_time || appt.start_time;
 }
 
-function getEffectiveEnd(appt: any): string {
-  return appt.actual_end_time || appt.end_time;
+function getEffectiveEnd(appt: { actual_end_time?: string | null; end_time?: string }): string {
+  return appt.actual_end_time || appt.end_time || '';
 }
 
 interface CascadeAppt {

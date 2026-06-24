@@ -50,8 +50,8 @@ export default function TabPayroll() {
     try {
       const list = await getStaffPayrollInfo();
       setStaffList(list);
-    } catch (e: any) {
-      setError(e.message || 'Lỗi tải danh sách nhân viên');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Lỗi tải danh sách nhân viên');
     }
   };
 
@@ -71,8 +71,8 @@ export default function TabPayroll() {
     try {
       const rows = await calculatePayroll(startDate, endDate);
       setCalculatedRows(rows);
-    } catch (e: any) {
-      setError(e.message || 'Lỗi tính lương');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Lỗi tính lương');
     }
     setLoading(false);
   };
@@ -87,8 +87,8 @@ export default function TabPayroll() {
       setSuccessMsg('Đã lưu bảng lương thành công!');
       setCalculatedRows(null);
       fetchPayments(startDate, endDate);
-    } catch (e: any) {
-      setError(e.message || 'Lỗi lưu bảng lương');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Lỗi lưu bảng lương');
     }
     setSaving(false);
   };
@@ -101,13 +101,13 @@ export default function TabPayroll() {
       await processPayrollPayment(id);
       setSuccessMsg('Đã xác nhận thanh toán!');
       fetchPayments(startDate, endDate);
-    } catch (e: any) {
-      setError(e.message || 'Lỗi thanh toán');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Lỗi thanh toán');
     }
     setLoading(false);
   };
 
-  const openEditModal = (staff: any) => {
+  const openEditModal = (staff: { id: string; baseSalary: number; fullName: string; bankAccount?: string; bankName?: string }) => {
     setEditModal({ staff });
     setEditBaseSalary(staff.baseSalary);
     setEditBankAccount(staff.bankAccount || '');
@@ -123,8 +123,8 @@ export default function TabPayroll() {
       setSuccessMsg(`Đã cập nhật lương ${editModal.staff.fullName}`);
       setEditModal(null);
       loadStaff();
-    } catch (e: any) {
-      setError(e.message || 'Lỗi cập nhật');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Lỗi cập nhật');
     }
   };
 
@@ -145,7 +145,7 @@ export default function TabPayroll() {
     setCalculatedRows(null);
   };
 
-  const netPay = (row: any) => row.baseSalary + row.totalCommission + row.totalTips + row.totalPackageCommission;
+  const netPay = (row: { baseSalary: number; totalCommission: number; totalTips: number; totalPackageCommission: number }) => row.baseSalary + row.totalCommission + row.totalTips + row.totalPackageCommission;
 
   const formatCurrency = (v: number) => new Intl.NumberFormat('vi-VN').format(v) + '₫';
 

@@ -3,13 +3,25 @@
 import { User, Clock, CheckCircle, Info, X, RefreshCw, Edit, Trash2 } from 'lucide-react';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
+interface SelectedAppt {
+  id: string;
+  start_time: string;
+  end_time: string;
+  status: string;
+  total_amount: number;
+  customers?: { full_name?: string; phone?: string } | null;
+  appointment_services?: { services?: { name?: string } | null }[] | null;
+  users?: { full_name?: string } | null;
+  staff_id?: string;
+}
+
 interface AppointmentModalProps {
-  selectedAppt: any;
-  setSelectedAppt: (v: any) => void;
+  selectedAppt: SelectedAppt | null;
+  setSelectedAppt: (v: SelectedAppt | null) => void;
   isEditingSelected: boolean;
   setIsEditingSelected: (v: boolean) => void;
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
-  data: any;
+  data: { staffList?: { id: string; full_name?: string; username?: string }[]; allServices?: { id: string; name?: string; price?: number }[] };
   timeSlots: string[];
   editFullName: string;
   setEditFullName: (v: string) => void;
