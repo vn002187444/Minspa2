@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react'
 import { Sparkles, X } from 'lucide-react'
 import { playPop, playClick } from '@/lib/sounds'
 import { trackMascotEvent } from '@/lib/analytics'
+import { storage } from '@/lib/storage'
 import { getMascotStyle, getCharacterEmoji } from '@/lib/mascot-themes'
 
 interface MascotConfig {
@@ -67,7 +68,7 @@ export default function MascotProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function load() {
       try {
-        const cached = localStorage.getItem(MASCOT_CONFIG_CACHE_KEY)
+        const cached = storage.get(MASCOT_CONFIG_CACHE_KEY)
         const cacheData = cached ? JSON.parse(cached) : null
 
         const res = await fetch('/api/mascot-settings')
@@ -75,12 +76,12 @@ export default function MascotProvider({ children }: { children: ReactNode }) {
           const server = await res.json()
           const merged = { ...defaultConfig, ...server }
           setConfig(merged)
-          localStorage.setItem(MASCOT_CONFIG_CACHE_KEY, JSON.stringify(merged))
+          storage.set(MASCOT_CONFIG_CACHE_KEY, JSON.stringify(merged))
         } else if (cacheData) {
           setConfig(cacheData)
         }
       } catch {
-        const cached = localStorage.getItem(MASCOT_CONFIG_CACHE_KEY)
+        const cached = storage.get(MASCOT_CONFIG_CACHE_KEY)
         if (cached) {
           try { setConfig(JSON.parse(cached)) } catch {}
         }
@@ -91,7 +92,7 @@ export default function MascotProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    const d = localStorage.getItem(MASCOT_GLOBAL_DISMISSED_KEY) === 'true'
+    const d = storage.get(MASCOT_GLOBAL_DISMISSED_KEY) === 'true'
     setDismissed(d)
     if (!d) {
       const path = window.location.pathname
@@ -112,7 +113,7 @@ export default function MascotProvider({ children }: { children: ReactNode }) {
     if (config.soundEnabled) playPop()
     setDismissed(true)
     setShowChat(false)
-    localStorage.setItem(MASCOT_GLOBAL_DISMISSED_KEY, 'true')
+    storage.set(MASCOT_GLOBAL_DISMISSED_KEY, 'true')
     trackMascotEvent('dismiss', { page: window.location.pathname })
   }, [config.soundEnabled])
 

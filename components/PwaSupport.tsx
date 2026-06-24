@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Bell, BellOff, CheckCircle, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { storage } from '@/lib/storage';
 import InstallPWA from './InstallPWA';
 import OfflineIndicator from './OfflineIndicator';
 
@@ -85,7 +86,7 @@ export default function PwaSupport() {
       });
 
       // Post subscription payload to backend
-      const customerId = localStorage.getItem('min_salon_customer_id') || undefined;
+      const customerId = storage.get('min_salon_customer_id') || undefined;
       const subRes = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

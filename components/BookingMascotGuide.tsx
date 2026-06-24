@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Sparkles, X, Lightbulb, ThumbsUp, Star, ChevronRight } from 'lucide-react'
 import { playPop, playClick } from '@/lib/sounds'
+import { storage } from '@/lib/storage'
 import { getMascotStyle } from '@/lib/mascot-themes'
 
 const MASCOT_DISMISSED_KEY = 'min_mascot_dismissed'
@@ -54,7 +55,7 @@ interface BookingMascotGuideProps {
 export default function BookingMascotGuide({ step, currentCategory, onSuggestionClick, soundEnabled = true }: BookingMascotGuideProps) {
   const [dismissed, setDismissed] = useState(() => {
     if (typeof window === 'undefined') return true
-    return localStorage.getItem(MASCOT_DISMISSED_KEY) === 'true'
+    return storage.get(MASCOT_DISMISSED_KEY) === 'true'
   })
   const [showTip, setShowTip] = useState(false)
   const [expression, setExpression] = useState<keyof typeof mascotExpressions>('idle')
@@ -98,7 +99,7 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
   const handleDismiss = useCallback(() => {
     if (soundEnabled) playPop()
     setDismissed(true)
-    localStorage.setItem(MASCOT_DISMISSED_KEY, 'true')
+    storage.set(MASCOT_DISMISSED_KEY, 'true')
   }, [soundEnabled])
 
   const handleSuggestionClick = useCallback((name: string) => {

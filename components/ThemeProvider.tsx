@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { storage } from '@/lib/storage';
 import { detectTheme, getParticleType, getThemeColor, type ThemeName, type ParticleType } from '@/lib/themes';
 import { getWeather, getThemeModifier } from '@/lib/weather';
 import dynamic from 'next/dynamic';
@@ -17,7 +18,7 @@ const CONFIG_KEY = 'min_theme_config';
 function loadConfig(): ThemeConfig {
   if (typeof window === 'undefined') return { override: null, particlesEnabled: true };
   try {
-    const raw = localStorage.getItem(CONFIG_KEY);
+    const raw = storage.get(CONFIG_KEY);
     if (raw) return JSON.parse(raw);
   } catch {}
   return { override: null, particlesEnabled: true };
@@ -50,7 +51,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
           activeTheme = serverConfig.override;
           const newConfig = loadConfig();
           newConfig.override = serverConfig.override;
-          localStorage.setItem(CONFIG_KEY, JSON.stringify(newConfig));
+          storage.set(CONFIG_KEY, JSON.stringify(newConfig));
         }
         if (serverConfig.particlesEnabled !== undefined) {
           setParticlesEnabled(serverConfig.particlesEnabled);

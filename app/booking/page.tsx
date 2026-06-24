@@ -13,6 +13,7 @@ import { submitBooking } from './actions/booking';
 import { enqueue } from '@/lib/offline-queue';
 import { trackEvent, trackMascotEvent } from '@/lib/analytics';
 import { stripHtml } from '@/lib/sanitize';
+import { storage } from '@/lib/storage';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, CloudOff, AlertTriangle } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import LoadingButton from '@/components/LoadingButton';
@@ -68,11 +69,11 @@ export default function BookingPage() {
 
   function getCachedHistory(phone: string): any | null {
     try {
-      const raw = localStorage.getItem(CACHE_HISTORY_PREFIX + phone);
+      const raw = storage.get(CACHE_HISTORY_PREFIX + phone);
       if (!raw) return null;
       const { data, timestamp } = JSON.parse(raw);
       if (Date.now() - timestamp > CACHE_TTL) {
-        localStorage.removeItem(CACHE_HISTORY_PREFIX + phone);
+        storage.remove(CACHE_HISTORY_PREFIX + phone);
         return null;
       }
       return data;
@@ -81,17 +82,17 @@ export default function BookingPage() {
 
   function setCachedHistory(phone: string, data: any) {
     try {
-      localStorage.setItem(CACHE_HISTORY_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
+      storage.set(CACHE_HISTORY_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
     } catch { /* quota exceeded */ }
   }
 
   function getCachedPackages(phone: string): any | null {
     try {
-      const raw = localStorage.getItem(CACHE_PACKAGES_PREFIX + phone);
+      const raw = storage.get(CACHE_PACKAGES_PREFIX + phone);
       if (!raw) return null;
       const { data, timestamp } = JSON.parse(raw);
       if (Date.now() - timestamp > CACHE_PACKAGES_TTL) {
-        localStorage.removeItem(CACHE_PACKAGES_PREFIX + phone);
+        storage.remove(CACHE_PACKAGES_PREFIX + phone);
         return null;
       }
       return data;
@@ -100,14 +101,14 @@ export default function BookingPage() {
 
   function setCachedPackages(phone: string, data: any) {
     try {
-      localStorage.setItem(CACHE_PACKAGES_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
+      storage.set(CACHE_PACKAGES_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
     } catch { /* quota exceeded */ }
   }
 
   function invalidateCustomerCache(phone: string) {
     try {
-      localStorage.removeItem(CACHE_HISTORY_PREFIX + phone);
-      localStorage.removeItem(CACHE_PACKAGES_PREFIX + phone);
+      storage.remove(CACHE_HISTORY_PREFIX + phone);
+      storage.remove(CACHE_PACKAGES_PREFIX + phone);
     } catch { /* ignore */ }
   }
 
@@ -171,7 +172,7 @@ export default function BookingPage() {
   // Restore phone number from previous booking
   useEffect(() => {
     if (typeof window !== 'undefined' && !restoredRef.current && allPackages.length > 0) {
-      const savedPhone = localStorage.getItem('min_salon_customer_phone');
+      const savedPhone = storage.get('min_salon_customer_phone');
       if (savedPhone) {
         restoredRef.current = true;
         setPhone(savedPhone);
@@ -185,7 +186,7 @@ export default function BookingPage() {
             if (result.found) {
               setName(result.name);
               setCustomerId(result.id);
-              localStorage.setItem('min_salon_customer_id', result.id);
+              storage.set('min_salon_customer_id', result.id);
               setActivePackages(result.activePackages || []);
               setGroupedPackages(result.groupedPackages || {});
             }
@@ -214,8 +215,8 @@ export default function BookingPage() {
         setName(foundName);
         setCustomerId(id);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('min_salon_customer_id', id);
-          localStorage.setItem('min_salon_customer_phone', phone);
+          storage.set('min_salon_customer_id', id);
+          storage.set('min_salon_customer_phone', phone);
         }
         setActivePackages(foundPackages || []);
         setGroupedPackages(foundGrouped || {});
@@ -322,9 +323,9 @@ export default function BookingPage() {
        if (res.success) {
          if (typeof window !== 'undefined') {
            invalidateCustomerCache(phone);
-           localStorage.setItem('min_salon_customer_phone', phone);
+           storage.set('min_salon_customer_phone', phone);
            if (res.customerId) {
-             localStorage.setItem('min_salon_customer_id', res.customerId);
+             storage.set('min_salon_customer_id', res.customerId);
            }
          }
          trackMascotEvent('booking_after_suggestion', {});

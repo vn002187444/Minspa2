@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { THEME_BANNERS, getWeatherBanner } from '@/lib/theme-banners';
 import { X } from 'lucide-react';
+import { storage } from '@/lib/storage';
 
 const DISMISS_KEY = 'min_theme_banner_dismissed';
 
@@ -35,7 +36,7 @@ export default function ThemeBanner() {
 
     const bannerId = getBannerId();
     if (bannerId) {
-      const stored = localStorage.getItem(DISMISS_KEY);
+      const stored = storage.get(DISMISS_KEY);
       if (stored === bannerId) {
         setDismissed(true);
         document.body.style.paddingTop = '';
@@ -69,7 +70,7 @@ export default function ThemeBanner() {
     document.body.style.paddingTop = '';
     setTimeout(() => {
       setDismissed(true);
-      localStorage.setItem(DISMISS_KEY, getBannerId());
+      storage.set(DISMISS_KEY, getBannerId());
     }, 300);
   };
 

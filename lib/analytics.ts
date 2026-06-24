@@ -1,3 +1,5 @@
+import { storage } from '@/lib/storage';
+
 type GtagParams = Record<string, string | number | boolean>;
 
 const MASCOT_EVENT_KEY = 'min_mascot_events';
@@ -13,16 +15,16 @@ export const trackMascotEvent = (action: string, extra: Record<string, string | 
   trackEvent('mascot_' + action, extra);
 
   try {
-    const stored = localStorage.getItem(MASCOT_EVENT_KEY);
+    const stored = storage.get(MASCOT_EVENT_KEY);
     const events = stored ? JSON.parse(stored) : [];
     events.push({ action, ...extra, timestamp: Date.now() });
-    localStorage.setItem(MASCOT_EVENT_KEY, JSON.stringify(events.slice(-50)));
+    storage.set(MASCOT_EVENT_KEY, JSON.stringify(events.slice(-50)));
   } catch {}
 };
 
 export function getMascotStats(): { clicks: number; bookings: number; dismissals: number } {
   try {
-    const raw = localStorage.getItem(MASCOT_EVENT_KEY);
+    const raw = storage.get(MASCOT_EVENT_KEY);
     if (!raw) return { clicks: 0, bookings: 0, dismissals: 0 };
     const events = JSON.parse(raw);
     return {

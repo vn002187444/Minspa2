@@ -1,3 +1,5 @@
+import { storage } from '@/lib/storage';
+
 export interface WeatherData {
   temp: number
   condition: 'sunny' | 'cloudy' | 'rainy' | 'snowy' | 'foggy'
@@ -10,7 +12,7 @@ const CACHE_TTL = 30 * 60 * 1000 // 30 phút
 
 export async function getWeather(): Promise<WeatherData | null> {
   try {
-    const cached = localStorage.getItem(CACHE_KEY)
+    const cached = storage.get(CACHE_KEY)
     if (cached) {
       const { data, timestamp } = JSON.parse(cached)
       if (Date.now() - timestamp < CACHE_TTL) return data
@@ -31,7 +33,7 @@ export async function getWeather(): Promise<WeatherData | null> {
       isDay: current.is_day === 1,
     }
 
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ data: weather, timestamp: Date.now() }))
+    storage.set(CACHE_KEY, JSON.stringify({ data: weather, timestamp: Date.now() }))
     return weather
   } catch {
     return null
