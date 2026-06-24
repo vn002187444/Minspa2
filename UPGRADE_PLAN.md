@@ -1,7 +1,7 @@
 # 🚀 KẾ HOẠCH NÂNG CẤP V3 (EXECUTION PLAN)
 
 > **Mục tiêu:** Nâng cấp hệ thống lên chuẩn doanh nghiệp, ưu tiên core operations trước, trải nghiệm & mở rộng sau.
-> **Trạng thái:** V3.1–V3.13 ✅ | Tất cả 13 phiên bản V3 đã hoàn thành ✅ | Migrations consolidated → `database.sql`
+> **Trạng thái:** V3.1–V3.14 ✅ | Tất cả 14 phiên bản V3 đã hoàn thành ✅ | Migrations consolidated → `database.sql`
 
 ---
 
@@ -15,6 +15,7 @@ V3 EXECUTION
 │   ├── V3.3 Booking Intelligence              → Đã xong
 │   ├── V3.4 Task Management                   → Đã xong
 │   └── V3.5 Báo cáo & Thống kê Nâng cao      → Đã xong
+│   └── V3.14 Payroll & Code Cleanup              → Đã xong
 ├── 🎯 TRACK B — EXPERIENCE & MARKETING
 │   ├── V3.6 Interactive Mascot               → Đã xong
 │   ├── V3.7 UX Polish & PWA                  → Đã xong
@@ -25,6 +26,7 @@ V3 EXECUTION
 │   ├── V3.10 Hardening                       → Đã xong
 │   ├── V3.11 Platform Scaling                → Đã xong
 │   └── V3.13 Stability & Polish              → Đã xong
+│   └── V3.14 Payroll & Code Cleanup              → Đã xong
 ```
 
 ## 🧠 V2 Post-Mortem: Lessons Learned cho V3
@@ -298,22 +300,22 @@ V3 EXECUTION
 
 ---
 
-## 🚀 V3.14 — Payroll + Code Cleanup (Kế hoạch)
+## ✅ V3.14 — Payroll + Code Cleanup
 > **Mục tiêu:** Tính lương nhân viên hàng tháng (base salary + commission + tips), dọn technical debt (any types, accessibility).
-> **Trạng thái:** 📋 Đang lên kế hoạch
+> **Trạng thái:** ✅ Đã xong
 
 ### A. 💰 Payroll — Tính lương nhân viên
 
 | # | Task | Trạng thái | Mức độ | Chi tiết |
 |---|------|-----------|--------|----------|
-| A.1 | Migration: thêm `base_salary`, `bank_account` vào `users` | [ ] | 🔴 | `migrations/migrate_payroll.sql` + `database.sql` |
-| A.2 | Tạo bảng `salary_payments` (period, base, commission, tips, bonus, deduction, advance, net, status) + RLS | [ ] | 🔴 | Cột: `staff_id`, `period_start`, `period_end`, `base_salary`, `total_commission`, `total_tips`, `bonus`, `deduction`, `advance`, `net_pay`, `status` (PENDING/PAID), `paid_at`, `paid_by`, `notes` |
-| A.3 | Server action: `calculatePayroll(periodStart, periodEnd)` — query commission + tips + attendance per staff, tính net | [ ] | 🔴 | Gộp commission từ appointments, tips, package sale commission; trừ absent days |
-| A.4 | Server action: `processPayrollPayment(id)` — đánh dấu PAID + ghi vào cash_register | [ ] | 🟠 | Insert `cash_register` record type='CHI' category='LƯƠNG' |
-| A.5 | Admin UI `TabPayroll.tsx`: bảng tính lương tháng, nút Tính/Thanh toán/Xem chi tiết | [ ] | 🔴 | Reuse pattern từ TabCommission — date range, per-staff row, tổng |
-| A.6 | Đăng ký tab Payroll trong admin navigation (drawer + sidebar) | [ ] | 🟠 | `app/admin/page.tsx` — thêm PAYROLL vào tab list |
-| A.7 | Thêm check-out vào Staff portal (tính giờ làm thực tế) | [ ] | 🟡 | `app/staff/actions.ts` — `checkOut()` function, cập nhật `check_out_time` |
-| A.8 | Build + migrate + verify | [ ] | 🔴 | — |
+| 1.1 | Migration: thêm `base_salary`, `bank_account` vào `users` | [x] | 🔴 | `migrations/migrate_payroll.sql` + `database.sql` |
+| 1.2 | Tạo bảng `salary_payments` (period, base, commission, tips, bonus, deduction, advance, net, status) + RLS | [x] | 🔴 | Cột: `staff_id`, `period_start`, `period_end`, `base_salary`, `total_commission`, `total_tips`, `bonus`, `deduction`, `advance`, `net_pay`, `status` (PENDING/PAID), `paid_at`, `paid_by`, `notes` |
+| 1.3 | Server action: `calculatePayroll(periodStart, periodEnd)` — query commission + tips + attendance per staff, tính net | [x] | 🔴 | Gộp commission từ appointments, tips, package sale commission; trừ absent days |
+| 1.4 | Server action: `processPayrollPayment(id)` — đánh dấu PAID + ghi vào cash_register | [x] | 🟠 | Insert `cash_register` record type='CHI' category='LƯƠNG' |
+| 1.5 | Admin UI `TabPayroll.tsx`: bảng tính lương tháng, nút Tính/Thanh toán/Xem chi tiết | [x] | 🔴 | Reuse pattern từ TabCommission — date range, per-staff row, tổng |
+| 1.6 | Đăng ký tab Payroll trong admin navigation (drawer + sidebar) | [x] | 🟠 | `app/admin/page.tsx` — thêm PAYROLL vào tab list |
+| 1.7 | Thêm check-out vào Staff portal (tính giờ làm thực tế) | [x] | 🟡 | Bỏ qua theo yêu cầu người dùng — chỉ giữ điểm danh ngày làm |
+| 1.8 | Build + migrate + verify | [x] | 🔴 | — |
 
 ### B. 🧼 V3.13.6 — Clean `any` types (giới hạn)
 
@@ -339,42 +341,75 @@ V3 EXECUTION
 
 ---
 
-## 🛠️ V3.15 — OpenCode Custom Tools & Agents (Developer Experience)
+## 🛠️ V3.15 — OpenCode Custom Tools & Agents (Developer Experience) ✅
 > **Mục tiêu:** Tạo custom tools + subagents cho OpenCode để tự động hoá CI/CD, migration, build check, env check.
-> **Trạng thái:** 📋 Đang lên kế hoạch
+> **Trạng thái:** ✅ Hoàn thành (24/06/2026)
 
-### A. 🔧 Custom Tools (`<root>/.opencode/tools/`)
+### A. 🔧 Custom Tools (`<root>/.opencode/tools/`) — 11 tools
 
-| # | Tool | Mô tả | Args |
-|---|------|-------|------|
-| A.1 | `ci_check` | Chạy full CI pipeline: lint → typecheck → build. Trả về kết quả từng step + exit code + thời gian. | `step?`: "all" \| "lint" \| "typecheck" \| "build" (default: all) |
-| A.2 | `build_check` | Chạy `npm run build`, report output + thời gian. | Không args |
-| A.3 | `deploy_vercel` | Deploy lên Vercel production. Kiểm tra `vercel.json` tồn tại, dùng token từ args hoặc env `VERCEL_TOKEN`. | `token?`: string |
-| A.4 | `migrate_db` | Chạy migration script an toàn dùng `POSTGRES_URL_NON_POOLING`. | `verify?`: boolean (dry-run) |
-| A.5 | `check_env` | Đọc `.env.example`, so sánh vs `process.env`, báo cáo biến thiếu. | `strict?`: boolean (default: false) |
+| # | Tool | Mô tả | Args | Status |
+|---|------|-------|------|--------|
+| A.1 | `ci_check` | Chạy full CI pipeline: lint → typecheck → build. Trả về kết quả từng step + exit code + thời gian. | `step?`: "all" \| "lint" \| "typecheck" \| "build" (default: all) | [x] |
+| A.2 | `build_check` | Chạy `npm run build`, report output + thời gian. | Không args | [x] |
+| A.3 | `deploy_vercel` | Deploy lên Vercel production. **Build-guard built-in**: tự động chạy CI check trước khi deploy. | `token?`: string, `skipCiCheck?`: boolean | [x] |
+| A.4 | `migrate_db` | Chạy migration script an toàn. Hỗ trợ dry-run (verify mode). | `verify?`: boolean (dry-run), `file?`: string (specific file) | [x] |
+| A.5 | `check_env` | Đọc `.env.example`, so sánh vs `process.env`, báo cáo biến thiếu. | `strict?`: boolean (default: false) | [x] |
+| **A.6** | **`schema_sync`** | **MỚI**: Dump schema từ Supabase → `database.sql`. | `dryRun?`: boolean | [x] |
+| **A.7** | **`env_diff`** | **MỚI**: So sánh 2 chiều `.env.local` vs `.env.example`. | `sync?`: boolean (tự động thêm biến thiếu) | [x] |
+| **A.8** | **`db_health_check`** | **MỚI**: Kiểm tra orphan records trên 10 bảng quan trọng. | `fix?`: boolean | [x] |
+| **A.9** | **`vercel_status`** | **MỚI**: Tra cứu trạng thái deployment qua Vercel API. | `limit?`: number (default: 5) | [x] |
+| **A.10** | **`seo_analyzer`** | **MỚI**: Quét blog articles thiếu meta/slug/image. | `fix?`: boolean | [x] |
+| **A.11** | **`skill_sync`** | **MỚI**: Phân tích database.sql, cập nhật số bảng vào SKILL.md. | `dryRun?`: boolean | [x] |
 
-**Implement:** Mỗi tool là 1 file `.ts` export `{ description, args, execute }`, dùng `child_process.execSync` — không cần thêm dependency.
+### B. 🤖 Custom Subagents (`<root>/.opencode/agents/` + `.opencode/opencode.json`)
 
-### B. 🤖 Custom Subagents (`<root>/opencode.json` hoặc `.opencode/agents/`)
+| # | Agent | Mode | Prompt | Tools gọi | Cross-agent |
+|---|-------|------|--------|-----------|-------------|
+| B.1 | `ci-fix` | subagent | Chuyên CI/CD — phân tích lỗi CI, chạy kiểm tra, deploy | `ci_check`, `build_check`, `deploy_vercel`, `check_env`, `env_diff`, `vercel_status` | Gọi `@db-admin` khi lỗi DB |
+| B.2 | `db-admin` | subagent | Chuyên database — migration, SQL, Supabase | `migrate_db`, `check_env`, `schema_sync`, `db_health_check`, `skill_sync`, `seo_analyzer`, `env_diff` | Gọi `@ci-fix` để verify build sau migration |
 
-| # | Agent | Mode | Prompt | Tools gọi |
-|---|-------|------|--------|-----------|
-| B.1 | `ci-fix` | subagent | Chuyên CI/CD — phân tích lỗi CI, chạy kiểm tra, deploy | `ci_check`, `build_check`, `deploy_vercel`, `check_env` |
-| B.2 | `db-admin` | subagent | Chuyên database — migration, SQL, Supabase | `migrate_db`, `check_env` |
+**Cross-Agent Collaboration:** Agent ci-fix có thể delegate task database cho db-admin qua `@db-admin`, và db-admin có thể gọi lại `@ci-fix` để verify build sau migration. Cả 2 agent đều có permission `task: allow` để launch subagent.
 
 ### C. 📋 Implementation Steps
-
 | # | Task | Trạng thái | Chi tiết |
 |---|------|-----------|----------|
-| C.1 | Tạo thư mục `.opencode/tools/` | [ ] | — |
-| C.2 | Viết `ci_check.ts` | [ ] | Dùng `execSync`, chạy lint → tsc → build, parse output |
-| C.3 | Viết `build_check.ts` | [ ] | Đơn giản: `execSync("npm run build", {cwd: worktree})` |
-| C.4 | Viết `deploy_vercel.ts` | [ ] | Kiểm tra token, chạy `npx vercel --prod --yes` |
-| C.5 | Viết `migrate_db.ts` | [ ] | Chạy `npx tsx scripts/migrate.ts` hoặc `scripts/run-migrations.mjs` |
-| C.6 | Viết `check_env.ts` | [ ] | Parse `.env.example`, so sánh process.env, báo cáo |
-| C.7 | Tạo `.opencode/agents/ci-fix.md` | [ ] | Subagent prompt + permission chỉ cho tools cần |
-| C.8 | Tạo `.opencode/agents/db-admin.md` | [ ] | Subagent prompt + permission |
-| C.9 | Verify: test từng tool bằng `@tool_name` | [ ] | — |
+| C.1 | Tạo thư mục `.opencode/tools/` | [x] | — |
+| C.2 | Viết `ci_check.ts` | [x] | Fix any→unknown, thêm interface StepResult |
+| C.3 | Viết `build_check.ts` | [x] | Fix any→unknown |
+| C.4 | Viết `deploy_vercel.ts` | [x] | Fix token flag + thêm build-guard + any→unknown |
+| C.5 | Viết `migrate_db.ts` | [x] | Implement verify mode + file filter + any→unknown |
+| C.6 | Viết `check_env.ts` | [x] | Fix split regex `\\n`→`/\r?\n/` + any→unknown |
+| C.7 | Tạo `.opencode/agents/ci-fix.md` | [x] | Thêm frontmatter + cross-agent collaboration |
+| C.8 | Tạo `.opencode/agents/db-admin.md` | [x] | Thêm frontmatter + cross-agent collaboration |
+| C.9 | Tạo `.opencode/opencode.json` | [x] | Register agents + permissions + references |
+| C.10 | Viết `schema_sync.ts` | [x] | P1: dump schema từ Supabase |
+| C.11 | Viết `env_diff.ts` | [x] | P1: 2-way env comparison + sync |
+| C.12 | Viết `db_health_check.ts` | [x] | P2: 10 orphan checks trên Supabase |
+| C.13 | Viết `vercel_status.ts` | [x] | P2: Vercel API deployment status |
+| C.14 | Viết `seo_analyzer.ts` | [x] | P2: SEO health scan |
+| C.15 | Viết `skill_sync.ts` | [x] | P2: parse database.sql → SKILL.md count sync |
+| C.16 | Thêm `.opencode/node_modules` vào `.gitignore` | [x] | Tránh commit dependencies |
+| C.17 | `npm run build` verify | [x] | Build pass |
+| C.18 | Commit + tag `v3.15` | [x] | — |
+
+### 📋 Pending Improvements (V3.16+)
+- **Agent nâng cao:**
+  - `seo-writer`: Agent chuyên viết blog SEO tự động dùng Gemini + Supabase.
+  - `data-auditor`: Agent kiểm tra toàn diện dữ liệu (schema drift, index health, constraint violations).
+  - `backup-agent`: Agent tự động backup database + download về NAS.
+- **Tool mới:**
+  - `backup_db`: Backup database qua `pg_dump` và lưu xuống `data/backups/`.
+  - `index_analyzer`: Kiểm tra missing indexes dùng `pg_stat_user_indexes`.
+  - `schema_diff`: So sánh 2 database schema khác nhau (staging vs production).
+  - `performance_report`: Chạy EXPLAIN ANALYZE trên các query chậm.
+- **CI/CD mở rộng:**
+  - `build-guard` nâng cấp: thêm `npm audit`, `dependency-check`, `bundle-size` step.
+  - Auto-create GitHub Release khi tag version mới.
+  - Auto-deploy lên Vercel preview cho mỗi PR branch.
+- **Plugin OpenCode:**
+  - Plugin `opencode-minspa`: tự động inject context (database.sql, .env.example, UPGRADE_PLAN.md) vào mỗi session.
+  - Plugin `opencode-deploy-hook`: chặn commit nếu build fail (pre-commit hook).
+
 
 ---
 

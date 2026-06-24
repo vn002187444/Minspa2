@@ -6,6 +6,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./scripts/test-setup.ts'],
     globals: true,
+    include: ['**/*.{test,spec}.?(c|m)[jt]s?(x)'],
+    exclude: ['node_modules', '.opencode/node_modules', '.opencode/**/node_modules'],
   },
   resolve: {
     alias: {

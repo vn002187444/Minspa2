@@ -1,0 +1,36 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "references": {
+    "docs": {
+      "path": "..",
+      "description": "Use for all project documentation, conventions, and architecture"
+    }
+  },
+
+  "agent": {
+    "ci-fix": {
+      "description": "Chuyên CI/CD — phân tích lỗi CI, chạy kiểm tra, deploy lên Vercel, kiểm tra biến môi trường.",
+      "mode": "subagent",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "task": "allow"
+      }
+    },
+    "db-admin": {
+      "description": "Chuyên database — migration, SQL, Supabase, đồng bộ schema, kiểm tra dữ liệu.",
+      "mode": "subagent",
+      "permission": {
+        "edit": "allow",
+        "bash": "allow",
+        "read": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "task": "allow"
+      }
+    }
+  }
+}
