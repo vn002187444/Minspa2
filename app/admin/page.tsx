@@ -29,6 +29,11 @@ import {
   ListTodo,
   DollarSign,
   Wallet,
+  LayoutDashboard,
+  Briefcase,
+  UserCircle,
+  Sparkles,
+  Server,
 } from "lucide-react";
 import {
   getStaffs,
@@ -58,6 +63,80 @@ const TabTasks = dynamic(() => import('./components/TabTasks'), { loading: () =>
 const TabReports = dynamic(() => import('./components/TabReports'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabCashRegister = dynamic(() => import('./components/TabCashRegister'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabPayroll = dynamic(() => import('./components/TabPayroll'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+
+const menuGroups: {
+  label: string;
+  icon: any;
+  items: { id: string; label: string; icon: any; external?: string }[];
+}[] = [
+  {
+    label: 'Tổng quan',
+    icon: LayoutDashboard,
+    items: [
+      { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
+      { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck },
+      { id: "ORDERS", label: "Đơn hàng", icon: CheckCircle2 },
+      { id: "CUSTOMERS", label: "Khách hàng", icon: User },
+    ],
+  },
+  {
+    label: 'Kinh doanh',
+    icon: Briefcase,
+    items: [
+      { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
+      { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
+      { id: "CASH_REGISTER", label: "Sổ quỹ", icon: DollarSign },
+      { id: "COMMISSION", label: "Báo cáo Hoa hồng", icon: FileText },
+    ],
+  },
+  {
+    label: 'Nhân sự',
+    icon: UserCircle,
+    items: [
+      { id: "STAFF", label: "Nhân sự", icon: Users },
+      { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
+      { id: "PAYROLL", label: "Bảng lương", icon: Wallet },
+    ],
+  },
+  {
+    label: 'Dịch vụ',
+    icon: Sparkles,
+    items: [
+      { id: "SERVICES", label: "Dịch vụ", icon: Settings },
+      { id: "PACKAGES", label: "Gói Liệu Trình", icon: Package },
+      { id: "REVIEWS", label: "Đánh giá", icon: Star },
+    ],
+  },
+  {
+    label: 'Hệ thống',
+    icon: Server,
+    items: [
+      { id: "TASKS", label: "Công việc", icon: ListTodo },
+      { id: "SEO", label: "Cấu hình SEO", icon: Globe },
+      { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
+      { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
+      { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
+      { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
+    ],
+  },
+];
+
+function handleNavClick(item: { id: string; external?: string }, router: any, setActiveTab: (tab: string) => void, closeDrawer?: () => void) {
+  closeDrawer?.();
+  if (item.external) {
+    router.push(item.external);
+  } else if (item.id === "SCHEDULE") {
+    router.push("/admin/schedule");
+  } else if (item.id === "AUDIT_LOGS") {
+    router.push("/admin/audit-logs");
+  } else if (item.id === "ORDERS") {
+    router.push("/admin/orders");
+  } else if (item.id === "CUSTOMERS") {
+    router.push("/admin/customers");
+  } else {
+    setActiveTab(item.id);
+  }
+}
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -197,55 +276,27 @@ export default function AdminDashboard() {
                   <span>Giao diện Thợ</span>
                 </button>
               )}
-              {[
-                { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
-                { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck },
-                { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
-                { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
-                { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
-                { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
-                { id: "STAFF", label: "Nhân sự", icon: Users },
-                { id: "SERVICES", label: "Dịch vụ", icon: Settings },
-                { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
-                {
-                  id: "COMMISSION",
-                  label: "Báo cáo Hoa hồng",
-                  icon: FileText,
-                },
-                { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
-                { id: "REVIEWS", label: "Đánh giá", icon: Star },
-                { id: "SEO", label: "Cấu hình SEO", icon: Globe },
-                { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
-                { id: "CASH_REGISTER", label: "Sổ quỹ", icon: DollarSign },
-                { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
-                { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
-                { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setIsDrawerOpen(false);
-                    if (item.id === "SCHEDULE") {
-                      router.push("/admin/schedule");
-                    } else if (item.id === "AUDIT_LOGS") {
-                      router.push("/admin/audit-logs");
-                    } else if (item.id === "ORDERS") {
-                      router.push("/admin/orders");
-                    } else if (item.id === "CUSTOMERS") {
-                      router.push("/admin/customers");
-                    } else {
-                      setActiveTab(item.id);
-                    }
-                  }}
-                  className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
-                    activeTab === item.id
-                      ? "bg-[#8D6E53] text-white shadow-lg"
-                      : "hover:bg-gray-900 text-gray-400 hover:text-white"
-                  }`}
-                >
-                  <item.icon className="w-5 h-5 shrink-0" />
-                  <span>{item.label}</span>
-                </button>
+              {menuGroups.map((group) => (
+                <div key={group.label} className="mb-1">
+                  <div className="flex items-center gap-2 px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                    <group.icon className="w-3 h-3" />
+                    <span>{group.label}</span>
+                  </div>
+                  {group.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item, router, setActiveTab, () => setIsDrawerOpen(false))}
+                      className={`flex items-center gap-3.5 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer w-full ${
+                        activeTab === item.id
+                          ? "bg-[#8D6E53] text-white shadow-lg"
+                          : "hover:bg-gray-900 text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      <item.icon className="w-4 h-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
               ))}
             </nav>
 
@@ -288,52 +339,27 @@ export default function AdminDashboard() {
               <span>Giao diện Thợ</span>
             </button>
           )}
-          {[
-            { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
-            { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck },
-            { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
-            { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
-            { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
-            { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
-            { id: "STAFF", label: "Nhân sự", icon: Users },
-            { id: "SERVICES", label: "Dịch vụ", icon: Settings },
-            { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
-              { id: "COMMISSION", label: "Báo cáo Hoa hồng", icon: FileText },
-                { id: "TASKS", label: "Công việc", icon: ListTodo },
-                { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
-            { id: "REVIEWS", label: "Đánh giá", icon: Star },
-            { id: "SEO", label: "Cấu hình SEO", icon: Globe },
-            { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
-            { id: "CASH_REGISTER", label: "Sổ quỹ", icon: DollarSign },
-            { id: "PAYROLL", label: "Bảng lương", icon: Wallet },
-            { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
-            { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
-            { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === "SCHEDULE") {
-                  router.push("/admin/schedule");
-                } else if (item.id === "AUDIT_LOGS") {
-                  router.push("/admin/audit-logs");
-                } else if (item.id === "ORDERS") {
-                  router.push("/admin/orders");
-                } else if (item.id === "CUSTOMERS") {
-                  router.push("/admin/customers");
-                } else {
-                  setActiveTab(item.id);
-                }
-              }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === item.id
-                  ? "bg-[#8D6E53] text-white shadow-md"
-                  : "hover:bg-gray-800 hover:text-white"
-              }`}
-            >
-              <item.icon className="w-5 h-5 shrink-0" />
-              <span>{item.label}</span>
-            </button>
+          {menuGroups.map((group) => (
+            <div key={group.label}>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <group.icon className="w-3 h-3" />
+                <span>{group.label}</span>
+              </div>
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavClick(item, router, setActiveTab)}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-xl font-medium text-sm transition-colors whitespace-nowrap cursor-pointer w-full ${
+                    activeTab === item.id
+                      ? "bg-[#8D6E53] text-white shadow-md"
+                      : "hover:bg-gray-800 hover:text-white"
+                  }`}
+                >
+                  <item.icon className="w-4 h-4 shrink-0" />
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="p-4">
