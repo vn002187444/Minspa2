@@ -168,7 +168,7 @@ export default function AdminDashboard() {
             />
             {/* Slide-out Drawer */}
             <motion.div
-              className="fixed top-0 right-0 h-full w-4/5 max-w-[300px] bg-gray-950 text-gray-300 z-[110] shadow-2xl p-6 flex flex-col md:hidden"
+              className="fixed top-0 right-0 h-dvh w-4/5 max-w-[300px] bg-gray-950 text-gray-300 z-[110] shadow-2xl p-6 flex flex-col md:hidden"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 max-h-[100vh] overflow-y-auto relative">
+      <main className="flex-1 p-4 md:p-8 max-h-[100dvh] overflow-y-auto relative">
         <div className="hidden md:flex absolute top-4 right-4 z-20">
           <NotificationBell />
         </div>

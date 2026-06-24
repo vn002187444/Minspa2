@@ -25,6 +25,7 @@ const config: Config = {
       },
       screens: {
         'xxl': '1600px',
+        '4k': '2500px',
       },
       keyframes: {
         blob: {
@@ -64,6 +65,14 @@ const config: Config = {
       },
     },
   },
+  safelist: [
+    'bg-red-50/80', 'border-red-200', 'text-red-400', 'cursor-not-allowed',
+    'bg-amber-500', 'border-amber-500', 'text-white', 'ring-2', 'ring-amber-300',
+    'bg-emerald-50', 'border-emerald-300', 'text-emerald-700',
+    'bg-green-50/70', 'border-green-200', 'text-green-600',
+    'bg-blue-50', 'border-blue-200', 'text-blue-600',
+    'bg-gray-50', 'border-gray-200', 'text-gray-500',
+  ],
   plugins: [],
 };
 export default config;

@@ -87,7 +87,7 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
 
   return (
     <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}>
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto scrollbar-none">
+      <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-[90dvh] overflow-y-auto scrollbar-none">
         <h3 className="font-display font-bold text-lg text-gray-900 mb-6">
           {form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}
         </h3>

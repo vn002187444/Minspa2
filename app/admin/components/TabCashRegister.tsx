@@ -67,7 +67,7 @@ export default function TabCashRegister() {
         </div>
       ) : data ? (
         <>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
               <div className="flex items-center gap-3 mb-2">
                 <ArrowDownCircle className="w-6 h-6 text-emerald-600" />
@@ -93,7 +93,47 @@ export default function TabCashRegister() {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          {/* Mobile card list */}
+          <div className="space-y-3 sm:hidden">
+            {data.items.length === 0 ? (
+              <p className="text-center py-12 text-gray-400 font-semibold">Chưa có giao dịch nào trong tháng này</p>
+            ) : data.items.map((item) => (
+              <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                    item.type === 'THU' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                  }`}>
+                    {item.type === 'THU' ? 'Thu' : 'Chi'}
+                  </span>
+                  <button
+                    onClick={async () => {
+                      if (confirm('Xoá giao dịch này?')) {
+                        await deleteCashTransaction(item.id)
+                        fetchData()
+                      }
+                    }}
+                    className="p-1.5 text-gray-300 hover:text-red-500 transition-colors cursor-pointer"
+                    title="Xoá"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-gray-700">{item.category}</span>
+                  <span className={`font-bold ${item.type === 'THU' ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {item.type === 'THU' ? '+' : '-'}{item.amount.toLocaleString('vi')}đ
+                  </span>
+                </div>
+                <div className="text-xs text-gray-400 flex justify-between">
+                  <span>{item.description || '-'}</span>
+                  <span>{item.recordedBy} · {format(new Date(item.recordedAt), 'dd/MM HH:mm', { locale: vi })}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table */}
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hidden sm:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>

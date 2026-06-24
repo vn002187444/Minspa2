@@ -43,7 +43,8 @@ export default React.memo(function MasterScheduleGrid({
   }
 
   return (
-    <div className="overflow-x-auto border border-[#EADDCD] rounded-2xl scrollbar-thin">
+    <div className="overflow-x-auto border border-[#EADDCD] rounded-2xl scrollbar-thin relative">
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white/80 to-transparent z-10 md:hidden" />
       <table className="w-full border-collapse text-left min-w-[800px] table-fixed">
         <thead>
           <tr className="bg-[#FAF6F0] border-b border-[#EADDCD]">

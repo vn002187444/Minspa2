@@ -755,7 +755,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
 
   return (
     <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[90vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
+      <div className="bg-white w-full h-full md:h-auto md:max-h-[90dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         {/* Header */}
         <div className={`p-5 shrink-0 flex justify-between items-center ${
           step === 6 ? "bg-emerald-500" : step === 5 ? "bg-pink-600" : "bg-gray-900"

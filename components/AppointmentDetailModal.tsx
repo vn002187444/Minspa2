@@ -88,7 +88,7 @@ export default function AppointmentDetailModal({
         </div>
 
         {isEditingSelected ? (
-          <form onSubmit={handleSaveEdit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+          <form onSubmit={handleSaveEdit} className="p-6 space-y-4 max-h-[80dvh] overflow-y-auto">
             <div className="space-y-1">
               <label htmlFor="detail-fullName" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Tên Khách Hàng</label>
               <input

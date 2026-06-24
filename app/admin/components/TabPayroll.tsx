@@ -250,7 +250,42 @@ export default function TabPayroll() {
 
         {calculatedRows && calculatedRows.length > 0 && (
           <>
-            <div className="overflow-x-auto mt-4">
+            {/* Mobile card view */}
+            <div className="mt-4 space-y-3 md:hidden">
+              {calculatedRows.map((row) => (
+                <div key={row.staffId} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <span className="font-bold text-gray-900">{row.fullName}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                    <div className="flex justify-between"><span className="text-gray-400">Lương CB</span><span>{formatCurrency(row.baseSalary)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Hoa hồng</span><span>{formatCurrency(row.totalCommission)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Tip</span><span>{formatCurrency(row.totalTips)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">HH Gói</span><span>{formatCurrency(row.totalPackageCommission)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Tổng đơn</span><span>{formatCurrency(row.totalSales)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Số đơn</span><span>{row.appointmentCount}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Vắng</span><span className={row.absentDays > 0 ? 'text-red-500' : ''}>{row.absentDays > 0 ? row.absentDays : '—'}</span></div>
+                    <div className="flex justify-between font-bold"><span className="text-[#8D6E53]">Thực lãnh</span><span className="text-[#8D6E53]">{formatCurrency(netPay(row))}</span></div>
+                  </div>
+                </div>
+              ))}
+              {/* Mobile totals */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm font-bold">
+                  <div className="flex justify-between"><span className="text-gray-500">Tổng lương</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.baseSalary, 0))}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Tổng HH</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalCommission, 0))}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Tổng Tip</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalTips, 0))}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">Tổng đơn</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalSales, 0))}</span></div>
+                </div>
+                <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between text-[#8D6E53] font-black text-base">
+                  <span>Tổng thực lãnh</span>
+                  <span>{formatCurrency(calculatedRows.reduce((s, r) => s + netPay(r), 0))}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop table */}
+            <div className="overflow-x-auto mt-4 hidden md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">

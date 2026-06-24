@@ -323,7 +323,7 @@ function CreateTaskModal({ staffs, onClose, onSaved }: CreateTaskModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full border border-gray-150 p-6 space-y-5 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl max-w-lg w-full border border-gray-150 p-6 space-y-5 animate-in zoom-in-95 duration-200 max-h-[90dvh] overflow-y-auto">
         <div className="flex items-center justify-between">
           <h3 className="font-extrabold text-lg text-gray-900 flex items-center gap-2">
             <Plus className="w-5 h-5 text-pink-500" />

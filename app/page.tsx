@@ -137,53 +137,53 @@ export default async function Home() {
       <HeaderNav />
 
       {/* Elegant Hero Frame */}
-      <header className="relative py-20 px-6 overflow-hidden bg-gradient-to-b from-[rgb(var(--color-bg))] via-[rgb(var(--color-bg-card))] to-[rgb(var(--color-bg))]">
+      <header className="relative py-12 md:py-20 4k:py-32 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[rgb(var(--color-bg))] via-[rgb(var(--color-bg-card))] to-[rgb(var(--color-bg))]">
         {/* Subtle decorative circles with floating animations */}
-        <div className="absolute top-20 right-[-10%] w-96 h-96 rounded-full theme-border/20 blur-3xl -z-10 animate-float" />
-        <div className="absolute bottom-10 left-[-10%] w-96 h-96 rounded-full theme-border/30 blur-3xl -z-10 animate-float-delayed" />
+        <div className="hidden md:block absolute top-20 right-[-10%] w-96 h-96 4k:w-[32rem] 4k:h-[32rem] rounded-full theme-border/20 blur-3xl -z-10 animate-float" />
+        <div className="hidden md:block absolute bottom-10 left-[-10%] w-96 h-96 4k:w-[32rem] 4k:h-[32rem] rounded-full theme-border/30 blur-3xl -z-10 animate-float-delayed" />
 
-        <div className="max-w-4xl mx-auto text-center space-y-8 animate-slideUp">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[rgb(var(--color-bg-warm))] theme-text-secondary rounded-full text-xs font-bold ring-1 theme-border tracking-widest uppercase">
-            <Sparkles className="w-3.5 h-3.5 theme-text-secondary animate-pulse" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
+        <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto text-center space-y-8 4k:space-y-12 animate-slideUp">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 4k:px-6 4k:py-2 bg-[rgb(var(--color-bg-warm))] theme-text-secondary rounded-full text-xs 4k:text-sm font-bold ring-1 theme-border tracking-widest uppercase">
+            <Sparkles className="w-3.5 h-3.5 4k:w-5 4k:h-5 theme-text-secondary animate-pulse" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
           </div>
 
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-display font-medium text-[#3A2E2B] tracking-tight leading-tight">
+          <div className="space-y-4 4k:space-y-6">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl 4k:text-8xl font-display font-medium text-[#3A2E2B] tracking-tight leading-tight">
               Min Nail & Gội Đầu Dưỡng Sinh
             </h1>
-            <p className="text-[#8D6E53] max-w-2xl mx-auto font-display italic text-lg md:text-xl">
+            <p className="text-[#8D6E53] max-w-2xl xxl:max-w-3xl 4k:max-w-4xl mx-auto font-display italic text-lg md:text-xl 4k:text-3xl">
               &quot;Nơi sắc đẹp bắt đầu từ những phút giây an yên&quot;
             </p>
           </div>
 
-          <div className="h-[2px] w-24 bg-[#D4C3B3] mx-auto relative">
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-[#8D6E53]"></div>
+          <div className="h-[2px] w-24 4k:w-32 bg-[#D4C3B3] mx-auto relative">
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 4k:w-3 4k:h-3 rounded-full bg-[#8D6E53]"></div>
           </div>
 
-          <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base leading-relaxed">
+          <p className="text-gray-600 max-w-2xl xxl:max-w-3xl 4k:max-w-4xl mx-auto text-sm md:text-base 4k:text-lg leading-relaxed">
              Chào mừng bạn đến với <strong>không gian spa sang trọng và ấm cúng</strong> tại Chung cư Lavita Charm. Chúng tôi kiến tạo những liệu trình thư giãn sâu kết hợp chăm sóc làm đẹp chu đáo nhất cho đôi tay, mái tóc và làn da của bạn.
            </p>
 
            {/* Primary CTA */}
-           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 4k:gap-6 pt-2">
               <Link
                 href="/booking"
-                className="inline-flex items-center gap-2 bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-8 py-3.5 rounded-full font-bold text-sm tracking-wider uppercase transition-all shadow-lg hover:shadow-xl active:scale-95 hover-magnetic"
+                className="inline-flex items-center gap-2 bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-8 4k:px-10 4k:py-4 py-3.5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all shadow-lg hover:shadow-xl active:scale-95 hover-magnetic"
               >
-                <Calendar className="w-4 h-4" />
+                <Calendar className="w-4 h-4 4k:w-5 4k:h-5" />
                 Đặt lịch ngay
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 4k:w-5 4k:h-5" />
               </Link>
               <Link
                 href="#services"
-                className="inline-flex items-center gap-2 border-2 border-[#EADDCD] hover:border-[#8D6E53] text-[#5C4033] px-8 py-3.5 rounded-full font-bold text-sm tracking-wider uppercase transition-all active:scale-95 hover-magnetic"
+                className="inline-flex items-center gap-2 border-2 border-[#EADDCD] hover:border-[#8D6E53] text-[#5C4033] px-8 4k:px-10 4k:py-4 py-3.5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all active:scale-95 hover-magnetic"
              >
                Xem dịch vụ
              </Link>
            </div>
 
            {/* Quick Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 4k:gap-6 max-w-3xl xxl:max-w-4xl 4k:max-w-5xl mx-auto pt-4">
             <div className="flex items-center gap-3 bg-white/70 p-4 rounded-2xl border border-[#EADDCD] backdrop-blur-sm hover:border-[#8D6E53] hover-magnetic transition-all cursor-default">
               <div className="w-10 h-10 rounded-full bg-[#FAF0E6] flex items-center justify-center shrink-0 shadow-sm">
                 <MapPin className="w-5 h-5 text-[#8D6E53]" />
@@ -221,21 +221,21 @@ export default async function Home() {
       <HomeMascotBanner />
 
       {/* Unique AI Highlight Section */}
-      <section className="py-8 max-w-7xl xxl:max-w-[1500px] mx-auto px-4">
-        <div className="bg-gradient-to-r from-[#5C4033] to-[#452F25] text-white p-6 md:p-8 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden hover-magnetic transition-all group border border-[#8D6E53]/30">
+      <section className="py-8 max-w-7xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4">
+        <div className="bg-gradient-to-r from-[#5C4033] to-[#452F25] text-white p-4 sm:p-6 md:p-8 4k:p-12 rounded-3xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 4k:gap-10 relative overflow-hidden hover-magnetic transition-all group border border-[#8D6E53]/30">
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full filter blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-700"></div>
           <div className="space-y-2 text-center md:text-left">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-bold uppercase tracking-wider animate-fadeIn">
               <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-pulse" /> Trợ lý ảo AI đắc lực
             </div>
-            <h3 className="text-lg md:text-xl font-display font-medium text-amber-100 group-hover:text-amber-250 transition-colors">Bắt số điện thoại - Nhận đề xuất dịch vụ cá nhân hóa tức thì!</h3>
-            <p className="text-xs md:text-sm text-gray-300 max-w-xl">
+             <h3 className="text-lg md:text-xl 4k:text-2xl font-display font-medium text-amber-100 group-hover:text-amber-250 transition-colors">Bắt số điện thoại - Nhận đề xuất dịch vụ cá nhân hóa tức thì!</h3>
+            <p className="text-xs md:text-sm 4k:text-base text-gray-300 max-w-xl 4k:max-w-2xl">
               Khi khách hàng nhập Số điện thoại, trợ lý ảo thông minh chạy bằng khu học máy **Gemini AI** sẽ tự động nhận diện lịch sử dùng dịch vụ cũ để chào đón và đề xuất dịch vụ phù hợp hoàn hảo nhất cho ngày hôm nay.
             </p>
           </div>
           <Link 
             href="/booking" 
-            className="shrink-0 bg-amber-150 hover:bg-amber-200 text-gray-900 font-bold text-xs tracking-wider uppercase px-6 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group-hover:scale-105 active:scale-95 hover-magnetic"
+            className="shrink-0 bg-amber-150 hover:bg-amber-200 text-gray-900 font-bold text-xs 4k:text-sm tracking-wider uppercase px-6 4k:px-8 py-3.5 4k:py-4 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group-hover:scale-105 active:scale-95 hover-magnetic"
           >
             Trải nghiệm AI Ngay <ChevronRight className="w-4 h-4 animate-bounce" />
           </Link>
@@ -243,8 +243,8 @@ export default async function Home() {
       </section>
 
       {/* Elegant Quick Categories Selectors */}
-      <section className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex flex-wrap items-center justify-center gap-3">
+      <section className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 py-8">
+        <div className="flex flex-wrap items-center justify-center gap-3 4k:gap-4">
           {categoriesOrder.map(cat => {
             if (!groupedServices[cat] || groupedServices[cat].length === 0) return null;
             return (
@@ -261,10 +261,10 @@ export default async function Home() {
       </section>
 
       {/* Services Menu Section */}
-      <main id="services" className="max-w-6xl mx-auto px-4 space-y-16 pb-12">
+      <main id="services" className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 space-y-16 pb-12">
         {/* Treatment Packages Carousel/Grid Section */}
         {treatmentPackages && treatmentPackages.length > 0 && (
-          <section className="bg-gradient-to-r from-amber-50 to-orange-50/70 p-8 md:p-10 rounded-3xl border border-[#EADDCD] space-y-8 shadow-sm">
+          <section className="bg-gradient-to-r from-amber-50 to-orange-50/70 p-5 md:p-10 4k:p-14 rounded-3xl border border-[#EADDCD] space-y-8 4k:space-y-12 shadow-sm">
             <div className="text-center md:text-left space-y-2">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-pink-100/60 text-pink-700 rounded-full text-[10px] font-extrabold tracking-widest uppercase mb-1">
                 ⭐ TIẾT KIỆM TOÀN DIỆN LÊN TỚI 25%
@@ -277,11 +277,11 @@ export default async function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 4k:grid-cols-4 gap-6 4k:gap-8">
               {treatmentPackages.map((pkg) => (
                 <div 
                   key={pkg.id} 
-                  className="bg-white rounded-2xl p-6 border border-[#EADDCD] shadow-sm hover:shadow-md hover-magnetic transition-all flex flex-col justify-between hover:border-pink-350"
+                  className="bg-white rounded-2xl p-6 4k:p-8 border border-[#EADDCD] shadow-sm hover:shadow-md hover-magnetic transition-all flex flex-col justify-between hover:border-pink-350"
                 >
                   <div className="space-y-4">
                     <div className="space-y-1">
@@ -384,7 +384,7 @@ export default async function Home() {
               </div>
 
               {/* Grid of service cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xxl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xxl:grid-cols-4 4k:grid-cols-5 gap-6 4k:gap-8">
                 {items.map((service: any) => {
                   const isDeal = categoryKey === 'Deal Chấn Động';
                   return (
@@ -393,7 +393,7 @@ export default async function Home() {
                       className={`relative bg-white rounded-3xl border ${borderStyle} hover-magnetic hover:border-[#8D6E53]/40 transition-all flex flex-col justify-between overflow-hidden`}
                     >
                       {service.image_url && (
-                        <div className="relative w-full h-48 overflow-hidden bg-gray-50">
+                          <div className="relative w-full h-36 md:h-48 overflow-hidden bg-gray-50">
                           <Image src={service.image_url} alt={service.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover hover:scale-105 transition-transform duration-500" />
                         </div>
                       )}
@@ -473,7 +473,7 @@ export default async function Home() {
       {/* Stats Counter Section */}
       <ScrollReveal>
       <section className="py-16 bg-gradient-to-r from-[#FAF6F0] to-[#FDFBF7] border-y border-[#EADDCD]">
-        <div className="max-w-4xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 4k:gap-12">
           <StatsCounter end={15000} suffix="+" icon="💅" label="Khách hàng đã phục vụ" />
           <StatsCounter end={8} suffix="+" icon="⭐" label="Năm kinh nghiệm" />
           <StatsCounter end={22} icon="💆" label="Dịch vụ làm đẹp cao cấp" />
@@ -487,7 +487,7 @@ export default async function Home() {
 
       {/* Extra Service Guarantee Banner */}
       <section className="py-12 bg-white border-t border-b border-[#EADDCD] my-8">
-        <div className="max-w-4xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+        <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 4k:gap-12 text-center">
           <div className="space-y-2">
             <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
               <Shield className="w-6 h-6 text-[#8D6E53]" />
@@ -514,15 +514,15 @@ export default async function Home() {
 
       {/* Appointment Tracker Portal */}
       <Suspense fallback={<div className="h-32 bg-[#EADDCD]/30 rounded-3xl animate-pulse" />}>
-      <section className="max-w-4xl mx-auto px-4 py-8">
+      <section className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto px-4 py-8">
         <AppointmentLookup />
       </section>
       </Suspense>
 
       {/* Real-time Schedule Tracker Section */}
       <Suspense fallback={<div className="h-64 bg-[#EADDCD]/30 rounded-3xl animate-pulse" />}>
-      <section className="max-w-6xl mx-auto px-4 py-8">
-        <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
+      <section className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 py-8">
+        <div className="text-center max-w-2xl xxl:max-w-3xl 4k:max-w-4xl mx-auto mb-8 4k:mb-12 space-y-2 4k:space-y-4">
           <span className="text-xs tracking-[0.2em] font-bold text-[#8D6E53] uppercase block">MIN TRANSPARENT SCHEDULING</span>
           <h2 className="text-2xl md:text-3xl font-display font-bold text-[#3A2E2B]">Theo Dõi Ca Cao Điểm</h2>
           <p className="text-xs text-gray-500 leading-relaxed">
@@ -534,28 +534,28 @@ export default async function Home() {
       </Suspense>
 
       {/* High-end Styled Final CTA Banner */}
-      <section className="max-w-6xl mx-auto px-4 py-8">
-        <div className="bg-[#5C4033] rounded-3xl p-8 md:p-12 text-center text-white relative overflow-hidden shadow-2xl border border-[#D4C3B3]">
+      <section className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 py-8">
+        <div className="bg-[#5C4033] rounded-3xl p-6 md:p-12 4k:p-16 text-center text-white relative overflow-hidden shadow-2xl border border-[#D4C3B3]">
           <div className="absolute top-0 right-[-10%] w-96 h-96 rounded-full bg-white/5 blur-3xl pointer-events-none"></div>
           <div className="absolute bottom-[-10%] left-[-10%] w-96 h-96 rounded-full bg-white/5 blur-3xl pointer-events-none"></div>
           
-          <div className="relative z-10 max-w-2xl mx-auto space-y-6">
+          <div className="relative z-10 max-w-2xl xxl:max-w-3xl 4k:max-w-4xl mx-auto space-y-6 4k:space-y-8">
             <span className="text-xs tracking-[0.3em] font-bold text-amber-200 uppercase block">HẸN GẶP LẠI BẠN TẠI SALON</span>
-            <h2 className="text-3xl md:text-4xl font-display font-medium text-[#FAF6F0]">Sẵn Sàng Để Tận Hưởng Phút Giây Thư Giãn?</h2>
-            <p className="text-gray-300 text-sm leading-relaxed max-w-lg mx-auto">
+            <h2 className="text-3xl md:text-4xl 4k:text-5xl font-display font-medium text-[#FAF6F0]">Sẵn Sàng Để Tận Hưởng Phút Giây Thư Giãn?</h2>
+            <p className="text-gray-300 text-sm 4k:text-base leading-relaxed max-w-lg 4k:max-w-xl mx-auto">
               Bấm ngay vào nút bên dưới để chọn lịch hẹn, chọn thợ kỹ thuật, đặt giờ chuẩn xác nhất và nhận ngay ưu đãi 5% trực tuyến.
             </p>
             <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link 
                 href="/booking" 
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FAF6F0] hover:bg-[#F5EBE0] text-[#5C4033] px-8 py-4 rounded-full font-bold text-sm tracking-wider uppercase transition-all shadow-lg hover:shadow-xl hover-magnetic"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FAF6F0] hover:bg-[#F5EBE0] text-[#5C4033] px-8 4k:px-10 py-4 4k:py-5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all shadow-lg hover:shadow-xl hover-magnetic"
               >
                 <Calendar className="w-4 h-4 text-[#5C4033]" />
                 ĐẶT LỊCH GỒI & LÀM MÓNG
               </Link>
               <a 
                 href={`tel:${hotline.replace(/\s/g, '')}`} 
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/40 hover:border-white text-white px-8 py-4 rounded-full font-bold text-sm tracking-wider uppercase transition-all hover-magnetic"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/40 hover:border-white text-white px-8 4k:px-10 py-4 4k:py-5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all hover-magnetic"
               >
                 <Phone className="w-4 h-4 text-white" />
                 ĐIỆN THOẠI ĐẶT TRỰC TIẾP
@@ -571,7 +571,7 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="bg-[#3A2E2B] text-white py-12">
-        <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 4k:gap-12">
           <div className="space-y-3">
             <h4 className="font-display font-bold text-lg text-[#EADDCD]">Min Nail &amp; Hair</h4>
             <p className="text-xs text-gray-400">📍 TM14 Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức</p>

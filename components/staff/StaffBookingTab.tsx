@@ -322,7 +322,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
                 key={dateStr}
                 type="button"
                 onClick={() => { setSelectedDate(dateStr); setSelectedTime("") }}
-                className={`shrink-0 py-2.5 px-3.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                className={`shrink-0 py-2.5 px-3 min-w-[44px] min-h-[44px] rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                   isSelected
                     ? "bg-pink-600 text-white border-pink-600"
                     : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"

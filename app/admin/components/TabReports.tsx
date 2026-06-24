@@ -352,7 +352,7 @@ export default function TabReports() {
       {/* Drill-down Modal (5.10) */}
       {drillDown && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-2xl w-full border border-gray-150 p-6 space-y-4 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full border border-gray-150 p-6 space-y-4 animate-in zoom-in-95 duration-200 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-lg text-gray-900">{drillDown.label}</h3>
               <button onClick={() => setDrillDown(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><ChevronDown className="w-5 h-5 rotate-180" /></button>

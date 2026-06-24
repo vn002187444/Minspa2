@@ -383,7 +383,7 @@ export default function BookingPage() {
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-2 sm:p-4 lg:py-12 font-sans text-[#3A2E2B]">
-       <div className="max-w-xl lg:max-w-6xl xxl:max-w-7xl w-full bg-white rounded-3xl shadow-xl overflow-hidden min-h-[520px] flex flex-col border border-[#EADDCD] transition-all duration-300">
+       <div className="max-w-xl lg:max-w-6xl xxl:max-w-7xl w-full bg-white rounded-3xl shadow-xl overflow-hidden min-h-[300px] md:min-h-[520px] flex flex-col border border-[#EADDCD] transition-all duration-300">
         
         {/* Header Steps */}
         <div className="bg-[#5C4033] p-5 sm:p-6 text-[#FAF6F0] shrink-0 relative overflow-hidden border-b border-[#EADDCD]">

@@ -470,7 +470,8 @@ export default function StaffDashboard() {
         </div>
 
         {/* Desktop Navigation - Hidden on mobile */}
-         <div className="hidden md:flex px-4 max-w-7xl xxl:max-w-[1500px] mx-auto border-t border-gray-100 gap-6">
+         <div className="hidden md:flex px-4 max-w-7xl xxl:max-w-[1500px] mx-auto border-t border-gray-100 gap-6 overflow-x-auto flex-nowrap relative">
+          <div className="pointer-events-none sticky right-0 w-8 bg-gradient-to-l from-white to-transparent z-10 ml-auto shrink-0" />
           {[
             { id: "SCHEDULE", label: "Lịch trình cá nhân", icon: Clock },
             { id: "MASTER", label: "Lịch làm việc của Tiệm", icon: Activity },
@@ -711,7 +712,7 @@ export default function StaffDashboard() {
               }`}
             >
               <Icon
-                className={`w-5.5 h-5.5 mb-1 transition-transform ${isActive ? "scale-110 text-pink-600" : "text-gray-400"}`}
+                className={`w-6 h-6 mb-1 transition-transform ${isActive ? "scale-110 text-pink-600" : "text-gray-400"}`}
               />
               <span
                 className={`text-[10px] uppercase font-bold tracking-tight whitespace-nowrap`}
@@ -1023,7 +1024,7 @@ function AppointmentCard({
 function HistoryModal({ history, customerName, onClose }: any) {
   return (
     <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
+      <div className="bg-white w-full h-full md:h-auto md:max-h-[85dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
           <h3 className="font-display font-medium text-lg text-gray-900">
             Lịch sử làm đẹp: {customerName}
@@ -1228,7 +1229,7 @@ function CompletedDetailModal({ appt, allServices, onClose }: any) {
 
   return (
     <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
+      <div className="bg-white w-full h-full md:h-auto md:max-h-[85dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
           <h3 className="font-display font-medium text-lg text-gray-900">Chi tiết đơn hàng</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">
@@ -1315,7 +1316,7 @@ function EditTipModal({ appt, onClose, onSaved }: any) {
 
   return (
     <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
-      <div className="bg-white w-full h-full md:h-auto md:max-h-[85vh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
+      <div className="bg-white w-full h-full md:h-auto md:max-h-[85dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
           <h3 className="font-display font-medium text-lg text-gray-900">Sửa tiền Tip</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer">

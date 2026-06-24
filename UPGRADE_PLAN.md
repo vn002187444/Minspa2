@@ -413,6 +413,92 @@ V3 EXECUTION
 
 ---
 
+---
+
+## 📱 V3.16 — Responsive Optimization (Mobile 320px → 4K 3840px) + iOS Safari Fixes
+> **Mục tiêu:** Fix responsive issues, tối ưu iOS Safari, scale layout cho màn 4K — đảm bảo UI đẹp trên mọi thiết bị (320px → 3840px+).
+> **Trạng thái:** ✅ Hoàn thành
+> **Phát hiện:** Audit responsive ngày 24/06/2026 — 10 responsive issues + 6 iOS critical issues + 4K scaling
+
+### A. 📱 Responsive Audit (320px → 1600px)
+
+#### 🔴 Critical (Table overflow — không scroll được)
+
+| # | Issue | File | Fix |
+|---|-------|------|-----|
+| 1 | TabPayroll: 9-column table không có mobile card view → vỡ layout trên <768px | `app/admin/components/TabPayroll.tsx` | Thêm mobile card view (ẩn table, show card) |
+| 2 | TabCashRegister: 7-column table + 3-column stat grid → vỡ layout <640px | `app/admin/components/TabCashRegister.tsx` | Thêm mobile card view + stat grid `grid-cols-1 sm:grid-cols-3` |
+| 3 | MasterScheduleGrid: `min-w-[800px]` → overflow ẩn, mất cột cuối | `components/MasterScheduleGrid.tsx:47` | Scroll gradient indicators + `snap-x` |
+
+#### 🟠 Medium
+
+| # | Issue | File | Fix |
+|---|-------|------|-----|
+| 4 | `w-5.5 h-5.5` — không phải Tailwind class hợp lệ → icon ẩn trên mobile | `app/staff/page.tsx:714` | Đổi thành `w-6 h-6` |
+| 5 | Staff nav desktop: 8-9 items dính chặt, không overflow-x-auto | `app/staff/page.tsx:473` | Thêm `overflow-x-auto` + `flex-nowrap` + fade indicators |
+| 6 | Service card image `h-48` quá cao trên 320px | `app/page.tsx:396` | `h-36 md:h-48` |
+| 7 | Hero `py-20` chiếm 40% viewport 320px | `app/page.tsx:140` | `py-12 md:py-20` |
+
+#### 🟢 Minor
+
+| # | Issue | File | Fix |
+|---|-------|------|-----|
+| 8 | Touch target date button ~40px (<44px WCAG) | `components/staff/StaffBookingTab.tsx:325` | `min-w-[44px] min-h-[44px]` |
+| 9 | `min-h-[520px]` → whitespace thừa trên mobile 320px | `app/booking/page.tsx:386` | `min-h-[300px] md:min-h-[520px]` |
+
+### B. 🍎 iOS Safari Critical Fixes
+
+| # | Issue | File | Fix | Severity |
+|---|-------|------|-----|----------|
+| 1 | `overflow-x-hidden` trên `<body>` phá vỡ `position: sticky` trên iOS | `app/layout.tsx:133` | Move `overflow-x-hidden` vào wrapper `<div>`, fixed elements là body con trực tiếp | 🔴 |
+| 2 | `max-h-[Nvh]` trên 11 components → iOS tính sai khi address bar hiện | `admin/page.tsx` + 8 modals | `vh` → `dvh` (dynamic viewport height) | 🔴 |
+| 3 | `backdrop-blur` (22×) không hoạt động trên iOS < 15 | `globals.css` + all modals | `@supports not (backdrop-filter)` fallback solid bg | 🔴 |
+| 4 | `-webkit-overflow-scrolling: touch` deprecated từ iOS 13+ | `app/globals.css:236` | Xoá property | 🟠 |
+| 5 | Dynamic Tailwind classes không được generate → thiếu CSS | `tailwind.config.ts` | Thêm `safelist` cho class patterns | 🔴 |
+| 6 | Thiếu `-webkit-text-size-adjust` → text auto-scale trên iOS | `app/globals.css` | `html { -webkit-text-size-adjust: 100% }` | 🟠 |
+
+### C. 🖥️ 4K Ultra-wide Optimization (2500px+)
+
+| # | Change | File | Chi tiết |
+|---|--------|------|----------|
+| 1 | Thêm breakpoint `4k: 2500px` | `tailwind.config.ts` | Breakpoint mới cho màn ultra-wide |
+| 2 | Container mở rộng dần | `app/page.tsx` | `max-w-4xl → xxl:max-w-5xl → 4k:max-w-6xl` (hero), `max-w-6xl → xxl:1600px → 4k:1920px` (sections) |
+| 3 | Service grid tăng cột | `app/page.tsx:387` | `xxl:grid-cols-4 4k:grid-cols-5` |
+| 4 | Package grid tăng cột | `app/page.tsx:280` | `4k:grid-cols-4` |
+| 5 | Hero typography scale | `app/page.tsx` | `4k:text-8xl` heading, `4k:text-3xl` subtitle, `4k:text-lg` body |
+| 6 | Spacing scale | `app/page.tsx` | `4k:py-32` hero, `4k:p-14` sections, `4k:p-16` CTA |
+| 7 | Decorative elements scale | `app/page.tsx` | `4k:w-[32rem]` circles, `4k:w-3 h-3` divider dot |
+
+### 🛠️ Implementation
+
+| # | Task | Trạng thái | File |
+|---|------|-----------|------|
+| A1 | Fix Hero responsive: `py-20` → `py-12 md:py-20`, ẩn decorative circles trên mobile | [x] | `app/page.tsx` |
+| A2 | Service card image: `h-48` → `h-36 md:h-48` | [x] | `app/page.tsx` |
+| A3 | Treatment packages: mobile padding `p-5 md:p-10` | [x] | `app/page.tsx` |
+| A4 | Final CTA: mobile padding `p-6 md:p-12` | [x] | `app/page.tsx` |
+| A5 | AI highlight: mobile padding `p-4 md:p-8` | [x] | `app/page.tsx` |
+| A6 | Fix `w-5.5 h-5.5` → `w-6 h-6` | [x] | `app/staff/page.tsx` |
+| A7 | TabPayroll mobile card view | [x] | `app/admin/components/TabPayroll.tsx` |
+| A8 | TabCashRegister mobile card view + stat grid | [x] | `app/admin/components/TabCashRegister.tsx` |
+| A9 | MasterScheduleGrid scroll indicators | [x] | `components/MasterScheduleGrid.tsx` |
+| A10 | Staff nav `overflow-x-auto` | [x] | `app/staff/page.tsx` |
+| A11 | Staff booking date touch target 44×44 | [x] | `components/staff/StaffBookingTab.tsx` |
+| A12 | Booking page `min-h-[300px] md:min-h-[520px]` | [x] | `app/booking/page.tsx` |
+| A13 | HeaderNav mobile compact logo + tối ưu CTA | [x] | `components/HeaderNav.tsx` |
+| B1 | iOS: `overflow-x-hidden` khỏi `<body>` → wrapper div | [x] | `app/layout.tsx` |
+| B2 | iOS: `vh` → `dvh` (11 files: admin, 8 modals, staff) | [x] | `app/admin/page.tsx`, modals |
+| B3 | iOS: `backdrop-blur` fallback with `@supports` | [x] | `app/globals.css` |
+| B4 | iOS: xoá `-webkit-overflow-scrolling: touch` | [x] | `app/globals.css` |
+| B5 | iOS: Tailwind `safelist` cho dynamic classes | [x] | `tailwind.config.ts` |
+| B6 | iOS: `-webkit-text-size-adjust: 100%` | [x] | `app/globals.css` |
+| C1 | 4K breakpoint `4k: 2500px` | [x] | `tailwind.config.ts` |
+| C2 | 4K container scaling (hero, sections, CTA, footer) | [x] | `app/page.tsx` |
+| C3 | 4K grid columns (services: 5, packages: 4) | [x] | `app/page.tsx` |
+| C4 | 4K typography + spacing | [x] | `app/page.tsx` |
+
+---
+
 ## 📋 NGUYÊN TẮC MIGRATION DATABASE (áp dụng cho mọi V3.x)
 
 ### Checklist khi thêm bảng mới

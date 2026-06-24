@@ -82,7 +82,7 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: E
 
   return (
     <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" role="dialog" aria-modal="true" aria-label={pkg.id ? "Sửa gói liệu trình" : "Thêm gói mới"}>
-      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden shadow-2xl flex flex-col max-h-[90dvh]">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
           <h3 className="text-xl font-bold text-gray-900 font-display">
             {pkg.id ? "Sửa Gói Liệu Trình" : "Thêm Gói Mới"}

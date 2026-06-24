@@ -161,7 +161,7 @@ export default function CustomerCRM() {
       {/* 2. GIAO DIỆN HỒ SƠ CHI TIẾT & PHÂN TÍCH (Modal) */}
       {selectedCustomerId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative">
+          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90dvh] overflow-y-auto shadow-2xl relative">
             <div className="sticky top-0 bg-white/95 backdrop-blur z-10 p-6 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h3 className="text-2xl font-bold font-display text-gray-900">

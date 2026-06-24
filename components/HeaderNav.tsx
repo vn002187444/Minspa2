@@ -64,16 +64,16 @@ export default function HeaderNav() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
     >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 md:h-20 flex items-center justify-between">
         
-        {/* Brand / Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-[#c08063] rounded-full flex items-center justify-center shadow-md border border-[#EADDCD]">
-            <span className="font-display text-xl font-bold text-[#F5EBE0] tracking-wider">M</span>
+        {/* Brand / Logo — compact on mobile, full on desktop */}
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="w-9 h-9 md:w-10 md:h-10 bg-[#c08063] rounded-full flex items-center justify-center shadow-md border border-[#EADDCD]">
+            <span className="font-display text-lg md:text-xl font-bold text-[#F5EBE0] tracking-wider">M</span>
           </div>
-          <div>
-            <span className="font-display font-black text-xl tracking-wider text-[#3A2E2B] uppercase block">MIN</span>
-            <span className="text-[10px] tracking-[0.25em] text-[#8D6E53] uppercase font-bold block -mt-1">Nail & Hair Salon</span>
+          <div className="hidden sm:block">
+            <span className="font-display font-black text-lg md:text-xl tracking-wider text-[#3A2E2B] uppercase block">MIN</span>
+            <span className="text-[9px] md:text-[10px] tracking-[0.25em] text-[#8D6E53] uppercase font-bold block -mt-1">Nail & Hair Salon</span>
           </div>
         </div>
         
@@ -141,17 +141,17 @@ export default function HeaderNav() {
         </button>
 
         {/* CTAs */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 md:gap-3">
           <NotificationBell />
           <Link 
             href="/booking" 
-            className="text-xs font-bold tracking-widest text-[#FFF] bg-[#8D6E53] hover:bg-[#3A2E2B] px-5 py-3 rounded-full transition-all flex items-center gap-2 shadow-md hover:shadow-lg uppercase"
+            className="text-[10px] md:text-xs font-bold tracking-widest text-[#FFF] bg-[#8D6E53] hover:bg-[#3A2E2B] px-3 md:px-5 py-2 md:py-3 rounded-full transition-all flex items-center gap-1 md:gap-2 shadow-md hover:shadow-lg uppercase"
           >
-            Booking <ArrowRight className="w-4 h-4 text-[#F5EBE0]" />
+            Booking <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F5EBE0]" />
           </Link>
           <Link 
             href="/login" 
-            className="text-xs font-semibold text-[#5C4033] hover:text-[#3A2E2B] bg-[#EADDCD]/50 hover:bg-[#EADDCD] px-3.5 py-3 rounded-full transition-all"
+            className="hidden sm:inline-flex text-xs font-semibold text-[#5C4033] hover:text-[#3A2E2B] bg-[#EADDCD]/50 hover:bg-[#EADDCD] px-3 py-2.5 md:px-3.5 md:py-3 rounded-full transition-all"
           >
             Nhân Viên
           </Link>

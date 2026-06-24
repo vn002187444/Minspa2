@@ -130,12 +130,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
       </head>
-       <body className="antialiased font-sans text-gray-900 bg-gray-50 overflow-x-hidden">
-          <div className="fixed top-2 right-2 z-[9999]">
-            <GoogleTranslate />
-          </div>
-          <SkipLink />
-         <Script
+        <body className="antialiased font-sans text-gray-900 bg-gray-50">
+           <div className="fixed top-2 right-2 z-[9999]">
+             <GoogleTranslate />
+           </div>
+           <SkipLink />
+          <div className="overflow-x-hidden">
+          <Script
            src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
            strategy="afterInteractive"
          />
@@ -182,6 +183,7 @@ export default function RootLayout({
               <PwaSupport />
             </MascotProvider>
           </ThemeProvider>
+          </div>
       </body>
     </html>
   );

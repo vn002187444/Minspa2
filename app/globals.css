@@ -225,6 +225,11 @@
   }
 }
 
+/* iOS Safari safe text sizing */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 /* Smooth and natural scroll behaviors */
 html {
   scroll-behavior: smooth;
@@ -233,7 +238,14 @@ html {
 /* App-Like Mobile UX Enhancements */
 body {
   overscroll-behavior-y: none; /* Prevents overall rubberbanding page bounce */
-  -webkit-overflow-scrolling: touch; /* Smooth inertial scrolling on iOS devices */
+}
+
+/* backdrop-blur fallback for iOS < 15 */
+@supports not (backdrop-filter: blur(1px)) {
+  .backdrop-blur-sm, .backdrop-blur, .backdrop-blur-md, .backdrop-blur-lg,
+  .backdrop-blur-xl, .backdrop-blur-2xl, .backdrop-blur-3xl {
+    background-color: rgba(250, 246, 240, 0.95) !important;
+  }
 }
 
 /* Eliminate browser specific highlight overlays and selection issues on interactive taps */
@@ -243,6 +255,7 @@ select,
 input,
 [role="button"] {
   -webkit-tap-highlight-color: transparent !important;
+  touch-action: manipulation;
 }
 
 /* Prevent accidental visual text-selection on pure click/tap elements */
