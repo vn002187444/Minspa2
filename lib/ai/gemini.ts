@@ -6,7 +6,7 @@ const MODELS = {
   fallback: "gemini-2.5-flash-lite",
 } as const;
 
-const TIMEOUT_MS = 8000;
+const TIMEOUT_MS = 12000;
 
 interface JsonSchema {
   type: string;
