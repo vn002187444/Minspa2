@@ -41,21 +41,25 @@ export default function PwaSupport() {
 
     // 2. Register Service Worker
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => {
-          console.log('[PWA] Service Worker registered:', reg.scope);
-          // Listen for background sync trigger from SW
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data?.type === 'trigger-sync') {
-              window.dispatchEvent(new Event('online'));
+      try {
+        navigator.serviceWorker.register('/sw.js')
+          .then((reg) => {
+            console.log('[PWA] Service Worker registered:', reg.scope);
+            // Listen for background sync trigger from SW
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              if (event.data?.type === 'trigger-sync') {
+                window.dispatchEvent(new Event('online'));
+              }
+            });
+            // Register background sync for offline queue if supported
+            if ('sync' in reg) {
+              (reg as any).sync.register('sync-queue').catch(() => {});
             }
-          });
-          // Register background sync for offline queue if supported
-          if ('sync' in reg) {
-            (reg as any).sync.register('sync-queue').catch(() => {});
-          }
-        })
-        .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
+          })
+          .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
+      } catch (e) {
+        console.warn('[PWA] Service Worker registration blocked by browser security policy:', e);
+      }
     }
 
     // 3. Notification triggers — via DB Webhook + background-tasks, không cần polling

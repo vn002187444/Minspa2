@@ -281,6 +281,7 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 | 3 | Quên kiểm tra RLS + Realtime sau migrations | Không có quy trình verify hậu migration | Thêm rule #15 vào SKILL.md — audit RLS + Realtime + database.sql sau mỗi migration |
 | 4 | Số table trong SKILL.md sai (ghi 18, thực tế 34) | Không cập nhật SKILL.md khi thêm bảng | Cập nhật section 4 + 9 mỗi khi thay đổi schema |
 | 5 | Multi-statement SQL không đáng tin qua PgBouncer | Pooler transaction mode xử lý multi-statement không ổn định | Dùng DO block thay vì `;`-separated statements; script `run-migrations.mjs` chạy từng câu riêng |
+| 6 | **SecurityError on iOS Safari (Private Browsing / SW)** | Gọi `.register()` hoặc `.subscribe()` tự động ngoài tương tác người dùng | Bao bọc `.register()` và `indexedDB.open` trong `try-catch`, chỉ gọi `.subscribe()` qua sự kiện click. |
 
 ### 10. Quy tắc bổ sung cho migrations
 

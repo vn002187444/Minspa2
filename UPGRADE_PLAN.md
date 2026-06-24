@@ -49,6 +49,7 @@ V3 EXECUTION
 | 4 | SKILL.md sai số table (ghi 18 nhưng thực tế 31) | Không cập nhật SKILL.md cùng schema | Cập nhật SKILL.md section 4 + 9 mỗi khi thay đổi DB |
 | 5 | Multi-statement SQL không ổn định qua pooler | PgBouncer xử lý `;`-separated statements không đáng tin | Dùng DO block; `run-migrations.mjs` chạy từng câu riêng |
 | 6 | **Schema mismatch: code tham chiếu column không tồn tại trong DB** | Code được viết dựa trên schema giả định, không verify với DB thật | **Rule mới:** Sau mỗi migration, chạy `schema_sync` tool; code review phải check `.select()` vs `database.sql`; thêm `IF NOT EXISTS` vào mọi ALTER TABLE |
+| 7 | **SecurityError on iOS Safari (Private Browsing / SW)** | Gọi `.register()` hoặc `.subscribe()` tự động ngoài tương tác người dùng | **Sửa đổi:** Bao bọc `.register()` và `indexedDB.open` trong `try-catch`, chỉ gọi `.subscribe()` qua sự kiện click. |
 
 ---
 
