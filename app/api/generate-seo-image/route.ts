@@ -66,25 +66,11 @@ async function searchUnsplash(query: string): Promise<string | null> {
 }
 
 async function tryGeminiImage(prompt: string, ai: GoogleGenAI): Promise<string | null> {
-  console.log(`[IMAGE GENERATION] Trying Gemini for prompt: "${prompt}"`);
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-exp-image-generation",
-      contents: prompt,
-      config: {
-        responseModalities: ["Text", "Image"],
-      },
-    });
-    const part = response.candidates?.[0]?.content?.parts?.find((p: any) => p.inlineData?.data);
-    if (part?.inlineData?.data) {
-      const mimeType = part.inlineData.mimeType || "image/png";
-      return `data:${mimeType};base64,${part.inlineData.data}`;
-    }
-  } catch (err: unknown) {
-    console.warn("[GEMINI IMAGE] Failed:", err instanceof Error ? err.message : 'Unknown error');
-  }
+  // Gemini image generation is currently unstable or deprecated in public API.
+  // We fallback to Unsplash and Stock images for stability.
   return null;
 }
+
 
 export async function POST(req: NextRequest) {
   try {
