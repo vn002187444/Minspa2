@@ -6,7 +6,22 @@ import { Key } from "lucide-react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { updateStaff, resetStaffPassword, deleteStaffSafely } from "../actions";
 
-export default function EditStaffModal({ staff, userRole, onClose, onReload }: any) {
+interface EditStaffModalStaff {
+  id: string;
+  full_name: string;
+  username: string;
+  cccd: string;
+  role: string;
+}
+
+interface EditStaffModalProps {
+  staff: EditStaffModalStaff;
+  userRole?: string;
+  onClose: () => void;
+  onReload: () => void;
+}
+
+export default function EditStaffModal({ staff, userRole, onClose, onReload }: EditStaffModalProps) {
   const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
     fullName: staff.full_name || "",

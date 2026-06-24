@@ -226,8 +226,9 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
 
       {/* Text Comment Input Area */}
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase font-bold text-[#8D6E53] tracking-wider block">Ý kiến đóng góp khác (Nếu có):</label>
+        <label htmlFor="lookup-comment" className="text-[10px] uppercase font-bold text-[#8D6E53] tracking-wider block">Ý kiến đóng góp khác (Nếu có):</label>
         <textarea
+          id="lookup-comment"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder="Nhập ý kiến đóng góp của bạn để salon cải thiện chất lượng dịch vụ tốt hơn..."

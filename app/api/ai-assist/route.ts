@@ -250,8 +250,8 @@ ${backlinkRulesStr}
     }
 
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[AI-ASSIST ERROR]", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

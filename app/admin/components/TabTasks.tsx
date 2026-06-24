@@ -268,7 +268,19 @@ function StatBadge({ label, value, color }: { label: string; value: number; colo
   )
 }
 
-function CreateTaskModal({ staffs, onClose, onSaved }: any) {
+interface CreateTaskModalStaff {
+  id: string;
+  role: string;
+  full_name: string;
+}
+
+interface CreateTaskModalProps {
+  staffs: CreateTaskModalStaff[];
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function CreateTaskModal({ staffs, onClose, onSaved }: CreateTaskModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [taskType, setTaskType] = useState<'daily' | 'one_time'>('one_time')
@@ -324,8 +336,9 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Tiêu đề *</label>
+            <label htmlFor="task-title" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Tiêu đề *</label>
             <input
+              id="task-title"
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -336,8 +349,9 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Mô tả</label>
+            <label htmlFor="task-description" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Mô tả</label>
             <textarea
+              id="task-description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Chi tiết công việc..."
@@ -348,7 +362,7 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Loại công việc</label>
+              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block" id="task-type-label">Loại công việc</label>
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -372,8 +386,9 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Mức ưu tiên</label>
+              <label htmlFor="task-priority" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Mức ưu tiên</label>
               <select
+                id="task-priority"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold focus:border-pink-500 focus:outline-none"
@@ -387,7 +402,7 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Giao cho</label>
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block" id="task-assignee-label">Giao cho</label>
             <div className="flex gap-2 mb-3">
               <button
                 type="button"
@@ -410,6 +425,7 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
             </div>
             {assigneeType === 'specific' && (
               <select
+                id="task-assigneeId"
                 value={assigneeId}
                 onChange={(e) => setAssigneeId(e.target.value)}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm font-semibold focus:border-pink-500 focus:outline-none"
@@ -424,8 +440,9 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Hạn hoàn thành</label>
+              <label htmlFor="task-deadline" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Hạn hoàn thành</label>
               <input
+                id="task-deadline"
                 type="datetime-local"
                 value={deadline}
                 onChange={(e) => setDeadline(e.target.value)}
@@ -433,8 +450,9 @@ function CreateTaskModal({ staffs, onClose, onSaved }: any) {
               />
             </div>
             <div>
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Khung giờ</label>
+              <label htmlFor="task-timeSlot" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Khung giờ</label>
               <input
+                id="task-timeSlot"
                 type="text"
                 value={timeSlot}
                 onChange={(e) => setTimeSlot(e.target.value)}

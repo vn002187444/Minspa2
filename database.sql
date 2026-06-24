@@ -11,6 +11,9 @@ CREATE TABLE users (
   cccd VARCHAR(20),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   notification_token JSONB,
+  base_salary DECIMAL(10,2) NOT NULL DEFAULT 0,
+  bank_account VARCHAR(50),
+  bank_name VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   CONSTRAINT users_role_cccd_check CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
 );
@@ -480,6 +483,27 @@ CREATE TABLE IF NOT EXISTS background_tasks (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Salary payments (V3.14 Payroll)
+CREATE TABLE IF NOT EXISTS salary_payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  base_salary DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total_commission DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total_tips DECIMAL(10,2) NOT NULL DEFAULT 0,
+  total_package_commission DECIMAL(10,2) NOT NULL DEFAULT 0,
+  bonus DECIMAL(10,2) NOT NULL DEFAULT 0,
+  deduction DECIMAL(10,2) NOT NULL DEFAULT 0,
+  advance DECIMAL(10,2) NOT NULL DEFAULT 0,
+  net_pay DECIMAL(10,2) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'CANCELLED')),
+  notes TEXT,
+  paid_at TIMESTAMPTZ,
+  paid_by UUID REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ========================================
 -- Row Level Security (RLS) for ALL tables
 -- ========================================
@@ -499,6 +523,9 @@ ALTER TABLE background_tasks ENABLE ROW LEVEL SECURITY;
 CREATE POLICY cash_register_admin_all ON cash_register
   FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
+CREATE POLICY salary_payments_admin_all ON salary_payments
+  FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+
 CREATE POLICY "service_role_all" ON cron_job_logs
   FOR ALL USING (true) WITH CHECK (true);
 
@@ -507,6 +534,7 @@ CREATE POLICY "authenticated_select" ON cron_job_logs
 
 CREATE POLICY "service_role_all" ON background_tasks
   FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE salary_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bank_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE banner_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_stats ENABLE ROW LEVEL SECURITY;

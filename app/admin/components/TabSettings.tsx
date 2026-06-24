@@ -251,8 +251,9 @@ export default function TabSettings() {
 
         {mascot && (
           <div className="space-y-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label htmlFor="settings-mascotEnabled" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="settings-mascotEnabled"
                 type="checkbox"
                 checked={mascot.enabled}
                 onChange={(e) => setMascot({ ...mascot, enabled: e.target.checked })}
@@ -281,8 +282,9 @@ export default function TabSettings() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label htmlFor="settings-mascotSound" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="settings-mascotSound"
                 type="checkbox"
                 checked={mascot.soundEnabled}
                 onChange={(e) => setMascot({ ...mascot, soundEnabled: e.target.checked })}
@@ -332,8 +334,9 @@ export default function TabSettings() {
         {theme && (
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-semibold text-gray-500 mb-2 block">Chủ đề</label>
+              <label htmlFor="settings-themeOverride" className="text-xs font-semibold text-gray-500 mb-2 block">Chủ đề</label>
               <select
+                id="settings-themeOverride"
                 value={theme.override || 'auto'}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -359,8 +362,9 @@ export default function TabSettings() {
               <div className="w-12 h-6 rounded" style={{ backgroundColor: `rgb(var(--color-gold))` }} />
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label htmlFor="settings-particlesEnabled" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="settings-particlesEnabled"
                 type="checkbox"
                 checked={theme.particlesEnabled}
                 onChange={(e) => setTheme({ ...theme, particlesEnabled: e.target.checked })}
@@ -404,8 +408,9 @@ export default function TabSettings() {
 
         {banner && (
           <div className="space-y-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label htmlFor="settings-bannerEnabled" className="flex items-center gap-2 cursor-pointer">
               <input
+                id="settings-bannerEnabled"
                 type="checkbox"
                 checked={banner.is_enabled}
                 onChange={(e) => setBanner({ ...banner, is_enabled: e.target.checked })}

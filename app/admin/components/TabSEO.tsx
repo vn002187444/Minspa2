@@ -498,10 +498,11 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
             className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5"
           >
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              <label htmlFor="seo-pageTitle" className="block text-xs font-bold text-gray-700 uppercase mb-2">
                 Tiêu đề trang (Page Title)
               </label>
               <input
+                id="seo-pageTitle"
                 type="text"
                 value={form.page_title || ""}
                 onChange={(e) => setForm({ ...form, page_title: e.target.value })}
@@ -513,10 +514,11 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
               </p>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              <label htmlFor="seo-metaDescription" className="block text-xs font-bold text-gray-700 uppercase mb-2">
                 Đoạn mô tả (Meta Description)
               </label>
               <textarea
+                id="seo-metaDescription"
                 rows={3}
                 value={form.meta_description || ""}
                 onChange={(e) =>
@@ -530,10 +532,11 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
               </p>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              <label htmlFor="seo-metaKeywords" className="block text-xs font-bold text-gray-700 uppercase mb-2">
                 Từ khóa (Meta Keywords)
               </label>
               <input
+                id="seo-metaKeywords"
                 type="text"
                 value={form.meta_keywords || ""}
                 onChange={(e) =>
@@ -547,10 +550,11 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
               </p>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              <label htmlFor="seo-ogImageUrl" className="block text-xs font-bold text-gray-700 uppercase mb-2">
                 Ảnh chia sẻ (Open Graph Image URL)
               </label>
               <input
+                id="seo-ogImageUrl"
                 type="text"
                 value={form.og_image_url || ""}
                 onChange={(e) => setForm({ ...form, og_image_url: e.target.value })}
@@ -591,8 +595,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
               </div>
               {form.online_discount_enabled && (
                 <div className="flex items-center gap-3">
-                  <label className="text-xs font-semibold text-gray-600 shrink-0">Phần trăm giảm:</label>
+                  <label htmlFor="seo-discountPercent" className="text-xs font-semibold text-gray-600 shrink-0">Phần trăm giảm:</label>
                   <input
+                    id="seo-discountPercent"
                     type="number"
                     min={0}
                     max={100}
@@ -610,8 +615,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
             <div className="pt-4 border-t border-gray-100 space-y-4">
               <h3 className="text-xs font-extrabold text-gray-700 uppercase tracking-widest">Hoa hồng & Liên hệ</h3>
               <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-gray-600 shrink-0">Hoa hồng mặc định:</label>
+                <label htmlFor="seo-commissionPercent" className="text-xs font-semibold text-gray-600 shrink-0">Hoa hồng mặc định:</label>
                 <input
+                  id="seo-commissionPercent"
                   type="number"
                   min={0}
                   max={100}
@@ -624,8 +630,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
                 <p className="text-[10px] text-gray-400 ml-2">Áp dụng khi dịch vụ/gói không có tỷ lệ riêng</p>
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-xs font-semibold text-gray-600 shrink-0">Số hotline:</label>
+                <label htmlFor="seo-hotline" className="text-xs font-semibold text-gray-600 shrink-0">Số hotline:</label>
                 <input
+                  id="seo-hotline"
                   type="text"
                   value={form.hotline || ""}
                   onChange={(e) => setForm({ ...form, hotline: e.target.value })}
@@ -664,8 +671,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">Chủ đề bài viết / Từ khóa chính</label>
+              <label htmlFor="seo-aiTopic" className="block text-xs font-bold text-gray-700 mb-1.5">Chủ đề bài viết / Từ khóa chính</label>
               <input
+                id="seo-aiTopic"
                 type="text"
                 value={seoTopic}
                 onChange={(e) => setSeoTopic(e.target.value)}
@@ -675,8 +683,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">Từ khóa phụ (Tự nhiên hóa)</label>
+              <label htmlFor="seo-aiKeywords" className="block text-xs font-bold text-gray-700 mb-1.5">Từ khóa phụ (Tự nhiên hóa)</label>
               <input
+                id="seo-aiKeywords"
                 type="text"
                 value={seoKeywords}
                 onChange={(e) => setSeoKeywords(e.target.value)}
@@ -1113,10 +1122,11 @@ export default function TabSEO({ data, userRole, onReload }: { data: any; userRo
 
             {/* Banner Text Area */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 uppercase mb-2">
+              <label htmlFor="seo-bannerContent" className="block text-xs font-bold text-gray-700 uppercase mb-2">
                 Nội dung thông báo (Banner Content)
               </label>
               <textarea
+                id="seo-bannerContent"
                 rows={2}
                 value={bannerForm.content || ""}
                 onChange={(e) => setBannerForm({ ...bannerForm, content: e.target.value })}

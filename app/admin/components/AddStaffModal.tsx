@@ -4,7 +4,12 @@ import { useState } from "react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { createStaff } from "../actions";
 
-export default function AddStaffModal({ onClose, onReload }: any) {
+interface AddStaffModalProps {
+  onClose: () => void;
+  onReload: () => void;
+}
+
+export default function AddStaffModal({ onClose, onReload }: AddStaffModalProps) {
   const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
     fullName: "",
@@ -45,10 +50,11 @@ export default function AddStaffModal({ onClose, onReload }: any) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="addStaff-fullName" className="block text-sm font-medium text-gray-700 mb-1">
               Họ và tên
             </label>
             <input
+              id="addStaff-fullName"
               required
               type="text"
               value={form.fullName}
@@ -57,10 +63,11 @@ export default function AddStaffModal({ onClose, onReload }: any) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="addStaff-cccd" className="block text-sm font-medium text-gray-700 mb-1">
               Số CCCD (*Bắt buộc)
             </label>
             <input
+              id="addStaff-cccd"
               required
               type="text"
               value={form.cccd}
@@ -69,10 +76,11 @@ export default function AddStaffModal({ onClose, onReload }: any) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="addStaff-username" className="block text-sm font-medium text-gray-700 mb-1">
               Tên đăng nhập
             </label>
             <input
+              id="addStaff-username"
               required
               type="text"
               value={form.username}
@@ -81,10 +89,11 @@ export default function AddStaffModal({ onClose, onReload }: any) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="addStaff-password" className="block text-sm font-medium text-gray-700 mb-1">
               Mật khẩu / PIN
             </label>
             <input
+              id="addStaff-password"
               required
               type="password"
               value={form.password}
@@ -93,10 +102,11 @@ export default function AddStaffModal({ onClose, onReload }: any) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="addStaff-role" className="block text-sm font-medium text-gray-700 mb-1">
               Phân quyền
             </label>
             <select
+              id="addStaff-role"
               value={form.role}
               onChange={(e) => setForm({ ...form, role: e.target.value })}
               className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none text-sm"

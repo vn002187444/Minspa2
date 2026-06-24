@@ -11,7 +11,7 @@ export async function GET() {
     }
     
     return NextResponse.json({ status: 'ok', timestamp: new Date().toISOString() });
-  } catch (err: any) {
-    return NextResponse.json({ status: 'error', error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ status: 'error', error: err instanceof Error ? err.message : 'Unknown error' }, { status: 500 });
   }
 }

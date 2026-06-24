@@ -535,8 +535,9 @@ export default function BookingPage() {
                               </p>
 
                               {sortedPkgs.length === 1 ? (
-                                <label className="flex items-center gap-3 p-3 bg-white border border-[#EADDCD] rounded-xl cursor-pointer hover:border-amber-400 transition-all">
+                                <label htmlFor={`booking-pkg-${sortedPkgs[0].id}`} className="flex items-center gap-3 p-3 bg-white border border-[#EADDCD] rounded-xl cursor-pointer hover:border-amber-400 transition-all">
                                   <input
+                                    id={`booking-pkg-${sortedPkgs[0].id}`}
                                     type="radio"
                                     name="package"
                                     value={sortedPkgs[0].id}

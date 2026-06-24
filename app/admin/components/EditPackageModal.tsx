@@ -5,7 +5,32 @@ import { XIcon } from "lucide-react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { saveTreatmentPackage } from "../actions";
 
-export default function EditPackageModal({ pkg, services, onClose, onReload }: any) {
+interface EditPackageModalPkg {
+  id?: string;
+  name?: string;
+  service_id?: string;
+  buy_count?: number;
+  free_count?: number;
+  price?: number;
+  commission_percentage?: number | null;
+  is_active?: boolean;
+}
+
+interface EditPackageModalService {
+  id: string;
+  name: string;
+  price: number;
+  is_active: boolean;
+}
+
+interface EditPackageModalProps {
+  pkg: EditPackageModalPkg;
+  services: EditPackageModalService[];
+  onClose: () => void;
+  onReload: () => void;
+}
+
+export default function EditPackageModal({ pkg, services, onClose, onReload }: EditPackageModalProps) {
   const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
     id: pkg.id || "",
@@ -79,10 +104,11 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
           )}
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label htmlFor="pkg-name" className="block text-sm font-semibold text-gray-700 mb-1.5">
               Tên gói <span className="text-red-500">*</span>
             </label>
             <input
+              id="pkg-name"
               type="text"
               name="name"
               required
@@ -94,10 +120,11 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label htmlFor="pkg-serviceId" className="block text-sm font-semibold text-gray-700 mb-1.5">
               Dịch vụ áp dụng <span className="text-red-500">*</span>
             </label>
             <select
+              id="pkg-serviceId"
               name="service_id"
               required
               value={form.service_id}
@@ -115,10 +142,11 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label htmlFor="pkg-buyCount" className="block text-sm font-semibold text-gray-700 mb-1.5">
                 Số buổi Mua <span className="text-red-500">*</span>
               </label>
               <input
+                id="pkg-buyCount"
                 type="number"
                 name="buy_count"
                 required
@@ -129,10 +157,11 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label htmlFor="pkg-freeCount" className="block text-sm font-semibold text-gray-700 mb-1.5">
                 Số buổi Tặng thêm
               </label>
               <input
+                id="pkg-freeCount"
                 type="number"
                 name="free_count"
                 min={0}
@@ -149,10 +178,11 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label htmlFor="pkg-price" className="block text-sm font-semibold text-gray-700 mb-1.5">
               Giá Mua Trọn Gói (VNĐ) <span className="text-red-500">*</span>
             </label>
             <input
+              id="pkg-price"
               type="number"
               name="price"
               required
@@ -165,10 +195,11 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: a
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label htmlFor="pkg-commissionPercent" className="block text-sm font-semibold text-gray-700 mb-1.5">
               % Hoa hồng bán gói (%) <span className="text-red-500">*</span>
             </label>
             <input
+              id="pkg-commissionPercent"
               type="number"
               name="commission_percentage"
               required

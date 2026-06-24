@@ -90,8 +90,9 @@ export default function AppointmentDetailModal({
         {isEditingSelected ? (
           <form onSubmit={handleSaveEdit} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Tên Khách Hàng</label>
+              <label htmlFor="detail-fullName" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Tên Khách Hàng</label>
               <input
+                id="detail-fullName"
                 type="text"
                 value={editFullName}
                 onChange={(e) => setEditFullName(e.target.value)}
@@ -101,8 +102,9 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Số Điện Thoại</label>
+              <label htmlFor="detail-phone" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Số Điện Thoại</label>
               <input
+                id="detail-phone"
                 type="tel"
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
@@ -112,8 +114,9 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Chọn Kỹ Thuật Viên</label>
+              <label htmlFor="detail-staffId" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Chọn Kỹ Thuật Viên</label>
               <select
+                id="detail-staffId"
                 value={editStaffId}
                 onChange={(e) => setEditStaffId(e.target.value)}
                 className="w-full p-2.5 text-xs bg-white border border-[#EADDCD] rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#8D6E53] cursor-pointer"
@@ -128,8 +131,9 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Giờ Đặt Lịch</label>
+              <label htmlFor="detail-startTime" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Giờ Đặt Lịch</label>
               <select
+                id="detail-startTime"
                 value={editStartTime}
                 onChange={(e) => setEditStartTime(e.target.value)}
                 className="w-full p-2.5 text-xs bg-white border border-[#EADDCD] rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#8D6E53] cursor-pointer"
@@ -143,8 +147,9 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Trạng Thế Đơn Hàng</label>
+              <label htmlFor="detail-status" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Trạng Thế Đơn Hàng</label>
               <select
+                id="detail-status"
                 value={editStatus}
                 onChange={(e) => setEditStatus(e.target.value)}
                 className="w-full p-2.5 text-xs bg-white border border-[#EADDCD] rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#8D6E53] cursor-pointer"
@@ -162,8 +167,9 @@ export default function AppointmentDetailModal({
                 {(data.allServices || []).map((srv: any) => {
                   const isChecked = editServiceIds.includes(srv.id);
                   return (
-                    <label key={srv.id} className="flex items-center gap-2.5 text-xs font-semibold text-gray-700 cursor-pointer select-none">
+                    <label key={srv.id} htmlFor={`detail-service-${srv.id}`} className="flex items-center gap-2.5 text-xs font-semibold text-gray-700 cursor-pointer select-none">
                       <input
+                        id={`detail-service-${srv.id}`}
                         type="checkbox"
                         checked={isChecked}
                         onChange={(e) => {
@@ -273,9 +279,10 @@ export default function AppointmentDetailModal({
 
             {mode !== 'READ_ONLY' && (
               <div className="pt-4 border-t border-gray-150 space-y-2.5">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block">Giao Việc / Đổi Kỹ Thuật Viên</span>
+                <label htmlFor="detail-swapStaff" className="text-xs font-bold text-gray-500 uppercase tracking-wide block">Giao Việc / Đổi Kỹ Thuật Viên</label>
                 <div className="flex gap-2">
                   <select
+                    id="detail-swapStaff"
                     value={newStaffId}
                     onChange={(e) => setNewStaffId(e.target.value)}
                     className="flex-1 p-2.5 text-xs bg-white border border-[#EADDCD] rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#8D6E53] cursor-pointer"

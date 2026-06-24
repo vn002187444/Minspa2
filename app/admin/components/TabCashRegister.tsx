@@ -213,8 +213,9 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1.5">Danh mục</label>
+          <label htmlFor="cash-category" className="block text-sm font-bold text-gray-700 mb-1.5">Danh mục</label>
           <select
+            id="cash-category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full px-3.5 py-3 border border-gray-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none bg-white"
@@ -225,8 +226,9 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1.5">Số tiền</label>
+          <label htmlFor="cash-amount" className="block text-sm font-bold text-gray-700 mb-1.5">Số tiền</label>
           <input
+            id="cash-amount"
             type="number"
             min="0"
             value={amount}
@@ -237,8 +239,9 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-1.5">Mô tả</label>
+          <label htmlFor="cash-description" className="block text-sm font-bold text-gray-700 mb-1.5">Mô tả</label>
           <textarea
+            id="cash-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Ghi chú thêm..."

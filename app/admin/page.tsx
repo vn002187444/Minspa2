@@ -28,6 +28,7 @@ import {
   Activity,
   ListTodo,
   DollarSign,
+  Wallet,
 } from "lucide-react";
 import {
   getStaffs,
@@ -56,6 +57,7 @@ const TabSettings = dynamic(() => import('./components/TabSettings'), { loading:
 const TabTasks = dynamic(() => import('./components/TabTasks'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabReports = dynamic(() => import('./components/TabReports'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabCashRegister = dynamic(() => import('./components/TabCashRegister'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabPayroll = dynamic(() => import('./components/TabPayroll'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -104,7 +106,7 @@ export default function AdminDashboard() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
-      if (tabParam && ["DASHBOARD", "STAFF", "SERVICES", "PACKAGES", "COMMISSION", "REVIEWS", "SEO", "BANK", "PASSWORD", "ATTENDANCE", "SETTINGS", "TASKS", "REPORTS", "CASH_REGISTER"].includes(tabParam)) {
+      if (tabParam && ["DASHBOARD", "STAFF", "SERVICES", "PACKAGES", "COMMISSION", "REVIEWS", "SEO", "BANK", "PASSWORD", "ATTENDANCE", "SETTINGS", "TASKS", "REPORTS", "CASH_REGISTER", "PAYROLL"].includes(tabParam)) {
         setActiveTab(tabParam);
       }
     }
@@ -303,6 +305,7 @@ export default function AdminDashboard() {
             { id: "SEO", label: "Cấu hình SEO", icon: Globe },
             { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
             { id: "CASH_REGISTER", label: "Sổ quỹ", icon: DollarSign },
+            { id: "PAYROLL", label: "Bảng lương", icon: Wallet },
             { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
             { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
             { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
@@ -398,6 +401,7 @@ export default function AdminDashboard() {
             {activeTab === "TASKS" && <TabTasks />}
             {activeTab === "REPORTS" && <TabReports />}
             {activeTab === "CASH_REGISTER" && <TabCashRegister />}
+            {activeTab === "PAYROLL" && <TabPayroll />}
             {activeTab === "SETTINGS" && <TabSettings />}
           </motion.div>
         )}

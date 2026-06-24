@@ -230,11 +230,13 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
               return (
                 <label
                   key={s.id}
+                  htmlFor={`checkout-extra-${s.id}`}
                   className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
                     isSelected ? "bg-emerald-50 border-emerald-300" : "bg-white border-gray-150 hover:bg-gray-50"
                   }`}
                 >
                   <input
+                    id={`checkout-extra-${s.id}`}
                     type="checkbox"
                     className="w-5 h-5 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300"
                     checked={isSelected}
@@ -252,7 +254,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
         </div>
 
         <div>
-          <label className="block text-sm font-bold text-gray-700 mb-2.5">Giảm giá</label>
+          <label htmlFor="checkout-discountPercent" className="block text-sm font-bold text-gray-700 mb-2.5">Giảm giá</label>
           <div className="flex gap-2 mb-3">
             <button
               type="button"
@@ -281,6 +283,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
               <input
+                id="checkout-discountPercent"
                 type="number"
                 min="0"
                 max="100"
@@ -299,6 +302,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
                 <div key={svc.id} className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-600 flex-1 truncate">{svc.name}</span>
                   <input
+                    id={`checkout-discount-${svc.id}`}
                     type="number"
                     min="0"
                     max="100"

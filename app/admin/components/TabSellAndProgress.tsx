@@ -289,11 +289,12 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: a
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                <label htmlFor="sell-phone" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                   Số điện thoại khách hàng <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input
+                    id="sell-phone"
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -312,10 +313,11 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: a
               {(phone.trim().length >= 9) && (
                 <div className="animate-in fade-in duration-200 space-y-4">
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    <label htmlFor="sell-customerName" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                       Họ và tên khách hàng <span className="text-red-500">*</span>
                     </label>
                     <input
+                      id="sell-customerName"
                       type="text"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
@@ -331,10 +333,11 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: a
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
+                    <label htmlFor="sell-package" className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                       Chọn Gói Liệu Trình <span className="text-red-500">*</span>
                     </label>
                     <select
+                      id="sell-package"
                       value={selectedPackageId}
                       onChange={(e) => setSelectedPackageId(e.target.value)}
                       required

@@ -466,8 +466,9 @@ export default function AdminBlogPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Title */}
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="block font-black text-stone-700 tracking-wide uppercase">Tiêu đề bài viết <span className="text-rose-500">*</span></label>
+                  <label htmlFor="blog-title" className="block font-black text-stone-700 tracking-wide uppercase">Tiêu đề bài viết <span className="text-rose-500">*</span></label>
                   <input
+                    id="blog-title"
                     type="text"
                     value={title}
                     onChange={handleTitleChange}
@@ -479,12 +480,13 @@ export default function AdminBlogPage() {
 
                 {/* Slug */}
                 <div className="space-y-1.5 col-span-2 md:col-span-1">
-                  <label className="block font-black text-stone-700 tracking-wide uppercase flex items-center justify-between">
+                  <label htmlFor="blog-slug" className="block font-black text-stone-700 tracking-wide uppercase flex items-center justify-between">
                     <span>Đường dẫn (Slug) <span className="text-rose-500">*</span></span>
                     <span className="text-[10px] text-stone-400 italic">Tự sinh nhạy bén</span>
                   </label>
                   <div className="relative">
                     <input
+                      id="blog-slug"
                       type="text"
                       value={slug}
                       onChange={(e) => setSlug(slugify(e.target.value))}
@@ -500,7 +502,7 @@ export default function AdminBlogPage() {
               {/* Summary */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <label className="block font-black text-stone-700 tracking-wide uppercase">Đoạn tóm tắt (Meta Description) <span className="text-rose-500">*</span></label>
+                  <label htmlFor="blog-summary" className="block font-black text-stone-700 tracking-wide uppercase">Đoạn tóm tắt (Meta Description) <span className="text-rose-500">*</span></label>
                   <span className={`text-[10px] font-bold ${
                     summary.length >= 100 && summary.length <= 160 ? 'text-emerald-600' : 'text-amber-600'
                   }`}>
@@ -508,6 +510,7 @@ export default function AdminBlogPage() {
                   </span>
                 </div>
                 <textarea
+                  id="blog-summary"
                   value={summary}
                   onChange={(e) => setSummary(e.target.value)}
                   placeholder="Viết đoạn giới thiệu ngắn (summary) bắt mắt chứa từ khóa chính, đoạn này sẽ hiển thị ở thẻ mô tả khi chia sẻ link lên Facebook, Zalo, Google..."
@@ -520,12 +523,13 @@ export default function AdminBlogPage() {
 
               {/* Image URL */}
               <div className="space-y-1.5">
-                <label className="block font-black text-stone-700 tracking-wide uppercase">Ảnh đại diện (Image URL)</label>
+                <label htmlFor="blog-imageUrl" className="block font-black text-stone-700 tracking-wide uppercase">Ảnh đại diện (Image URL)</label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-3 text-stone-400">
                     <ImageIcon className="w-4 h-4" />
                   </span>
                   <input
+                    id="blog-imageUrl"
                     type="url"
                     value={imageUrl}
                     onChange={(e) => setImageUrl(e.target.value)}
@@ -552,7 +556,7 @@ export default function AdminBlogPage() {
               {/* Content Textarea */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label className="block font-black text-stone-700 tracking-wide uppercase">Nội dung bài viết (Hỗ trợ tiêu đề ##, ### &amp; liên kết) <span className="text-rose-500">*</span></label>
+                  <label htmlFor="blog-content" className="block font-black text-stone-700 tracking-wide uppercase">Nội dung bài viết (Hỗ trợ tiêu đề ##, ### &amp; liên kết) <span className="text-rose-500">*</span></label>
                   <span className="text-stone-400 font-mono text-[10px] font-bold">Trạng thái: Đang soạn thảo...</span>
                 </div>
                 <div className="bg-[#FAF0E6] p-2.5 rounded-2xl text-[10px] text-stone-600 space-y-1 font-semibold leading-relaxed border border-[#EADDCD]/50">
@@ -612,6 +616,7 @@ export default function AdminBlogPage() {
                   {/* Left Workspace: Input Textarea */}
                   <div className="lg:col-span-9 h-full min-h-[350px]">
                     <textarea
+                      id="blog-content"
                       ref={contentRef}
                       value={content}
                       onChange={(e) => setContent(e.target.value)}

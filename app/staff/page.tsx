@@ -1153,10 +1153,11 @@ function TabPassword() {
         )}
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+          <label htmlFor="staff-oldPassword" className="block text-sm font-semibold text-gray-700 mb-1.5">
             Mật khẩu cũ
           </label>
           <input
+            id="staff-oldPassword"
             type="password"
             value={oldPassword}
             onChange={(e) => setOldPassword(e.target.value)}
@@ -1166,10 +1167,11 @@ function TabPassword() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+          <label htmlFor="staff-newPassword" className="block text-sm font-semibold text-gray-700 mb-1.5">
             Mật khẩu mới
           </label>
           <input
+            id="staff-newPassword"
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
@@ -1179,10 +1181,11 @@ function TabPassword() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+          <label htmlFor="staff-confirmPassword" className="block text-sm font-semibold text-gray-700 mb-1.5">
             Xác nhận mật khẩu mới
           </label>
           <input
+            id="staff-confirmPassword"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
@@ -1346,8 +1349,9 @@ function EditTipModal({ appt, onClose, onSaved }: any) {
               </button>
             ))}
             <div className="col-span-2">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Số tiền khác</label>
+              <label htmlFor="staff-editTipCustom" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Số tiền khác</label>
               <input
+                id="staff-editTipCustom"
                 type="text"
                 value={customTip}
                 onChange={(e) => { setCustomTip(e.target.value); setTipAmount(0); }}
@@ -1502,11 +1506,12 @@ function TabSellPackage({
           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Bước 1: Thông tin khách hàng</h3>
           
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label htmlFor="staff-sellPhone" className="block text-sm font-semibold text-gray-700 mb-1.5">
               Số điện thoại khách hàng <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
+                id="staff-sellPhone"
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
@@ -1527,10 +1532,11 @@ function TabSellPackage({
 
           {(phone.trim().length >= 9) && (
             <div className="animate-fadeIn">
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label htmlFor="staff-sellCustomerName" className="block text-sm font-semibold text-gray-700 mb-1.5">
                 Tên khách hàng <span className="text-red-500">*</span>
               </label>
               <input
+                id="staff-sellCustomerName"
                 type="text"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
@@ -1596,10 +1602,11 @@ function TabSellPackage({
           <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Bước 2: Chọn gói liệu trình</h3>
           
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+            <label htmlFor="staff-sellPackage" className="block text-sm font-semibold text-gray-700 mb-1.5">
               Gói ưu đãi đang hoạt động <span className="text-red-500">*</span>
             </label>
             <select
+              id="staff-sellPackage"
               value={selectedPackageId}
               onChange={(e) => setSelectedPackageId(e.target.value)}
               required
@@ -2510,8 +2517,9 @@ function ManagementTab() {
               <h5 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Thông tin từ khóa</h5>
               
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Chủ đề bài viết / Từ khóa chính</label>
+                <label htmlFor="staff-mgmtSeoTopic" className="block text-xs font-bold text-gray-700 mb-1">Chủ đề bài viết / Từ khóa chính</label>
                 <input
+                  id="staff-mgmtSeoTopic"
                   type="text"
                   value={seoTopic}
                   onChange={(e) => setSeoTopic(e.target.value)}
@@ -2521,8 +2529,9 @@ function ManagementTab() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 mb-1">Các từ khóa phụ (Phân cách bằng dấu phẩy)</label>
+                <label htmlFor="staff-mgmtSeoKeywords" className="block text-xs font-bold text-gray-700 mb-1">Các từ khóa phụ (Phân cách bằng dấu phẩy)</label>
                 <input
+                  id="staff-mgmtSeoKeywords"
                   type="text"
                   value={seoKeywords}
                   onChange={(e) => setSeoKeywords(e.target.value)}
@@ -2650,9 +2659,10 @@ function ManagementTab() {
               {/* Dynamic Image Generator Box */}
               <div className="border-t pt-5 border-gray-150 space-y-4">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-gray-700">Tạo hình minh họa cho bài viết (Prompt / Từ khóa)</label>
+                  <label htmlFor="staff-mgmtSeoImagePrompt" className="block text-xs font-bold text-gray-700">Tạo hình minh họa cho bài viết (Prompt / Từ khóa)</label>
                   <div className="flex gap-2">
                     <input
+                      id="staff-mgmtSeoImagePrompt"
                       type="text"
                       value={seoImagePrompt}
                       onChange={(e) => setSeoImagePrompt(e.target.value)}
@@ -2706,8 +2716,9 @@ function ManagementTab() {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Tên nghệ sĩ thợ / Quản lý</label>
+              <label htmlFor="staff-mgmtFullName" className="block text-xs font-bold text-gray-500 mb-1">Tên nghệ sĩ thợ / Quản lý</label>
               <input
+                id="staff-mgmtFullName"
                 type="text"
                 value={newStaff.fullName}
                 onChange={(e) => setNewStaff({ ...newStaff, fullName: e.target.value })}
@@ -2717,8 +2728,9 @@ function ManagementTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Cần cước công dân (CCCD)</label>
+              <label htmlFor="staff-mgmtCccd" className="block text-xs font-bold text-gray-500 mb-1">Cần cước công dân (CCCD)</label>
               <input
+                id="staff-mgmtCccd"
                 type="text"
                 value={newStaff.cccd}
                 onChange={(e) => setNewStaff({ ...newStaff, cccd: e.target.value })}
@@ -2728,8 +2740,9 @@ function ManagementTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Tài khoản đăng nhập (Username)</label>
+              <label htmlFor="staff-mgmtUsername" className="block text-xs font-bold text-gray-500 mb-1">Tài khoản đăng nhập (Username)</label>
               <input
+                id="staff-mgmtUsername"
                 type="text"
                 value={newStaff.username}
                 onChange={(e) => setNewStaff({ ...newStaff, username: e.target.value })}
@@ -2739,8 +2752,9 @@ function ManagementTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Mật khẩu (Password)</label>
+              <label htmlFor="staff-mgmtPassword" className="block text-xs font-bold text-gray-500 mb-1">Mật khẩu (Password)</label>
               <input
+                id="staff-mgmtPassword"
                 type="password"
                 value={newStaff.password}
                 onChange={(e) => setNewStaff({ ...newStaff, password: e.target.value })}
@@ -2752,8 +2766,9 @@ function ManagementTab() {
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-2">Vai trò (Role)</label>
               <div className="flex gap-4">
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                <label htmlFor="staff-mgmtRoleStaff" className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
                   <input
+                    id="staff-mgmtRoleStaff"
                     type="radio"
                     name="role"
                     checked={newStaff.role === "STAFF"}
@@ -2761,8 +2776,9 @@ function ManagementTab() {
                   />
                   Nhân viên thông thường
                 </label>
-                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
+                <label htmlFor="staff-mgmtRoleManager" className="flex items-center gap-1.5 text-xs font-semibold text-gray-700">
                   <input
+                    id="staff-mgmtRoleManager"
                     type="radio"
                     name="role"
                     checked={newStaff.role === "MANAGER"}
@@ -2815,8 +2831,9 @@ function ManagementTab() {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Tên nhóm dịch vụ chi tiết</label>
+              <label htmlFor="staff-mgmtSvcName" className="block text-xs font-bold text-gray-500 mb-1">Tên nhóm dịch vụ chi tiết</label>
               <input
+                id="staff-mgmtSvcName"
                 type="text"
                 value={newService.name}
                 onChange={(e) => setNewService({ ...newService, name: e.target.value })}
@@ -2826,8 +2843,9 @@ function ManagementTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Đơn giá niêm yết (VNĐ)</label>
+              <label htmlFor="staff-mgmtSvcPrice" className="block text-xs font-bold text-gray-500 mb-1">Đơn giá niêm yết (VNĐ)</label>
               <input
+                id="staff-mgmtSvcPrice"
                 type="number"
                 value={newService.price}
                 onChange={(e) => setNewService({ ...newService, price: Number(e.target.value) })}
@@ -2836,8 +2854,9 @@ function ManagementTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Thời gian thi công thực tế (Phút)</label>
+              <label htmlFor="staff-mgmtSvcDuration" className="block text-xs font-bold text-gray-500 mb-1">Thời gian thi công thực tế (Phút)</label>
               <input
+                id="staff-mgmtSvcDuration"
                 type="number"
                 value={newService.duration}
                 onChange={(e) => setNewService({ ...newService, duration: Number(e.target.value) })}
@@ -2846,8 +2865,9 @@ function ManagementTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-2">Chuyên mục lớn (Category Group)</label>
+              <label htmlFor="staff-mgmtSvcCategory" className="block text-xs font-bold text-gray-500 mb-2">Chuyên mục lớn (Category Group)</label>
               <select
+                id="staff-mgmtSvcCategory"
                 value={newService.category}
                 onChange={(e) => setNewService({ ...newService, category: e.target.value })}
                 className="w-full p-3 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 focus:outline-none"
@@ -2860,8 +2880,9 @@ function ManagementTab() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-1">Nội dung mô tả ngắn</label>
+              <label htmlFor="staff-mgmtSvcDescription" className="block text-xs font-bold text-gray-500 mb-1">Nội dung mô tả ngắn</label>
               <textarea
+                id="staff-mgmtSvcDescription"
                 rows={2}
                 value={newService.description}
                 onChange={(e) => setNewService({ ...newService, description: e.target.value })}

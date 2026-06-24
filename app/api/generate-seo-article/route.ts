@@ -54,7 +54,7 @@ Thương hiệu: Min Nail & Hair`;
     }
 
     throw new Error("Gemini returned empty");
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.warn("[GEMINI ARTICLE GENERATOR ERROR] Using high-quality fallback content.", error);
     
     // Create custom beautiful SEO article markdown based on the requested topic and keywords

@@ -18,6 +18,52 @@ type SubTab = typeof SUBTABS[number]
 
 const COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#a855f7']
 
+type FmtFn = (n: number) => string
+
+interface RevenueByDayItem { date: string; value: number }
+interface RevenueByServiceItem { name: string; revenue: number; count: number }
+interface RevenueByStaffItem { name: string; revenue: number; tip: number; count: number }
+interface RevenueData {
+  totalRevenue: number;
+  totalTip: number;
+  totalAppointments: number;
+  totalDiscount: number;
+  revenueByDay: RevenueByDayItem[];
+  revenueByService: RevenueByServiceItem[];
+  revenueByStaff: RevenueByStaffItem[];
+}
+
+interface CustomerStats {
+  total: number;
+  newCount: number;
+  returningCount: number;
+  avgVisits: number;
+}
+interface TopCustomerItem { name: string; phone: string; totalSpent: number; visits: number }
+interface CustomerData {
+  customerStats: CustomerStats;
+  topCustomers: TopCustomerItem[];
+}
+
+interface GrowthPeriod {
+  revenue: number;
+  count: number;
+  byDay: { date: string; value: number }[];
+}
+interface GrowthData {
+  current: GrowthPeriod;
+  previous: GrowthPeriod;
+  revenueChange: number;
+  countChange: number;
+}
+
+interface TaxMonthItem { month: string; revenue: number; orders: number; commission: number; tip: number }
+interface TaxData {
+  totalRevenue: number;
+  totalOrders: number;
+  months: TaxMonthItem[];
+}
+
 export default function TabReports() {
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('TỔNG_QUAN')
   const [rangeType, setRangeType] = useState<'week' | 'month' | 'last_month' | 'custom' | 'year'>('month')
@@ -254,8 +300,8 @@ export default function TabReports() {
             <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold" />
           </div>
         )}
-        <label className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
-          <input type="checkbox" checked={compareEnabled} onChange={(e) => setCompareEnabled(e.target.checked)} className="rounded" />
+        <label htmlFor="reports-compare" className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
+          <input id="reports-compare" type="checkbox" checked={compareEnabled} onChange={(e) => setCompareEnabled(e.target.checked)} className="rounded" />
           So sánh với kỳ trước (YoY/MoM/WoW)
         </label>
       </div>
@@ -338,7 +384,12 @@ export default function TabReports() {
   )
 }
 
-function OverviewTab({ revenueData, customerData, fmt, fmtCurrency }: any) {
+function OverviewTab({ revenueData, customerData, fmt, fmtCurrency }: {
+  revenueData: RevenueData;
+  customerData: CustomerData | null;
+  fmt: FmtFn;
+  fmtCurrency: FmtFn;
+}) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -387,7 +438,11 @@ function OverviewTab({ revenueData, customerData, fmt, fmtCurrency }: any) {
   )
 }
 
-function RevenueTab({ revenueData, fmt, fmtCurrency }: any) {
+function RevenueTab({ revenueData, fmt, fmtCurrency }: {
+  revenueData: RevenueData;
+  fmt: FmtFn;
+  fmtCurrency: FmtFn;
+}) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -412,7 +467,11 @@ function RevenueTab({ revenueData, fmt, fmtCurrency }: any) {
   )
 }
 
-function ServiceTab({ revenueData, fmt, fmtCurrency }: any) {
+function ServiceTab({ revenueData, fmt, fmtCurrency }: {
+  revenueData: RevenueData;
+  fmt: FmtFn;
+  fmtCurrency: FmtFn;
+}) {
   return (
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
@@ -454,7 +513,11 @@ function ServiceTab({ revenueData, fmt, fmtCurrency }: any) {
   )
 }
 
-function StaffTab({ revenueData, fmt, fmtCurrency }: any) {
+function StaffTab({ revenueData, fmt, fmtCurrency }: {
+  revenueData: RevenueData;
+  fmt: FmtFn;
+  fmtCurrency: FmtFn;
+}) {
   return (
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
@@ -495,7 +558,11 @@ function StaffTab({ revenueData, fmt, fmtCurrency }: any) {
   )
 }
 
-function CustomerTab({ customerData, fmt, fmtCurrency }: any) {
+function CustomerTab({ customerData, fmt, fmtCurrency }: {
+  customerData: CustomerData;
+  fmt: FmtFn;
+  fmtCurrency: FmtFn;
+}) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -533,7 +600,11 @@ function CustomerTab({ customerData, fmt, fmtCurrency }: any) {
   )
 }
 
-function GrowthTab({ growthData, fmt, fmtCurrency }: any) {
+function GrowthTab({ growthData, fmt, fmtCurrency }: {
+  growthData: GrowthData;
+  fmt: FmtFn;
+  fmtCurrency: FmtFn;
+}) {
   const mergedDays = [...new Set([...growthData.current.byDay.map((d: any) => d.date), ...growthData.previous.byDay.map((d: any) => d.date)])].sort()
   const chartData = mergedDays.map((day) => ({
     date: day,
@@ -590,12 +661,20 @@ function GrowthTab({ growthData, fmt, fmtCurrency }: any) {
   )
 }
 
-function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: any) {
+function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: {
+  taxData: TaxData | null;
+  taxYear: number;
+  setTaxYear: (year: number) => void;
+  taxLoading: boolean;
+  fmt: FmtFn;
+  fmtCurrency: FmtFn;
+}) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <label className="text-xs font-bold text-gray-500">Năm:</label>
+        <label htmlFor="reports-taxYear" className="text-xs font-bold text-gray-500">Năm:</label>
         <select
+          id="reports-taxYear"
           value={taxYear}
           onChange={(e) => setTaxYear(Number(e.target.value))}
           className="px-3 py-1.5 border border-gray-200 rounded-xl text-sm font-semibold bg-white"
@@ -697,7 +776,13 @@ function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: 
   )
 }
 
-function StatCard({ icon: Icon, label, value, color, bg }: any) {
+function StatCard({ icon: Icon, label, value, color, bg }: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  color: string;
+  bg: string;
+}) {
   return (
     <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm space-y-1">
       <div className={`inline-flex p-2 rounded-xl ${bg}`}>

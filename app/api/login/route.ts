@@ -76,11 +76,11 @@ export async function POST(req: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('[API LOGIN ERROR]:', error);
     return NextResponse.json({
       success: false,
-      message: error?.message || 'Có lỗi xảy ra trong quá trình xử lý đăng nhập.'
+      message: error instanceof Error ? error.message : 'Có lỗi xảy ra trong quá trình xử lý đăng nhập.'
     }, { status: 500 });
   }
 }

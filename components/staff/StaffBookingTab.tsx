@@ -223,11 +223,13 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
             return (
               <label
                 key={svc.id}
+                htmlFor={`booking-${svc.id}`}
                 className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                   isSelected ? "bg-pink-50 border-pink-300" : "bg-white border-gray-150 hover:bg-gray-50"
                 }`}
               >
                 <input
+                  id={`booking-${svc.id}`}
                   type="checkbox"
                   className="w-5 h-5 rounded text-pink-600 focus:ring-pink-500 border-gray-300"
                   checked={isSelected}

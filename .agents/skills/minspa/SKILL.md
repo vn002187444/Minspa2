@@ -64,9 +64,18 @@ description: >-
 
 ## 3. CI/CD & Vercel Deployment Lessons (Learned Jun 2026)
 - **sharp runtime error:** `SHARP_IGNORE_GLOBAL_LIBVIPS=1` causes Vercel crash (libvips not found). Remove from build script + vercel.json env. Keep `@img/sharp-linux-x64` in `optionalDependencies`.
+- **Note:** `sharp` version `0.35.1` expects libvips `1.2.x`. Do NOT include `@img/sharp-libvips-linux-x64` separately in `optionalDependencies` — npm may resolve a mismatched version (e.g., `^1.3.0` → libvips 8.18.3, which sharp 0.35.1 cannot load, causing `ERR_DLOPEN_FAILED`).
+- **⚠️ CRITICAL: Top-level `import sharp` in `"use server"` files crashes ALL server actions in that module.** When `sharp` is imported at module top level and fails to load (e.g., libvips mismatch), the ENTIRE module fails — every server action in that file becomes unusable. This causes "Server Components render" errors on ANY page that calls ANY action from that file. **Fix:** use dynamic import (`const sharp = (await import('sharp')).default`) inside the specific function that needs it, never at module top level.
 - **Vercel project name:** `vercel.json` needs `"name": "minhair"` or CLI fails with `---` in auto-generated name.
 - **Supabase Management API timeout:** v2.107+ calls `api.supabase.com/v1/projects/{ref}/...` on init. Block via custom `global.fetch` in `createClient` options.
 - **Always verify full CI pipeline:** lint → test → build → deploy. Don't stop at build success.
+
+## 3.5 V3.14 Payroll Notes (Jun 2026)
+- **Payroll calculation** sums commission from `appointments.commission_amount` + `customer_packages.commission_amount` + `appointments.tip_amount` + `users.base_salary`.
+- **Cash register integration:** `processPayrollPayment()` inserts a `CHI` record with category `'Chi lương'` referencing the `salary_payments` record.
+- **Database:** `salary_payments` table stores per-staff period data; `users` table has `base_salary`, `bank_account`, `bank_name`.
+- **Migration pattern:** Use `DO $$` blocks with `IF NOT EXISTS` guards for idempotent column additions + table creation.
+- **RPC not needed** for payroll — all logic is in server actions with Supabase JS client queries.
 
 ## 4. Auth System
 - **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)

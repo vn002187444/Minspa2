@@ -80,8 +80,9 @@ export default function TabAutoSEO() {
           {/* Schedule */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Ngày trong tuần</label>
+              <label htmlFor="autoseo-scheduleDay" className="block text-xs font-bold text-gray-700 mb-1">Ngày trong tuần</label>
               <select
+                id="autoseo-scheduleDay"
                 value={config.schedule_day}
                 onChange={(e) => setConfig({ ...config, schedule_day: e.target.value })}
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-pink-500"
@@ -90,8 +91,9 @@ export default function TabAutoSEO() {
               </select>
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1">Giờ (0-23)</label>
+              <label htmlFor="autoseo-scheduleHour" className="block text-xs font-bold text-gray-700 mb-1">Giờ (0-23)</label>
               <input
+                id="autoseo-scheduleHour"
                 type="number"
                 min={0}
                 max={23}
@@ -104,8 +106,9 @@ export default function TabAutoSEO() {
 
           {/* Topic Pool */}
           <div>
-            <label className="block text-xs font-bold text-gray-700 mb-1">Topic Pool (mỗi dòng một chủ đề)</label>
+            <label htmlFor="autoseo-topicPool" className="block text-xs font-bold text-gray-700 mb-1">Topic Pool (mỗi dòng một chủ đề)</label>
             <textarea
+              id="autoseo-topicPool"
               rows={5}
               value={(config.topic_pool || []).join('\n')}
               onChange={(e) => setConfig({ ...config, topic_pool: e.target.value.split('\n').filter(Boolean) })}

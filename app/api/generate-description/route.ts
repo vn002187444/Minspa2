@@ -41,7 +41,7 @@ Danh mục: "${category}"`;
     }
 
     throw new Error("Gemini returned empty");
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.warn("[GEMINI API ERROR] Using fallback description.", error);
     
     // Custom beautiful fallback description based on service request

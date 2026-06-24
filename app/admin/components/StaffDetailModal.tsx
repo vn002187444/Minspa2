@@ -2,7 +2,23 @@
 
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 
-export default function StaffDetailModal({ staff, stats, onClose }: any) {
+interface StaffDetailStats {
+  totalRevenue: number;
+  totalCommission: number;
+  totalTip: number;
+  daysPresent: number;
+  daysAbsent: number;
+  topServices: { name: string; count: number }[];
+  topCustomers: { name: string; count: number }[];
+}
+
+interface StaffDetailModalProps {
+  staff: { full_name: string; cccd: string };
+  stats: StaffDetailStats | null;
+  onClose: () => void;
+}
+
+export default function StaffDetailModal({ staff, stats, onClose }: StaffDetailModalProps) {
   const trapRef = useFocusTrap(true);
   return (
     <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Chi tiết nhân viên: ${staff.full_name}`}>

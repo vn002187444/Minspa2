@@ -57,7 +57,7 @@ Từ khóa bổ sung: "${keywords || "Không có"}"`;
       model: result.modelUsed,
       fromCache: result.fromCache,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.warn("[GEMINI SEO SEARCH ERROR] Using fallback analysis.", error);
 
     const fbKeywords = [

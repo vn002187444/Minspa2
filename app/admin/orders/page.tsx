@@ -234,8 +234,9 @@ export default function AdminOrdersPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Status Filter */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Trạng thái đơn</label>
+              <label htmlFor="order-statusFilter" className="text-xs font-bold uppercase tracking-wider text-gray-500">Trạng thái đơn</label>
               <select
+                id="order-statusFilter"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]"
@@ -250,8 +251,9 @@ export default function AdminOrdersPage() {
 
             {/* Date Range Selector */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-500 font-sans">Khoảng thời gian</label>
+              <label htmlFor="order-dateRange" className="text-xs font-bold uppercase tracking-wider text-gray-500 font-sans">Khoảng thời gian</label>
               <select
+                id="order-dateRange"
                 value={dateRangeFilter}
                 onChange={(e) => setDateRangeFilter(e.target.value as any)}
                 className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]"
@@ -267,8 +269,9 @@ export default function AdminOrdersPage() {
             {/* Start Date picker (Custom range only) */}
             {dateRangeFilter === 'custom' && (
               <div className="space-y-1.5 animate-in slide-in-from-top duration-200">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Từ ngày</label>
+                <label htmlFor="order-startDate" className="text-xs font-bold uppercase tracking-wider text-gray-500">Từ ngày</label>
                 <input
+                  id="order-startDate"
                   type="date"
                   value={startDateStr}
                   onChange={(e) => setStartDateStr(e.target.value)}
@@ -280,8 +283,9 @@ export default function AdminOrdersPage() {
             {/* End Date picker (Custom range only) */}
             {dateRangeFilter === 'custom' && (
               <div className="space-y-1.5 animate-in slide-in-from-top duration-200">
-                <label className="text-xs font-bold uppercase tracking-wider text-gray-500">Đến ngày</label>
+                <label htmlFor="order-endDate" className="text-xs font-bold uppercase tracking-wider text-gray-500">Đến ngày</label>
                 <input
+                  id="order-endDate"
                   type="date"
                   value={endDateStr}
                   onChange={(e) => setEndDateStr(e.target.value)}
@@ -776,8 +780,9 @@ function AdminEditTipModal({ appt, onClose, onSaved }: any) {
             </button>
           ))}
           <div className="col-span-2">
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Số tiền khác</label>
+            <label htmlFor="order-customTip" className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5 block">Số tiền khác</label>
             <input
+              id="order-customTip"
               type="text"
               value={customTip}
               onChange={(e) => { setCustomTip(e.target.value); setTipAmount(0); }}

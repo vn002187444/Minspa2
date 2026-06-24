@@ -7,7 +7,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Push notifications are not configured on server' }, { status: 500 });
     }
     return NextResponse.json({ publicKey });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
 }

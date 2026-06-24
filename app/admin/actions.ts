@@ -311,8 +311,8 @@ export async function getStaffs() {
     if (error) throw error;
     console.log('Fetched staff count:', data?.length);
     return data || [];
-  } catch (error: any) {
-    if (error?.code === '42703') {
+  } catch (error: unknown) {
+    if (error != null && typeof error === 'object' && 'code' in error && (error as any).code === '42703') {
       console.warn('is_active column missing from users table, retrying query without it');
       const { data, error: err2 } = await supabase.from('users')
         .select('id, username, full_name, role, cccd, created_at')
@@ -484,8 +484,8 @@ export async function saveService(serviceData: ServiceInput) {
   if (imageUrl && imageUrl.startsWith('data:')) {
     try {
       imageUrl = await uploadBase64ToStorage(imageUrl);
-    } catch (e: any) {
-      return { success: false, error: e.message };
+    } catch (e: unknown) {
+      return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
   }
   const { id, ...updateData } = { ...serviceData, image_url: imageUrl };
@@ -532,8 +532,8 @@ export async function deleteServiceSafely(serviceId: string, serviceName: string
     revalidatePath('/');
     revalidatePath('/admin');
     return { success: true, mode: 'SOFT_DELETE', message: 'Hệ thống đã tắt kích hoạt và tự động ẩn dịch vụ thành công để tránh lỗi lịch sử đơn hàng.' };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
@@ -557,8 +557,8 @@ export async function deleteStaffSafely(staffId: string, staffName: string) {
     revalidatePath('/');
     revalidatePath('/admin');
     return { success: true, message: 'Đã ẩn nhân viên thành công.' };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
@@ -586,8 +586,8 @@ export async function toggleStaffActive(staffId: string, newStatus: boolean) {
     revalidatePath('/');
     revalidatePath('/admin');
     return { success: true, message: newStatus ? 'Đã kích hoạt lại nhân viên.' : 'Đã vô hiệu hóa nhân viên.' };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
@@ -656,9 +656,9 @@ export async function saveSeoSettings(payload: SeoInput) {
     }, { onConflict: 'id' });
     if (error) throw error;
     return { success: true };
-  } catch (e: any) {
-    console.error(e);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    console.error(e instanceof Error ? e.message : e);
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -755,9 +755,9 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
       if (error) throw error;
     }
     return { success: true };
-  } catch (e: any) {
-    console.error(e);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    console.error(e instanceof Error ? e.message : e);
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -768,9 +768,9 @@ export async function deleteSeoArticle(id: string) {
     const { error } = await supabase.from('seo_articles').delete().eq('id', id);
     if (error) throw error;
     return { success: true };
-  } catch (e: any) {
-    console.error(e);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    console.error(e instanceof Error ? e.message : e);
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -1029,9 +1029,9 @@ export async function getCommissionReport(startDateStr: string, endDateStr: stri
         grandAppointmentsCount
       }
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Commission Report aggregation error:", error);
-    return { success: false, error: error.message || 'Lỗi khi lấy báo cáo hoa hồng' };
+    return { success: false, error: error instanceof Error ? error.message : 'Lỗi khi lấy báo cáo hoa hồng' };
   }
 }
 
@@ -1100,8 +1100,8 @@ export async function deleteTreatmentPackageSafely(packageId: string, packageNam
 
     revalidatePath('/admin');
     return { success: true, message: 'Đã ẩn gói liệu trình (soft delete).' };
-  } catch (err: any) {
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
@@ -1197,9 +1197,9 @@ export async function saveBankSettings(payload: BankInput) {
     }, { onConflict: 'id' });
     if (error) throw error;
     return { success: true };
-  } catch (e: any) {
-    console.error(e);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    console.error(e instanceof Error ? e.message : e);
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -1328,9 +1328,9 @@ export async function deleteAppointment(appointmentId: string) {
     
     await logAuditAction(session!.user.id, "DELETE_APPOINTMENT", `Xóa vĩnh viễn lịch hẹn ID: ${appointmentId}`);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('deleteAppointment Error:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -1365,8 +1365,8 @@ export async function getSystemHealth() {
     });
     const data = await res.json();
     return { status: res.ok ? 'ok' : 'unhealthy', ...data };
-  } catch (e: any) {
-    return { status: 'error', error: e.message };
+  } catch (e: unknown) {
+    return { status: 'error', error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -1389,8 +1389,8 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
     });
     const data = await res.json();
     return { success: res.ok, ...data };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -1497,9 +1497,9 @@ export async function saveBannerSettings(payload: BannerInput) {
     }, { onConflict: 'id' });
     if (error) throw error;
     return { success: true };
-  } catch (e: any) {
-    console.error(e);
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    console.error(e instanceof Error ? e.message : e);
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -1990,8 +1990,8 @@ export async function saveThemeSettings(payload: { override: string | null; part
     }, { onConflict: 'id' });
     if (error) throw error;
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -2022,8 +2022,8 @@ export async function saveMascotSettings(payload: { enabled: boolean; character:
     }, { onConflict: 'id' });
     if (error) throw error;
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -2049,8 +2049,8 @@ export async function saveAutoSeoConfig(payload: {
     }, { onConflict: 'id' });
     if (error) throw error;
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e: unknown) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
 
@@ -2257,4 +2257,257 @@ export async function deleteCashTransaction(id: string) {
   }
   const supabase = await createClient();
   await supabase.from('cash_register').update({ is_active: false }).eq('id', id);
+}
+
+// ===== V3.14 — Payroll =====
+
+interface StaffPayrollInfo {
+  id: string;
+  fullName: string;
+  username: string;
+  role: string;
+  isActive: boolean;
+  baseSalary: number;
+  bankAccount: string | null;
+  bankName: string | null;
+}
+
+interface PayrollStaffRow {
+  staffId: string;
+  fullName: string;
+  baseSalary: number;
+  totalCommission: number;
+  totalTips: number;
+  totalPackageCommission: number;
+  totalSales: number;
+  appointmentCount: number;
+  absentDays: number;
+  workingDays: number;
+}
+
+interface PayrollRecord {
+  id: string;
+  staffId: string;
+  fullName: string;
+  periodStart: string;
+  periodEnd: string;
+  baseSalary: number;
+  totalCommission: number;
+  totalTips: number;
+  totalPackageCommission: number;
+  bonus: number;
+  deduction: number;
+  advance: number;
+  netPay: number;
+  status: string;
+  notes: string | null;
+  paidAt: string | null;
+}
+
+export async function getStaffPayrollInfo(): Promise<StaffPayrollInfo[]> {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('users')
+    .select('id, full_name, username, role, is_active, base_salary, bank_account, bank_name')
+    .in('role', ['STAFF', 'MANAGER'])
+    .order('full_name');
+  return (data || []).map((u: any) => ({
+    id: u.id,
+    fullName: u.full_name,
+    username: u.username,
+    role: u.role,
+    isActive: u.is_active,
+    baseSalary: Number(u.base_salary) || 0,
+    bankAccount: u.bank_account || null,
+    bankName: u.bank_name || null,
+  }));
+}
+
+export async function updateStaffSalary(staffId: string, baseSalary: number, bankAccount: string, bankName: string) {
+  const session = await getSession();
+  if (!session || session.user.role !== 'ADMIN') throw new Error('Unauthorized');
+  const supabase = await createClient();
+  const { error } = await supabase.from('users').update({
+    base_salary: baseSalary,
+    bank_account: bankAccount || null,
+    bank_name: bankName || null,
+  }).eq('id', staffId);
+  if (error) throw error;
+}
+
+export async function calculatePayroll(periodStart: string, periodEnd: string): Promise<PayrollStaffRow[]> {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+  const staffs = await getStaffPayrollInfo();
+
+  const startDate = new Date(periodStart);
+  const endDate = new Date(periodEnd);
+  endDate.setHours(23, 59, 59, 999);
+
+  const startISO = startDate.toISOString();
+  const endISO = endDate.toISOString();
+
+  const result: PayrollStaffRow[] = [];
+
+  for (const staff of staffs) {
+    if (!staff.isActive) continue;
+
+    // Commission + tips from completed appointments
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select('commission_amount, tip_amount, total_amount')
+      .eq('staff_id', staff.id)
+      .eq('status', 'COMPLETED')
+      .gte('start_time', startISO)
+      .lte('start_time', endISO);
+
+    // Package commission from customer_packages sold in period
+    const { data: packages } = await supabase
+      .from('customer_packages')
+      .select('commission_amount')
+      .eq('sold_by_staff_id', staff.id)
+      .gte('purchased_at', startISO)
+      .lte('purchased_at', endISO);
+
+    // Attendance: count working days vs absent days
+    const { data: attendance } = await supabase
+      .from('attendance')
+      .select('date, status')
+      .eq('staff_id', staff.id)
+      .gte('date', periodStart)
+      .lte('date', periodEnd);
+
+    const totalCommission = (appointments || []).reduce((s, a: any) => s + Number(a.commission_amount || 0), 0);
+    const totalTips = (appointments || []).reduce((s, a: any) => s + Number(a.tip_amount || 0), 0);
+    const totalPackageCommission = (packages || []).reduce((s, p: any) => s + Number(p.commission_amount || 0), 0);
+    const totalSales = (appointments || []).reduce((s, a: any) => s + Number(a.total_amount || 0), 0);
+    const appointmentCount = (appointments || []).length;
+    const absentDays = (attendance || []).filter((a: any) => a.status === 'ABSENT').length;
+    const workingDays = (attendance || []).length;
+
+    result.push({
+      staffId: staff.id,
+      fullName: staff.fullName,
+      baseSalary: staff.baseSalary,
+      totalCommission: Math.round(totalCommission),
+      totalTips: Math.round(totalTips),
+      totalPackageCommission: Math.round(totalPackageCommission),
+      totalSales: Math.round(totalSales),
+      appointmentCount,
+      absentDays,
+      workingDays,
+    });
+  }
+
+  return result;
+}
+
+export async function getSalaryPayments(periodStart: string, periodEnd: string): Promise<PayrollRecord[]> {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from('salary_payments')
+    .select('*, users!staff_id(full_name)')
+    .gte('period_start', periodStart)
+    .lte('period_end', periodEnd)
+    .order('created_at', { ascending: false });
+
+  return (data || []).map((p: any) => ({
+    id: p.id,
+    staffId: p.staff_id,
+    fullName: p.users?.full_name || '',
+    periodStart: p.period_start,
+    periodEnd: p.period_end,
+    baseSalary: Number(p.base_salary),
+    totalCommission: Number(p.total_commission),
+    totalTips: Number(p.total_tips),
+    totalPackageCommission: Number(p.total_package_commission),
+    bonus: Number(p.bonus),
+    deduction: Number(p.deduction),
+    advance: Number(p.advance),
+    netPay: Number(p.net_pay),
+    status: p.status,
+    notes: p.notes,
+    paidAt: p.paid_at,
+  }));
+}
+
+export async function savePayrollCalculations(
+  periodStart: string,
+  periodEnd: string,
+  rows: PayrollStaffRow[]
+) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+
+  for (const row of rows) {
+    const netPay = row.baseSalary + row.totalCommission + row.totalTips + row.totalPackageCommission;
+
+    const { error } = await supabase.from('salary_payments').insert({
+      staff_id: row.staffId,
+      period_start: periodStart,
+      period_end: periodEnd,
+      base_salary: row.baseSalary,
+      total_commission: row.totalCommission,
+      total_tips: row.totalTips,
+      total_package_commission: row.totalPackageCommission,
+      bonus: 0,
+      deduction: 0,
+      advance: 0,
+      net_pay: netPay,
+      status: 'PENDING',
+    });
+    if (error) console.error(`[PAYROLL] Failed to save ${row.fullName}:`, error);
+  }
+}
+
+export async function processPayrollPayment(id: string) {
+  const session = await getSession();
+  if (!session || session.user.role !== 'ADMIN') {
+    throw new Error('Unauthorized');
+  }
+  const supabase = await createClient();
+
+  const { data: payment } = await supabase
+    .from('salary_payments')
+    .select('*, users!staff_id(full_name)')
+    .eq('id', id)
+    .single();
+
+  if (!payment) throw new Error('Không tìm thấy bản ghi lương');
+  if (payment.status === 'PAID') throw new Error('Kỳ lương này đã được thanh toán');
+
+  const fullName = (payment.users as any)?.full_name || 'Nhân viên';
+
+  // Update payment status
+  const { error: updateError } = await supabase
+    .from('salary_payments')
+    .update({ status: 'PAID', paid_at: new Date().toISOString(), paid_by: session.user.id })
+    .eq('id', id);
+  if (updateError) throw updateError;
+
+  // Record in cash register
+  const { error: cashError } = await supabase.from('cash_register').insert({
+    type: 'CHI',
+    category: 'Chi lương',
+    amount: payment.net_pay,
+    description: `Lương ${fullName} - ${payment.period_start} đến ${payment.period_end}`,
+    reference_type: 'salary_payment',
+    reference_id: payment.id,
+    recorded_by: session.user.id,
+  });
+  if (cashError) throw cashError;
 }

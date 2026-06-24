@@ -6,10 +6,29 @@ import { RefreshCw, Sparkles, ImageIcon, CheckCircle2, XIcon } from "lucide-reac
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { saveService } from "../actions";
 
-export default function ServiceModal({ service, onClose, onReload }: any) {
+interface ServiceModalService {
+  id?: string | null;
+  name?: string;
+  description?: string;
+  price?: number | null;
+  duration?: number | null;
+  category?: string;
+  image_url?: string;
+  is_active?: boolean;
+  commission_percentage?: number | null;
+  commission_amount?: number | null;
+}
+
+interface ServiceModalProps {
+  service: ServiceModalService;
+  onClose: () => void;
+  onReload: () => void;
+}
+
+export default function ServiceModal({ service, onClose, onReload }: ServiceModalProps) {
   const trapRef = useFocusTrap(true);
   const [form, setForm] = useState({
-    id: service.id || null,
+    id: service.id || undefined,
     name: service.name || "",
     description: service.description || "",
     price: service.price ?? 0,
@@ -81,10 +100,11 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="svc-name" className="block text-sm font-medium text-gray-700 mb-1">
               Tên dịch vụ
             </label>
             <input
+              id="svc-name"
               required
               type="text"
               value={form.name}
@@ -94,7 +114,7 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
           </div>
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="block text-sm font-medium text-gray-700">
+              <label htmlFor="svc-description" className="block text-sm font-medium text-gray-700">
                 Mô tả dịch vụ
               </label>
               <button
@@ -108,6 +128,7 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
               </button>
             </div>
             <textarea
+              id="svc-description"
               value={form.description || ""}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               placeholder="Nhập mô tả chi tiết cho dịch vụ này..."
@@ -117,10 +138,11 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="svc-price" className="block text-sm font-medium text-gray-700 mb-1">
                 Giá (VNĐ)
               </label>
               <input
+                id="svc-price"
                 required
                 type="number"
                 value={form.price}
@@ -131,10 +153,11 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="svc-duration" className="block text-sm font-medium text-gray-700 mb-1">
                 Thời gian (Phút)
               </label>
               <input
+                id="svc-duration"
                 required
                 type="number"
                 value={form.duration}
@@ -148,11 +171,12 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <div className="flex justify-between">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="svc-commissionPercent" className="block text-sm font-medium text-gray-700 mb-1">
                   Tỷ lệ hoa hồng (%)
                 </label>
               </div>
               <input
+                id="svc-commissionPercent"
                 type="number"
                 value={form.commission_percentage}
                 onChange={(e) =>
@@ -170,11 +194,12 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
             </div>
             <div>
               <div className="flex justify-between">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="svc-commissionAmount" className="block text-sm font-medium text-gray-700 mb-1">
                   Số tiền cố định (VNĐ)
                 </label>
               </div>
               <input
+                id="svc-commissionAmount"
                 type="number"
                 value={form.commission_amount}
                 onChange={(e) =>
@@ -192,10 +217,11 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="svc-category" className="block text-sm font-medium text-gray-700 mb-1">
               Danh mục
             </label>
             <select
+              id="svc-category"
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
               className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
@@ -209,7 +235,7 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
 
           {/* Service Image */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="svc-imageUrl" className="block text-sm font-medium text-gray-700 mb-1">
               Ảnh dịch vụ
             </label>
             <div className="space-y-3">
@@ -222,10 +248,10 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
                 </div>
               )}
               <div className="flex gap-2">
-                <label className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-sm font-medium text-gray-600">
+                <label htmlFor="svc-imageUrl" className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-sm font-medium text-gray-600">
                   <ImageIcon className="w-4 h-4" />
                   Tải ảnh lên
-                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                  <input id="svc-imageUrl" type="file" accept="image/*" className="hidden" onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     if (file.size > 512000) {
@@ -263,11 +289,12 @@ export default function ServiceModal({ service, onClose, onReload }: any) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="svc-isActive" className="block text-sm font-medium text-gray-700 mb-1">
               Trạng thái hiển thị
             </label>
-            <label className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+            <label htmlFor="svc-isActive" className="flex items-center gap-3 cursor-pointer p-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
               <input
+                id="svc-isActive"
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) =>

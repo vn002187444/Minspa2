@@ -80,8 +80,8 @@ async function tryGeminiImage(prompt: string, ai: GoogleGenAI): Promise<string |
       const mimeType = part.inlineData.mimeType || "image/png";
       return `data:${mimeType};base64,${part.inlineData.data}`;
     }
-  } catch (err: any) {
-    console.warn("[GEMINI IMAGE] Failed:", err.message);
+  } catch (err: unknown) {
+    console.warn("[GEMINI IMAGE] Failed:", err instanceof Error ? err.message : 'Unknown error');
   }
   return null;
 }
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
     const theme = getTheme(prompt);
     const pool = FALLBACK_IMAGES[theme] || FALLBACK_IMAGES.general;
     return NextResponse.json({ image: pickRandom(pool), method: "STOCK" });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.warn("[IMAGE GENERATION CRITICAL ERROR]", error);
     const prompt = "";
     const theme = getTheme(prompt);
