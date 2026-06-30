@@ -3,13 +3,14 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-import PwaSupport from "@/components/PwaSupport";
 import SkipLink from "@/components/SkipLink";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeBanner from "@/components/ThemeBanner";
 import MascotProvider from "@/components/MascotProvider";
-import GoogleTranslate from "@/components/GoogleTranslate";
 import ErrorBoundary from "@/components/ErrorBoundary";
+
+import PwaSupport from "@/components/PwaSupport";
+import GoogleTranslate from "@/components/GoogleTranslate";
 
 import { Toaster } from "sonner";
 import Script from "next/script";
@@ -69,6 +70,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [`${baseUrl}/icons/icon-512.png`],
     },
     appleWebApp: { capable: true, statusBarStyle: "default", title: "Min Salon" },
+    robots: { index: true, follow: true },
   };
 
   try {
@@ -124,8 +126,10 @@ export default function RootLayout({
     >
       <head>
 
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="dns-prefetch" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="preload" href="/icons/icon-192.png" as="image" />
@@ -134,18 +138,22 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
-          `}
-        </Script>
+        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');
+              `}
+            </Script>
+          </>
+        )}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{

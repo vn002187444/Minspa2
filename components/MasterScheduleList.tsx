@@ -95,7 +95,8 @@ const MasterScheduleList = React.memo(function MasterScheduleList({
             <select
               value={filterStaffId}
               onChange={(e) => setFilterStaffId(e.target.value)}
-              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-[#EADDCD] outline-none text-gray-700 focus:ring-1 focus:ring-[#8D6E53] cursor-pointer"
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-white border border-[#EADDCD] outline-none text-gray-700 focus:ring-1 focus:ring-[#8D6E53] cursor-pointer min-h-[44px]"
+              aria-label="Chọn kỹ thuật viên"
             >
               <option value="">Tất cả thợ</option>
               {displayStaffList.map((s: StaffInfo) => (
