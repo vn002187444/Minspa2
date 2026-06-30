@@ -126,9 +126,6 @@ export default function RootLayout({
       <head>
 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
-        <link rel="preconnect" href="https://www.googletagmanager.com" />
-        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         <link rel="dns-prefetch" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="preload" href="/icons/icon-192.png" as="image" />

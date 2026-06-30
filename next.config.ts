@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  experimental: {
+    optimizeCss: true,
+  },
   output: 'standalone',
   poweredByHeader: false,
   compress: true,

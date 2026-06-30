@@ -2,6 +2,12 @@
   "name": "min-nail-hair",
   "version": "0.1.0",
   "private": true,
+  "browserslist": [
+    "last 2 versions",
+    "not dead",
+    "not ie 11",
+    "not op_mini all"
+  ],
   "scripts": {
     "dev": "next dev --webpack",
     "build": "npx next build",
@@ -26,6 +32,7 @@
     "bcryptjs": "^3.0.3",
     "caniuse-lite": "^1.0.30001799",
     "clsx": "^2.1.1",
+    "critters": "^0.0.23",
     "date-fns": "^4.4.0",
     "dompurify": "^3.4.11",
     "dotenv": "^17.4.2",
