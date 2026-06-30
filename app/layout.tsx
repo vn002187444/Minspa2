@@ -122,6 +122,7 @@ export default function RootLayout({
     <html
       lang="vi"
       className={`${inter.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
     >
       <head>
 

@@ -162,7 +162,7 @@ export default async function Home() {
         <div className="hidden md:block absolute bottom-10 left-[-10%] w-96 h-96 4k:w-[32rem] 4k:h-[32rem] rounded-full theme-border/30 blur-3xl -z-10 animate-float-delayed" />
 
         <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto text-center space-y-8 4k:space-y-12 animate-slideUp">
-          <div className="inline-flex items-center gap-2 px-4 py-2.5 4k:px-6 4k:py-2 bg-[rgb(var(--color-bg-warm))] theme-text-secondary rounded-full text-xs 4k:text-sm font-bold ring-1 theme-border tracking-widest uppercase min-h-[44px]">
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 4k:px-6 4k:py-2 bg-[rgb(var(--color-bg-warm))] theme-text rounded-full text-xs 4k:text-sm font-bold ring-1 theme-border tracking-widest uppercase min-h-[44px]">
             <Sparkles className="w-3.5 h-3.5 4k:w-5 4k:h-5 theme-text-secondary animate-pulse" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
           </div>
 
@@ -208,7 +208,7 @@ export default async function Home() {
                 <MapPin className="w-5 h-5 text-[#8D6E53]" />
               </div>
               <div className="text-left">
-                <p className="text-xs uppercase tracking-wider text-gray-400 font-bold">Địa chỉ</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Địa chỉ</p>
                <p className="text-xs font-semibold text-[#3A2E2B] line-clamp-1">TM14 Lavita Charm, Thủ Đức</p>
               </div>
             </div>
@@ -218,7 +218,7 @@ export default async function Home() {
                 <Phone className="w-5 h-5 text-[#8D6E53]" />
               </div>
               <div className="text-left">
-                <p className="text-xs uppercase tracking-wider text-gray-400 font-bold">Hotline đặt lịch</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Hotline đặt lịch</p>
                 <p className="text-xs font-semibold text-[#3A2E2B]">{hotline}</p>
               </div>
             </a>
@@ -228,7 +228,7 @@ export default async function Home() {
                 <Clock className="w-5 h-5 text-[#8D6E53]" />
               </div>
               <div className="text-left">
-                <p className="text-xs uppercase tracking-wider text-gray-400 font-bold">Giờ mở cửa</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Giờ mở cửa</p>
                 <p className="text-xs font-semibold text-[#3A2E2B]">09:00 - 20:30 (Mỗi ngày)</p>
               </div>
             </div>
@@ -304,20 +304,20 @@ export default async function Home() {
                 >
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-pink-700 bg-pink-100 px-2 py-0.5 rounded-full">
                         Mua {pkg.buy_count} Tặng {pkg.free_count}
                       </span>
                       <h3 className="font-display font-extrabold text-lg text-[#3A2E2B] mt-1.5 line-clamp-1">
                         {pkg.name}
                       </h3>
-                      <p className="text-xs text-gray-400 font-medium italic">
+                      <p className="text-xs text-gray-500 font-medium italic">
                         Áp dụng: {pkg.services?.name || 'Dịch vụ nâng cao'}
                       </p>
                     </div>
 
                     <div className="space-y-2 bg-[#FAF6F0] p-3.5 rounded-xl text-xs text-[#5C4033] font-medium border border-[#EADDCD]/40">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Số buổi mua gốc:</span>
+                        <span className="text-gray-500">Số buổi mua gốc:</span>
                         <span className="font-bold">{pkg.buy_count} buổi</span>
                       </div>
                       <div className="flex justify-between items-center text-emerald-600">
@@ -333,7 +333,7 @@ export default async function Home() {
 
                   <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-gray-400 uppercase tracking-widest block font-bold mb-0.5">Giá Trọn Gói</span>
+                      <span className="text-[10px] text-gray-500 uppercase tracking-widest block font-bold mb-0.5">Giá Trọn Gói</span>
                       <span className="text-xl font-black text-gray-950 font-mono">
                         {Number(pkg.price).toLocaleString("vi")}đ
                       </span>
@@ -451,7 +451,7 @@ export default async function Home() {
                       {/* Footer element of the card: Price / Duration and Book CTA */}
                       <div className="mt-6 pt-4 border-t border-[#FAF6F0] flex items-center justify-between">
                         <div>
-                          <div className="text-xs text-gray-400 font-medium flex items-center gap-1.5">
+                          <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5">
                             <Clock className="w-3.5 h-3.5 text-[#8D6E53]" /> {service.duration} Phút
                           </div>
                           <div className="mt-1 font-display font-bold text-xl text-[#8D6E53]">
@@ -577,7 +577,7 @@ export default async function Home() {
               </a>
             </div>
             
-            <p className="text-xs text-gray-400 italic pt-2">
+            <p className="text-xs text-gray-300 italic pt-2">
               📍 Địa chỉ: TM14 Chung cư Lavita Charm, Trường Thọ, Thủ Đức (kế bên cổng chính chung cư)
             </p>
           </div>
@@ -610,7 +610,7 @@ export default async function Home() {
                   <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
                 </div>
               </div>
-              <p className="text-xs text-gray-400 font-medium leading-relaxed">
+              <p className="text-xs text-gray-300 font-medium leading-relaxed">
                 Nơi gìn giữ nét xuân và khơi dậy vẻ đẹp tự nhiên của bạn. Min Salon kiêu hãnh mang đến dịch vụ gội đầu dưỡng sinh thảo dược, làm móng chuyên sâu và trị liệu tóc cao cấp trong không gian thanh tịnh, đẳng cấp.
               </p>
               {/* Social links with premium circular icons */}
@@ -619,7 +619,7 @@ export default async function Home() {
                   href={facebookUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#8D6E53] hover:border-[#8D6E53] transition-all group"
+                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-[#8D6E53] hover:border-[#8D6E53] transition-all group"
                   title="Theo dõi Min trên Facebook"
                   aria-label="Facebook"
                 >
@@ -629,7 +629,7 @@ export default async function Home() {
                   href={zaloUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-amber-300 hover:bg-[#8D6E53] hover:border-[#8D6E53] transition-all group"
+                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-300 hover:text-amber-300 hover:bg-[#8D6E53] hover:border-[#8D6E53] transition-all group"
                   title="Kết nối qua Zalo OA"
                   aria-label="Zalo OA"
                 >
@@ -645,25 +645,25 @@ export default async function Home() {
               </h4>
               <ul className="space-y-1">
                 <li>
-                  <Link href="/booking" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                  <Link href="/booking" className="inline-flex items-center gap-1.5 text-xs text-gray-300 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
                     <span className="w-1 h-1 rounded-full bg-amber-500" />
                     Đặt lịch trực tuyến
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                  <Link href="/blog" className="inline-flex items-center gap-1.5 text-xs text-gray-300 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
                     <span className="w-1 h-1 rounded-full bg-amber-500" />
                     Cẩm nang chăm sóc &amp; Blog
                   </Link>
                 </li>
                 <li>
-                  <Link href="/#services" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                  <Link href="/#services" className="inline-flex items-center gap-1.5 text-xs text-gray-300 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
                     <span className="w-1 h-1 rounded-full bg-amber-500" />
                     Bảng giá &amp; Dịch vụ spa
                   </Link>
                 </li>
                 <li>
-                  <a href="https://maps.google.com/?q=Lavita+Charm+Thu+Duc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                  <a href="https://maps.google.com/?q=Lavita+Charm+Thu+Duc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-gray-300 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
                     <span className="w-1 h-1 rounded-full bg-amber-500" />
                     Xem bản đồ &amp; Chỉ đường
                   </a>
@@ -679,7 +679,7 @@ export default async function Home() {
               <ul className="space-y-2">
                 <li className="flex items-start gap-2.5 py-0.5">
                   <MapPin className="w-4 h-4 text-[#8D6E53] shrink-0 mt-0.5" />
-                  <span className="text-xs text-gray-400 font-medium leading-relaxed">
+                  <span className="text-xs text-gray-300 font-medium leading-relaxed">
                     TM14 Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức, TP. Hồ Chí Minh
                   </span>
                 </li>
@@ -691,7 +691,7 @@ export default async function Home() {
                 </li>
                 <li className="flex items-center gap-2.5 py-0.5">
                   <Clock className="w-4 h-4 text-[#8D6E53] shrink-0" />
-                  <span className="text-xs text-gray-400 font-medium">
+                  <span className="text-xs text-gray-300 font-medium">
                     09:00 - 20:30 (Tất cả các ngày)
                   </span>
                 </li>
@@ -703,7 +703,7 @@ export default async function Home() {
               <h4 className="font-display font-bold text-sm text-[#EADDCD] uppercase tracking-wider border-l-2 border-[#8D6E53] pl-2.5">
                 Nhận Ưu Đãi Đặc Biệt
               </h4>
-              <p className="text-xs text-gray-400 font-medium leading-relaxed">
+              <p className="text-xs text-gray-300 font-medium leading-relaxed">
                 Đăng ký để nhận thông tin về các gói liệu trình khuyến mãi, sự kiện đặc biệt và mẹo làm đẹp hàng tuần của Min.
               </p>
               <div className="relative flex items-center rounded-xl bg-white/5 border border-white/10 p-1 focus-within:ring-2 focus-within:ring-[#8D6E53] focus-within:border-transparent transition-all">

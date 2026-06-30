@@ -18,6 +18,11 @@ interface Notification {
   created_at: string;
 }
 
+function hasAuthCookie(): boolean {
+  if (typeof document === 'undefined') return false;
+  return document.cookie.split(';').some(c => c.trim().startsWith('sb-'));
+}
+
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -29,6 +34,10 @@ export default function NotificationBell() {
   const userIdRef = useRef<string | null>(null);
 
   const fetchUnreadCount = useCallback(async () => {
+    if (!hasAuthCookie()) {
+      startTransition(() => { setAuthenticated(false); });
+      return;
+    }
     try {
       const res = await fetch('/api/notifications/unread-count');
       if (res.status === 401) {
@@ -45,6 +54,7 @@ export default function NotificationBell() {
   }, []);
 
   const fetchNotifications = useCallback(async () => {
+    if (!hasAuthCookie()) return;
     startTransition(() => { setLoading(true); });
     try {
       const res = await fetch('/api/notifications?limit=20');
@@ -61,6 +71,10 @@ export default function NotificationBell() {
   }, []);
 
   useEffect(() => {
+    if (!hasAuthCookie()) {
+      startTransition(() => { setAuthenticated(false); });
+      return;
+    }
     fetchUnreadCount().then(() => {
       // Get current user ID for Realtime subscription
       fetch('/api/auth/me').then(async (res) => {
