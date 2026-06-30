@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, startTransition } from 'react';
 import { getScheduleData } from '@/app/admin/schedule/actions';
 import { swapAppointment, updateAppointmentByStaffOrAdmin } from '@/app/staff/actions';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Calendar as CalendarIcon, Clock, Sparkles, Filter, Grid3x3, List } from 'lucide-react';
-import { DndContext, DragOverlay, DragStartEvent, DragEndEvent } from '@dnd-kit/core';
+import { Calendar as CalendarIcon, Clock, Grid3x3, List } from 'lucide-react';
+import { DndContext, DragOverlay, DragStartEvent, DragEndEvent, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { useScheduleRealtime } from '@/lib/realtime';
 
 import MasterScheduleGrid from './MasterScheduleGrid';
@@ -26,7 +26,7 @@ function getVNTimeComponents(dateStr: string) {
     const hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
     const minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
     return { hour, minute };
-  } catch (e) {
+  } catch {
     const d = new Date(dateStr);
     return { hour: d.getHours(), minute: d.getMinutes() };
   }
@@ -36,7 +36,7 @@ function getVNTimeStr(dateStr: string) {
   try {
     const comps = getVNTimeComponents(dateStr);
     return `${comps.hour.toString().padStart(2, '0')}:${comps.minute.toString().padStart(2, '0')}`;
-  } catch (e) {
+  } catch {
     return '09:00';
   }
 }
@@ -79,14 +79,14 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
         month: '2-digit',
         day: '2-digit'
       }).format(new Date());
-      setSelectedDate(todayStr);
+      startTransition(() => { setSelectedDate(todayStr); });
     }
-    setIsMounted(true);
+    startTransition(() => { setIsMounted(true); });
   }, [dateOverride]);
 
   useEffect(() => {
     if (dateOverride) {
-      setSelectedDate(dateOverride);
+      startTransition(() => { setSelectedDate(dateOverride); });
     }
   }, [dateOverride]);
 
@@ -111,9 +111,14 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
   const [editStatus, setEditStatus] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+  );
+
   const displayStaffList = useMemo(() => {
     if (!data.staffList) return [];
-    const hasUnassigned = data.appointments?.some((a: any) => !a.staff_id);
+      const hasUnassigned = data.appointments?.some((a: any) => !a.staff_id);
     if (hasUnassigned) {
       return [
         ...data.staffList,
@@ -136,7 +141,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     setEditStaffId(appt.staff_id || '_unassigned');
     try {
       setEditStartTime(getVNTimeStr(appt.start_time));
-    } catch (e) {
+    } catch {
       setEditStartTime('09:00');
     }
     const sIds = appt.appointment_services?.map((as: { service_id: string }) => as.service_id).filter(Boolean) || [];
@@ -170,7 +175,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
         } else {
           setMessage({ type: 'error', text: res.error || 'Có lỗi xảy ra khi chuyển đơn' });
         }
-      } catch (err) {
+      } catch {
         setMessage({ type: 'error', text: 'Lỗi kết nối máy chủ' });
       }
       setIsLoading(false);
@@ -179,7 +184,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      setViewType('list');
+      startTransition(() => { setViewType('list'); });
     }
   }, []);
 
@@ -187,6 +192,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
     if (selectedDate) {
       loadData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   async function loadData() {
@@ -200,8 +206,8 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       const res = await getScheduleData(selectedDate);
       setData(res);
       setDateCache(prev => new Map(prev).set(selectedDate, res));
-    } catch (e) {
-      console.error(e);
+    } catch {
+      console.error('loadData failed');
     }
     setIsLoading(false);
   }
@@ -213,21 +219,25 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       return next;
     });
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate]);
 
   useScheduleRealtime({ date: selectedDate, onDataChanged: handleRealtimeRefresh, enabled: !!selectedDate });
 
-  const timeSlots: string[] = [];
-  for (let hour = START_HOUR; hour < END_HOUR; hour++) {
-    timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
-    timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
-  }
-  timeSlots.push(`${END_HOUR}:00`);
-  timeSlots.push(`${END_HOUR}:30`);
+  const timeSlots = useMemo(() => {
+    const slots: string[] = [];
+    for (let hour = START_HOUR; hour < END_HOUR; hour++) {
+      slots.push(`${hour.toString().padStart(2, '0')}:00`);
+      slots.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+    slots.push(`${END_HOUR}:00`);
+    slots.push(`${END_HOUR}:30`);
+    return slots;
+  }, []);
 
   const parsedAppointments = useMemo(() => {
     if (!data.appointments) return [];
-    return data.appointments.map((appt: any) => {
+      return data.appointments.map((appt: any) => {
       const effStart = getEffectiveStart(appt);
       const effEnd = getEffectiveEnd(appt);
       const vnStart = getVNTimeComponents(effStart);
@@ -249,7 +259,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
 
   const parsedLocks = useMemo(() => {
     if (!data.timeSlotLocks) return [];
-    return data.timeSlotLocks.map((lock: any) => {
+      return data.timeSlotLocks.map((lock: any) => {
       const vnStart = getVNTimeComponents(lock.start_time);
       const vnEnd = getVNTimeComponents(lock.end_time);
       return {
@@ -288,7 +298,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
   }, [parsedLocks]);
 
   const activeTimeSlots = useMemo(() => {
-    const staffIds = new Set(displayStaffList.map((s: any) => s.id));
+      const staffIds = new Set(displayStaffList.map((s: any) => s.id));
     const activeSet = new Set<string>();
     for (const [key] of apptLookupMap) {
       const [sid, minsStr] = key.split('-');
@@ -389,8 +399,8 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       } else {
         setMessage({ type: 'error', text: res.error || 'Có lỗi xảy ra khi cập nhật.' });
       }
-    } catch (err: any) {
-      setMessage({ type: 'error', text: err.message || 'Lỗi server' });
+    } catch (err: unknown) {
+      setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Lỗi server' });
     }
     setIsSavingEdit(false);
   };
@@ -411,7 +421,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       } else {
         setMessage({ type: 'error', text: res.error || 'Lỗi khi hủy đơn' });
       }
-    } catch (err) {
+    } catch {
       setMessage({ type: 'error', text: 'Lỗi server khi hủy đơn' });
     }
     setIsLoading(false);
@@ -427,7 +437,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
   }
 
   return (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="bg-white rounded-3xl border border-[#EADDCD] p-4 sm:p-6 shadow-sm space-y-6">
         {/* Date Navigation Badges */}
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
@@ -506,14 +516,14 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
               <button
                 type="button"
                 onClick={() => setViewType('grid')}
-                className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewType === 'grid' ? 'bg-[#5C4033] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`flex-1 sm:flex-initial text-center px-4 py-2.5 rounded-lg text-xs font-bold transition-all min-h-[44px] ${viewType === 'grid' ? 'bg-[#5C4033] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 Biểu đồ ngang
               </button>
               <button
                 type="button"
                 onClick={() => setViewType('list')}
-                className={`flex-1 sm:flex-initial text-center px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${viewType === 'list' ? 'bg-[#5C4033] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`flex-1 sm:flex-initial text-center px-4 py-2.5 rounded-lg text-xs font-bold transition-all min-h-[44px] ${viewType === 'list' ? 'bg-[#5C4033] text-white shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
               >
                 📱 Biểu đồ đứng (Mobile)
               </button>

@@ -131,10 +131,14 @@ export default function TabPayroll() {
   useEffect(() => {
     if (rangeType !== 'custom') {
       const dates = calculateDates(rangeType);
-      setStartDate(dates.startInput);
-      setEndDate(dates.endInput);
-      loadStaff();
-      fetchPayments(dates.startInput, dates.endInput);
+      setTimeout(() => {
+        setStartDate(dates.startInput);
+        setEndDate(dates.endInput);
+      }, 0);
+      setTimeout(() => {
+        loadStaff();
+        fetchPayments(dates.startInput, dates.endInput);
+      }, 0);
     }
   }, [rangeType]);
 
@@ -182,9 +186,9 @@ export default function TabPayroll() {
           </select>
           {rangeType === 'custom' && (
             <>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]" />
               <span className="text-gray-400">→</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]" />
               <button onClick={handleCustomSearch} className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
                 Xem
               </button>
@@ -390,7 +394,7 @@ export default function TabPayroll() {
                         <button
                           onClick={() => handlePay(p.id)}
                           disabled={loading}
-                          className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
+                          className="flex items-center gap-1 px-3 py-2.5 min-h-[44px] bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
                         </button>

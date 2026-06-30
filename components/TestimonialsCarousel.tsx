@@ -19,7 +19,7 @@ const testimonials = [
 
 export default function TestimonialsCarousel() {
   return (
-    <section className="py-16 bg-white border-y border-[#EADDCD] overflow-hidden">
+    <section id="reviews" className="scroll-mt-28 md:scroll-mt-24 py-16 bg-white border-y border-[#EADDCD] overflow-hidden">
       <div className="max-w-6xl mx-auto px-4 mb-10 text-center space-y-3">
         <span className="text-xs tracking-[0.2em] font-bold text-[#8D6E53] uppercase block">
           Khách hàng nói gì về Min

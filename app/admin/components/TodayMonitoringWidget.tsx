@@ -41,7 +41,7 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
       const res = await updateAppointmentStatus(id, nextStatus);
       if (res.success) { onReload(); toast.success('Cập nhật trạng thái thành công'); }
       else toast.error('Lỗi: ' + res.error);
-    } catch (err: any) { console.error(err); }
+    } catch (err: unknown) { console.error(err); }
     finally { setUpdatingId(null); }
   };
 
@@ -71,7 +71,7 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
           { id: 'COMPLETED' as const, label: 'Đã hoàn thành', count: completed.length, activeClass: 'bg-emerald-600 text-white shadow-xs' },
           { id: 'CANCELLED' as const, label: 'Đã hủy', count: cancelled.length, activeClass: 'bg-rose-600 text-white shadow-xs' },
         ].map((tab) => (
-          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === tab.id ? tab.activeClass : 'bg-gray-100 text-gray-500 hover:text-gray-900'}`}>
+          <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer min-h-[44px] flex items-center ${activeTab === tab.id ? tab.activeClass : 'bg-gray-100 text-gray-500 hover:text-gray-900'}`}>
             {tab.label} ({tab.count})
           </button>
         ))}
@@ -93,7 +93,7 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-150/50 font-medium text-gray-700">
-                {list.map((appt: any) => (
+                {list.map((appt) => (
                   <tr key={appt.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-3 font-bold text-gray-900">{appt.customers?.full_name || 'Khách lẻ'}</td>
                     <td className="p-3 font-mono font-bold text-gray-800">{formatTime(appt.start_time)}</td>
@@ -118,14 +118,14 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
                           <>
                             {(appt.status === 'PENDING_RANDOM' || appt.status === 'CONFIRMED') && (
                               <>
-                                <button onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')} className="px-2 py-1 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-[10px] font-extrabold cursor-pointer transition-colors">Bắt đầu làm</button>
-                                <button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-2 py-1 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors">Hủy lịch</button>
+                                <button onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')} className="px-2 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center">Bắt đầu làm</button>
+                                <button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-2 py-2.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center">Hủy lịch</button>
                               </>
                             )}
                             {appt.status === 'IN_PROGRESS' && (
                               <>
-                                <button onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')} className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 text-[10px] font-extrabold cursor-pointer transition-colors">Hoàn thành</button>
-                                <button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-2 py-1 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors">Hủy lịch</button>
+                                <button onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')} className="px-2 py-2.5 bg-emerald-50 text-emerald-600 rounded-lg hover:bg-emerald-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center">Hoàn thành</button>
+                                <button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-2 py-2.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center">Hủy lịch</button>
                               </>
                             )}
                             {appt.status === 'COMPLETED' && <span className="text-gray-400 text-[10px] font-bold">Hoàn tất</span>}
@@ -140,7 +140,7 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
             </table>
           </div>
           <div className="md:hidden space-y-3">
-            {list.map((appt: any) => (
+            {list.map((appt) => (
               <div key={appt.id} className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 space-y-2.5">
                 <div className="flex justify-between items-start">
                   <div>
@@ -161,10 +161,10 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
                   ) : (
                     <>
                       {(appt.status === 'PENDING_RANDOM' || appt.status === 'CONFIRMED') && (
-                        <><button onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')} className="flex-1 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer text-center">Bắt đầu làm</button><button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center">Hủy</button></>
+                        <><button onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer text-center min-h-[44px] flex items-center justify-center">Bắt đầu làm</button><button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-3 py-2.5 bg-gray-200 text-gray-700 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center min-h-[44px] flex items-center justify-center">Hủy</button></>
                       )}
                       {appt.status === 'IN_PROGRESS' && (
-                        <><button onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')} className="flex-1 py-1.5 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer text-center">Hoàn thành</button><button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center">Hủy</button></>
+                        <><button onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')} className="flex-1 py-2.5 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer text-center min-h-[44px] flex items-center justify-center">Hoàn thành</button><button onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')} className="px-3 py-2.5 bg-gray-200 text-gray-700 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer text-center min-h-[44px] flex items-center justify-center">Hủy</button></>
                       )}
                     </>
                   )}

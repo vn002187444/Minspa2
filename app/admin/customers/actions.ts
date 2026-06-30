@@ -1,8 +1,17 @@
 'use server';
 
 import { createClient } from "@/utils/supabase/server";
+import { getSession } from "@/utils/auth";
+
+async function checkAdminOrManager() {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+    throw new Error('Unauthorized');
+  }
+}
 
 export async function getCustomers(page = 1, limit = 20, searchTerm = '') {
+  await checkAdminOrManager();
   const supabase = await createClient();
 
   let query = supabase.from('customers').select('id, full_name, phone, created_at', { count: 'exact' });
@@ -46,6 +55,7 @@ export async function getCustomers(page = 1, limit = 20, searchTerm = '') {
 }
 
 export async function getCustomerStats(customerId: string) {
+  await checkAdminOrManager();
   const supabase = await createClient();
 
   const { data: appointments, error } = await supabase

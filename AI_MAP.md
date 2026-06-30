@@ -266,26 +266,22 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | Endpoint | Method | Mô tả |
 |----------|--------|-------|
 | `api/auth/me` | GET | `{ authenticated: boolean, user: ... }` từ session cookie |
-| `api/login` | POST | Login form → set session cookie |
 | `api/logout` | POST | Xóa session cookie |
 | `api/vapid` | GET | Trả VAPID public key cho push notification |
 | `api/subscribe` | POST | Lưu push subscription |
-| `api/booking/cancel` | POST | Hủy appointment + unlock slots + cascade shift |
-| `api/booking/complete-early` | POST | Kết thúc sớm appointment + cascade shift |
-| `api/booking/locks` | POST | Quản lý time_slot_locks |
 | `api/notifications` | GET | Danh sách notifications (có phân trang) |
 | `api/notifications/unread-count` | GET | Số lượng chưa đọc |
 | `api/notifications/[id]/read` | PATCH | Đánh dấu đã đọc |
 | `api/notifications/read-all` | POST | Đánh dấu tất cả đã đọc |
 | `api/cron/reminders` | POST | Cron job: 4 reminder rules (cần CRON_SECRET) |
-| `api/cron-check` | GET | Health check cho cron |
+| `api/cron/marketing` | POST | Cron job: marketing auto-posts (cần CRON_SECRET) |
+| `api/cron/auto-assign` | POST | Cron job: auto-assign staff to unassigned bookings |
 | `api/generate-description` | POST | AI sinh mô tả dịch vụ |
 | `api/generate-seo-article` | POST | AI sinh bài viết SEO |
 | `api/generate-seo-image` | POST | AI sinh ảnh SEO |
 | `api/ai-assist` | POST | AI assistant chat |
 | `api/seo-search` | POST | Tìm kiếm từ khóa SEO |
 | `api/blog/view` | POST | Track blog view (ip_hash, user_agent) |
-| `api/queue/sync` | POST | Trigger offline queue sync |
 
 ---
 
@@ -307,14 +303,14 @@ Cookie: session=<JWT>
 
 ```
 Client → Login form → loginUser() server action
-                        ├── Hardcoded bypass (admin/staff1) → createSession → redirect
-                        └── DB path: query users → check is_active → compare password_hash → createSession → redirect
+                        ├── Hardcoded bypass (admin/staff1) → createSession → redirect() (dùng next/navigation redirect, cookie flush an toàn)
+                        └── DB path: query users → check is_active → compare password_hash → createSession → redirect()
 
 Mỗi request:
-  middleware.ts
+  proxy.ts (formerly middleware.ts)
     ├── Đọc cookie "session"
-    ├── Decrypt JWT → nếu OK → re-encrypt với exp mới → set cookie
-    ├── Nếu fail → clear cookie
+    ├── Decrypt JWT → nếu OK → re-encrypt với exp mới → set cookie (sliding session)
+    ├── Nếu fail → redirect /login, KHÔNG clear cookie (tránh mất session do lỗi nhất thời)
     ├── /admin chỉ cho ADMIN/MANAGER
     └── /staff chỉ cho STAFF/MANAGER
 
@@ -425,7 +421,7 @@ api/cron/reminders → utils/reminders.ts → runRemindersCheck()
 | `.env.local` | Chứa: SUPABASE_*, JWT_SECRET, GEMINI_API_KEY, VAPID_*, CRON_SECRET, UNSPLASH_ACCESS_KEY |
 | `.env.example` | Mẫu các biến môi trường |
 | `next.config.ts` | images.remotePatterns + logging.fetches (P4.3) |
-| `middleware.ts` | Session refresh + route protection |
+| `proxy.ts` | Session refresh + route protection (Next.js 16, replaces middleware.ts) |
 | `scripts/migrate_schema.sql` | Upgrade script (ALTER ADD COLUMN IF NOT EXISTS) |
 
 ### Environment Variables
@@ -477,13 +473,13 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
 ## ⚠️ QUY CHẾ VẬN HÀNH (CYCLE PROTOCOL)
 
-> **Chi tiết hơn:** Xem `UPGRADE_PLAN.md` phần "QUY TẮC VẬN HÀNH & GIAO TIẾP" hoặc `PLAN.md` (archive)
+> **Chi tiết hơn:** Xem `PLAN.md` mục "QUY TẮC VẬN HÀNH & GIAO TIẾP"
 
 1. **Đọc `UPGRADE_PLAN.md`** → Các mục chưa làm + ưu tiên
 2. **Đọc `PLAN.md`** → Workflows + cycle protocol (nếu cần reference cũ)
 3. **Đọc `AI_MAP.md`** → Kiến trúc, DB schema, quy tắc kỹ thuật
 4. **Viết code** theo đúng kiến trúc
-5. **Cập nhật `UPGRADE_PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
+5. **Cập nhật `PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
 6. **Commit** với message rõ ràng: `feat:`, `fix:`, `refactor:`
 7. **Không push secrets** (.env.local, .env)
 
@@ -528,7 +524,7 @@ app/
 ├── api/              → API routes (cron, auth, notifications...)
 └── login/            → Trang đăng nhập
 
-components/           → Shared UI components
+components/           → Shared UI components (SEO schema: WebSiteSchema, BreadcrumbSchema, ArticleSchema, ServiceSchema, FaqSchema, AggregateRatingSchema, ProductSchema, ReviewCustomerModal)
 lib/                  → Business logic (booking-engine.ts)
 utils/                → Helpers (supabase, push, reminders)
 scripts/              → DB migration + seed

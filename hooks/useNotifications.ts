@@ -9,8 +9,8 @@ interface UseNotificationsReturn {
   notifications: Notification[];
   loading: boolean;
   open: boolean;
-  setOpen: (v: boolean) => void;
-  markAsRead: (id: string) => Promise<void>;
+  setOpen: (_v: boolean) => void;
+  markAsRead: (_id: string) => Promise<void>;
   markAllRead: () => Promise<void>;
 }
 
@@ -60,8 +60,11 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
   }, []);
 
   useEffect(() => {
-    userIdRef.current = userId;
-    fetchUnreadCount();
+    const init = async () => {
+      userIdRef.current = userId;
+      await fetchUnreadCount();
+    };
+    init();
 
     const supabase = createClient();
     const channel = supabase
@@ -76,7 +79,7 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
         { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `recipient_id=eq.${userId ?? ''}` },
         () => { fetchUnreadCount(); if (open) fetchNotifications(); }
       );
- 
+
     (async () => {
       try {
         const { safeSubscribe } = await import('@/lib/realtime');
@@ -85,7 +88,7 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
         console.warn('[Realtime] useNotifications subscription failed:', e);
       }
     })();
- 
+
     const pollingInterval = setInterval(fetchUnreadCount, 300000);
 
     return () => {
@@ -95,7 +98,10 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
   }, [userId, open, fetchUnreadCount, fetchNotifications]);
 
   useEffect(() => {
-    if (open) fetchNotifications();
+    const init = async () => {
+      if (open) await fetchNotifications();
+    };
+    init();
   }, [open, fetchNotifications]);
 
   return { unreadCount, notifications, loading, open, setOpen, markAsRead, markAllRead };

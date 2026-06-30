@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+
 import { motion } from "motion/react";
 import { getDashboardData } from "../actions";
 import TodayMonitoringWidget from "./TodayMonitoringWidget";
@@ -21,9 +22,6 @@ import {
   Activity,
   Globe,
   Sparkles,
-  CheckCircle2,
-  TrendingUp,
-  TrendingDown,
   DollarSign,
 } from "lucide-react";
 
@@ -43,7 +41,7 @@ export default function TabDashboard() {
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+      startTransition(() => { setIsMobile(window.innerWidth < 768); });
     };
     handleResize();
     window.addEventListener("resize", handleResize);
@@ -81,7 +79,7 @@ export default function TabDashboard() {
 
   const triggerToast = (type: "success" | "danger" | "info", message: string) => {
     const id = Date.now().toString() + Math.random().toString();
-    setToasts((prev) => [...prev, { id, type, message }]);
+    startTransition(() => { setToasts((prev) => [...prev, { id, type, message }]); });
     
     // Play chemical synthetic chime sound securely
     try {
@@ -122,31 +120,31 @@ export default function TabDashboard() {
     
     // Auto-remove after 8 seconds
     setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
+      startTransition(() => { setToasts((prev) => prev.filter((t) => t.id !== id)); });
     }, 8000);
   };
 
   const fetchDashboardData = async (startISO: string, endISO: string, silent = false) => {
-    if (!silent) setLoading(true);
-    setError("");
+    if (!silent) startTransition(() => { setLoading(true); });
+    startTransition(() => { setError(""); });
     try {
       const res = await getDashboardData(startISO, endISO);
-      setData(res);
-    } catch (e: any) {
-      setError(e.message || "Lỗi khi tải dữ liệu tổng quan");
+      startTransition(() => { setData(res); });
+    } catch (e: unknown) {
+      startTransition(() => { setError(e instanceof Error ? e.message : "Lỗi khi tải dữ liệu tổng quan"); });
     }
-    if (!silent) setLoading(false);
+    if (!silent) startTransition(() => { setLoading(false); });
   };
 
   const fetchFinancialData = async (startISO: string, endISO: string) => {
-    setFinLoading(true);
+    startTransition(() => { setFinLoading(true); });
     try {
       const res = await getFinancialDashboard(startISO, endISO);
-      setFinData(res);
-    } catch (e) {
+      startTransition(() => { setFinData(res); });
+    } catch {
       // Non-critical, silently fail
     }
-    setFinLoading(false);
+    startTransition(() => { setFinLoading(false); });
   };
 
   // Compare updates for real-time notifications
@@ -158,9 +156,9 @@ export default function TabDashboard() {
 
         // 1. Detect New Bookings
         const newAppts = currList.filter(
-          (curr: any) => !prevList.some((prev: any) => prev.id === curr.id)
+          (curr: any) => !prevList.some((prev) => prev.id === curr.id)
         );
-        newAppts.forEach((appt: any) => {
+         newAppts.forEach((appt: any) => {
           const timeStr = appt.start_time ? format(new Date(appt.start_time), 'HH:mm') : '--:--';
           triggerToast(
             'success',
@@ -169,8 +167,8 @@ export default function TabDashboard() {
         });
 
         // 2. Detect Cancellations
-        currList.forEach((curr: any) => {
-          const prev = prevList.find((p: any) => p.id === curr.id);
+         currList.forEach((curr: any) => {
+          const prev = prevList.find((p) => p.id === curr.id);
           if (prev && prev.status !== 'CANCELLED' && curr.status === 'CANCELLED') {
             triggerToast(
               'danger',
@@ -187,8 +185,10 @@ export default function TabDashboard() {
   useEffect(() => {
     if (rangeType !== "custom") {
       const dates = calculateDates(rangeType);
-      setStartDate(dates.startInput);
-      setEndDate(dates.endInput);
+      startTransition(() => {
+        setStartDate(dates.startInput);
+        setEndDate(dates.endInput);
+      });
       fetchDashboardData(dates.start, dates.end);
       fetchFinancialData(dates.start, dates.end);
     }
@@ -219,7 +219,7 @@ export default function TabDashboard() {
       const channel: any = supabase
         .channel('dashboard_updates')
         .on(
-          'postgres_changes' as any,
+          'postgres_changes',
           {
             event: '*',
             schema: 'public',
@@ -233,7 +233,7 @@ export default function TabDashboard() {
           }
         )
         .on(
-          'postgres_changes' as any,
+          'postgres_changes',
           {
             event: '*',
             schema: 'public',
@@ -293,7 +293,7 @@ export default function TabDashboard() {
               {t.type === 'success' ? '🎉' : t.type === 'danger' ? '⚠️' : '📢'}
             </span>
             <div className="flex-1 min-w-0">
-              <p className={`text-[10px] font-black uppercase tracking-wider mb-0.5 ${
+              <p className={`text-[11px] font-black uppercase tracking-wider mb-0.5 ${
                 t.type === 'success' ? 'text-emerald-700' : t.type === 'danger' ? 'text-rose-700' : 'text-blue-700'
               }`}>
                 {t.type === 'success' ? 'LỊCH ĐẶT MỚI' : t.type === 'danger' ? 'KHÁCH HỦY ĐƠN' : 'TIN TỨC'}
@@ -331,8 +331,8 @@ export default function TabDashboard() {
             ].map((btn) => (
               <button
                 key={btn.id}
-                onClick={() => setRangeType(btn.id as any)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                onClick={() => setRangeType(btn.id as "week" | "month" | "last_month" | "custom")}
+                className={`px-3.5 py-2.5 min-h-[44px] rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   rangeType === btn.id ? "bg-[#8D6E53] text-white shadow-xs" : "text-gray-500 hover:text-gray-900"
                 }`}
               >
@@ -388,7 +388,7 @@ export default function TabDashboard() {
                 <CalendarCheck className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[10px] text-[#A68F7B] font-bold uppercase tracking-wider font-sans">Hôm nay: Lịch chờ</p>
+                <p className="text-[11px] text-[#A68F7B] font-bold uppercase tracking-wider font-sans">Hôm nay: Lịch chờ</p>
                 <p className="text-lg font-black text-gray-800">{data.pendingCount} ca</p>
               </div>
             </div>
@@ -398,7 +398,7 @@ export default function TabDashboard() {
                 <Activity className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-[10px] text-blue-500 font-bold uppercase tracking-wider font-sans">Hôm nay: Đã điểm danh</p>
+                <p className="text-[11px] text-blue-500 font-bold uppercase tracking-wider font-sans">Hôm nay: Đã điểm danh</p>
                 <p className="text-lg font-black text-gray-800">{data.presentCount} thợ</p>
               </div>
             </div>
@@ -530,7 +530,7 @@ export default function TabDashboard() {
                 
                 <div className="space-y-4">
                   <div>
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider">Tổng Lượt truy cập (Quý này)</p>
+                    <p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider">Tổng Lượt truy cập (Quý này)</p>
                     <p className="text-2xl font-black text-stone-850 font-mono mt-0.5">
                       {((data.totalCompleted * 8.5) + 342).toLocaleString("vi")} <span className="text-xs font-normal text-stone-400 font-sans">lượt</span>
                     </p>
@@ -560,7 +560,7 @@ export default function TabDashboard() {
                   <div className="p-3 bg-amber-50/40 border border-amber-100 rounded-2xl flex items-start gap-2">
                     <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-[10px] font-extrabold text-amber-800 uppercase tracking-wide">Lời khuyên chuyển đổi mẫu</p>
+                      <p className="text-[11px] font-extrabold text-amber-800 uppercase tracking-wide">Lời khuyên chuyển đổi mẫu</p>
                       <p className="text-[10.5px] font-medium leading-relaxed text-stone-600 mt-0.5">
                         Với <b>82%</b> khách truy cập bằng điện thoại, hãy tối ưu ưu đãi và luôn giữ cho thanh công cụ dưới mobile tiện lợi nhất!
                       </p>
@@ -577,7 +577,7 @@ export default function TabDashboard() {
               <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider flex items-center gap-2">
                 <CalendarCheck className="w-4 h-4 text-[#8D6E53]" /> Nhật ký Xem điểm danh nhân viên
               </h3>
-              <span className="text-[10px] bg-gray-100 px-2.5 py-1 rounded-md font-bold text-gray-500">
+              <span className="text-[11px] bg-gray-100 px-2.5 py-1 rounded-md font-bold text-gray-500">
                 Lượt check-in: {data.attendanceLog.length} lần
               </span>
             </div>
@@ -587,42 +587,71 @@ export default function TabDashboard() {
                 Không tìm thấy dữ liệu điểm danh nào trong thời gian này.
               </p>
             ) : (
-              <div className="overflow-x-auto whitespace-nowrap">
-                <table className="w-full text-left font-sans text-xs">
-                  <thead className="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-100 text-[10px]">
-                    <tr>
-                      <th className="p-3 font-semibold">Ngày</th>
-                      <th className="p-3 font-semibold">Nhân viên</th>
-                      <th className="p-3 text-center font-semibold">Trạng thái</th>
-                      <th className="p-3 font-semibold">Giờ vào chi tiết</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
-                    {data.attendanceLog.map((log: any) => (
-                      <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
-                        <td className="p-3 font-semibold text-gray-900">
-                          {format(new Date(log.date), "EEEE, dd/MM/yyyy", { locale: vi })}
-                        </td>
-                        <td className="p-3 font-bold text-gray-800">{log.users?.full_name || "Nhân viên"}</td>
-                        <td className="p-3 text-center">
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
-                              log.status === "PRESENT"
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                : "bg-red-50 text-red-650 border border-red-100"
-                            }`}
-                          >
-                            {log.status === "PRESENT" ? "CÓ MẶT" : "VẮNG MẶT"}
-                          </span>
-                        </td>
-                        <td className="p-3 font-mono text-gray-500">
-                          {log.check_in_time ? format(new Date(log.check_in_time), "HH:mm:ss") : "--:--:--"}
-                        </td>
+              <>
+                <div className="overflow-x-auto whitespace-nowrap hidden md:block">
+                  <table className="w-full text-left font-sans text-xs">
+                    <thead className="bg-gray-50 text-gray-500 font-bold uppercase tracking-wider border-b border-gray-100 text-[10px]">
+                      <tr>
+                        <th className="p-3 font-semibold">Ngày</th>
+                        <th className="p-3 font-semibold">Nhân viên</th>
+                        <th className="p-3 text-center font-semibold">Trạng thái</th>
+                        <th className="p-3 font-semibold">Giờ vào chi tiết</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 font-medium text-gray-700">
+                       {data.attendanceLog.map((log: any) => (
+                        <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="p-3 font-semibold text-gray-900">
+                            {format(new Date(log.date), "EEEE, dd/MM/yyyy", { locale: vi })}
+                          </td>
+                          <td className="p-3 font-bold text-gray-800">{log.users?.full_name || "Nhân viên"}</td>
+                          <td className="p-3 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                                log.status === "PRESENT"
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                  : "bg-red-50 text-red-650 border border-red-100"
+                              }`}
+                            >
+                              {log.status === "PRESENT" ? "CÓ MẶT" : "VẮNG MẶT"}
+                            </span>
+                          </td>
+                          <td className="p-3 font-mono text-gray-500">
+                            {log.check_in_time ? format(new Date(log.check_in_time), "HH:mm:ss") : "--:--:--"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4 space-y-3 md:hidden">
+                  {data.attendanceLog.map((log: any) => (
+                    <div key={log.id} className="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-bold text-gray-900">{log.users?.full_name || "Nhân viên"}</p>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            {format(new Date(log.date), "EEEE, dd/MM/yyyy", { locale: vi })}
+                          </p>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                          log.status === "PRESENT"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            : "bg-red-50 text-red-650 border border-red-100"
+                        }`}>
+                          {log.status === "PRESENT" ? "CÓ MẶT" : "VẮNG MẶT"}
+                        </span>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
+                        <span className="text-gray-400 text-[11px] font-bold">Giờ check-in</span>
+                        <span className="font-mono font-bold text-gray-700">
+                          {log.check_in_time ? format(new Date(log.check_in_time), "HH:mm:ss") : "--:--:--"}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
 
@@ -641,25 +670,25 @@ export default function TabDashboard() {
               <>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Doanh thu</p>
+                    <p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mb-1">Doanh thu</p>
                     <p className="text-lg font-black text-gray-900 font-mono">
                       {finData.totalRevenue.toLocaleString("vi")} đ
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Hoa hồng</p>
+                    <p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mb-1">Hoa hồng</p>
                     <p className="text-lg font-black text-rose-600 font-mono">
                       -{finData.totalCommission.toLocaleString("vi")} đ
                     </p>
                   </div>
                   <div className="bg-gray-50 rounded-2xl p-4 text-center">
-                    <p className="text-gray-400 text-[10px] font-bold uppercase tracking-wider mb-1">Giảm giá</p>
+                    <p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mb-1">Giảm giá</p>
                     <p className="text-lg font-black text-amber-600 font-mono">
                       -{finData.totalDiscount.toLocaleString("vi")} đ
                     </p>
                   </div>
                   <div className="bg-emerald-50 rounded-2xl p-4 text-center border border-emerald-100">
-                    <p className="text-emerald-700 text-[10px] font-bold uppercase tracking-wider mb-1">Lợi nhuận ròng</p>
+                    <p className="text-emerald-700 text-[11px] font-bold uppercase tracking-wider mb-1">Lợi nhuận ròng</p>
                     <p className="text-lg font-black text-emerald-700 font-mono">
                       {finData.netProfit.toLocaleString("vi")} đ
                     </p>
@@ -668,7 +697,7 @@ export default function TabDashboard() {
 
                 {finData.monthlyCashFlow && finData.monthlyCashFlow.length > 1 && (
                   <div className="pt-2">
-                    <h4 className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-3">
+                    <h4 className="text-[11px] text-gray-500 font-bold uppercase tracking-wider mb-3">
                       Dòng tiền theo tháng (thu - chi)
                     </h4>
                     <div className="w-full h-48">

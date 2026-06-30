@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { getCustomers, getCustomerStats } from "./actions";
 import { Search, ChevronLeft, ChevronRight, BarChart2, Star, Calendar, Clock, DollarSign, User, FileText } from "lucide-react";
 import { format } from "date-fns";
@@ -22,11 +22,7 @@ export default function CustomerCRM() {
   const [stats, setStats] = useState<any>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
-  useEffect(() => {
-    fetchCustomers();
-  }, [page, searchTerm]);
-
-  const fetchCustomers = async () => {
+  const fetchCustomers = useCallback(async () => {
     setLoading(true);
     try {
       const { data, count } = await getCustomers(page, limit, searchTerm);
@@ -37,7 +33,14 @@ export default function CustomerCRM() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, searchTerm]);
+
+  useEffect(() => {
+    const tid = setTimeout(() => {
+      fetchCustomers();
+    }, 0);
+    return () => clearTimeout(tid);
+  }, [fetchCustomers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,7 +92,41 @@ export default function CustomerCRM() {
           </form>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="mt-4 space-y-3 md:hidden p-4">
+          {loading ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+          ) : customers.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center text-gray-500">Không tìm thấy khách hàng nào.</div>
+          ) : (
+            customers.map((c) => (
+              <div key={c.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                  <span className="font-bold text-gray-900">{c.full_name}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">SĐT</span>
+                    <span className="text-gray-700">{c.phone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Ghé gần nhất</span>
+                    <span className="text-gray-700">{c.last_visit ? format(new Date(c.last_visit), "dd/MM/yyyy", { locale: vi }) : "Chưa có"}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => openCustomerStats(c.id)}
+                  className="w-full inline-flex items-center justify-center px-4 py-3 bg-[#FAF0E6] text-[#8D6E53] hover:bg-[#F0E6DA] font-semibold rounded-lg text-sm transition-colors min-h-[44px]"
+                >
+                  <BarChart2 className="w-4 h-4 mr-2" />
+                  Xem Hồ Sơ Chi Tiết
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+        {/* Desktop table */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left whitespace-nowrap">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold border-b border-gray-100">
               <tr>

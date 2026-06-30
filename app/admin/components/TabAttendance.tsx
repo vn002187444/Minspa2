@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
 import {
   CalendarDays,
   CheckCircle2,
@@ -21,19 +20,20 @@ export default function TabAttendance() {
   const [filter, setFilter] = useState<"ALL" | "PRESENT" | "ABSENT" | "LATE">("ALL");
 
   const loadLogs = async () => {
-    setLoading(true);
+    startTransition(() => setLoading(true));
     try {
       const data = await getAttendanceLogs(startDate, endDate);
-      setLogs(data || []);
+      startTransition(() => setLogs(data || []));
     } catch (e) {
       console.error(e);
-      setLogs([]);
+      startTransition(() => setLogs([]));
     }
-    setLoading(false);
+    startTransition(() => setLoading(false));
   };
 
   useEffect(() => {
     loadLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filtered = logs.filter((l) => {
@@ -90,6 +90,7 @@ export default function TabAttendance() {
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
               className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent"
+              suppressHydrationWarning
             />
           </div>
           <div>
@@ -100,6 +101,7 @@ export default function TabAttendance() {
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
               className="px-3 py-2 rounded-lg border border-gray-200 text-sm focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent"
+              suppressHydrationWarning
             />
           </div>
           <button
@@ -118,7 +120,7 @@ export default function TabAttendance() {
             <button
               key={s}
               onClick={() => setFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-1.5 min-h-[44px] rounded-full text-xs font-semibold transition-colors flex items-center justify-center ${
                 filter === s
                   ? "bg-[#8D6E53] text-white"
                   : "bg-gray-100 text-gray-600 hover:bg-gray-200"
@@ -133,8 +135,9 @@ export default function TabAttendance() {
         </div>
       </div>
 
-      {/* Attendance Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Attendance Table — Desktop */}
+      <div className="hidden md:block">
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left min-w-[600px]">
             <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
@@ -157,7 +160,7 @@ export default function TabAttendance() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((log: any) => (
+                filtered.map((log) => (
                   <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="p-4 pl-6 font-semibold text-gray-900">
                       {log.users?.full_name || log.users?.username || "N/A"}
@@ -197,6 +200,58 @@ export default function TabAttendance() {
             </tbody>
           </table>
         </div>
+      </div>
+      </div>
+
+      {/* Mobile card view */}
+      <div className="mt-4 space-y-3 md:hidden">
+        {loading ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center text-gray-400">Đang tải dữ liệu...</div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center text-gray-400">
+            {logs.length === 0 ? "Chưa có dữ liệu điểm danh trong khoảng ngày này." : "Không có bản ghi phù hợp."}
+          </div>
+        ) : (
+          filtered.map((log) => (
+            <div key={log.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <span className="font-bold text-gray-900">{log.users?.full_name || log.users?.username || "N/A"}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Ngày</span>
+                  <span className="flex items-center gap-1 text-gray-700">
+                    <CalendarDays className="w-3 h-3" />
+                    {format(new Date(log.date + "T00:00:00"), "dd/MM/yyyy")}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Check-in</span>
+                  <span>{log.check_in_time ? format(new Date(log.check_in_time), "HH:mm") : "---"}</span>
+                </div>
+                <div className="flex justify-between col-span-2">
+                  <span className="text-gray-400">Trạng thái</span>
+                  <span
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
+                      log.status === "PRESENT"
+                        ? "bg-green-50 text-green-700"
+                        : log.status === "LATE"
+                        ? "bg-yellow-50 text-yellow-700"
+                        : "bg-red-50 text-red-700"
+                    }`}
+                  >
+                    {log.status === "PRESENT" && <CheckCircle2 className="w-3 h-3" />}
+                    {log.status === "LATE" && <Clock className="w-3 h-3" />}
+                    {log.status === "ABSENT" && <XCircle className="w-3 h-3" />}
+                    {log.status === "PRESENT" && "Có mặt"}
+                    {log.status === "LATE" && "Đi muộn"}
+                    {log.status === "ABSENT" && "Vắng"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

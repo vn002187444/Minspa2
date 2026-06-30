@@ -5,7 +5,6 @@ import { format } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { lockTimeSlots, incrementSlotLimit } from "@/lib/booking-engine";
 import { getPublicSeoSettings } from "./public";
-import { runRemindersCheck } from "@/utils/reminders";
 import { sendEmail } from "@/lib/notify";
 
 export async function submitBooking(formData: any) {

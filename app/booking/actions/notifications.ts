@@ -1,9 +1,14 @@
 'use server'
 
 import { createClient } from "@/utils/supabase/server";
+import { getSession } from "@/utils/auth";
 import { stripHtml } from "@/lib/sanitize";
 
 export async function getCustomerNotifications(customerId: string) {
+  const session = await getSession();
+  if (!session) {
+    return [];
+  }
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('notifications')

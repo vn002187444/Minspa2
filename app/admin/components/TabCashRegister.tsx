@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet } from 'lucide-react'
@@ -27,14 +27,14 @@ export default function TabCashRegister() {
   const [showModal, setShowModal] = useState(false)
 
   const fetchData = useCallback(async () => {
-    setLoading(true)
+    startTransition(() => { setLoading(true) })
     try {
       const result = await getCashRegisterTransactions(month)
-      setData(result)
+      startTransition(() => { setData(result) })
     } catch (e) {
       console.error(e)
     }
-    setLoading(false)
+    startTransition(() => { setLoading(false) })
   }, [month])
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -49,6 +49,7 @@ export default function TabCashRegister() {
             value={month}
             onChange={(e) => setMonth(e.target.value)}
             className="px-3 py-2 border border-gray-200 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-emerald-500 outline-none"
+            suppressHydrationWarning
           />
           <button
             onClick={() => setShowModal(true)}
@@ -94,7 +95,7 @@ export default function TabCashRegister() {
           </div>
 
           {/* Mobile card list */}
-          <div className="space-y-3 sm:hidden">
+          <div className="space-y-3 md:hidden">
             {data.items.length === 0 ? (
               <p className="text-center py-12 text-gray-400 font-semibold">Chưa có giao dịch nào trong tháng này</p>
             ) : data.items.map((item) => (
@@ -133,7 +134,7 @@ export default function TabCashRegister() {
           </div>
 
           {/* Desktop table */}
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hidden sm:block">
+          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden hidden md:block">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -218,8 +219,8 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
         description: description || undefined,
       })
       onSaved()
-    } catch (e: any) {
-      alert('Lỗi: ' + e.message)
+    } catch (e: unknown) {
+      alert('Lỗi: ' + (e instanceof Error ? e.message : String(e)))
     }
     setSaving(false)
   }

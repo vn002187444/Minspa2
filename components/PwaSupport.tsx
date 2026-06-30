@@ -7,6 +7,18 @@ import { storage } from '@/lib/storage';
 import InstallPWA from './InstallPWA';
 import OfflineIndicator from './OfflineIndicator';
 
+const LS_KEY_DISMISS = 'notif_widget_dismissed_at';
+const NOTIF_COOLDOWN_DAYS = 3;
+
+function isNotifCooldownPassed(): boolean {
+  if (typeof window === 'undefined') return true;
+  const stored = localStorage.getItem(LS_KEY_DISMISS);
+  if (!stored) return true;
+  const dismissed = parseInt(stored, 10);
+  if (isNaN(dismissed)) return true;
+  return Date.now() - dismissed > NOTIF_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+}
+
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding)
@@ -30,41 +42,42 @@ export default function PwaSupport() {
   const [notificationStatusMsg, setNotificationStatusMsg] = useState('');
 
   useEffect(() => {
-    // 1. Check current Notification permission status
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotificationPermission(Notification.permission);
-      // Only show registration helper widget if not already granted
-      if (Notification.permission !== 'granted') {
-        setShowNotificationWidget(true);
+    const init = async () => {
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        setNotificationPermission(Notification.permission);
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        if (Notification.permission !== 'granted' && !isStandalone && isNotifCooldownPassed()) {
+          setShowNotificationWidget(true);
+        }
       }
-    }
-
-    // 2. Register Service Worker
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      try {
-        navigator.serviceWorker.register('/sw.js')
-          .then((reg) => {
-            console.log('[PWA] Service Worker registered:', reg.scope);
-            // Listen for background sync trigger from SW
-            navigator.serviceWorker.addEventListener('message', (event) => {
-              if (event.data?.type === 'trigger-sync') {
-                window.dispatchEvent(new Event('online'));
-              }
-            });
-            // Register background sync for offline queue if supported
-            if ('sync' in reg) {
-              (reg as any).sync.register('sync-queue').catch(() => {});
-            }
-          })
-          .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
-      } catch (e) {
-        console.warn('[PWA] Service Worker registration blocked by browser security policy:', e);
-      }
-    }
-
-    // 3. Notification triggers — via DB Webhook + background-tasks, không cần polling
-    // (Đã xoá client-side 30s polling để giảm ~6.700 requests/ngày)
+    };
+    init();
   }, []);
+
+useEffect(() => {
+  // 2. Register Service Worker
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    try {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('[PWA] Service Worker registered:', reg.scope);
+          // Listen for background sync trigger from SW
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'trigger-sync') {
+              window.dispatchEvent(new Event('online'));
+            }
+          });
+          // Register background sync for offline queue if supported
+          if ('sync' in reg) {
+            (reg as any).sync.register('sync-queue').catch(() => {});
+          }
+        })
+        .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
+    } catch (e) {
+      console.warn('[PWA] Service Worker registration blocked by browser security policy:', e);
+    }
+  }
+}, []);
 
   // Helper method to sync token to Backend database
   const syncSubscriptionToken = async (reg: ServiceWorkerRegistration, forceSubscribe = false) => {
@@ -113,7 +126,7 @@ export default function PwaSupport() {
 
       console.log('[PWA] Push subscription successfully synchronized!');
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[PWA] Error during subscription token sync:', err);
       throw err;
     }
@@ -136,6 +149,7 @@ export default function PwaSupport() {
         const reg = await navigator.serviceWorker.ready;
         await syncSubscriptionToken(reg, true);
         setNotificationStatusMsg('Đăng ký thông báo thành công!');
+        try { localStorage.removeItem(LS_KEY_DISMISS); } catch {}
         
         // Hide widget after 2.5 seconds
         setTimeout(() => {
@@ -146,12 +160,17 @@ export default function PwaSupport() {
       } else {
         setNotificationStatusMsg('Yêu cầu quyền đã bị bỏ qua.');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[PWA] Permission request failed:', error);
-      setNotificationStatusMsg('Lỗi khi đăng ký: ' + (error.message || error));
+      setNotificationStatusMsg('Lỗi khi đăng ký: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsSubscribing(false);
     }
+  };
+
+  const dismissNotifWidget = () => {
+    setShowNotificationWidget(false);
+    try { localStorage.setItem(LS_KEY_DISMISS, String(Date.now())); } catch {}
   };
 
   return (
@@ -193,13 +212,13 @@ export default function PwaSupport() {
                 <button
                   onClick={requestNotificationPermission}
                   disabled={isSubscribing}
-                  className="px-2.5 py-1.5 bg-[#8D6E53] hover:bg-[#765B43] disabled:bg-gray-400 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
+                  className="px-2.5 py-2.5 bg-[#8D6E53] hover:bg-[#765B43] disabled:bg-gray-400 text-white rounded-lg text-[11px] font-bold transition-all shadow-xs active:scale-95 cursor-pointer min-h-[44px]"
                 >
                   {isSubscribing ? 'Đang bật...' : 'Bật nhận thông báo 🔔'}
                 </button>
                 <button
-                  onClick={() => setShowNotificationWidget(false)}
-                  className="px-2 py-1.5 text-gray-500 hover:text-gray-700 bg-white rounded-lg text-[10px] font-semibold border border-[#EADDCD] cursor-pointer"
+                  onClick={dismissNotifWidget}
+                  className="px-2 py-2.5 text-gray-500 hover:text-gray-700 bg-white rounded-lg text-[11px] font-semibold border border-[#EADDCD] cursor-pointer min-h-[44px]"
                 >
                   Tắt
                 </button>
@@ -208,7 +227,7 @@ export default function PwaSupport() {
           </div>
 
           <button
-            onClick={() => setShowNotificationWidget(false)}
+            onClick={dismissNotifWidget}
             className="text-gray-400 hover:text-gray-700 p-0.5 rounded-full hover:bg-gray-200/50 transition-colors shrink-0 cursor-pointer"
             aria-label="Đóng bảng thông báo"
           >

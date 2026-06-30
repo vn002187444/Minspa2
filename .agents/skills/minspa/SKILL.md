@@ -18,7 +18,7 @@ description: >-
 1. **`database.sql` is the schema source of truth** — keep it in sync with all migration files. When adding tables/columns via migrations, also add them to `database.sql` (tables → RLS → Realtime). See section 10 for the sync checklist.
 2. **Soft delete only** — use `is_active` or `status='cancelled'` columns, never DELETE FROM
 3. **No SELECT \*** — always specify columns in queries
-4. **Cycle Protocol (revised):** Audit first → Read UPGRADE_PLAN.md + AI_MAP.md → Read existing files for conventions → **Audit schema mismatches (grep .select() vs database.sql)** → Code → Update docs (PLAN.md, UPGRADE_PLAN.md, SKILL.md) → `npm run build` verify → Commit
+4. **Cycle Protocol (revised):** Audit first → Read UPGRADE_PLAN.md (root) + AI_MAP.md → Read existing files for conventions → **Audit schema mismatches (grep .select() vs database.sql)** → Code → Update docs (PLAN.md, UPGRADE_PLAN.md, SKILL.md) → `npm run build` verify → Commit
 5. **Build check:** Must pass `npm run build` before any commit (TypeScript + 50 static pages). Run after EVERY batch of changes.
 6. **File management:** Prefer editing existing files over creating new ones. Check git log / git diff before creating new files.
 7. **Initial audit required:** At the start of any session, first audit the existing codebase to find orphan features (BE without FE UI), mojibake/encoding issues, and types that don't match reality.
@@ -31,7 +31,10 @@ description: >-
     - Or remove the column reference from the select query
     - Run `npm run build` to verify
     - Common sources of mismatch: new features that add columns in code but forget migration files (V3.6 Mascot, V3.8 Theme, V3.12 Auto-SEO, V3.9 Financials all had this issue)
-12. **Single source of truth:** PLAN.md is the permanent project plan. UPGRADE_PLAN.md is the active execution plan. After completing a session, merge the results into PLAN.md and remove from UPGRADE_PLAN.md.
+12. **Single source of truth:** PLAN.md is the permanent project plan. UPGRADE_PLAN.md (root level) is the active execution plan storing only WHAT'S NOT DONE. After completing a session:
+    - Add completed items to PLAN.md (with section header and ✅ status)
+    - Strip done items from UPGRADE_PLAN.md (keep only pending items)
+    - Keep UPGRADE_PLAN.md lean (target &lt;100 lines) — it's a TODO list, not an archive
 13. **Supabase features first:** Before writing code for any new feature, check `SUPABASE_FEATURES.md` (root) + `.agents/skills/minspa/SUPABASE_FEATURES.md` to see if Supabase đã có sẵn giải pháp. Ưu tiên pg_cron (schedule), pgmq (queue), Realtime (live update), Storage (file), pg_net (webhook) thay vì tự viết mới.
 14. **PgBouncer compatibility:** Supabase pooler (port 6543) uses PgBouncer transaction mode. Multi-statement SQL may fail silently. Always use `DO $$ ... END $$;` blocks instead of multiple `;`-separated statements for complex operations (publication membership, conditional DDL, etc.). The `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` syntax does NOT pass through PgBouncer — use a DO block with `pg_publication_tables` check instead (NOT `pg_publication_rel` which also hangs through PgBouncer). For running migrations, use `POSTGRES_URL_NON_POOLING` (port 5432) instead of `POSTGRES_URL` (port 6543 pooler) to avoid catalog query issues.
 15. **RLS + Realtime audit after migrations:** After applying any migration that adds new tables, immediately verify:
@@ -67,7 +70,40 @@ description: >-
     Xem `utils/supabase/server.ts` implementation hiện tại.
 22. **Full CI pipeline test:** Sau khi sửa CI, không chỉ verify build local — đợi GitHub Actions run hoàn tất (bao gồm cả Deploy step). Lỗi có thể xuất hiện ở bất kỳ step nào (lint, test, build, deploy). Dùng GitHub API kiểm tra kết quả từng job.
 23. **iOS SecurityError Prevention:** `navigator.serviceWorker.register()` and `indexedDB.open()` can throw synchronous SecurityError on iOS Safari Private Browsing. Wrap these calls in `try-catch` and ensure `pushManager.subscribe()` is only called during user gestures.
-24. **Deployment:** Only commit changes to GitHub. Do NOT automatically deploy to Vercel. Only report the deployment result if explicitly requested to deploy.
+24. **Commit & Deploy policy:**
+    - **🚫 NEVER commit to GitHub unless explicitly requested by the user.** Do not auto-commit after fixes.
+    - **🚫 NEVER deploy to Vercel unless explicitly requested.** Only report deployment result if asked.
+    - Limit commit frequency — batch multiple fixes into a single commit, avoid continuous small commits.
+    - Before committing, always verify: `git status`, `git diff`, `npm run build` ✅.
+25. **Check available tools & skills:** Before starting any task, load the relevant skill and list all available tools.
+26. **Token efficiency — delegate to Gemini subagents:** AI chính (`big-pickle`) nên giữ vai trò điều phối, delegate các tác vụ nặng cho subagents để tiết kiệm token:
+    - `explore` agent: research, tìm file, grep, glob
+    - `db-admin` agent: SQL, migration, schema analysis
+    - `ci-fix` agent: CI/CD, deploy, env vars
+    - `general` agent: UI components, logic phức tạp
+    - Batch parallel reads: dùng nhiều `read` tool trong 1 message
+27. **Context preservation (`docs/` files):**
+    - `docs/Log.md` — **Ghi log sau mỗi session**: tóm tắt mục tiêu, đã làm, bugs, build status. Đọc đầu session để lấy lại context.
+    - `docs/Audit.md` — **Ghi nhận audit findings**: mỗi lần audit codebase, thêm entry theo format (phạm vi, phát hiện, kết luận).
+    - `docs/Discuss.md` — **Ghi quyết định quan trọng**: bất kỳ quyết định nào ảnh hưởng architecture/design đều ghi vào đây (context, quyết định, lý do, files).
+    - Khi bắt đầu session mới: đọc `Log.md` để nắm context, đọc `Discuss.md` cho decisions history. Use `skill` tool to load skill context, then refer to `.opencode/tools/` for automation tools (ci_check, build_check, deploy_vercel, migrate_db, check_env, schema_sync, env_diff, db_health_check, vercel_status, seo_analyzer, skill_sync). Available skills: `minspa` (project knowledge), `supabase` (Supabase products), `supabase-postgres-best-practices`, `customize-opencode` (OpenCode config).
+
+28. **Server action redirect for auth cookie flush:** When setting cookies in a server action for login/auth, use `redirect()` from `next/navigation` (not client `window.location.href`). Pattern:
+    - `cookies().set()` + `redirect('/admin')` — NEXT_REDIRECT throw ensures cookie flushes in same HTTP response
+    - Don't return `{ redirectTo }` JSON + let client redirect — cookie may not flush before navigation
+    - See `app/login/actions.ts` for working implementation
+
+29. **Verify docs freshness before coding:** Before implementing a feature that UPGRADE_PLAN.md or docs say is "missing UI", grep the actual codebase first. These docs are often stale. Example: UPGRADE_PLAN said `staff_skills` had "no UI" but `StaffSkillsModal.tsx` (292 lines) already existed with full CRUD. Steps:
+    - Search for file patterns (modal, dialog, component names)
+    - Grep server actions referencing the table
+    - Grep imports in parent components
+    - Only if nothing found, treat as truly orphan
+
+30. **UPGRADE_PLAN.md consolidation:** After completing a major section (V3.x track, SEO Schema, Session Audit, Orphan Cleanup):
+    - Add a summary section to PLAN.md with `✅` status
+    - Remove ALL completed items from UPGRADE_PLAN.md (not just mark them done)
+    - Keep UPGRADE_PLAN.md under 100 lines — it should read like a sprint backlog, not release notes
+    - Arcived details live in PLAN.md + docs/Log.md + docs/Audit.md
 
 ## 3. Schema Mismatch Lesson (Learned Jun 2026)
 - **Root cause:** Developers added columns in code `.select('col1, col2, ...')` without running migration to add those columns to the database. Error 42703 `column X does not exist` on Vercel.
@@ -92,7 +128,7 @@ description: >-
 
 ## 4. Auth System
 - **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)
-- **Middleware:** `middleware.ts` — protects `/admin/*` routes with JWT verification
+- **Proxy (Middleware):** `proxy.ts` — protects `/admin/*` routes with JWT verification (Next.js 16 convention)
 - **Login:** `/app/login/actions.ts` — server actions that return JWT
 - **Logout:** Clear `session` cookie
 - **Admin bypass:** Route handler `/api/auth/me` as fallback

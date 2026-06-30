@@ -1,13 +1,16 @@
 import { createClient } from '@/utils/supabase/server';
+import { getSession } from '@/utils/auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 
 // Enable Incremental Static Regeneration (ISR) - cache page and services data for 5 minutes
 export const revalidate = 3600;
 import { 
-  ArrowRight, Sparkles, MapPin, Phone, Clock, Star, 
-  CheckCircle2, Heart, Shield, Award, Calendar, ChevronRight 
+  ArrowRight, Sparkles, MapPin, Phone, Clock, 
+  Heart, Shield, Award, Calendar, ChevronRight,
+  Facebook, MessageSquare, Mail, ArrowUpRight
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import HeaderNav from '@/components/HeaderNav';
@@ -20,6 +23,9 @@ import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 import { getBannerSettings } from './admin/actions';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
 import HomeMascotBanner from '@/components/HomeMascotBanner';
+import FaqSection from '@/components/FaqSection';
+import ServiceSchema from '@/components/ServiceSchema';
+import ProductSchema from '@/components/ProductSchema';
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => (
@@ -53,10 +59,16 @@ export default async function Home() {
   const bannerSettings = await getBannerSettings();
   
   let hotline = '0934 323 878';
+  let facebookUrl = 'https://facebook.com/minnailhair';
+  let zaloUrl = 'https://zalo.me/0934323878';
   if (supabase) {
     try {
-      const { data: seoRow } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
-      if (seoRow?.hotline) hotline = seoRow.hotline;
+      const { data: seoRow } = await supabase.from('seo_settings').select('hotline, facebook_url, zalo_url').eq('id', 1).single();
+      if (seoRow) {
+        if (seoRow.hotline) hotline = seoRow.hotline;
+        if (seoRow.facebook_url) facebookUrl = seoRow.facebook_url;
+        if (seoRow.zalo_url) zaloUrl = seoRow.zalo_url;
+      }
     } catch {
       // ignore
     }
@@ -130,6 +142,12 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen theme-bg theme-text font-sans selection:bg-[#EADDCD] selection:text-[#5C4033]">
+      {services.length > 0 && (
+        <>
+          <ServiceSchema services={services} />
+          <ProductSchema services={services} />
+        </>
+      )}
       {/* Premium Notification Topbar */}
       <AnnouncementBanner settings={bannerSettings} />
 
@@ -137,13 +155,13 @@ export default async function Home() {
       <HeaderNav />
 
       {/* Elegant Hero Frame */}
-      <header className="relative py-12 md:py-20 4k:py-32 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[rgb(var(--color-bg))] via-[rgb(var(--color-bg-card))] to-[rgb(var(--color-bg))]">
+      <header id="hero" className="relative py-12 md:py-20 4k:py-32 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[rgb(var(--color-bg))] via-[rgb(var(--color-bg-card))] to-[rgb(var(--color-bg))] scroll-mt-24">
         {/* Subtle decorative circles with floating animations */}
         <div className="hidden md:block absolute top-20 right-[-10%] w-96 h-96 4k:w-[32rem] 4k:h-[32rem] rounded-full theme-border/20 blur-3xl -z-10 animate-float" />
         <div className="hidden md:block absolute bottom-10 left-[-10%] w-96 h-96 4k:w-[32rem] 4k:h-[32rem] rounded-full theme-border/30 blur-3xl -z-10 animate-float-delayed" />
 
         <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto text-center space-y-8 4k:space-y-12 animate-slideUp">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 4k:px-6 4k:py-2 bg-[rgb(var(--color-bg-warm))] theme-text-secondary rounded-full text-xs 4k:text-sm font-bold ring-1 theme-border tracking-widest uppercase">
+          <div className="inline-flex items-center gap-2 px-4 py-2.5 4k:px-6 4k:py-2 bg-[rgb(var(--color-bg-warm))] theme-text-secondary rounded-full text-xs 4k:text-sm font-bold ring-1 theme-border tracking-widest uppercase min-h-[44px]">
             <Sparkles className="w-3.5 h-3.5 4k:w-5 4k:h-5 theme-text-secondary animate-pulse" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
           </div>
 
@@ -228,7 +246,7 @@ export default async function Home() {
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-bold uppercase tracking-wider animate-fadeIn">
               <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-pulse" /> Trợ lý ảo AI đắc lực
             </div>
-             <h3 className="text-lg md:text-xl 4k:text-2xl font-display font-medium text-amber-100 group-hover:text-amber-250 transition-colors">Bắt số điện thoại - Nhận đề xuất dịch vụ cá nhân hóa tức thì!</h3>
+             <h2 className="text-lg md:text-xl 4k:text-2xl font-display font-medium text-amber-100 group-hover:text-amber-250 transition-colors">Bắt số điện thoại - Nhận đề xuất dịch vụ cá nhân hóa tức thì!</h2>
             <p className="text-xs md:text-sm 4k:text-base text-gray-300 max-w-xl 4k:max-w-2xl">
               Khi khách hàng nhập Số điện thoại, trợ lý ảo thông minh chạy bằng khu học máy **Gemini AI** sẽ tự động nhận diện lịch sử dùng dịch vụ cũ để chào đón và đề xuất dịch vụ phù hợp hoàn hảo nhất cho ngày hôm nay.
             </p>
@@ -251,7 +269,7 @@ export default async function Home() {
               <a 
                 key={cat}
                 href={`#category-${slugify(cat)}`}
-                className="px-5 py-2.5 bg-white border border-[#EADDCD] hover:border-[#8D6E53] hover:bg-[#FAF0E6] hover:text-[#5C4033] rounded-full text-xs font-semibold tracking-wider hover-magnetic transition-all uppercase shadow-xs hover:shadow-sm"
+                className="px-5 py-2.5 bg-white border border-[#EADDCD] hover:border-[#8D6E53] hover:bg-[#FAF0E6] hover:text-[#5C4033] rounded-full text-xs font-semibold tracking-wider hover-magnetic transition-all uppercase shadow-xs hover:shadow-sm min-h-[44px] flex items-center"
               >
                 {cat}
               </a>
@@ -340,23 +358,18 @@ export default async function Home() {
           // Define beautiful icons, accents & details based on type
           let catTitle = categoryKey;
           let catSubtitle = 'Danh sách các gói dịch vụ tốt nhất';
-          let catBg = 'bg-[#FAF0E6]';
           let borderStyle = 'border-[#EADDCD]';
-          let accentText = 'text-[#8D6E53] font-display font-medium text-lg italic';
 
           if (categoryKey === 'Deal Chấn Động') {
             catTitle = '🔥 GÓC DEAL CHẤN ĐỘNG';
             catSubtitle = 'Làm móng trọn gói và chà gót chân với mức giá không tưởng';
-            catBg = 'bg-amber-50';
             borderStyle = 'border-amber-200';
           } else if (categoryKey === 'Gội dưỡng sinh') {
             catTitle = '🌸 CHUYÊN SÂU GỘI DƯỠNG SINH';
             catSubtitle = 'Gội đầu canh thảo dược, đả thông kinh lạc giảm đau vai gáy mệt mỏi';
-            catBg = 'bg-emerald-50/50';
           } else if (categoryKey === 'Chà Gót Chân') {
             catTitle = '👣 CHÀ GÓT CHÂN CHUYÊN SÂU';
             catSubtitle = 'Liệu trình 5 bước ngâm chân và tẩy tế bào chết gót ngọc trơn mịn';
-            catBg = 'bg-peach-50/20';
           } else if (categoryKey === 'Massage') {
             catTitle = '💆 MASSAGE BODY THƯ GIÃN';
             catSubtitle = 'Ấn huyệt, chườm đá nóng Tây Tạng, phục hồi sinh lực (Giảm 5% khi đặt lịch)';
@@ -366,7 +379,7 @@ export default async function Home() {
             <ScrollReveal key={categoryKey}>
             <section 
               id={`category-${slugify(categoryKey)}`} 
-              className="scroll-mt-24 space-y-8"
+              className="scroll-mt-28 md:scroll-mt-24 space-y-8"
             >
               {/* Header Box */}
               <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-[#EADDCD] pb-4">
@@ -569,32 +582,232 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Blog Posts Section */}
+      <LatestBlogPosts />
+      {/* FAQ Section */}
+      <Suspense fallback={null}>
+        <FaqSection />
+      </Suspense>
+
       {/* Footer */}
-      <footer className="bg-[#3A2E2B] text-white py-12">
-        <div className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 4k:gap-12">
-          <div className="space-y-3">
-            <h4 className="font-display font-bold text-lg text-[#EADDCD]">Min Nail &amp; Hair</h4>
-            <p className="text-xs text-gray-400">📍 TM14 Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức</p>
-            <a href="tel:0934323878" className="text-xs text-amber-300 font-bold">📞 0934 323 878</a>
-            <p className="text-xs text-gray-400">⏰ 09:00 - 20:30 (Mỗi ngày)</p>
+      <footer className="bg-gradient-to-b from-[#2E2421] to-[#1C1513] text-white pt-16 pb-12 border-t border-[#EADDCD]/10 relative overflow-hidden">
+        {/* Decorative elements for premium feel */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 relative z-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 pb-10 border-b border-[#EADDCD]/10">
+            {/* Column 1: Brand Info */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-[#8D6E53] to-[#5C4033] rounded-2xl flex items-center justify-center text-[#FAF6F0] font-display font-black text-2xl shadow-lg border border-[#EADDCD]/20 shrink-0">
+                  M
+                </div>
+                <div>
+                  <h4 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h4>
+                  <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                Nơi gìn giữ nét xuân và khơi dậy vẻ đẹp tự nhiên của bạn. Min Salon kiêu hãnh mang đến dịch vụ gội đầu dưỡng sinh thảo dược, làm móng chuyên sâu và trị liệu tóc cao cấp trong không gian thanh tịnh, đẳng cấp.
+              </p>
+              {/* Social links with premium circular icons */}
+              <div className="flex items-center gap-2.5 pt-2">
+                <a
+                  href={facebookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#8D6E53] hover:border-[#8D6E53] transition-all group"
+                  title="Theo dõi Min trên Facebook"
+                  aria-label="Facebook"
+                >
+                  <Facebook className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </a>
+                <a
+                  href={zaloUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 hover:text-amber-300 hover:bg-[#8D6E53] hover:border-[#8D6E53] transition-all group"
+                  title="Kết nối qua Zalo OA"
+                  aria-label="Zalo OA"
+                >
+                  <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </a>
+              </div>
+            </div>
+
+            {/* Column 2: Quick Links */}
+            <div className="space-y-4">
+              <h4 className="font-display font-bold text-sm text-[#EADDCD] uppercase tracking-wider border-l-2 border-[#8D6E53] pl-2.5">
+                Hành Trình Làm Đẹp
+              </h4>
+              <ul className="space-y-1">
+                <li>
+                  <Link href="/booking" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                    <span className="w-1 h-1 rounded-full bg-amber-500" />
+                    Đặt lịch trực tuyến
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                    <span className="w-1 h-1 rounded-full bg-amber-500" />
+                    Cẩm nang chăm sóc &amp; Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/#services" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                    <span className="w-1 h-1 rounded-full bg-amber-500" />
+                    Bảng giá &amp; Dịch vụ spa
+                  </Link>
+                </li>
+                <li>
+                  <a href="https://maps.google.com/?q=Lavita+Charm+Thu+Duc" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                    <span className="w-1 h-1 rounded-full bg-amber-500" />
+                    Xem bản đồ &amp; Chỉ đường
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Contact Info */}
+            <div className="space-y-4">
+              <h4 className="font-display font-bold text-sm text-[#EADDCD] uppercase tracking-wider border-l-2 border-[#8D6E53] pl-2.5">
+                Liên Hệ Với Min
+              </h4>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2.5 py-0.5">
+                  <MapPin className="w-4 h-4 text-[#8D6E53] shrink-0 mt-0.5" />
+                  <span className="text-xs text-gray-400 font-medium leading-relaxed">
+                    TM14 Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức, TP. Hồ Chí Minh
+                  </span>
+                </li>
+                <li className="flex items-center gap-2.5 py-0.5">
+                  <Phone className="w-4 h-4 text-[#8D6E53] shrink-0" />
+                  <a href={`tel:${hotline.replace(/\s+/g, '')}`} className="text-xs text-amber-300 hover:text-amber-400 font-bold transition-colors">
+                    {hotline}
+                  </a>
+                </li>
+                <li className="flex items-center gap-2.5 py-0.5">
+                  <Clock className="w-4 h-4 text-[#8D6E53] shrink-0" />
+                  <span className="text-xs text-gray-400 font-medium">
+                    09:00 - 20:30 (Tất cả các ngày)
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Newsletter */}
+            <div className="space-y-4">
+              <h4 className="font-display font-bold text-sm text-[#EADDCD] uppercase tracking-wider border-l-2 border-[#8D6E53] pl-2.5">
+                Nhận Ưu Đãi Đặc Biệt
+              </h4>
+              <p className="text-xs text-gray-400 font-medium leading-relaxed">
+                Đăng ký để nhận thông tin về các gói liệu trình khuyến mãi, sự kiện đặc biệt và mẹo làm đẹp hàng tuần của Min.
+              </p>
+              <div className="relative flex items-center rounded-xl bg-white/5 border border-white/10 p-1 focus-within:ring-2 focus-within:ring-[#8D6E53] focus-within:border-transparent transition-all">
+                <input
+                  type="email"
+                  placeholder="Địa chỉ Email của bạn..."
+                  className="w-full pl-3 pr-2 py-2 bg-transparent border-none outline-none text-xs text-white placeholder-gray-500"
+                  aria-label="Địa chỉ Email đăng ký nhận tin"
+                />
+                <button
+                  type="button"
+                  className="bg-[#8D6E53] hover:bg-[#5C4033] text-white p-2 rounded-lg transition-colors cursor-pointer shrink-0"
+                  title="Đăng ký"
+                >
+                  <ArrowUpRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="space-y-3">
-            <h4 className="font-display font-bold text-lg text-[#EADDCD]">Dịch vụ</h4>
-            <Link href="/booking" className="block text-xs text-gray-400 hover:text-amber-300">Đặt lịch trực tuyến</Link>
-            <Link href="/blog" className="block text-xs text-gray-400 hover:text-amber-300">Blog làm đẹp</Link>
-            <a href="https://maps.google.com/?q=Lavita+Charm+Thu+Duc" target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-400 hover:text-amber-300">Xem bản đồ</a>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 text-center sm:text-left text-xs text-gray-500">
+            <div>
+              © 2026 Min Nail &amp; Hair Salon. Đã đăng ký bản quyền.
+            </div>
+            <div className="flex gap-4">
+              <Link href="/sitemap.xml" className="hover:text-gray-400 transition-colors">Sitemap</Link>
+              <span className="text-gray-700">|</span>
+              <a href="#" className="hover:text-gray-400 transition-colors">Chính sách bảo mật</a>
+            </div>
           </div>
-          <div className="space-y-3">
-            <h4 className="font-display font-bold text-lg text-[#EADDCD]">Kết nối</h4>
-            <a href="https://facebook.com/minnailhair" target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-400 hover:text-amber-300">Facebook</a>
-            <a href="https://zalo.me/0934323878" target="_blank" rel="noopener noreferrer" className="block text-xs text-gray-400 hover:text-amber-300">Zalo OA</a>
-          </div>
-        </div>
-        <div className="border-t border-gray-700 mt-8 pt-6 text-center text-xs text-gray-500">
-          © 2026 Min Nail &amp; Hair Salon. All rights reserved.
         </div>
       </footer>
       <BottomNavigation />
     </div>
+  );
+}
+
+async function LatestBlogPosts() {
+  const supabase = await createClient();
+  const { data: posts } = await supabase
+    .from('blogs')
+    .select('id, title, slug, summary, image_url, created_at')
+    .eq('is_active', true)
+    .order('created_at', { ascending: false })
+    .limit(3);
+
+  if (!posts || posts.length === 0) return null;
+
+  return (
+    <section className="py-10 md:py-16 max-w-7xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4">
+      <div className="text-center mb-8 md:mb-12">
+        <span className="inline-block px-3 py-1 rounded-full bg-[#8D6E53]/10 text-[#8D6E53] text-[10px] font-bold uppercase tracking-widest mb-3">
+          Blog
+        </span>
+        <h2 className="text-2xl md:text-4xl font-serif font-black text-[#5C4033]">
+          Bài viết mới nhất
+        </h2>
+        <p className="text-sm text-stone-500 mt-2 max-w-lg mx-auto">
+          Cẩm nang chăm sóc tóc, da, móng và phong cách sống từ Min Nail &amp; Hair
+        </p>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        {posts.map((post) => (
+          <Link
+            key={post.id}
+            href={`/blog/${post.slug}`}
+            className="group bg-white rounded-2xl border border-[#EADDCD]/60 overflow-hidden shadow-sm hover:shadow-lg transition-all hover:-translate-y-1"
+          >
+            <div className="relative h-44 md:h-52 overflow-hidden bg-stone-100">
+              <Image
+                src={post.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop'}
+                alt={post.title}
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+            <div className="p-4 md:p-5 space-y-2">
+              <h3 className="text-sm md:text-base font-bold text-[#3A2E2B] group-hover:text-[#8D6E53] transition-colors line-clamp-2 leading-snug">
+                {post.title}
+              </h3>
+              {post.summary && (
+                <p className="text-xs text-stone-500 line-clamp-2 leading-relaxed">
+                  {post.summary}
+                </p>
+              )}
+              <div className="flex items-center justify-between pt-2">
+                <span className="text-[10px] text-stone-400 font-medium">
+                  {post.created_at ? new Date(post.created_at).toLocaleDateString('vi-VN') : ''}
+                </span>
+                <span className="text-[10px] font-bold text-[#8D6E53] uppercase tracking-wider group-hover:mr-1 transition-all">
+                  Đọc thêm →
+                </span>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <div className="text-center mt-8">
+        <Link
+          href="/blog"
+          className="inline-flex items-center gap-2 text-xs font-bold text-[#8D6E53] bg-white border-2 border-[#EADDCD] hover:bg-[#FAF6F0] px-6 py-3 rounded-full transition-all"
+        >
+          Xem tất cả bài viết <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      </div>
+    </section>
   );
 }

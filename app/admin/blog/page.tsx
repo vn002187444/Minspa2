@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, startTransition } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -11,9 +11,9 @@ import {
   getCurrentSessionUser 
 } from '../../blog/actions';
 import { 
-  BookOpen, Plus, Edit3, Trash2, ArrowLeft, ArrowRight, 
-  Sparkles, Globe, Key, CheckCircle, AlertTriangle, Info, Image as ImageIcon,
-  Bold, Italic, Link2, Code,
+  BookOpen, Edit3, Trash2, ArrowLeft, 
+  Sparkles, CheckCircle, AlertTriangle, Image as ImageIcon,
+  Bold, Italic, Link2,
   WandSparkles, FileText, BarChart3
 } from 'lucide-react';
 import { format } from 'date-fns';
@@ -76,40 +76,48 @@ export default function AdminBlogPage() {
     }
   };
 
-  // Check auth and load posts on mount
-  useEffect(() => {
-    async function initPage() {
-      try {
-        setCheckingAuth(true);
-        const user = await getCurrentSessionUser();
-        if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
-          router.push('/login');
-          return;
-        }
-        setCurrentUser(user);
-        setCheckingAuth(false);
-
-        await loadPosts();
-      } catch (err: any) {
-        setError('Lỗi phân quyền bài viết hoặc phiên làm việc đã quá hạn.');
-        setCheckingAuth(false);
-      }
-    }
-    initPage();
-  }, []);
-
   const loadPosts = async () => {
     setLoading(true);
     setError('');
     try {
       const { posts: data } = await getBlogPosts();
       setPosts(data);
-    } catch (e: any) {
+    } catch {
       setError('Lỗi khi tải danh sách bài viết từ database.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Check auth and load posts on mount
+  useEffect(() => {
+    async function initPage() {
+      try {
+        startTransition(() => {
+          setCheckingAuth(true);
+        });
+        const user = await getCurrentSessionUser();
+        if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
+          router.push('/login');
+          return;
+        }
+        startTransition(() => {
+          setCurrentUser(user);
+          setCheckingAuth(false);
+        });
+
+        startTransition(() => {
+          loadPosts();
+        });
+      } catch {
+        startTransition(() => {
+          setError('Lỗi phân quyền bài viết hoặc phiên làm việc đã quá hạn.');
+          setCheckingAuth(false);
+        });
+      }
+    }
+    initPage();
+  }, [router]);
 
   // AI Assist States
   const [aiTopic, setAiTopic] = useState('');
@@ -409,7 +417,7 @@ export default function AdminBlogPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/admin/blog-analytics"
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#EADDCD] rounded-xl text-[10px] font-black text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all uppercase tracking-wider"
+              className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-[#EADDCD] rounded-xl text-[11px] font-black text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all uppercase tracking-wider min-h-[44px]"
             >
               <BarChart3 className="w-3.5 h-3.5" /> Analytics
             </Link>
@@ -455,7 +463,7 @@ export default function AdminBlogPage() {
               {editingId && (
                 <button
                   onClick={resetForm}
-                  className="text-xs text-rose-600 hover:underline px-3 py-1.5 border border-rose-200 hover:bg-rose-50 rounded-xl font-bold cursor-pointer transition-colors"
+                  className="text-xs text-rose-600 hover:underline px-3 py-2.5 border border-rose-200 hover:bg-rose-50 rounded-xl font-bold cursor-pointer transition-colors min-h-[44px] flex items-center"
                 >
                   Xủy bỏ Chỉnh sửa / Viết bài mới
                 </button>
@@ -566,22 +574,22 @@ export default function AdminBlogPage() {
 
                 {/* Rich Formatting Toolbar */}
                 <div className="flex flex-wrap items-center gap-1 p-1.5 bg-[#FAF6F0]/95 backdrop-blur-md rounded-2xl border-2 border-[#EADDCD] text-[11px] font-bold text-stone-700 sticky top-[75px] md:top-[83px] z-30 shadow-sm">
-                  <button type="button" onClick={() => applyFormat('bold')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In đậm" aria-label="In đậm"><Bold className="w-3.5 h-3.5 align-middle" /></button>
-                  <button type="button" onClick={() => applyFormat('italic')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="In nghiêng" aria-label="In nghiêng"><Italic className="w-3.5 h-3.5 align-middle" /></button>
-                  <button type="button" onClick={() => applyFormat('underline')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all underline text-sm" title="Gạch chân" aria-label="Gạch chân">U</button>
-                  <button type="button" onClick={() => applyFormat('strikethrough')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all line-through text-sm" title="Gạch ngang" aria-label="Gạch ngang">S</button>
+                  <button type="button" onClick={() => applyFormat('bold')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px]" title="In đậm" aria-label="In đậm"><Bold className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('italic')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px]" title="In nghiêng" aria-label="In nghiêng"><Italic className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('underline')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] underline text-sm" title="Gạch chân" aria-label="Gạch chân">U</button>
+                  <button type="button" onClick={() => applyFormat('strikethrough')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] line-through text-sm" title="Gạch ngang" aria-label="Gạch ngang">S</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('h2')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H2" aria-label="Tiêu đề H2">H2</button>
-                  <button type="button" onClick={() => applyFormat('h3')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Tiêu đề H3" aria-label="Tiêu đề H3">H3</button>
+                  <button type="button" onClick={() => applyFormat('h2')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] font-mono text-xs font-bold" title="Tiêu đề H2" aria-label="Tiêu đề H2">H2</button>
+                  <button type="button" onClick={() => applyFormat('h3')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] font-mono text-xs font-bold" title="Tiêu đề H3" aria-label="Tiêu đề H3">H3</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('ul')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Danh sách" aria-label="Danh sách">☰</button>
-                  <button type="button" onClick={() => applyFormat('ol')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-xs font-bold" title="Danh sách số" aria-label="Danh sách số">#.</button>
+                  <button type="button" onClick={() => applyFormat('ul')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-sm" title="Danh sách" aria-label="Danh sách">☰</button>
+                  <button type="button" onClick={() => applyFormat('ol')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-xs font-bold" title="Danh sách số" aria-label="Danh sách số">#.</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('blockquote')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Trích dẫn" aria-label="Trích dẫn">❝</button>
-                  <button type="button" onClick={() => applyFormat('code')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all font-mono text-xs font-bold" title="Code" aria-label="Code">&lt;/&gt;</button>
-                  <button type="button" onClick={() => applyFormat('hr')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all text-sm" title="Đường kẻ" aria-label="Đường kẻ">—</button>
+                  <button type="button" onClick={() => applyFormat('blockquote')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-sm" title="Trích dẫn" aria-label="Trích dẫn">❝</button>
+                  <button type="button" onClick={() => applyFormat('code')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] font-mono text-xs font-bold" title="Code" aria-label="Code">&lt;/&gt;</button>
+                  <button type="button" onClick={() => applyFormat('hr')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-sm" title="Đường kẻ" aria-label="Đường kẻ">—</button>
                   <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('link')} className="px-2.5 py-1.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all" title="Chèn link" aria-label="Chèn link"><Link2 className="w-3.5 h-3.5 align-middle" /></button>
+                  <button type="button" onClick={() => applyFormat('link')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px]" title="Chèn link" aria-label="Chèn link"><Link2 className="w-3.5 h-3.5 align-middle" /></button>
                 </div>
 
                 {/* AI Assist Toolbar */}
@@ -594,19 +602,19 @@ export default function AdminBlogPage() {
                     <input type="text" value={aiKeywords} onChange={(e) => setAiKeywords(e.target.value)} placeholder="Từ khóa phụ..." className="w-20 md:w-32 bg-transparent outline-none text-[11px] font-semibold text-stone-400 placeholder-stone-300 hidden md:inline-block" />
                   </div>
 
-                  <button type="button" onClick={handleAiWrite} disabled={isAiWriting} className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all">
+                  <button type="button" onClick={handleAiWrite} disabled={isAiWriting} className="px-3 py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-[11px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all min-h-[44px]">
                     {isAiWriting ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span> : <WandSparkles className="w-3 h-3 inline-block" />} Viết Bài
                   </button>
 
-                  <button type="button" onClick={handleAiSummarize} disabled={isAiSummarizing} className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all">
+                  <button type="button" onClick={handleAiSummarize} disabled={isAiSummarizing} className="px-3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-[11px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all min-h-[44px]">
                     {isAiSummarizing ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span> : <FileText className="w-3 h-3 inline-block" />} Tóm Tắt
                   </button>
 
-                  <button type="button" onClick={handleAiSuggestImages} disabled={isAiSuggestingImages} className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all">
+                  <button type="button" onClick={handleAiSuggestImages} disabled={isAiSuggestingImages} className="px-3 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-[11px] font-bold inline-flex items-center gap-1 disabled:opacity-50 cursor-pointer transition-all min-h-[44px]">
                     {isAiSuggestingImages ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span> : <ImageIcon className="w-3 h-3 inline-block" />} Gợi Ý Ảnh
                   </button>
 
-                  <button type="button" onClick={() => { if (title) { setSlug(slugify(title)); toast.success('Đã sinh slug từ tiêu đề!'); } else { toast.error('Chưa có tiêu đề!'); } }} className="px-3 py-1.5 bg-stone-600 hover:bg-stone-700 text-white rounded-xl text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer transition-all">
+                  <button type="button" onClick={() => { if (title) { setSlug(slugify(title)); toast.success('Đã sinh slug từ tiêu đề!'); } else { toast.error('Chưa có tiêu đề!'); } }} className="px-3 py-2.5 bg-stone-600 hover:bg-stone-700 text-white rounded-xl text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-all min-h-[44px]">
                     <Link2 className="w-3 h-3 inline-block" /> Sinh Slug
                   </button>
                 </div>
@@ -692,7 +700,7 @@ export default function AdminBlogPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-4.5 bg-[#8D6E53] hover:bg-[#5C4033] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-md active:scale-[98%] cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-4.5 bg-[#8D6E53] hover:bg-[#5C4033] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-md active:scale-[98%] cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   {isSubmitting ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -814,7 +822,7 @@ export default function AdminBlogPage() {
             </div>
             <button 
               onClick={loadPosts}
-              className="text-xs font-bold text-[#8D6E53] hover:text-[#5C4033] px-3.5 py-2 border border-[#EADDCD] rounded-xl hover:bg-stone-50 cursor-pointer transition-colors"
+              className="text-xs font-bold text-[#8D6E53] hover:text-[#5C4033] px-3.5 py-2 border border-[#EADDCD] rounded-xl hover:bg-stone-50 cursor-pointer transition-colors min-h-[44px] flex items-center"
             >
               🔄 Tải lại bảng tin
             </button>
@@ -862,7 +870,7 @@ export default function AdminBlogPage() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleEdit(post)}
-                            className="px-3 py-1.5 bg-[#FAF6F0] text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD] rounded-xl text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1 active:scale-95"
+                            className="px-3 py-2.5 bg-[#FAF6F0] text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD] rounded-xl text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1 active:scale-95 min-h-[44px]"
                           >
                             <Edit3 className="w-3.5 h-3.5" /> Sửa
                           </button>
@@ -871,7 +879,7 @@ export default function AdminBlogPage() {
                           {currentUser?.role === 'ADMIN' ? (
                             <button
                               onClick={() => handleDelete(post.id, post.title)}
-                              className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white border border-rose-200 rounded-xl text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1 active:scale-95"
+                              className="px-3 py-2.5 bg-rose-50 text-rose-700 hover:bg-rose-600 hover:text-white border border-rose-200 rounded-xl text-[11px] font-extrabold cursor-pointer transition-all flex items-center gap-1 active:scale-95 min-h-[44px]"
                             >
                               <Trash2 className="w-3.5 h-3.5" /> Xóa
                             </button>

@@ -54,7 +54,7 @@ export default function ThemeParticles({ type, count = 30 }: { type: ParticleTyp
 
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const scrollY = window.scrollY;
+      const _scrollY = window.scrollY;
 
       for (const p of particlesRef.current) {
         p.y += p.speedY;

@@ -20,6 +20,15 @@
     --color-gold-light: 208 195 179;
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   [data-theme="tet"] {
     --color-bg: 254 245 238;
     --color-bg-card: 255 255 255;

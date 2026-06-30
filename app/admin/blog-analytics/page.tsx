@@ -73,7 +73,7 @@ export default async function BlogAnalyticsPage() {
                 <Eye className="w-6 h-6 text-[#8D6E53]" />
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-stone-500">Tổng lượt xem</p>
+                <p className="text-[11px] uppercase tracking-widest font-bold text-stone-500">Tổng lượt xem</p>
                 <p className="text-3xl font-black text-stone-900">{totalViews.toLocaleString()}</p>
               </div>
             </div>
@@ -84,7 +84,7 @@ export default async function BlogAnalyticsPage() {
                 <TrendingUp className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-stone-500">7 ngày qua</p>
+                <p className="text-[11px] uppercase tracking-widest font-bold text-stone-500">7 ngày qua</p>
                 <p className="text-3xl font-black text-stone-900">{recentTotal.toLocaleString()}</p>
               </div>
             </div>
@@ -95,7 +95,7 @@ export default async function BlogAnalyticsPage() {
                 <Calendar className="w-6 h-6 text-amber-600" />
               </div>
               <div>
-                <p className="text-[10px] uppercase tracking-widest font-bold text-stone-500">Bài viết</p>
+                <p className="text-[11px] uppercase tracking-widest font-bold text-stone-500">Bài viết</p>
                 <p className="text-3xl font-black text-stone-900">{(posts || []).length}</p>
               </div>
             </div>
@@ -110,7 +110,7 @@ export default async function BlogAnalyticsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-stone-200 text-stone-500 font-black uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-stone-200 text-stone-500 font-black uppercase tracking-wider text-[11px]">
                   <th className="pb-3.5 pl-2 font-black">Bài viết</th>
                   <th className="pb-3.5 font-black text-right">Tổng lượt xem</th>
                   <th className="pb-3.5 font-black text-right">7 ngày qua</th>
@@ -133,7 +133,7 @@ export default async function BlogAnalyticsPage() {
                       <td className="py-3.5 text-right font-mono font-bold">{post.totalViews}</td>
                       <td className="py-3.5 text-right font-mono">{post.recent7}</td>
                       <td className="py-3.5 pr-2 text-right">
-                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-black uppercase ${
                           post.trend > 50
                             ? 'bg-emerald-50 text-emerald-700'
                             : post.trend > 20
@@ -160,7 +160,7 @@ export default async function BlogAnalyticsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className="border-b border-stone-200 text-stone-500 font-black uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-stone-200 text-stone-500 font-black uppercase tracking-wider text-[11px]">
                     <th className="pb-3.5 font-black">Ngày</th>
                     <th className="pb-3.5 font-black text-right">Lượt xem</th>
                   </tr>

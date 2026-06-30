@@ -41,8 +41,8 @@ export default function TabCommission() {
       const res = await getCommissionReport(startISO, endISO);
       if (res.success) setReportData(res.data);
       else setError(res.error || 'Lỗi khi tải báo cáo hoa hồng');
-    } catch (e: any) {
-      setError(e.message || 'Lỗi kết nối máy chủ');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Lỗi kết nối máy chủ');
     }
     setLoading(false);
   };
@@ -50,9 +50,12 @@ export default function TabCommission() {
   useEffect(() => {
     if (rangeType !== 'custom') {
       const dates = calculateDates(rangeType);
-      setStartDate(dates.startInput);
-      setEndDate(dates.endInput);
-      fetchReport(dates.start, dates.end);
+      const tid = setTimeout(() => {
+        setStartDate(dates.startInput);
+        setEndDate(dates.endInput);
+        fetchReport(dates.start, dates.end);
+      }, 0);
+      return () => clearTimeout(tid);
     }
   }, [rangeType]);
 
@@ -99,7 +102,7 @@ export default function TabCommission() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-gray-100">
           <div className="flex flex-wrap bg-gray-100 p-1 rounded-xl border border-gray-200/50 max-w-max">
             {[{ id: 'week', label: 'Tuần này' }, { id: 'month', label: 'Tháng này' }, { id: 'last_month', label: 'Tháng trước' }, { id: 'custom', label: 'Tùy chỉnh' }].map((btn) => (
-              <button key={btn.id} onClick={() => setRangeType(btn.id as any)} className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${rangeType === btn.id ? 'bg-[#8D6E53] text-white shadow-sm' : 'text-gray-500 hover:text-gray-950'}`}>{btn.label}</button>
+              <button key={btn.id} onClick={() => setRangeType(btn.id as "week" | "month" | "last_month" | "custom")} className={`px-4 py-2 min-h-[44px] rounded-lg text-xs font-semibold transition-all ${rangeType === btn.id ? 'bg-[#8D6E53] text-white shadow-sm' : 'text-gray-500 hover:text-gray-950'}`}>{btn.label}</button>
             ))}
           </div>
           {rangeType === 'custom' && (
@@ -112,12 +115,12 @@ export default function TabCommission() {
                 <span className="text-xs font-medium text-gray-500">Đến</span>
                 <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 bg-gray-50" />
               </div>
-              <button onClick={handleCustomSearch} className="bg-gray-900 text-white hover:bg-black px-4 py-2 rounded-lg text-xs font-bold transition-all">Áp dụng</button>
+              <button onClick={handleCustomSearch} className="bg-gray-900 text-white hover:bg-black px-4 py-2 min-h-[44px] rounded-lg text-xs font-bold transition-all">Áp dụng</button>
             </div>
           )}
           <div className="relative">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-            <input type="text" placeholder="Tìm KTV..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 pr-4 py-2 w-full lg:w-60 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
+            <input type="text" placeholder="Tìm KTV..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 pr-4 py-2 w-full lg:w-60 text-xs bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold min-h-[44px]" />
           </div>
         </div>
       </div>
@@ -143,7 +146,8 @@ export default function TabCommission() {
       ) : filteredStaffReports.length === 0 ? (
         <div className="bg-white p-12 text-center rounded-3xl border border-gray-100 text-gray-400 text-xs">Không tìm thấy dữ liệu hoa hồng trong khoảng thời gian đã chọn.</div>
       ) : (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        <>
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hidden md:block">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
@@ -171,6 +175,38 @@ export default function TabCommission() {
             </table>
           </div>
         </div>
+        <div className="mt-4 space-y-3 md:hidden">
+          {filteredStaffReports.map((s: any) => (
+            <div key={s.staffId} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-gray-900">{s.fullName}</div>
+                  <div className="text-[10px] text-gray-400 font-mono">@{s.username}</div>
+                </div>
+                <span className="bg-[#FAF0E6] text-[#8D6E53] font-mono px-2.5 py-1 rounded-lg text-[10px] font-bold border border-[#FAF0E6]/50">{s.totalAppointments} ca</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                <div>
+                  <span className="text-gray-400">Doanh số</span>
+                  <p className="font-mono text-gray-900 font-bold">{s.totalSales.toLocaleString('vi')} đ</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Hoa hồng</span>
+                  <p className="font-mono text-emerald-600 font-bold">{s.totalCommission.toLocaleString('vi')} đ</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Tiền Tip</span>
+                  <p className="font-mono text-[#8D6E53] font-bold">{s.totalTip.toLocaleString('vi')} đ</p>
+                </div>
+                <div>
+                  <span className="text-gray-400">Thực nhận</span>
+                  <p className="font-mono text-gray-950 font-black">{(s.totalCommission + s.totalTip).toLocaleString('vi')} đ</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        </>
       )}
     </div>
   );

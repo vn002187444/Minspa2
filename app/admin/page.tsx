@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, startTransition } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -29,6 +29,7 @@ import {
   ListTodo,
   DollarSign,
   Wallet,
+  HelpCircle,
 } from "lucide-react";
 import {
   getStaffs,
@@ -39,7 +40,6 @@ import {
   getTreatmentPackages,
   getAdminSessionInfo,
 } from "./actions";
-import TodayMonitoringWidget from "./components/TodayMonitoringWidget";
 import dynamic from 'next/dynamic';
 
 const TabDashboard = dynamic(() => import('./components/TabDashboard'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
@@ -58,12 +58,65 @@ const TabTasks = dynamic(() => import('./components/TabTasks'), { loading: () =>
 const TabReports = dynamic(() => import('./components/TabReports'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabCashRegister = dynamic(() => import('./components/TabCashRegister'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabPayroll = dynamic(() => import('./components/TabPayroll'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+const TabFAQ = dynamic(() => import('./components/TabFAQ'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
+
+type MenuItem = { id: string; label: string; icon: React.ComponentType<{ className?: string }>; isLink?: boolean };
+
+const menuGroups: { groupLabel: string; items: MenuItem[] }[] = [
+  {
+    groupLabel: 'ĐIỀU HÀNH',
+    items: [
+      { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
+      { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck, isLink: true },
+      { id: "ORDERS", label: "Đơn hàng", icon: CheckCircle2, isLink: true },
+      { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User, isLink: true },
+      { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
+    ],
+  },
+  {
+    groupLabel: 'NHÂN SỰ',
+    items: [
+      { id: "STAFF", label: "Nhân sự", icon: Users },
+      { id: "TASKS", label: "Công việc", icon: ListTodo },
+      { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
+    ],
+  },
+  {
+    groupLabel: 'DỊCH VỤ',
+    items: [
+      { id: "SERVICES", label: "Dịch vụ", icon: Settings },
+      { id: "PACKAGES", label: "Gói Liệu Trình", icon: Package },
+    ],
+  },
+  {
+    groupLabel: 'TÀI CHÍNH',
+    items: [
+      { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
+      { id: "COMMISSION", label: "Báo cáo Hoa hồng", icon: FileText },
+      { id: "CASH_REGISTER", label: "Sổ quỹ", icon: DollarSign },
+      { id: "PAYROLL", label: "Bảng lương", icon: Wallet },
+    ],
+  },
+  {
+    groupLabel: 'CẤU HÌNH',
+    items: [
+      { id: "FAQS", label: "FAQ", icon: HelpCircle },
+      { id: "REVIEWS", label: "Đánh giá", icon: Star },
+      { id: "SEO", label: "Cấu hình SEO", icon: Globe },
+      { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
+      { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert, isLink: true },
+      { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
+      { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
+    ],
+  },
+];
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("DASHBOARD");
   const [isLoading, setIsLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [configCollapsed, setConfigCollapsed] = useState(true);
 
   // Data states
   const [userRole, setUserRole] = useState<string>('');
@@ -75,7 +128,9 @@ export default function AdminDashboard() {
   const [seoSettings, setSeoSettings] = useState<any>(null);
   const [bankSettings, setBankSettings] = useState<any>(null);
 
-  const loadData = async (tab: string, additionalParams?: any) => {
+  const allTabIds = menuGroups.flatMap(g => g.items.map(i => i.id));
+
+  const loadData = async (tab: string, _additionalParams?: any) => {
     if (tab === "ATTENDANCE" || tab === "SETTINGS") return;
     setIsLoading(true);
     setStaffError(null);
@@ -106,20 +161,24 @@ export default function AdminDashboard() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
-      if (tabParam && ["DASHBOARD", "STAFF", "SERVICES", "PACKAGES", "COMMISSION", "REVIEWS", "SEO", "BANK", "PASSWORD", "ATTENDANCE", "SETTINGS", "TASKS", "REPORTS", "CASH_REGISTER", "PAYROLL"].includes(tabParam)) {
-        setActiveTab(tabParam);
+      if (tabParam && allTabIds.includes(tabParam)) {
+        startTransition(() => {
+          setActiveTab(tabParam);
+        });
       }
     }
-  }, []);
+  }, [allTabIds]);
 
   useEffect(() => {
     getAdminSessionInfo().then((u) => {
-      if (u) setUserRole(u.role);
+      if (u) startTransition(() => { setUserRole(u.role); });
     });
   }, []);
 
   useEffect(() => {
-    loadData(activeTab);
+    startTransition(() => {
+      loadData(activeTab);
+    });
   }, [activeTab]);
 
   const handleLogout = async () => {
@@ -127,218 +186,145 @@ export default function AdminDashboard() {
     router.push("/login");
   };
 
+  const handleNavClick = (item: MenuItem, closeDrawer?: () => void) => {
+    if (closeDrawer) closeDrawer();
+    if (item.isLink) {
+      router.push(`/admin/${item.id.toLowerCase()}`);
+    } else {
+      setActiveTab(item.id);
+    }
+  };
+
+  const renderMenuItem = (item: MenuItem, variant: 'drawer' | 'sidebar', onClick: () => void) => {
+    const isActive = activeTab === item.id;
+    if (variant === 'drawer') {
+      return (
+        <button key={item.id} onClick={onClick}
+          className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+            isActive ? "bg-[#8D6E53] text-white shadow-lg" : "hover:bg-gray-900 text-gray-400 hover:text-white"
+          }`}
+        >
+          <item.icon className="w-5 h-5 shrink-0" />
+          <span>{item.label}</span>
+        </button>
+      );
+    }
+    return (
+      <button key={item.id} onClick={onClick}
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors whitespace-nowrap cursor-pointer ${
+          isActive ? "bg-[#8D6E53] text-white shadow-md" : "hover:bg-gray-800 hover:text-white"
+        }`}
+      >
+        <item.icon className="w-5 h-5 shrink-0" />
+        <span>{item.label}</span>
+      </button>
+    );
+  };
+
+  const renderGroup = (group: typeof menuGroups[0], variant: 'drawer' | 'sidebar') => (
+    <div key={group.groupLabel}>
+      <div className={`${variant === 'drawer' ? 'text-[11px] tracking-[0.15em] text-gray-600 font-bold uppercase px-4 pt-4 pb-1.5' : 'text-[9px] tracking-[0.15em] text-gray-500 font-bold uppercase px-3 pt-3 pb-1'}`}>
+        {group.groupLabel}
+      </div>
+      {group.items.map(item => renderMenuItem(item, variant, () => handleNavClick(item, variant === 'drawer' ? () => setIsDrawerOpen(false) : undefined)))}
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
-      <header className="md:hidden h-16 bg-gray-900 text-white flex items-center justify-between px-6 shadow-md border-b border-gray-800 shrink-0">
+      <header className="md:hidden h-16 bg-gray-900 text-white flex items-center justify-between px-6 shadow-md border-b border-gray-800 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(4rem + env(safe-area-inset-top, 0px))' }}>
         <span className="font-display font-extrabold text-sm tracking-wider bg-[#8D6E53] text-white px-2 py-0.5 rounded-lg">
           MIN
         </span>
         <div className="flex items-center gap-2">
           <NotificationBell />
-          <Link
-            href="/"
-            aria-label="Về trang chủ"
-            className="text-gray-400 hover:text-white p-1.5 rounded-lg"
-          >
+          <Link href="/" aria-label="Về trang chủ" className="text-gray-400 hover:text-white p-1.5 rounded-lg">
             <Home className="w-5 h-5" />
           </Link>
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            aria-label="Mở menu"
-            className="text-gray-300 hover:text-white p-1.5 focus:outline-none cursor-pointer"
-          >
+          <button onClick={() => setIsDrawerOpen(true)} aria-label="Mở menu" className="text-gray-300 hover:text-white p-1.5 focus:outline-none cursor-pointer">
             <MenuIcon className="w-6 h-6" />
           </button>
         </div>
       </header>
 
-      {/* Mobile Drawer Navigation (Slide-out menu with Hamburger) */}
+      {/* Mobile Drawer Navigation */}
       <AnimatePresence>
         {isDrawerOpen && (
           <>
-            {/* Backdrop Overlay */}
-            <motion.div
-              onClick={() => setIsDrawerOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
+            <motion.div onClick={() => setIsDrawerOpen(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
             />
-            {/* Slide-out Drawer */}
-            <motion.div
-              className="fixed top-0 right-0 h-dvh w-4/5 max-w-[300px] bg-gray-950 text-gray-300 z-[110] shadow-2xl p-6 flex flex-col md:hidden"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
+            <motion.div className="fixed top-0 right-0 h-dvh w-4/5 max-w-[300px] bg-gray-950 text-gray-300 z-[110] shadow-2xl p-6 flex flex-col md:hidden overflow-y-auto"
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             >
-            <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-6">
-              <span className="font-display font-black text-white text-base tracking-widest">
-                ADMIN MENU
-              </span>
-              <button
-                onClick={() => setIsDrawerOpen(false)}
-                className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-805 cursor-pointer"
-                aria-label="Đóng menu"
-              >
-                <XIcon className="w-6 h-6" />
-              </button>
-            </div>
-
-            <nav className="flex-1 flex flex-col gap-2.5">
-              {userRole === 'MANAGER' && (
-                <button
-                  onClick={() => router.push('/staff')}
-                  className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20"
-                >
-                  <CheckCircle2 className="w-5 h-5 shrink-0" />
-                  <span>Giao diện Thợ</span>
+              <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-4 shrink-0">
+                <span className="font-display font-black text-white text-base tracking-widest">ADMIN MENU</span>
+                <button onClick={() => setIsDrawerOpen(false)} className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-805 cursor-pointer" aria-label="Đóng menu">
+                  <XIcon className="w-6 h-6" />
                 </button>
-              )}
-              {[
-                { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
-                { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck },
-                { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
-                { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
-                { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
-                { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
-                { id: "STAFF", label: "Nhân sự", icon: Users },
-                { id: "SERVICES", label: "Dịch vụ", icon: Settings },
-                { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
-                {
-                  id: "COMMISSION",
-                  label: "Báo cáo Hoa hồng",
-                  icon: FileText,
-                },
-                { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
-                { id: "REVIEWS", label: "Đánh giá", icon: Star },
-                { id: "SEO", label: "Cấu hình SEO", icon: Globe },
-                { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
-                { id: "CASH_REGISTER", label: "Sổ quỹ", icon: DollarSign },
-                { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
-                { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
-                { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
-              ].map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setIsDrawerOpen(false);
-                    if (item.id === "SCHEDULE") {
-                      router.push("/admin/schedule");
-                    } else if (item.id === "AUDIT_LOGS") {
-                      router.push("/admin/audit-logs");
-                    } else if (item.id === "ORDERS") {
-                      router.push("/admin/orders");
-                    } else if (item.id === "CUSTOMERS") {
-                      router.push("/admin/customers");
-                    } else {
-                      setActiveTab(item.id);
-                    }
-                  }}
-                  className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm transition-all cursor-pointer ${
-                    activeTab === item.id
-                      ? "bg-[#8D6E53] text-white shadow-lg"
-                      : "hover:bg-gray-900 text-gray-400 hover:text-white"
-                  }`}
+              </div>
+              <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
+                {userRole === 'MANAGER' && (
+                  <button onClick={() => { setIsDrawerOpen(false); router.push('/staff'); }}
+                    className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-1 border border-pink-500/20 shrink-0"
+                  >
+                    <CheckCircle2 className="w-5 h-5 shrink-0" />
+                    <span>Giao diện Thợ</span>
+                  </button>
+                )}
+                {menuGroups.map(group => {
+                  if (group.groupLabel === 'CẤU HÌNH') {
+                    return (
+                      <div key={group.groupLabel}>
+                        <button onClick={() => setConfigCollapsed(!configCollapsed)}
+                          className="flex items-center justify-between w-full text-[11px] tracking-[0.15em] text-gray-600 font-bold uppercase px-4 pt-4 pb-1.5 cursor-pointer hover:text-gray-400 transition-colors"
+                        >
+                          <span>{group.groupLabel}</span>
+                          <span className={`transition-transform duration-200 ${configCollapsed ? '' : 'rotate-180'}`}>▾</span>
+                        </button>
+                        {!configCollapsed && group.items.map(item => renderMenuItem(item, 'drawer', () => handleNavClick(item, () => setIsDrawerOpen(false))))}
+                      </div>
+                    );
+                  }
+                  return renderGroup(group, 'drawer');
+                })}
+              </nav>
+              <div className="border-t border-gray-800 pt-4 mt-4 shrink-0">
+                <button onClick={() => { setIsDrawerOpen(false); handleLogout(); }}
+                  className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 w-full transition-colors cursor-pointer"
                 >
-                  <item.icon className="w-5 h-5 shrink-0" />
-                  <span>{item.label}</span>
+                  <LogOut className="w-5 h-5 shrink-0" />
+                  <span>Đăng xuất</span>
                 </button>
-              ))}
-            </nav>
-
-            <div className="border-t border-gray-800 pt-4 mt-6">
-              <button
-                onClick={() => {
-                  setIsDrawerOpen(false);
-                  handleLogout();
-                }}
-                className="flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 w-full transition-colors cursor-pointer"
-              >
-                <LogOut className="w-5 h-5 shrink-0" />
-                <span>Đăng xuất</span>
-              </button>
-            </div>
-          </motion.div>
+              </div>
+            </motion.div>
           </>
         )}
       </AnimatePresence>
 
-        {/* Desktop Sidebar */}
-        <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 min-h-screen flex-col shrink-0 font-sans">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 min-h-screen flex-col shrink-0 font-sans">
         <div className="h-16 flex items-center justify-between px-6 bg-black/20 text-white font-display font-bold text-lg">
           <span>ADMIN PORTAL</span>
-          <Link
-            href="/"
-            aria-label="Về trang chủ"
-            className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-gray-800"
-          >
+          <Link href="/" aria-label="Về trang chủ" className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-gray-800">
             <Home className="w-5 h-5" />
           </Link>
         </div>
-        <nav className="flex-1 p-4 flex flex-col gap-2">
+        <nav className="flex-1 p-4 flex flex-col gap-1 overflow-y-auto">
           {userRole === 'MANAGER' && (
-            <button
-              onClick={() => router.push('/staff')}
-              className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20 shadow-sm shadow-pink-900/10 transition-all"
+            <button onClick={() => router.push('/staff')}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl font-bold bg-pink-600/10 text-pink-500 hover:bg-pink-600/20 mb-2 border border-pink-500/20 shadow-sm shadow-pink-900/10 transition-all shrink-0"
             >
               <CheckCircle2 className="w-5 h-5 shrink-0" />
               <span>Giao diện Thợ</span>
             </button>
           )}
-          {[
-            { id: "DASHBOARD", label: "Tổng quan", icon: BarChart },
-            { id: "SCHEDULE", label: "Lịch Tổng", icon: CalendarCheck },
-            { id: "ORDERS", label: "Quản lý Đơn hàng", icon: CheckCircle2 },
-            { id: "CUSTOMERS", label: "Khách hàng (CRM)", icon: User },
-            { id: "SELL_PACKAGE", label: "Bán Gói & Tiến Độ", icon: Package },
-            { id: "REPORTS", label: "Báo cáo nâng cao", icon: BarChart },
-            { id: "STAFF", label: "Nhân sự", icon: Users },
-            { id: "SERVICES", label: "Dịch vụ", icon: Settings },
-            { id: "PACKAGES", label: "Quản lý Gói Liệu Trình", icon: Package },
-              { id: "COMMISSION", label: "Báo cáo Hoa hồng", icon: FileText },
-                { id: "TASKS", label: "Công việc", icon: ListTodo },
-                { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarDays },
-            { id: "REVIEWS", label: "Đánh giá", icon: Star },
-            { id: "SEO", label: "Cấu hình SEO", icon: Globe },
-            { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
-            { id: "CASH_REGISTER", label: "Sổ quỹ", icon: DollarSign },
-            { id: "PAYROLL", label: "Bảng lương", icon: Wallet },
-            { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert },
-            { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
-            { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                if (item.id === "SCHEDULE") {
-                  router.push("/admin/schedule");
-                } else if (item.id === "AUDIT_LOGS") {
-                  router.push("/admin/audit-logs");
-                } else if (item.id === "ORDERS") {
-                  router.push("/admin/orders");
-                } else if (item.id === "CUSTOMERS") {
-                  router.push("/admin/customers");
-                } else {
-                  setActiveTab(item.id);
-                }
-              }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors whitespace-nowrap cursor-pointer ${
-                activeTab === item.id
-                  ? "bg-[#8D6E53] text-white shadow-md"
-                  : "hover:bg-gray-800 hover:text-white"
-              }`}
-            >
-              <item.icon className="w-5 h-5 shrink-0" />
-              <span>{item.label}</span>
-            </button>
-          ))}
+          {menuGroups.map(group => renderGroup(group, 'sidebar'))}
         </nav>
-        <div className="p-4">
-          <button
-            onClick={handleLogout}
+        <div className="p-4 shrink-0">
+          <button onClick={handleLogout}
             className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-gray-800 w-full transition-colors cursor-pointer"
           >
             <LogOut className="w-5 h-5 shrink-0" />
@@ -383,6 +369,7 @@ export default function AdminDashboard() {
               />
             )}
             {activeTab === "COMMISSION" && <TabCommission />}
+            {activeTab === "FAQS" && <TabFAQ />}
             {activeTab === "REVIEWS" && <TabReviews reviews={reviews} />}
             {activeTab === "SEO" && (
               <TabSEO data={seoSettings} userRole={userRole} onReload={() => loadData("SEO")} />
@@ -406,7 +393,7 @@ export default function AdminDashboard() {
           </motion.div>
         )}
       </main>
-      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} />
+      <BottomNavigation activeTab={activeTab} setActiveTab={setActiveTab} onMenuClick={() => setIsDrawerOpen(true)} />
     </div>
   );
 }

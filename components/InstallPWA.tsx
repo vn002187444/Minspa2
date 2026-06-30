@@ -1,7 +1,19 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, startTransition } from 'react';
 import { Smartphone, Download, X, Share } from 'lucide-react';
+
+const LS_KEY = 'pwa_install_dismissed_at';
+const COOLDOWN_DAYS = 7;
+
+function isCooldownPassed(): boolean {
+  if (typeof window === 'undefined') return true;
+  const stored = localStorage.getItem(LS_KEY);
+  if (!stored) return true;
+  const dismissed = parseInt(stored, 10);
+  if (isNaN(dismissed)) return true;
+  return Date.now() - dismissed > COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+}
 
 export default function InstallPWA() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -16,16 +28,17 @@ export default function InstallPWA() {
                         (window.navigator as any).standalone === true;
 
     if (isStandalone) return;
+    if (!isCooldownPassed()) return;
 
     const ua = window.navigator.userAgent.toLowerCase();
     const isApple = /iphone|ipad|ipod/.test(ua);
-    setIsIos(isApple);
+    startTransition(() => { setIsIos(isApple); });
 
     const handleBeforeInstallEvent = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
       timerRef.current = setTimeout(() => {
-        setIsVisible(true);
+        startTransition(() => { setIsVisible(true); });
       }, 3000);
     };
 
@@ -33,7 +46,7 @@ export default function InstallPWA() {
 
     if (isApple) {
       timerRef.current = setTimeout(() => {
-        setIsVisible(true);
+        startTransition(() => { setIsVisible(true); });
       }, 5000);
     }
 
@@ -45,11 +58,18 @@ export default function InstallPWA() {
     };
   }, []);
 
+  const dismiss = () => {
+    setIsVisible(false);
+    try { localStorage.setItem(LS_KEY, String(Date.now())); } catch {}
+  };
+
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    console.log(`[PWA Install] User choice: ${outcome}`);
+    if (outcome === 'accepted') {
+      try { localStorage.removeItem(LS_KEY); } catch {}
+    }
     setDeferredPrompt(null);
     setIsVisible(false);
   };
@@ -84,13 +104,13 @@ export default function InstallPWA() {
           <div className="mt-2 flex gap-1.5">
             <button
               onClick={handleInstallClick}
-              className="px-2.5 py-1.5 bg-[#8D6E53] hover:bg-[#765B43] text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer hover:shadow-md"
+              className="px-2.5 py-2.5 bg-[#8D6E53] hover:bg-[#765B43] text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer hover:shadow-md min-h-[44px]"
             >
               <Download className="w-3 h-3" /> Cài đặt ngay
             </button>
             <button
-              onClick={() => setIsVisible(false)}
-              className="px-2 py-1.5 text-gray-500 hover:text-gray-800 bg-white border border-[#E3D3BE] rounded-lg text-[10px] font-semibold cursor-pointer transition-colors"
+              onClick={dismiss}
+              className="px-2 py-2.5 text-gray-500 hover:text-gray-800 bg-white border border-[#E3D3BE] rounded-lg text-[11px] font-semibold cursor-pointer transition-colors min-h-[44px]"
             >
               Để sau
             </button>
@@ -99,7 +119,7 @@ export default function InstallPWA() {
       </div>
 
       <button
-        onClick={() => setIsVisible(false)}
+        onClick={dismiss}
         className="text-[#A08A75] hover:text-[#5C4033] p-0.5 rounded-full hover:bg-gray-200/50 transition-colors shrink-0 cursor-pointer"
         aria-label="Đóng bảng cài đặt"
       >

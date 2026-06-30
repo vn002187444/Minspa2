@@ -1,10 +1,11 @@
 'use client';
-
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
 import { useEffect } from 'react';
+import { useNoindex } from '@/lib/seo';
 
 export default function StaffError({ error, reset }: { error: Error; reset: () => void }) {
+  useNoindex();
   useEffect(() => { console.error('[Staff Error]', error); }, [error]);
 
   return (
@@ -27,3 +28,4 @@ export default function StaffError({ error, reset }: { error: Error; reset: () =
     </div>
   );
 }
+

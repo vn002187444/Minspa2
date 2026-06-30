@@ -179,6 +179,8 @@ export async function cancelAppointmentByCustomer(appointmentId: string) {
   }
 
   // Refund package session if this appointment used a package
+  // Note: DB has two overloads of refund_package_session — the void-returning one
+  // uses p_pkg_id/p_appt_id/p_used_at, which is what we call here
   if (appt.is_package_session && appt.use_package_id) {
     await supabase.rpc('refund_package_session', {
       p_pkg_id: appt.use_package_id,

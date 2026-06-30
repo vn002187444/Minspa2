@@ -2,11 +2,12 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
-import { format, startOfDay, endOfDay, subDays, eachDayOfInterval, startOfMonth, endOfMonth, startOfYear } from "date-fns";
+import { format, subDays, eachDayOfInterval, startOfMonth, endOfMonth } from "date-fns";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { logAuditAction } from "@/utils/audit";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { sanitizeHtml, stripHtml } from "@/lib/sanitize";
+import { stripHtml } from "@/lib/sanitize";
 
 interface StaffInput {
   username?: string;
@@ -58,6 +59,8 @@ interface SeoInput {
   online_discount_percent?: number;
   default_commission_percent?: number;
   hotline?: string;
+  facebook_url?: string;
+  zalo_url?: string;
 }
 
 interface BannerInput {
@@ -84,40 +87,7 @@ interface StaffReportEntry {
   }>;
 }
 
-interface AppointmentRow {
-  id: string;
-  total_amount?: number;
-  commission_amount?: number;
-  tip_amount?: number;
-  start_time?: string;
-  status?: string;
-  staff_id?: string;
-  customer_id?: string;
-  customers?: { full_name?: string; phone?: string } | null;
-  users?: { id?: string; full_name?: string; username?: string } | null;
-  appointment_services?: Array<{
-    services?: { id?: string; name?: string; price?: number } | null;
-    service_id?: string;
-  }>;
-  reviews?: Array<{
-    id?: string;
-    rating?: number;
-    quick_tags?: string[];
-    comment?: string;
-    created_at?: string;
-  }> | null;
-}
 
-interface AttendanceRow {
-  id: string;
-  staff_id?: string;
-  date?: string;
-  status?: string;
-  check_in_time?: string;
-  check_out_time?: string;
-  note?: string;
-  users?: { full_name?: string; username?: string } | null;
-}
 
 async function checkAdmin() {
   const session = await getSession();
@@ -254,7 +224,7 @@ export async function getDashboardData(startDateStr?: string, endDateStr?: strin
           const dStr = format(d, 'dd/MM');
           return { name: dStr, value: dailyRevenue[dStr] || 0 };
         });
-      } catch (chartErr) {
+      } catch {
         chartData = eachDayOfInterval({ start: subDays(today, 6), end: today }).map(d => {
           const dStr = format(d, 'dd/MM');
           return { name: dStr, value: dailyRevenue[dStr] || 0 };
@@ -280,7 +250,7 @@ export async function getDashboardData(startDateStr?: string, endDateStr?: strin
       appointmentsList: appts || [],
       todayAppointments: todayAppts || []
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Supabase query error:', error);
     // Return empty mock data on fetch failure
     return {
@@ -457,7 +427,7 @@ export async function getStaffDetail(staffId: string, startDateStr?: string, end
     const topServices = Object.entries(serviceCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => ({ name: e[0], count: e[1] }));
 
     return { totalRevenue, totalCommission, totalTip, daysPresent, daysAbsent, topCustomers, topServices, totalCompleted: appointments?.length || 0 };
-  } catch (error) {
+  } catch {
     return { totalRevenue: 0, totalCommission: 0, totalTip: 0, daysPresent: 0, daysAbsent: 0, topCustomers: [], topServices: [], totalCompleted: 0 };
   }
 }
@@ -469,7 +439,7 @@ export async function getServices() {
     const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, commission_percentage, commission_amount, is_active').order('category', { ascending: true }).limit(200);
     if (error) throw error;
     return data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -609,7 +579,7 @@ export async function getReviews() {
       .limit(200);
     if (error) throw error;
     return data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -618,7 +588,7 @@ export async function getSeoSettings() {
   await checkAdminOrManager();
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('seo_settings').select('page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline').eq('id', 1).single();
+    const { data, error } = await supabase.from('seo_settings').select('page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline, facebook_url, zalo_url').eq('id', 1).single();
     if (error) throw error;
     if (data) {
       return {
@@ -630,12 +600,14 @@ export async function getSeoSettings() {
         online_discount_percent: data.online_discount_percent ?? 5,
         default_commission_percent: data.default_commission_percent ?? 15,
         hotline: data.hotline || '0934 323 878',
+        facebook_url: data.facebook_url || 'https://facebook.com/minnailhair',
+        zalo_url: data.zalo_url || 'https://zalo.me/0934323878',
       };
     }
-  } catch (e) {
+  } catch (e: unknown) {
     console.error(e);
   }
-  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878' };
+  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878', facebook_url: 'https://facebook.com/minnailhair', zalo_url: 'https://zalo.me/0934323878' };
 }
 
 export async function saveSeoSettings(payload: SeoInput) {
@@ -652,6 +624,8 @@ export async function saveSeoSettings(payload: SeoInput) {
       online_discount_percent: payload.online_discount_percent ?? 5,
       default_commission_percent: payload.default_commission_percent ?? 15,
       hotline: payload.hotline || '0934 323 878',
+      facebook_url: payload.facebook_url || 'https://facebook.com/minnailhair',
+      zalo_url: payload.zalo_url || 'https://zalo.me/0934323878',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
     if (error) throw error;
@@ -682,7 +656,7 @@ export async function getSeoArticles() {
       article: a.article,
       imageUrl: a.image_url,
     }));
-  } catch (e) {
+  } catch (e: unknown) {
     console.error(e);
   }
   return [];
@@ -848,7 +822,7 @@ export async function changePassword(oldPassword: string, newPassword: string) {
     return { success: false, error: 'Không tìm thấy tài khoản người dùng trong hệ thống' };
   }
   
-  const isOldPasswordCorrect = await verifyPassword(oldPassword, user.password_hash) || user.password_hash === oldPassword;
+  const isOldPasswordCorrect = await verifyPassword(oldPassword, user.password_hash);
   if (!isOldPasswordCorrect) {
     return { success: false, error: 'Mật khẩu cũ nhập vào không chính xác' };
   }
@@ -1047,7 +1021,7 @@ export async function getTreatmentPackages() {
       .limit(200);
     if (error) throw error;
     return data || [];
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -1067,12 +1041,12 @@ export async function saveTreatmentPackage(packageData: PackageInput) {
   };
 
   if (dataToSave.id) {
-    const { id, services, ...updateData } = dataToSave;
+    const { id, services: _services, ...updateData } = dataToSave;
     const { error } = await supabase.from('treatment_packages').update(updateData).eq('id', id);
     if (error) return { success: false, error: error.message };
     await logAuditAction(session.user.id, "EDIT_PACKAGE", `Sửa gói liệu trình '${updateData.name}'`);
   } else {
-    const { services, ...insertData } = dataToSave;
+    const { services: _services, ...insertData } = dataToSave;
     const { error } = await supabase.from('treatment_packages').insert(insertData);
     if (error) return { success: false, error: error.message };
     await logAuditAction(session.user.id, "ADD_PACKAGE", `Thêm mới gói liệu trình '${insertData.name}'`);
@@ -1177,7 +1151,7 @@ export async function getBankSettings() {
         account_owner: data.account_owner,
       };
     }
-  } catch (e) {
+  } catch (e: unknown) {
     console.error(e);
   }
   return { bank_id: 'vcb', bank_name: 'Vietcombank', account_number: '', account_owner: '' };
@@ -1409,9 +1383,10 @@ export async function createManualNotification(recipientRole: string, title: str
   if (!users || users.length === 0) return { success: false, error: 'Không tìm thấy người nhận' };
 
   const notifications = users.map((u: { id: string }) => ({
-    user_id: u.id,
+    recipient_type: 'user',
+    recipient_id: u.id,
     title,
-    body,
+    content: body,
     is_read: false,
     created_at: new Date().toISOString(),
   }));
@@ -1425,7 +1400,6 @@ export async function createManualNotification(recipientRole: string, title: str
 
 export async function getCronJobStatuses() {
   const supabase = await createClient();
-  const now = new Date().toISOString();
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
   const jobs = [
@@ -1472,7 +1446,7 @@ export async function getBannerSettings() {
         content: stripHtml(data.content || ''),
       };
     }
-  } catch (e) {
+  } catch (e: unknown) {
     console.error(e);
   }
   // fallback: fetch hotline from seo_settings
@@ -1673,6 +1647,7 @@ export async function deleteTask(taskId: string) {
 }
 
 export async function cloneDailyTasks() {
+  await checkAdminOrManager();
   const supabase = await createClient();
 
   const todayStart = new Date();
@@ -2563,4 +2538,136 @@ export async function backupDatabase() {
   }
 
   return { success: true, sql: lines.join('\n'), count: BACKUP_TABLES.length } as const;
+}
+
+// ====== FAQ CRUD (V3.15) ======
+
+export async function getFaqs() {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('faqs')
+    .select('*')
+    .order('sort_order');
+  if (error) throw error;
+  return data;
+}
+
+export async function createFaq(payload: {
+  question: string;
+  answer: string;
+  category?: string;
+  sort_order?: number;
+  is_active?: boolean;
+}) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('faqs')
+    .insert({
+      question: payload.question,
+      answer: payload.answer,
+      category: payload.category || 'general',
+      sort_order: payload.sort_order ?? 0,
+      is_active: payload.is_active ?? true,
+    });
+  if (error) throw error;
+  revalidatePath('/admin');
+}
+
+export async function updateFaq(id: string, updates: Partial<{
+  question: string;
+  answer: string;
+  category: string;
+  sort_order: number;
+  is_active: boolean;
+}>) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('faqs')
+    .update(updates)
+    .eq('id', id);
+  if (error) throw error;
+  revalidatePath('/admin');
+}
+
+export async function deleteFaq(id: string) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('faqs')
+    .delete()
+    .eq('id', id);
+  if (error) throw error;
+  revalidatePath('/admin');
+}
+
+export async function reorderFaqs(sortedIds: string[]) {
+  const session = await getSession();
+  if (!session) redirect('/login');
+  const supabase = await createClient();
+
+  const updates = sortedIds.map((id, idx) => ({ id, sort_order: idx }));
+  const { error } = await supabase
+    .from('faqs')
+    .upsert(updates, { onConflict: 'id' });
+  if (error) throw error;
+  revalidatePath('/admin');
+}
+
+export async function getStaffSkills(staffId: string) {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('staff_skills')
+    .select('*, services(name)')
+    .eq('staff_id', staffId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function saveStaffSkill(skillData: {
+  staff_id: string;
+  service_id: string;
+  skill_level: number;
+  certificate_name?: string;
+  certificate_url?: string;
+  is_active: boolean;
+}) {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('staff_skills')
+    .upsert({
+      staff_id: skillData.staff_id,
+      service_id: skillData.service_id,
+      skill_level: skillData.skill_level,
+      certificate_name: skillData.certificate_name,
+      certificate_url: skillData.certificate_url,
+      is_active: skillData.is_active,
+    }, { onConflict: 'staff_id,service_id' });
+  if (error) throw error;
+  revalidatePath('/admin');
+  return { success: true };
+}
+
+export async function deleteStaffSkill(skillId: string) {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('staff_skills')
+    .delete()
+    .eq('id', skillId);
+  if (error) throw error;
+  revalidatePath('/admin');
+  return { success: true };
 }

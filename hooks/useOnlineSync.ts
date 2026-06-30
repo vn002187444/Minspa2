@@ -50,7 +50,10 @@ export function useOnlineSync() {
   }, [refreshCount]);
 
   useEffect(() => {
-    refreshCount();
+    const init = async () => {
+      await refreshCount();
+    };
+    init();
 
     const handleOnline = () => sync();
     window.addEventListener('online', handleOnline);

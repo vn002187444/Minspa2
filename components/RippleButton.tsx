@@ -14,7 +14,7 @@ let rippleId = 0
 interface RippleButtonProps {
   children: ReactNode
   className?: string
-  onClick?: (e: MouseEvent<HTMLButtonElement>) => void
+  onClick?: (_e: MouseEvent<HTMLButtonElement>) => void
   [key: string]: any
 }
 

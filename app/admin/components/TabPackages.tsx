@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { toast } from 'sonner';
 import { Package, PenTool, XIcon } from "lucide-react";
-import { saveTreatmentPackage, deleteTreatmentPackageSafely } from "../actions";
+import { deleteTreatmentPackageSafely } from "../actions";
 import EditPackageModal from "./EditPackageModal";
 
 interface PkgItem {
@@ -77,7 +77,7 @@ export default function TabPackages({ packages, services, userRole, onReload }: 
           >
             <div className="absolute top-0 right-0 p-4 flex gap-2">
               {!pkg.is_active && (
-                <span className="absolute top-2 left-2 bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Đã ẩn</span>
+                <span className="absolute top-2 left-2 bg-red-100 text-red-700 text-[11px] font-bold px-2 py-0.5 rounded-full">Đã ẩn</span>
               )}
               <button
                 onClick={() => setEditingPackage(pkg)}
@@ -130,7 +130,7 @@ export default function TabPackages({ packages, services, userRole, onReload }: 
 
             <div className="mt-auto pt-4 border-t border-gray-100 flex items-end justify-between">
               <div>
-                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">Giá Trọn Gói</p>
+                <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wider mb-0.5">Giá Trọn Gói</p>
                 <p className="text-xl font-black text-gray-900 font-mono tracking-tight">
                   {Number(pkg.price).toLocaleString("vi")}đ
                 </p>

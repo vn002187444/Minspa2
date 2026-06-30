@@ -6,7 +6,7 @@ const MASCOT_EVENT_KEY = 'min_mascot_events';
 
 export const trackEvent = (eventName: string, params: GtagParams) => {
   if (typeof window !== 'undefined') {
-    const w = window as { gtag?: (cmd: string, event: string, params: GtagParams) => void };
+    const w = window as { gtag?: (_cmd: string, _event: string, _params: GtagParams) => void };
     w.gtag?.('event', eventName, params);
   }
 };

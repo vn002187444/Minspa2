@@ -3,10 +3,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { verifyPassword, hashPassword } from "@/lib/password";
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
-import { runRemindersCheck } from "@/utils/reminders";
-import { lockTimeSlots, unlockTimeSlots, cascadeShiftForward, handleCancelAndUnlock, incrementSlotLimit } from "@/lib/booking-engine";
+import { lockTimeSlots, unlockTimeSlots, cascadeShiftForward, incrementSlotLimit } from "@/lib/booking-engine";
 
 export async function getStaffData() {
   const session = await getSession();
@@ -139,6 +138,8 @@ export async function checkIn() {
 }
 
 export async function getCustomerActivePackages(customerId: string) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
   const { data } = await supabase
     .from('customer_packages')
@@ -150,6 +151,8 @@ export async function getCustomerActivePackages(customerId: string) {
 }
 
 export async function getCustomerHistory(customerId: string) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
   const { data } = await supabase
     .from('appointments')
@@ -164,7 +167,6 @@ export async function getCustomerHistory(customerId: string) {
     .eq('status', 'COMPLETED')
     .order('created_at', { ascending: false })
     .limit(5);
-    
   return data || [];
 }
 
@@ -187,6 +189,8 @@ export async function takeRandomAppointment(appointmentId: string) {
 }
 
 export async function swapAppointment(appointmentId: string, newStaffId: string) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
   const isUnassigned = newStaffId === '_unassigned' || !newStaffId;
   const { error } = await supabase
@@ -285,6 +289,7 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
 
       // Cascade shift when completed early
       if (payload.status === 'COMPLETED' && appt?.staff_id && appt?.end_time) {
+        await unlockTimeSlots(appointmentId);
         const now = new Date();
         const originalEnd = new Date(appt.end_time);
         await lockTimeSlots(appointmentId, appt.staff_id, appt.start_time, appt.end_time);
@@ -323,6 +328,9 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
 
 export async function updateAppointmentStatus(appointmentId: string, status: string) {
   const session = await getSession();
+  if (!session) {
+    return { success: false, error: 'Unauthorized' };
+  }
   const supabase = await createClient();
   const { data: oldAppt } = await supabase.from('appointments').select('status, staff_id, start_time, end_time, actual_start_time, actual_end_time').eq('id', appointmentId).single();
 
@@ -352,6 +360,7 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
 
   // Cascade shift: when completed early, shift subsequent appointments forward
   if (status === 'COMPLETED' && oldAppt && oldAppt.staff_id) {
+    await unlockTimeSlots(appointmentId);
     const completedAt = new Date(now);
     const originalEnd = new Date(oldAppt.end_time);
     await lockTimeSlots(appointmentId, oldAppt.staff_id, oldAppt.start_time, oldAppt.end_time);
@@ -371,6 +380,8 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
 }
 
 export async function completeAppointment(appointmentId: string, extraServiceIds: string[] = [], tipAmount: number = 0, discountPercent: number = 0) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
 
   // Parallel: fetch appointment, fetch services, insert extra services
@@ -504,6 +515,8 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
 }
 
 export async function submitReview(appointmentId: string, rating: number, tags: string[], comment: string = "") {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
   const { error } = await supabase
     .from('reviews')
@@ -669,7 +682,7 @@ export async function getStaffStats(startDateStr?: string, endDateStr?: string) 
       reviewsCount: staffReviews.length,
       soldPackages: mySoldPackages || []
     };
-  } catch (error) {
+    } catch {
     return {
       totalRevenue: 0, totalCommission: 0, totalTip: 0, daysPresent: 0, daysAbsent: 0, topCustomers: [], topServices: [], totalCompleted: 0, attendanceLogs: [], reviews: [], avgRating: 5, reviewsCount: 0
     };
@@ -743,6 +756,10 @@ export async function updateTip(appointmentId: string, newTipAmount: number) {
 }
 
 export async function getCustomerPackagesDetailed(customerId: string) {
+  const session = await getSession();
+  if (!session) {
+    return [];
+  }
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('customer_packages')

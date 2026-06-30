@@ -10,7 +10,7 @@ export async function GET(req: Request) {
   try {
     const assignedCount = await batchAutoAssign();
     return NextResponse.json({ success: true, assignedCount });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[CRON] Auto-assign error:', error);
     return NextResponse.json({ success: false, error: 'Internal error' }, { status: 500 });
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Bell, ArrowLeft, CheckCheck, Loader2 } from 'lucide-react';
@@ -28,7 +28,7 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const fetchData = useCallback(async (pageNum: number, filterType: 'all' | 'unread') => {
-    setLoading(true);
+    startTransition(() => { setLoading(true); });
     try {
       const params = new URLSearchParams({ page: String(pageNum), limit: String(PAGE_SIZE) });
       const res = await fetch(`/api/notifications?${params}`);
@@ -44,12 +44,14 @@ export default function NotificationsPage() {
       if (filterType === 'unread') {
         items = items.filter((n: Notification) => !n.is_read);
       }
-      setNotifications(items);
-      setTotal(data.total ?? 0);
+      startTransition(() => {
+        setNotifications(items);
+        setTotal(data.total ?? 0);
+      });
     } catch {
       // silent
     }
-    setLoading(false);
+    startTransition(() => { setLoading(false); });
   }, [router]);
 
   useEffect(() => {

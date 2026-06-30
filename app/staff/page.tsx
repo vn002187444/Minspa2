@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, startTransition } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -41,7 +42,6 @@ import {
   History,
   Info,
   LogOut,
-  ArrowRight,
   Activity,
   Home,
   Key,
@@ -60,9 +60,10 @@ import {
   Bell,
   Package,
   ListTodo,
+  Menu,
+  X,
 } from "lucide-react";
 import MasterSchedule from "@/components/MasterSchedule";
-import BottomNavigation from "@/components/BottomNavigation";
 import PushNotificationManager from "@/components/PushNotificationManager";
 import LoadingButton from "@/components/LoadingButton";
 import LoadingOverlay from "@/components/LoadingOverlay";
@@ -76,6 +77,7 @@ export default function StaffDashboard() {
   const [activeTab, setActiveTab] = useState<
     "ATTENDANCE" | "SCHEDULE" | "MASTER" | "REPORTS" | "PASSWORD" | "MANAGEMENT" | "SELL_PACKAGE" | "BOOKING" | "TASKS"
   >("SCHEDULE");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   // States to track new random appointments alerts
@@ -93,7 +95,6 @@ export default function StaffDashboard() {
 
   // Data state
   const [data, setData] = useState<any>(null);
-  const [stats, setStats] = useState<any>(null);
 
   // Modals state
   const [historyModal, setHistoryModal] = useState<{
@@ -134,17 +135,23 @@ export default function StaffDashboard() {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab");
       if (tabParam && ["ATTENDANCE", "SCHEDULE", "MASTER", "REPORTS", "PASSWORD", "MANAGEMENT", "SELL_PACKAGE", "BOOKING", "TASKS"].includes(tabParam)) {
-        setActiveTab(tabParam as any);
+        startTransition(() => {
+          setActiveTab(tabParam as "ATTENDANCE" | "SCHEDULE" | "MASTER" | "REPORTS" | "PASSWORD" | "MANAGEMENT" | "SELL_PACKAGE" | "BOOKING" | "TASKS");
+        });
       }
     }
   }, []);
 
   useEffect(() => {
-    loadData();
+    startTransition(() => {
+      loadData();
+    });
     
     // Auto-refresh every 5 minutes as fallback (Realtime handles instant updates)
     const intervalId = setInterval(() => {
-      loadData(true);
+      startTransition(() => {
+        loadData(true);
+      });
     }, 300000);
     
     return () => clearInterval(intervalId);
@@ -167,7 +174,7 @@ export default function StaffDashboard() {
       const channel: any = supabase
         .channel('staff_appointments')
         .on(
-          'postgres_changes' as any,
+          'postgres_changes',
           {
             event: '*',
             schema: 'public',
@@ -175,11 +182,13 @@ export default function StaffDashboard() {
             filter: `staff_id=eq.${staffId}`,
           },
           () => {
-            loadData(true);
+            startTransition(() => {
+              loadData(true);
+            });
           }
         )
         .on(
-          'postgres_changes' as any,
+          'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
@@ -187,7 +196,9 @@ export default function StaffDashboard() {
             filter: `status=in.(PENDING_RANDOM,CONFIRMED)`,
           },
           () => {
-            loadData(true);
+            startTransition(() => {
+              loadData(true);
+            });
           }
         );
  
@@ -248,23 +259,31 @@ export default function StaffDashboard() {
           }
 
           // Trigger toast alert and glowing states
-          setNewAppointmentIds((prev) => [...prev, ...newIds]);
-          setHasNewRandomAlert(true);
+          startTransition(() => {
+            setNewAppointmentIds((prev) => [...prev, ...newIds]);
+            setHasNewRandomAlert(true);
+          });
           
           const newAppts = data.randomAppointments.filter((appt: any) => newIds.includes(appt.id));
           const clientNames = newAppts.map((appt: any) => appt.customers?.full_name || "Khách hàng mới").join(", ");
-          setAlertMessage(`Có lịch đặt Random mới từ: ${clientNames}. Vui lòng kiểm tra nhận ca!`);
+          startTransition(() => {
+            setAlertMessage(`Có lịch đặt Random mới từ: ${clientNames}. Vui lòng kiểm tra nhận ca!`);
+          });
           
           // Clear toast automatically after 15 seconds
           const timer = setTimeout(() => {
-            setHasNewRandomAlert(false);
+            startTransition(() => {
+              setHasNewRandomAlert(false);
+            });
           }, 15000);
           
           randomIdsRef.current = currentIds;
           return () => clearTimeout(timer);
         } else {
           // If a random appointment gets claimed or cancelled, remove it from the highlighted state immediately
-          setNewAppointmentIds((prev) => prev.filter((id) => currentIds.includes(id)));
+          startTransition(() => {
+            setNewAppointmentIds((prev) => prev.filter((id) => currentIds.includes(id)));
+          });
           randomIdsRef.current = currentIds;
         }
       }
@@ -312,32 +331,36 @@ export default function StaffDashboard() {
       const hours = now.getHours();
       
       // Post 09:00 AM flag check-in warning
-      if (!isCheckedIn && hours >= 9) {
-        setShowCheckInReminder(true);
-      } else {
-        setShowCheckInReminder(false);
-      }
+      startTransition(() => {
+        if (!isCheckedIn && hours >= 9) {
+          setShowCheckInReminder(true);
+        } else {
+          setShowCheckInReminder(false);
+        }
+      });
     }
-  }, [data?.attendance]);
+  }, [data]);
 
   // Alert thợ with pre-appointment notice 10 minutes before their scheduled services
   useEffect(() => {
     if (data?.myAppointments) {
       const now = Date.now();
-      data.myAppointments.forEach((appt: any) => {
-        if (appt.status === 'CONFIRMED' && !alertedTenMinutesRef.current[appt.id]) {
-          const startTime = new Date(appt.start_time).getTime();
-          const diffMinutes = (startTime - now) / (1000 * 60);
+      startTransition(() => {
+        data.myAppointments.forEach((appt: any) => {
+          if (appt.status === 'CONFIRMED' && !alertedTenMinutesRef.current[appt.id]) {
+            const startTime = new Date(appt.start_time).getTime();
+            const diffMinutes = (startTime - now) / (1000 * 60);
 
-          // If the appointment starts within 0 to 11 minutes
-          if (diffMinutes > 0 && diffMinutes <= 11) {
-            triggerStaffToast(
-              'warning',
-              `⏰ Bạn có ca phục vụ khách hàng [${appt.customers?.full_name || 'Khách lẻ'}] sau 10 phút nữa (${format(new Date(appt.start_time), 'HH:mm')}). Chuẩn bị dụng cụ nhé!`
-            );
-            alertedTenMinutesRef.current[appt.id] = true;
+            // If the appointment starts within 0 to 11 minutes
+            if (diffMinutes > 0 && diffMinutes <= 11) {
+              triggerStaffToast(
+                'warning',
+                `⏰ Bạn có ca phục vụ khách hàng [${appt.customers?.full_name || 'Khách lẻ'}] sau 10 phút nữa (${format(new Date(appt.start_time), 'HH:mm')}). Chuẩn bị dụng cụ nhé!`
+              );
+              alertedTenMinutesRef.current[appt.id] = true;
+            }
           }
-        }
+        });
       });
     }
   }, [data?.myAppointments]);
@@ -411,7 +434,7 @@ export default function StaffDashboard() {
                   setHasNewRandomAlert(false);
                   setNewAppointmentIds([]); // clear visual blinking
                 }}
-                className="text-[11px] font-bold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                className="text-[11px] font-bold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-2.5 py-2.5 rounded-lg transition-colors cursor-pointer min-h-[44px] flex items-center"
               >
                 Bỏ qua
               </button>
@@ -425,7 +448,7 @@ export default function StaffDashboard() {
                   }
                   setHasNewRandomAlert(false);
                 }}
-                className="text-[11px] font-bold text-white bg-pink-600 hover:bg-pink-700 px-3.5 py-1.5 rounded-lg transition-colors shadow-sm cursor-pointer"
+                className="text-[11px] font-bold text-white bg-pink-600 hover:bg-pink-700 px-3.5 py-2.5 rounded-lg transition-colors shadow-sm cursor-pointer min-h-[44px] flex items-center"
               >
                 Xem ngay ⚡
               </button>
@@ -461,16 +484,25 @@ export default function StaffDashboard() {
             <button
               onClick={() => setActiveTab("PASSWORD")}
               title="Đổi mật khẩu"
-              className={`text-gray-500 hover:text-gray-950 transition-colors p-1.5 rounded-lg hover:bg-gray-150 ${activeTab === "PASSWORD" ? "text-pink-600 bg-pink-50" : ""}`}
+              className={`hidden md:block text-gray-500 hover:text-gray-950 transition-colors p-1.5 rounded-lg hover:bg-gray-150 ${activeTab === "PASSWORD" ? "text-pink-600 bg-pink-50" : ""}`}
             >
               <Key className="w-5 h-5" />
             </button>
             <button
               onClick={handleLogout}
-              className="text-gray-500 hover:text-red-500 transition-colors"
+              className="hidden md:block text-gray-500 hover:text-red-500 transition-colors p-1.5"
               title="Đăng xuất"
             >
               <LogOut className="w-5 h-5" />
+            </button>
+            {/* Mobile only Hamburger Menu */}
+            <button
+              onClick={() => setIsDrawerOpen(true)}
+              className="md:hidden text-gray-500 hover:text-gray-950 p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer"
+              title="Mở menu"
+              aria-label="Mở menu"
+            >
+              <Menu className="w-6 h-6" />
             </button>
           </div>
         </div>
@@ -497,7 +529,7 @@ export default function StaffDashboard() {
           ].map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id as any)}
+              onClick={() => setActiveTab(item.id as "ATTENDANCE" | "SCHEDULE" | "MASTER" | "REPORTS" | "PASSWORD" | "MANAGEMENT" | "SELL_PACKAGE" | "BOOKING" | "TASKS")}
               className={`py-4 px-1 text-sm font-semibold border-b-2 transition-colors flex items-center gap-2 cursor-pointer ${
                 activeTab === item.id
                   ? "border-pink-600 text-pink-600"
@@ -511,7 +543,96 @@ export default function StaffDashboard() {
         </div>
       </nav>
 
-       <main className="flex-1 p-4 max-w-7xl xxl:max-w-[1500px] mx-auto w-full pb-24 md:pb-8">
+      {/* Mobile Drawer Navigation */}
+      <AnimatePresence>
+        {isDrawerOpen && (
+          <>
+            <motion.div
+              onClick={() => setIsDrawerOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] md:hidden"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            />
+            <motion.div
+              className="fixed top-0 right-0 h-dvh w-4/5 max-w-[300px] bg-gray-950 text-gray-300 z-[110] shadow-2xl p-6 flex flex-col md:hidden overflow-y-auto"
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+              <div className="flex items-center justify-between border-b border-gray-800 pb-4 mb-4 shrink-0">
+                <span className="font-display font-black text-white text-base tracking-widest">STAFF MENU</span>
+                <button
+                  onClick={() => setIsDrawerOpen(false)}
+                  className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-gray-800 cursor-pointer"
+                  aria-label="Đóng menu"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+              <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
+                {[
+                  { id: "SCHEDULE", label: "Lịch trình cá nhân", icon: Clock },
+                  { id: "MASTER", label: "Lịch làm việc của Tiệm", icon: Activity },
+                  { id: "ATTENDANCE", label: "Điểm danh hàng ngày", icon: CalendarCheck },
+                  { id: "TASKS", label: "Công việc & Nhiệm vụ", icon: ListTodo },
+                  { id: "REPORTS", label: "Hiệu suất & Báo cáo", icon: DollarSign },
+                  { id: "BOOKING", label: "Đặt lịch hộ", icon: PlusCircle },
+                  { id: "SELL_PACKAGE", label: "Bán Gói Liệu Trình", icon: Package },
+                  { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },
+                  ...((data?.profile?.role === "MANAGER" || data?.profile?.role === "ADMIN")
+                    ? [{ id: "MANAGEMENT", label: "Ban Quản lý 👑", icon: ShieldCheck }]
+                    : [])
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id as any);
+                        setIsDrawerOpen(false);
+                      }}
+                      className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl font-bold text-sm w-full transition-colors cursor-pointer ${
+                        isActive
+                          ? "bg-pink-600/10 text-pink-500 border border-pink-500/20"
+                          : "text-gray-400 hover:text-white hover:bg-gray-900 border border-transparent"
+                      }`}
+                    >
+                      <Icon className="w-5 h-5 shrink-0" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </nav>
+              <div className="border-t border-gray-800 pt-4 mt-4 shrink-0 space-y-2">
+                <Link
+                  href="/"
+                  className="flex items-center gap-3.5 px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:text-white hover:bg-gray-900 transition-colors cursor-pointer"
+                  onClick={() => setIsDrawerOpen(false)}
+                >
+                  <Home className="w-5 h-5 shrink-0" />
+                  <span>Quay lại Trang Chủ</span>
+                </Link>
+                <button
+                  onClick={() => {
+                    setIsDrawerOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex items-center gap-3.5 px-4 py-3 rounded-xl font-bold text-sm text-rose-400 hover:text-rose-300 hover:bg-rose-950/20 w-full transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-5 h-5 shrink-0" />
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <main className="flex-1 p-4 max-w-7xl xxl:max-w-[1500px] mx-auto w-full pb-24 md:pb-8">
         {/* Persistent Flashing Checkin Reminder Past 09:00 AM */}
         {showCheckInReminder && (
           <div className="mb-6 p-4 rounded-3xl bg-amber-500/10 border-2 border-amber-500 text-[#3A2E2B] font-bold flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl shadow-amber-100/50 animate-[pulse_2s_infinite]">
@@ -526,7 +647,7 @@ export default function StaffDashboard() {
               onClick={() => {
                 setActiveTab("ATTENDANCE");
               }}
-              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl text-xs font-black transition-all shadow-sm active:scale-95 cursor-pointer text-center whitespace-nowrap"
+              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl text-xs font-black transition-all shadow-sm active:scale-95 cursor-pointer text-center whitespace-nowrap min-h-[44px] flex items-center justify-center"
             >
               Xem Điểm danh ngay ⚡
             </button>
@@ -644,7 +765,7 @@ export default function StaffDashboard() {
                         onClick={handleCheckIn}
                         isLoading={checkInLoading}
                         loadingText="Đang điểm danh..."
-                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-2xl shadow-lg transition-transform active:scale-95 cursor-pointer text-center"
+                        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gray-900 hover:bg-black text-white font-bold rounded-2xl shadow-lg transition-transform active:scale-95 cursor-pointer text-center min-h-[44px]"
                       >
                         <CalendarCheck className="w-5 h-5" /> Điểm danh làm việc
                         ngay
@@ -694,24 +815,27 @@ export default function StaffDashboard() {
       </main>
 
       {/* Bottom Navigation for Mobile Native App Look */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-150 flex justify-around items-center z-50 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-150 flex justify-around items-center z-50 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)', height: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
         {[
-          { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarCheck },
           { id: "SCHEDULE", label: "Lịch trình", icon: Clock },
           { id: "MASTER", label: "Lịch Tiệm", icon: Activity },
-          { id: "REPORTS", label: "Hiệu suất", icon: DollarSign },
+          { id: "ATTENDANCE", label: "Điểm danh", icon: CalendarCheck },
           { id: "TASKS", label: "Công việc", icon: ListTodo },
-          ...((data?.profile?.role === "MANAGER" || data?.profile?.role === "ADMIN")
-            ? [{ id: "MANAGEMENT", label: "Quản lý 👑", icon: ShieldCheck }]
-            : [])
+          { id: "MENU", label: "Menu", icon: Menu },
         ].map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = item.id === "MENU" ? isDrawerOpen : activeTab === item.id;
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id as any)}
-              className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition-all text-center ${
+              onClick={() => {
+                if (item.id === "MENU") {
+                  setIsDrawerOpen(true);
+                } else {
+                  setActiveTab(item.id as any);
+                }
+              }}
+              className={`flex flex-col items-center justify-center flex-1 h-full py-1 transition-all text-center cursor-pointer ${
                 isActive
                   ? "text-pink-600 font-bold"
                   : "text-gray-400 hover:text-gray-600"
@@ -721,7 +845,7 @@ export default function StaffDashboard() {
                 className={`w-6 h-6 mb-1 transition-transform ${isActive ? "scale-110 text-pink-600" : "text-gray-400"}`}
               />
               <span
-                className={`text-[10px] uppercase font-bold tracking-tight whitespace-nowrap`}
+                className={`text-[11px] uppercase font-bold tracking-tight whitespace-nowrap`}
               >
                 {item.label}
               </span>
@@ -744,7 +868,7 @@ export default function StaffDashboard() {
           appt={completeModal.appt}
           allServices={data.allServices}
           onClose={() => setCompleteModal({ appt: null, isOpen: false })}
-          onComplete={async (extraServices: string[], tip: number, discountPercent: number, paymentMethod: "CASH" | "BANK") => {
+          onComplete={async (extraServices: string[], tip: number, discountPercent: number, _paymentMethod: "CASH" | "BANK") => {
             const res = await completeAppointment(completeModal.appt.id, extraServices, tip, discountPercent)
             if (res.success) {
               triggerStaffToast(
@@ -976,13 +1100,13 @@ function AppointmentCard({
                 onClick={handleStartAppointment}
                 isLoading={actionLoading}
                 loadingText="Đang nhận khách..."
-                className="w-full bg-gray-950 active:scale-95 transition-transform hover:bg-black text-white font-bold py-3.5 rounded-xl text-s cursor-pointer text-center"
+                className="w-full bg-gray-950 active:scale-95 transition-transform hover:bg-black text-white font-bold py-3.5 rounded-xl text-s cursor-pointer text-center min-h-[44px] flex items-center justify-center"
               >
                 Nhận Khách (Bắt đầu làm)
               </LoadingButton>
               <button
                 onClick={() => setSwapModal({ isOpen: true, appt })}
-                className="w-full bg-white border border-gray-200 active:scale-95 transition-transform hover:bg-gray-50 text-gray-700 py-3 rounded-xl text-sm font-semibold cursor-pointer text-center flex items-center justify-center gap-2"
+                className="w-full bg-white border border-gray-200 active:scale-95 transition-transform hover:bg-gray-50 text-gray-700 py-3 rounded-xl text-sm font-semibold cursor-pointer text-center flex items-center justify-center gap-2 min-h-[44px]"
               >
                 <RefreshCw className="w-4 h-4" /> Đổi đơn (Yêu cầu đổi thợ)
               </button>
@@ -991,7 +1115,7 @@ function AppointmentCard({
           {appt.status === "IN_PROGRESS" && (
             <button
               onClick={() => setCompleteModal({ isOpen: true, appt })}
-              className="w-full bg-emerald-500 active:scale-95 transition-transform hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-100 cursor-pointer text-center"
+              className="w-full bg-emerald-500 active:scale-95 transition-transform hover:bg-emerald-600 text-white font-bold py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-emerald-100 cursor-pointer text-center min-h-[44px] flex items-center justify-center"
             >
               Hoàn thành báo cáo (Hoàn thành)
             </button>
@@ -1000,13 +1124,13 @@ function AppointmentCard({
             <div className="flex flex-col gap-2 w-full">
               <button
                 onClick={() => setCompletedDetailModal({ isOpen: true, appt })}
-                className="w-full bg-white border border-gray-200 active:scale-95 transition-transform hover:bg-gray-50 text-gray-700 py-3 rounded-xl text-sm font-semibold cursor-pointer text-center"
+                className="w-full bg-white border border-gray-200 active:scale-95 transition-transform hover:bg-gray-50 text-gray-700 py-3 rounded-xl text-sm font-semibold cursor-pointer text-center min-h-[44px] flex items-center justify-center"
               >
                 <Info className="w-4 h-4 inline mr-1.5" />Xem chi tiết đơn hàng
               </button>
               <button
                 onClick={() => setEditTipModal({ isOpen: true, appt })}
-                className="w-full bg-amber-50 border border-amber-200 active:scale-95 transition-transform hover:bg-amber-100 text-amber-700 py-2.5 rounded-xl text-sm font-semibold cursor-pointer text-center"
+                className="w-full bg-amber-50 border border-amber-200 active:scale-95 transition-transform hover:bg-amber-100 text-amber-700 py-2.5 rounded-xl text-sm font-semibold cursor-pointer text-center min-h-[44px] flex items-center justify-center"
               >
                 <DollarSign className="w-4 h-4 inline mr-1.5" />Sửa tiền Tip
               </button>
@@ -1018,7 +1142,7 @@ function AppointmentCard({
           onClick={handleTakeRandom}
           isLoading={actionLoading}
           loadingText="Đang nhận..."
-          className="w-full bg-blue-500 active:scale-95 transition-transform hover:bg-blue-600 text-white font-semibold py-3.5 rounded-xl text-sm transition-all shadow-md shadow-blue-100 cursor-pointer text-center animate-pulse"
+          className="w-full bg-blue-500 active:scale-95 transition-transform hover:bg-blue-600 text-white font-semibold py-3.5 rounded-xl text-sm transition-all shadow-md shadow-blue-100 cursor-pointer text-center animate-pulse min-h-[44px] flex items-center justify-center"
         >
           Nhận khách này
         </LoadingButton>
@@ -1077,7 +1201,7 @@ function HistoryModal({ history, customerName, onClose }: any) {
         <div className="p-4 border-t border-gray-100 bg-white shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-4 bg-gray-950 hover:bg-black text-white font-bold rounded-2xl active:scale-95 transition-transform cursor-pointer"
+            className="w-full py-4 bg-gray-950 hover:bg-black text-white font-bold rounded-2xl active:scale-95 transition-transform cursor-pointer min-h-[44px] flex items-center justify-center"
           >
             Đóng lịch sử
           </button>
@@ -1128,7 +1252,7 @@ function TabPassword() {
       } else {
         setMsg({ type: "error", text: res.error || "Có lỗi xảy ra." });
       }
-    } catch (err) {
+    } catch {
       setMsg({ type: "error", text: "Lỗi kết nối máy chủ." });
     } finally {
       setLoading(false);
@@ -1207,7 +1331,7 @@ function TabPassword() {
             isLoading={loading}
             loadingText="Đang cập nhật..."
             disabled={loading}
-            className="px-8 py-3.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer font-semibold"
+            className="px-8 py-3.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer font-semibold min-h-[44px]"
           >
             <CheckCircle2 className="w-5 h-5" />
             Cập nhật mật khẩu
@@ -1228,7 +1352,7 @@ function TabPassword() {
   );
 }
 
-function CompletedDetailModal({ appt, allServices, onClose }: any) {
+function CompletedDetailModal({ appt, onClose }: any) {
   const services = appt?.appointment_services?.map((as: any) => as.services).filter(Boolean) || [];
   const total = appt?.total_amount || 0;
   const tip = appt?.tip_amount || 0;
@@ -1286,7 +1410,7 @@ function CompletedDetailModal({ appt, allServices, onClose }: any) {
         <div className="p-4 border-t border-gray-100 shrink-0">
           <button
             onClick={onClose}
-            className="w-full py-3 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black cursor-pointer text-sm"
+            className="w-full py-3 bg-gray-900 text-white font-semibold rounded-xl hover:bg-black cursor-pointer text-sm min-h-[44px] flex items-center justify-center"
           >
             Đóng
           </button>
@@ -1346,11 +1470,11 @@ function EditTipModal({ appt, onClose, onSaved }: any) {
                 key={amount}
                 type="button"
                 onClick={() => { setTipAmount(amount); setCustomTip(''); }}
-                className={`py-4 px-4 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer ${
-                  tipAmount === amount && !customTip
-                    ? 'border-pink-500 bg-pink-50 text-pink-700'
-                    : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
-                }`}
+className={`py-4 px-4 rounded-xl text-sm font-bold border-2 transition-all cursor-pointer min-h-[44px] flex items-center justify-center ${
+                   tipAmount === amount && !customTip
+                     ? 'border-pink-500 bg-pink-50 text-pink-700'
+                     : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                 }`}
               >
                 {amount.toLocaleString("vi")}đ
               </button>
@@ -1369,14 +1493,14 @@ function EditTipModal({ appt, onClose, onSaved }: any) {
           </div>
         </div>
         <div className="p-4 border-t border-gray-100 shrink-0 flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 cursor-pointer text-sm">
+          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 cursor-pointer text-sm min-h-[44px] flex items-center justify-center">
             Hủy
           </button>
           <LoadingButton
             onClick={handleSave}
             isLoading={saving}
             loadingText="Đang lưu..."
-            className="flex-1 py-3 bg-pink-600 text-white font-semibold rounded-xl hover:bg-pink-700 cursor-pointer text-sm"
+            className="flex-1 py-3 bg-pink-600 text-white font-semibold rounded-xl hover:bg-pink-700 cursor-pointer text-sm min-h-[44px] flex items-center justify-center"
           >
             Lưu tip
           </LoadingButton>
@@ -1407,47 +1531,64 @@ function TabSellPackage({
   useEffect(() => {
     const cleanedPhone = phone.trim().replace(/\s+/g, "");
     if (cleanedPhone.length >= 9) {
-      setIsSearching(true);
+      startTransition(() => {
+        setIsSearching(true);
+      });
       const timer = setTimeout(async () => {
         try {
           const { getCustomerByPhone } = await import("../admin/actions");
           const cust = await getCustomerByPhone(cleanedPhone);
           if (cust) {
-            setCustomerName(cust.full_name);
-            setFoundCustomer(cust);
-            setIsNewCustomer(false);
+            startTransition(() => {
+              setCustomerName(cust.full_name);
+              setFoundCustomer(cust);
+              setIsNewCustomer(false);
+            });
 
-            setLoadingPackages(true);
+            startTransition(() => {
+              setLoadingPackages(true);
+            });
             try {
               const { getCustomerPackagesDetailed } = await import("./actions");
               const pkgs = await getCustomerPackagesDetailed(cust.id);
-              setCustomerPackages(pkgs || []);
+              startTransition(() => {
+                setCustomerPackages(pkgs || []);
+              });
             } catch (err) {
               console.error("Error loading customer packages", err);
             } finally {
-              setLoadingPackages(false);
+              startTransition(() => {
+                setLoadingPackages(false);
+              });
             }
           } else {
-            if (!foundCustomer) {
-              setCustomerName("");
-            }
-            setFoundCustomer(null);
-            setIsNewCustomer(true);
-            setCustomerPackages([]);
+            startTransition(() => {
+              if (!foundCustomer) {
+                setCustomerName("");
+              }
+              setFoundCustomer(null);
+              setIsNewCustomer(true);
+              setCustomerPackages([]);
+            });
           }
         } catch (e) {
           console.error(e);
         } finally {
-          setIsSearching(false);
+          startTransition(() => {
+            setIsSearching(false);
+          });
         }
       }, 400);
       return () => clearTimeout(timer);
     } else {
-      setFoundCustomer(null);
-      setIsNewCustomer(false);
-      setIsSearching(false);
-      setCustomerPackages([]);
+      startTransition(() => {
+        setFoundCustomer(null);
+        setIsNewCustomer(false);
+        setIsSearching(false);
+        setCustomerPackages([]);
+      });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phone]);
 
   const handleSell = async (e: React.FormEvent) => {
@@ -1653,7 +1794,7 @@ function TabSellPackage({
           isLoading={submitting}
           loadingText="Đang xử lý..."
           disabled={submitting || !phone || !customerName || !selectedPackageId}
-          className="w-full p-4 bg-gray-900 text-white font-bold rounded-2xl hover:bg-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none shadow-md flex items-center justify-center gap-2 text-base cursor-pointer"
+          className="w-full p-4 bg-gray-900 text-white font-bold rounded-2xl hover:bg-black transition-all active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none shadow-md flex items-center justify-center gap-2 text-base cursor-pointer min-h-[44px]"
         >
           <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           Xác nhận thanh toán và kích hoạt gói
@@ -1676,7 +1817,7 @@ function StaffTasksTab() {
     setLoading(false)
   }
 
-  useEffect(() => { loadTasks() }, [])
+  useEffect(() => { startTransition(() => { loadTasks() }) }, [])
 
   const handleStatusUpdate = async (taskId: string, status: string) => {
     const { updateTaskStatus } = await import('@/app/admin/actions')
@@ -1719,9 +1860,9 @@ function StaffTasksTab() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
-              statusFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+className={`shrink-0 px-3 py-2.5 rounded-lg text-xs font-bold transition-colors cursor-pointer min-h-[44px] flex items-center ${
+               statusFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+             }`}
           >
             {s === 'ALL' ? 'Tất cả' : s === 'PENDING' ? '🔔 Chưa nhận' : s === 'IN_PROGRESS' ? '⏳ Đang làm' : '✅ Hoàn thành'}
           </button>
@@ -1767,16 +1908,16 @@ function StaffTasksTab() {
               <div className="flex gap-2 pt-1">
                 {task.status === 'PENDING' && (
                   <>
-                    <button onClick={() => handleStatusUpdate(task.id, 'IN_PROGRESS')} className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                    <button onClick={() => handleStatusUpdate(task.id, 'IN_PROGRESS')} className="flex-1 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors min-h-[44px] flex items-center justify-center">
                       Nhận việc
                     </button>
-                    <button onClick={() => handleStatusUpdate(task.id, 'REJECTED')} className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                    <button onClick={() => handleStatusUpdate(task.id, 'REJECTED')} className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-xs font-bold cursor-pointer transition-colors min-h-[44px] flex items-center">
                       Từ chối
                     </button>
                   </>
                 )}
                 {task.status === 'IN_PROGRESS' && (
-                  <button onClick={() => handleStatusUpdate(task.id, 'COMPLETED')} className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors">
+                  <button onClick={() => handleStatusUpdate(task.id, 'COMPLETED')} className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors min-h-[44px] flex items-center justify-center">
                     Hoàn thành
                   </button>
                 )}
@@ -1851,9 +1992,13 @@ function ReportsTab() {
   useEffect(() => {
     if (rangeType !== "custom") {
       const dates = calculateDates(rangeType);
-      setStartDate(dates.startInput);
-      setEndDate(dates.endInput);
-      fetchStats(dates.start, dates.end);
+      startTransition(() => {
+        setStartDate(dates.startInput);
+        setEndDate(dates.endInput);
+      });
+      startTransition(() => {
+        fetchStats(dates.start, dates.end);
+      });
     }
   }, [rangeType]);
 
@@ -1895,8 +2040,8 @@ function ReportsTab() {
             ].map((btn) => (
               <button
                 key={btn.id}
-                onClick={() => setRangeType(btn.id as any)}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${rangeType === btn.id ? "bg-pink-600 text-white shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
+                onClick={() => setRangeType(btn.id as "week" | "month" | "last_month" | "custom")}
+                className={`px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[44px] flex items-center ${rangeType === btn.id ? "bg-pink-600 text-white shadow-xs" : "text-gray-500 hover:text-gray-900"}`}
               >
                 {btn.label}
               </button>
@@ -1925,7 +2070,7 @@ function ReportsTab() {
               </div>
               <button
                 onClick={handleCustomSearch}
-                className="bg-gray-900 text-white hover:bg-black px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                className="bg-gray-900 text-white hover:bg-black px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer min-h-[44px] flex items-center"
               >
                 Áp dụng
               </button>
@@ -2259,7 +2404,7 @@ function ReportsTab() {
 function ManagementTab() {
   const [subTab, setSubTab] = useState<"SEO_AI" | "STAFF_MGMT" | "SERVICE_MGMT" | "COMMISSIONS" | "REVIEWS">("SEO_AI");
   const [overview, setOverview] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   // SEO states
   const [seoTopic, setSeoTopic] = useState("");
@@ -2385,7 +2530,7 @@ function ManagementTab() {
       } else {
         setSeoResearchText("Không tìm thấy kết quả nghiên cứu. Vui lòng thử lại.");
       }
-    } catch (e) {
+    } catch {
       setSeoResearchText("Lỗi tìm kiếm nghiên cứu SEO.");
     }
     setIsResearchLoading(false);
@@ -2407,7 +2552,7 @@ function ManagementTab() {
       } else {
         setSeoArticleText("Có lỗi xảy ra khi tạo bài viết SEO. Vui lòng kiểm tra API key.");
       }
-    } catch (e) {
+    } catch {
       setSeoArticleText("Có lỗi xảy ra khi gọi dịch vụ tạo bài viết SEO.");
     }
     setIsArticleLoading(false);
@@ -2440,9 +2585,7 @@ function ManagementTab() {
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const simulateSocialShare = (platform: string, content: string) => {
-    const title = "Chia sẻ Bài Viết SEO";
-    const text = `Tôi vừa viết xong bài viết: ${seoTopic || "Bài viết mới"} - Chia sẻ qua ${platform}!`;
+  const simulateSocialShare = (platform: string, _content: string) => {
     toast.success(`[MÔ PHỎNG CHIA SẺ] Đã chia sẻ nội dung bài viết lên ${platform} một cách nhanh chóng cùng hashtag #MinNailHair #SEO!`);
   };
 
@@ -2493,10 +2636,10 @@ function ManagementTab() {
           return (
             <button
               key={item.id}
-              onClick={() => setSubTab(item.id as any)}
-              className={`py-2 px-4 text-xs font-bold rounded-full transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
-                isActive ? "bg-pink-600 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-250"
-              }`}
+              onClick={() => setSubTab(item.id as "SEO_AI" | "STAFF_MGMT" | "SERVICE_MGMT" | "COMMISSIONS" | "REVIEWS")}
+className={`py-2 px-4 text-xs font-bold rounded-full transition-all shrink-0 cursor-pointer flex items-center gap-1.5 min-h-[44px] ${
+                 isActive ? "bg-pink-600 text-white shadow-sm" : "bg-gray-100/80 text-gray-600 hover:bg-gray-250"
+               }`}
             >
               <Icon className="w-3.5 h-3.5" />
               {item.label}
@@ -2583,7 +2726,7 @@ function ManagementTab() {
                     <div className="mt-2 space-y-1">
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nguồn tham khảo:</p>
                       {seoResearchSources.map((s, idx) => (
-                        <div key={idx} className="text-[10px] text-pink-600 truncate flex items-center gap-1">
+                        <div key={idx} className="text-[11px] text-pink-600 truncate flex items-center gap-1">
                           🌐 <a href={s.uri} target="_blank" rel="noopener noreferrer" className="hover:underline font-bold">{s.title || s.uri}</a>
                         </div>
                       ))}
@@ -2600,7 +2743,7 @@ function ManagementTab() {
                 {seoArticleText && (
                   <button
                     onClick={() => copyToClipboard(seoArticleText, "copy-art")}
-                    className="text-[10px] font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 px-2.5 py-1.5 rounded-lg transition-all"
+                    className="text-[11px] font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 px-2.5 py-2.5 rounded-lg transition-all min-h-[44px] flex items-center"
                   >
                     {copiedIndex === "copy-art" ? "Copied!" : "Chép Toàn Bộ"}
                   </button>
@@ -2649,7 +2792,7 @@ function ManagementTab() {
 
                       <button
                         onClick={() => copyToClipboard(seoArticleText, "copy-snip")}
-                        className="bg-gray-200 hover:bg-gray-250 text-gray-700 px-4 py-2 font-bold rounded-full text-[10px] flex items-center justify-center gap-1 shrink-0 transition-all cursor-pointer"
+                        className="bg-gray-200 hover:bg-gray-250 text-gray-700 px-4 py-2 font-bold rounded-full text-[11px] flex items-center justify-center gap-1 shrink-0 transition-all cursor-pointer min-h-[44px]"
                       >
                         <FileText className="w-3.5 h-3.5" />
                         {copiedIndex === "copy-snip" ? "Đã chép!" : "Sao chép link bài viết"}
@@ -2798,7 +2941,7 @@ function ManagementTab() {
 
             <button
               type="submit"
-              className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white py-3 rounded-xl text-xs font-bold tracking-widest uppercase shadow-sm cursor-pointer"
+              className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white py-3 rounded-xl text-xs font-bold tracking-widest uppercase shadow-sm cursor-pointer min-h-[44px] flex items-center justify-center"
             >
               Lưu nhân sự mới
             </button>
@@ -2900,7 +3043,7 @@ function ManagementTab() {
 
             <button
               type="submit"
-              className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white py-3 rounded-xl text-xs font-bold tracking-widest uppercase shadow-sm cursor-pointer"
+              className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white py-3 rounded-xl text-xs font-bold tracking-widest uppercase shadow-sm cursor-pointer min-h-[44px] flex items-center justify-center"
             >
               Lưu dịch vụ
             </button>

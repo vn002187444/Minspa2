@@ -43,6 +43,7 @@ export default function MasterSchedulePage() {
                   }
                 }}
                 className="bg-transparent border-none focus:ring-0 outline-none text-[#5C4033] cursor-pointer w-full text-right sm:text-left"
+                suppressHydrationWarning
               />
             </div>
           </div>

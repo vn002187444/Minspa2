@@ -1,5 +1,6 @@
 import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/utils/auth";
 
 const SYSTEM_INSTRUCTION = `Bạn là chuyên gia viết copy cho spa và salon làm đẹp (Nail, Gội dưỡng sinh, Massage) tại Việt Nam.
 Chỉ viết mô tả dịch vụ, không tư vấn y tế. Giọng văn sinh động, hấp dẫn. Tiếng Việt có dấu.`;
@@ -13,6 +14,10 @@ const DESC_SCHEMA = {
 };
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER' && session.user.role !== 'STAFF')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   let serviceName = "";
   let category = "";
   try {

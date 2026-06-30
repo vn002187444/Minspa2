@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import Link from 'next/link';
 import { Sparkles, User, Lock, AlertCircle, ArrowRight, LogIn, ArrowLeft } from 'lucide-react';
 import { loginUser } from './actions';
@@ -13,7 +13,9 @@ export default function LoginPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       if (params.get('auth_err') === '1') {
-        setAuthError(true);
+        startTransition(() => {
+          setAuthError(true);
+        });
       }
     }
   }, []);
@@ -26,14 +28,10 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget);
     try {
       const data = await loginUser(null, formData);
-      // Nếu login thành công, redirect() đã gọi bên trong server action,
-      // chúng ta không bao giờ chạy tới đây.
-      // Nếu tới được đây tức là login thất bại (data chứa lỗi).
-      if (data) {
-        setErrorMsg(data.message || data.error || 'Sai tên đăng nhập hoặc mật khẩu.');
+      if (data && !data.success) {
+        setErrorMsg(data.message || 'Sai tên đăng nhập hoặc mật khẩu.');
       }
     } catch (err: any) {
-      if (err?.digest?.startsWith('NEXT_REDIRECT')) return;
       console.error('Login error caught:', err);
       setErrorMsg(
         err?.message || 'Không thể kết nối đến máy chủ. Vui lòng mở trang web trong tab mới (Open in new tab) hoặc sử dụng các tài khoản khẩn cấp dưới đây.'
@@ -81,7 +79,7 @@ export default function LoginPage() {
                   const p = document.querySelector('input[name="password"]') as HTMLInputElement;
                   if(u && p) { u.value='admin'; p.value='admin'; }
                }} 
-               className="absolute top-4 right-4 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 shadow-sm opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
+               className="absolute top-4 right-4 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 min-h-[44px]">
                <LogIn className="w-3" /> Auto-Fill
             </button>
           </div>

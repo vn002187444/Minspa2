@@ -7,6 +7,7 @@ import { getStaffDetail, toggleStaffActive } from "../actions";
 import AddStaffModal from "./AddStaffModal";
 import EditStaffModal from "./EditStaffModal";
 import StaffDetailModal from "./StaffDetailModal";
+import StaffSkillsModal from "./StaffSkillsModal";
 
 export default function TabStaff({
   staffs,
@@ -22,6 +23,7 @@ export default function TabStaff({
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [detailStaff, setDetailStaff] = useState<any>(null);
   const [editStaff, setEditStaff] = useState<any>(null);
+  const [skillsStaff, setSkillsStaff] = useState<{ id: string; name: string } | null>(null);
   const [staffStats, setStaffStats] = useState<Record<string, any>>({});
   const [loadingStats, setLoadingStats] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -128,7 +130,7 @@ export default function TabStaff({
             ].map((btn) => (
               <button
                 key={btn.id}
-                onClick={() => setRangeType(btn.id as any)}
+                onClick={() => setRangeType(btn.id as "week" | "month" | "last_month" | "custom")}
                 className={`px-3 py-1 rounded-[8px] text-[11px] font-bold transition-all cursor-pointer ${
                   rangeType === btn.id ? "bg-[#8D6E53] text-white" : "bg-gray-100 text-gray-500 hover:text-gray-900"
                 }`}
@@ -169,7 +171,7 @@ export default function TabStaff({
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
             className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-pink-500 cursor-pointer"
           >
             <option value="all">Tất cả</option>
@@ -207,8 +209,86 @@ export default function TabStaff({
         </div>
       ) : (
         <>
-          {/* Responsive Table */}
-          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-300 w-full">
+          {/* Mobile card view */}
+          <div className="mt-4 space-y-3 md:hidden">
+            {filteredStaffs.map((staff) => {
+              const stats = staffStats[staff.id] || {
+                totalRevenue: 0,
+                totalCommission: 0,
+                totalTip: 0,
+                totalCompleted: 0,
+              };
+              return (
+                <div key={staff.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <span className="font-bold text-gray-900">{staff.full_name}</span>
+                    {staff.is_active !== false ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        Hoạt động
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full whitespace-nowrap">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                        Đã vô hiệu hóa
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                    <div className="flex justify-between"><span className="text-gray-400">CCCD</span><span className="font-mono">{staff.cccd || 'N/A'}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Doanh thu</span><span className="font-bold text-gray-900">{(stats.totalRevenue || 0).toLocaleString("vi")}đ</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Hoa hồng</span><span className="font-bold text-emerald-600">{(stats.totalCommission || 0).toLocaleString("vi")}đ</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Tiền Tip</span><span className="font-bold text-pink-500">{(stats.totalTip || 0).toLocaleString("vi")}đ</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Số ca HF</span><span className="font-bold text-gray-800">{stats.totalCompleted || 0}</span></div>
+                  </div>
+                  <div className="flex items-center justify-end gap-1.5 pt-1 border-t border-gray-100">
+                    {userRole === 'ADMIN' && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const res = await toggleStaffActive(staff.id, staff.is_active === false);
+                          if (res.success) { onReload(); toast.success(staff.is_active !== false ? 'Đã vô hiệu hóa' : 'Đã kích hoạt'); }
+                          else toast.error(res.error);
+                        }}
+                        className={`text-[11px] font-semibold px-3 py-2 rounded-lg cursor-pointer transition-all min-h-[44px] flex items-center ${
+                          staff.is_active !== false
+                            ? 'text-red-500 hover:bg-red-50'
+                            : 'text-emerald-600 hover:bg-emerald-50'
+                        }`}
+                      >
+                        {staff.is_active !== false ? 'Vô hiệu hóa' : 'Kích hoạt'}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setSkillsStaff({ id: staff.id, name: staff.full_name })}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-semibold cursor-pointer min-h-[44px] flex items-center px-2"
+                    >
+                      Kỹ năng
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditStaff(staff)}
+                      className="text-[#8D6E53] hover:text-[#5C4033] text-sm font-semibold cursor-pointer min-h-[44px] flex items-center px-2"
+                    >
+                      Sửa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDetailStaff(staff)}
+                      aria-label="Xem chi tiết nhân viên"
+                      className="bg-gray-50 text-gray-400 hover:bg-pink-50 hover:text-pink-600 rounded-full p-1.5 transition-colors cursor-pointer"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop table */}
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden animate-in fade-in duration-300 w-full hidden md:block">
             <div className="overflow-x-auto whitespace-nowrap scrollbar-none">
               <table className="w-full text-left">
                 <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider border-b border-gray-100">
@@ -291,7 +371,7 @@ export default function TabStaff({
                                 if (res.success) { onReload(); toast.success(staff.is_active !== false ? 'Đã vô hiệu hóa' : 'Đã kích hoạt'); }
                                 else toast.error(res.error);
                               }}
-                              className={`text-[11px] font-semibold px-2 py-1 rounded-lg cursor-pointer transition-all ${
+                              className={`text-[11px] font-semibold px-3 py-2 rounded-lg cursor-pointer transition-all min-h-[44px] flex items-center ${
                                 staff.is_active !== false
                                   ? 'text-red-500 hover:bg-red-50'
                                   : 'text-emerald-600 hover:bg-emerald-50'
@@ -300,13 +380,20 @@ export default function TabStaff({
                               {staff.is_active !== false ? 'Vô hiệu hóa' : 'Kích hoạt'}
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => setEditStaff(staff)}
-                            className="text-[#8D6E53] hover:text-[#5C4033] text-sm font-semibold cursor-pointer"
-                          >
-                            Sửa
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => setSkillsStaff({ id: staff.id, name: staff.full_name })}
+                              className="text-blue-600 hover:text-blue-800 text-sm font-semibold cursor-pointer min-h-[44px] flex items-center px-2"
+                            >
+                              Kỹ năng
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditStaff(staff)}
+                              className="text-[#8D6E53] hover:text-[#5C4033] text-sm font-semibold cursor-pointer min-h-[44px] flex items-center px-2"
+                            >
+                              Sửa
+                            </button>
                           <button
                             type="button"
                             onClick={() => setDetailStaff(staff)}
@@ -332,21 +419,29 @@ export default function TabStaff({
           onReload={onReload}
         />
       )}
-      {editStaff && (
-        <EditStaffModal
-          staff={editStaff}
-          userRole={userRole}
-          onClose={() => setEditStaff(null)}
-          onReload={onReload}
-        />
-      )}
-      {detailStaff && (
-        <StaffDetailModal
-          staff={detailStaff}
-          stats={staffStats[detailStaff.id]}
-          onClose={() => setDetailStaff(null)}
-        />
-      )}
-    </div>
-  );
-}
+       {editStaff && (
+         <EditStaffModal
+           staff={editStaff}
+           userRole={userRole}
+           onClose={() => setEditStaff(null)}
+           onReload={onReload}
+         />
+       )}
+       {detailStaff && (
+         <StaffDetailModal
+           staff={detailStaff}
+           stats={staffStats[detailStaff.id]}
+           onClose={() => setDetailStaff(null)}
+         />
+       )}
+       {skillsStaff && (
+         <StaffSkillsModal
+           staffId={skillsStaff.id}
+           staffName={skillsStaff.name}
+           onClose={() => setSkillsStaff(null)}
+           onReload={onReload}
+         />
+       )}
+     </div>
+   );
+ }

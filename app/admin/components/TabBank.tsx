@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { CheckCircle2, CreditCard } from 'lucide-react';
 import { saveBankSettings } from '../actions';
 import { VIETNAMESE_BANKS } from '../banks';
@@ -21,9 +21,11 @@ export default function TabBank({ data, onReload }: { data: BankData | null; onR
 
   useEffect(() => {
     if (data) {
-      setBankId(data.bank_id || 'vcb');
-      setAccountNumber(data.account_number || '');
-      setAccountOwner(data.account_owner || '');
+      startTransition(() => {
+        setBankId(data.bank_id || 'vcb');
+        setAccountNumber(data.account_number || '');
+        setAccountOwner(data.account_owner || '');
+      });
     }
   }, [data]);
 

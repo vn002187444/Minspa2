@@ -1,34 +1,34 @@
 'use client'
 
-import { useState, useMemo, memo } from 'react';
-import { Clock, Users, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useMemo, memo } from 'react';
+import { Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { SlotInfo } from '@/app/booking/actions/slots';
-import { addDays, format, subDays } from 'date-fns';
+import { addDays, format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
 interface BookingCalendarProps {
   slotAvailability: SlotInfo[];
   selectedDate: string;
   selectedTime: string;
-  onSelectDate: (date: string) => void;
-  onSelectTime: (time: string) => void;
+  onSelectDate: (_date: string) => void;
+  onSelectTime: (_time: string) => void;
   totalDuration: number;
 }
 
-const START_HOUR = 9;
-const END_HOUR = 20;
+
 
 export default memo(function BookingCalendar({
   slotAvailability,
   selectedDate,
   selectedTime,
-  onSelectDate,
+  onSelectDate: _onSelectDate,
   onSelectTime,
   totalDuration,
 }: BookingCalendarProps) {
   const now = new Date();
   const todayStr = format(now, 'yyyy-MM-dd');
-  const dates = useMemo(() => {
+  const _dates = useMemo(() => {
+    const now = new Date();
     const days = [];
     for (let i = 0; i < 14; i++) {
       const d = addDays(now, i);
@@ -81,7 +81,7 @@ export default memo(function BookingCalendar({
 
       <div className="bg-white rounded-2xl border border-[#EADDCD] overflow-hidden">
         <div className="p-3 bg-[#FAF6F0] border-b border-[#EADDCD] flex items-center justify-between">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5" suppressHydrationWarning>
             <Clock className="w-3.5 h-3.5" />
             {selectedDate === todayStr ? 'Hôm nay' : format(new Date(selectedDate), 'EEEE, dd/MM', { locale: vi })}
             {totalDuration > 0 && (

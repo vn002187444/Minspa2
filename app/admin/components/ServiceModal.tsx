@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { RefreshCw, Sparkles, ImageIcon, CheckCircle2, XIcon } from "lucide-react";
+import { RefreshCw, Sparkles, ImageIcon } from "lucide-react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { saveService } from "../actions";
 
@@ -64,7 +64,7 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
       } else if (data.error) {
         setErrorMsg(data.error);
       }
-    } catch (error) {
+    } catch {
       setErrorMsg("Lỗi khi tạo mô tả bằng AI. Vui lòng thử lại sau.");
     } finally {
       setIsGenerating(false);
@@ -188,7 +188,7 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
                 placeholder="15"
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
               />
-              <span className="text-[10px] text-gray-400">
+              <span className="text-[11px] text-gray-400">
                 Tính theo % giá dịch vụ
               </span>
             </div>
@@ -211,7 +211,7 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
                 placeholder="0"
                 className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none"
               />
-              <span className="text-[10px] text-gray-400">
+              <span className="text-[11px] text-gray-400">
                 Nếu đặt &gt; 0, sẽ ưu tiên dùng số tiền này
               </span>
             </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Share, Check, Copy } from 'lucide-react';
+import { Share, Check } from 'lucide-react';
 
 interface ShareButtonProps {
   title: string;
@@ -43,7 +43,7 @@ export default function ShareButton({ title, url }: ShareButtonProps) {
     <div className="relative inline-block">
       <button
         onClick={handleShare}
-        className="flex items-center gap-1.5 px-3.5 py-2 bg-[#FAF6F0] hover:bg-[#8D6E53] text-[#8D6E53] hover:text-white border border-[#EADDCD] rounded-2xl text-[11px] font-extrabold cursor-pointer transition-all active:scale-95"
+        className="flex items-center gap-1.5 px-3.5 py-2 bg-[#FAF6F0] hover:bg-[#8D6E53] text-[#8D6E53] hover:text-white border border-[#EADDCD] rounded-2xl text-[11px] font-extrabold cursor-pointer transition-all active:scale-95 min-h-[44px]"
         title="Chia sẻ bài viết"
         id="share-article-btn"
       >

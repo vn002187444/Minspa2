@@ -40,7 +40,7 @@ self.addEventListener('fetch', (e) => {
   let url;
   try {
     url = new URL(e.request.url);
-  } catch (err) {
+  } catch {
     e.respondWith(fetch(e.request));
     return;
   }
@@ -122,7 +122,7 @@ self.addEventListener('push', (event) => {
   if (event.data) {
     try {
       data = event.data.json();
-    } catch (e) {
+    } catch {
       data = { title: 'Min Nail & Hair', body: event.data.text() };
     }
   }

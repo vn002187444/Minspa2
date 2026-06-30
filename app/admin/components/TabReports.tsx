@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { toast } from 'sonner'
 import {
   BarChart3, TrendingUp, Users, DollarSign, ShoppingBag,
@@ -18,7 +18,7 @@ type SubTab = typeof SUBTABS[number]
 
 const COLORS = ['#ec4899', '#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#a855f7']
 
-type FmtFn = (n: number) => string
+type FmtFn = (_n: number) => string
 
 interface RevenueByDayItem { date: string; value: number }
 interface RevenueByServiceItem { name: string; revenue: number; count: number }
@@ -70,8 +70,8 @@ export default function TabReports() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [compareEnabled, setCompareEnabled] = useState(false)
-  const [compareStartDate, setCompareStartDate] = useState('')
-  const [compareEndDate, setCompareEndDate] = useState('')
+  const [compareStartDate, _setCompareStartDate] = useState('')
+  const [compareEndDate, _setCompareEndDate] = useState('')
   const [loading, setLoading] = useState(false)
   const [revenueData, setRevenueData] = useState<any>(null)
   const [customerData, setCustomerData] = useState<any>(null)
@@ -116,27 +116,31 @@ export default function TabReports() {
   }, [getDateRange, compareStartDate, compareEndDate])
 
   const loadData = useCallback(async () => {
-    setLoading(true)
+    startTransition(() => { setLoading(true) })
     const { start, end } = getDateRange()
-    if (!start || !end) { setLoading(false); return }
+    if (!start || !end) { startTransition(() => { setLoading(false) }); return }
     try {
       const [rev, cust] = await Promise.all([
         getAdvancedRevenueReport(start, end),
         getCustomerAnalytics(start, end),
       ])
-      setRevenueData(rev)
-      setCustomerData(cust)
+      startTransition(() => {
+        setRevenueData(rev)
+        setCustomerData(cust)
+      })
       if (compareEnabled) {
         const comp = getCompareRange()
         const growth = await getGrowthComparison(start, end, comp.start, comp.end)
-        setGrowthData(growth)
+        startTransition(() => { setGrowthData(growth) })
       } else {
-        setGrowthData(null)
+        startTransition(() => { setGrowthData(null) })
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Lỗi tải báo cáo')
+    } catch (err: unknown) {
+      startTransition(() => {
+        toast.error(err instanceof Error ? err.message : 'Lỗi tải báo cáo')
+      })
     } finally {
-      setLoading(false)
+      startTransition(() => { setLoading(false) })
     }
   }, [getDateRange, compareEnabled, getCompareRange])
 
@@ -144,11 +148,11 @@ export default function TabReports() {
 
   useEffect(() => {
     if (activeSubTab !== 'THUE') return
-    setTaxLoading(true)
+    startTransition(() => { setTaxLoading(true) })
     getTaxReport(taxYear)
-      .then(setTaxData)
-      .catch((err: any) => toast.error(err.message || 'Lỗi tải báo cáo thuế'))
-      .finally(() => setTaxLoading(false))
+      .then((data) => startTransition(() => { setTaxData(data) }))
+      .catch((err: unknown) => startTransition(() => { toast.error(err instanceof Error ? err.message : 'Lỗi tải báo cáo thuế') }))
+      .finally(() => startTransition(() => { setTaxLoading(false) }))
   }, [activeSubTab, taxYear])
 
   const fmt = (n: number) => new Intl.NumberFormat('vi-VN').format(n)
@@ -229,8 +233,8 @@ export default function TabReports() {
       a.remove();
       window.URL.revokeObjectURL(url);
       toast.success(`Đã xuất ${type} (${format.toUpperCase()})`);
-    } catch (err: any) {
-      toast.error(err.message || 'Lỗi xuất dữ liệu');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi xuất dữ liệu');
     }
   }
 
@@ -252,23 +256,23 @@ export default function TabReports() {
              <button className="px-3 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-black transition-colors shadow-sm">
                <Download className="w-4 h-4" /> Export Raw
              </button>
-             <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 hidden group-hover:block p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 hidden group-hover:block group-focus-within:block p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Appointments</div>
                <div className="grid grid-cols-2 gap-1">
-                 <button onClick={() => handleRawExport('appointments', 'csv')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
-                 <button onClick={() => handleRawExport('appointments', 'json')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
+                 <button onClick={() => handleRawExport('appointments', 'csv')} className="px-2 py-2.5 min-h-[44px] bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
+                 <button onClick={() => handleRawExport('appointments', 'json')} className="px-2 py-2.5 min-h-[44px] bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
                </div>
                <div className="border-t border-gray-100 my-1"></div>
                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Customers</div>
                <div className="grid grid-cols-2 gap-1">
-                 <button onClick={() => handleRawExport('customers', 'csv')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
-                 <button onClick={() => handleRawExport('customers', 'json')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
+                 <button onClick={() => handleRawExport('customers', 'csv')} className="px-2 py-2.5 min-h-[44px] bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
+                 <button onClick={() => handleRawExport('customers', 'json')} className="px-2 py-2.5 min-h-[44px] bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
                </div>
                <div className="border-t border-gray-100 my-1"></div>
                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Services</div>
                <div className="grid grid-cols-2 gap-1">
-                 <button onClick={() => handleRawExport('services', 'csv')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
-                 <button onClick={() => handleRawExport('services', 'json')} className="px-2 py-1.5 bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
+                 <button onClick={() => handleRawExport('services', 'csv')} className="px-2 py-2.5 min-h-[44px] bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">CSV</button>
+                 <button onClick={() => handleRawExport('services', 'json')} className="px-2 py-2.5 min-h-[44px] bg-gray-50 hover:bg-gray-100 text-xs text-gray-700 rounded-lg text-left transition-colors">JSON</button>
                </div>
              </div>
            </div>
@@ -285,7 +289,7 @@ export default function TabReports() {
             <button
               key={r}
               onClick={() => setRangeType(r)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+              className={`px-3 py-2.5 min-h-[44px] rounded-lg text-xs font-bold transition-colors cursor-pointer ${
                 rangeType === r ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -295,9 +299,9 @@ export default function TabReports() {
         </div>
         {rangeType === 'custom' && (
           <div className="flex items-center gap-3">
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold" />
+            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold min-h-[44px]" />
             <span className="text-gray-400">→</span>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold" />
+            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="px-3 py-2 border-2 border-gray-200 rounded-xl text-sm font-semibold min-h-[44px]" />
           </div>
         )}
         <label htmlFor="reports-compare" className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer">
@@ -357,7 +361,7 @@ export default function TabReports() {
               <h3 className="font-extrabold text-lg text-gray-900">{drillDown.label}</h3>
               <button onClick={() => setDrillDown(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><ChevronDown className="w-5 h-5 rotate-180" /></button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
@@ -367,15 +371,27 @@ export default function TabReports() {
                   </tr>
                 </thead>
                 <tbody>
-                  {drillDown.data.map((row: any, i: number) => (
+                  {drillDown.data.map((row, i: number) => (
                     <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
-                      {Object.values(row).map((v: any, j: number) => (
+                       {Object.values(row).map((v: any, j: number) => (
                         <td key={j} className="p-2 font-semibold text-gray-800">{typeof v === 'number' ? fmt(v) : v}</td>
                       ))}
                     </tr>
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="mt-4 space-y-3 md:hidden">
+              {drillDown.data.map((row, i: number) => (
+                <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                  {Object.entries(row).map(([k, v]) => (
+                    <div key={k} className="flex items-center justify-between text-sm">
+                      <span className="text-xs font-bold text-gray-500 uppercase">{k}</span>
+                      <span className="font-semibold text-gray-800">{typeof v === 'number' ? fmt(v) : String(v)}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -414,7 +430,7 @@ function OverviewTab({ revenueData, customerData, fmt, fmtCurrency }: {
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
           <h4 className="font-bold text-gray-900 mb-2 text-sm">Top dịch vụ</h4>
           <div className="space-y-2">
-            {revenueData.revenueByService.slice(0, 5).map((s: any, i: number) => (
+            {revenueData.revenueByService.slice(0, 5).map((s, i: number) => (
               <div key={i} className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-700">{i + 1}. {s.name}</span>
                 <span className="text-sm font-bold text-gray-900">{fmtCurrency(s.revenue)}</span>
@@ -425,7 +441,7 @@ function OverviewTab({ revenueData, customerData, fmt, fmtCurrency }: {
         <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
           <h4 className="font-bold text-gray-900 mb-2 text-sm">Top nhân viên</h4>
           <div className="space-y-2">
-            {revenueData.revenueByStaff.slice(0, 5).map((s: any, i: number) => (
+            {revenueData.revenueByStaff.slice(0, 5).map((s, i: number) => (
               <div key={i} className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-700">{i + 1}. {s.name}</span>
                 <span className="text-sm font-bold text-gray-900">{fmtCurrency(s.revenue)}</span>
@@ -467,7 +483,7 @@ function RevenueTab({ revenueData, fmt, fmtCurrency }: {
   )
 }
 
-function ServiceTab({ revenueData, fmt, fmtCurrency }: {
+function ServiceTab({ revenueData, fmt: _fmt, fmtCurrency }: {
   revenueData: RevenueData;
   fmt: FmtFn;
   fmtCurrency: FmtFn;
@@ -479,15 +495,15 @@ function ServiceTab({ revenueData, fmt, fmtCurrency }: {
         <div className="grid md:grid-cols-2 gap-4">
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={revenueData.revenueByService.slice(0, 8)} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ percent }: any) => `${(percent * 100).toFixed(0)}%`}>
-                {revenueData.revenueByService.slice(0, 8).map((_: any, i: number) => (
+              <Pie data={revenueData.revenueByService.slice(0, 8)} dataKey="revenue" nameKey="name" cx="50%" cy="50%" outerRadius={100} label={({ percent }: { percent?: number }) => `${((percent || 0) * 100).toFixed(0)}%`}>
+                {revenueData.revenueByService.slice(0, 8).map((_, i: number) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip formatter={(v: any) => fmtCurrency(Number(v))} />
             </PieChart>
           </ResponsiveContainer>
-          <div>
+          <div className="hidden md:block">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
@@ -497,7 +513,7 @@ function ServiceTab({ revenueData, fmt, fmtCurrency }: {
                 </tr>
               </thead>
               <tbody>
-                {revenueData.revenueByService.slice(0, 10).map((s: any, i: number) => (
+                {revenueData.revenueByService.slice(0, 10).map((s, i: number) => (
                   <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="p-2 font-semibold text-gray-800">{s.name}</td>
                     <td className="p-2 text-right font-bold text-gray-900">{fmtCurrency(s.revenue)}</td>
@@ -507,13 +523,33 @@ function ServiceTab({ revenueData, fmt, fmtCurrency }: {
               </tbody>
             </table>
           </div>
+          <div className="mt-4 space-y-3 md:hidden">
+            {revenueData.revenueByService.slice(0, 10).map((s, i: number) => (
+              <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-500">Dịch vụ</p>
+                    <p className="font-semibold text-gray-800">{s.name}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Doanh thu</p>
+                    <p className="font-bold text-gray-900">{fmtCurrency(s.revenue)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Lượt</p>
+                    <p className="font-semibold text-gray-600">{s.count}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
-function StaffTab({ revenueData, fmt, fmtCurrency }: {
+function StaffTab({ revenueData, fmt: _fmt, fmtCurrency }: {
   revenueData: RevenueData;
   fmt: FmtFn;
   fmtCurrency: FmtFn;
@@ -532,7 +568,7 @@ function StaffTab({ revenueData, fmt, fmtCurrency }: {
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hidden md:block">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
@@ -543,7 +579,7 @@ function StaffTab({ revenueData, fmt, fmtCurrency }: {
             </tr>
           </thead>
           <tbody>
-            {revenueData.revenueByStaff.map((s: any, i: number) => (
+            {revenueData.revenueByStaff.map((s, i: number) => (
               <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="p-2 font-semibold text-gray-800">{s.name}</td>
                 <td className="p-2 text-right font-bold text-gray-900">{fmtCurrency(s.revenue)}</td>
@@ -553,6 +589,30 @@ function StaffTab({ revenueData, fmt, fmtCurrency }: {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="mt-4 space-y-3 md:hidden">
+        {revenueData.revenueByStaff.map((s, i: number) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+              <div>
+                <p className="text-xs text-gray-500">Nhân viên</p>
+                <p className="font-semibold text-gray-800">{s.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">Doanh thu</p>
+                <p className="font-bold text-gray-900">{fmtCurrency(s.revenue)}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Tip</p>
+                <p className="font-bold text-pink-600">{fmtCurrency(s.tip)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">Đơn</p>
+                <p className="font-semibold text-gray-600">{s.count}</p>
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -571,7 +631,7 @@ function CustomerTab({ customerData, fmt, fmtCurrency }: {
         <StatCard icon={Activity} label="KH quay lại" value={fmt(customerData.customerStats.returningCount)} color="text-purple-600" bg="bg-purple-50" />
         <StatCard icon={TrendingUp} label="TB lượt/KH" value={String(customerData.customerStats.avgVisits)} color="text-amber-600" bg="bg-amber-50" />
       </div>
-      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+      <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hidden md:block">
         <h4 className="font-bold text-gray-900 mb-3 text-sm">Top khách hàng chi tiêu nhiều nhất</h4>
         <table className="w-full text-sm">
           <thead>
@@ -584,7 +644,7 @@ function CustomerTab({ customerData, fmt, fmtCurrency }: {
             </tr>
           </thead>
           <tbody>
-            {customerData.topCustomers.slice(0, 15).map((c: any, i: number) => (
+            {customerData.topCustomers.slice(0, 15).map((c, i: number) => (
               <tr key={i} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="p-2 font-bold text-gray-400">{i + 1}</td>
                 <td className="p-2 font-semibold text-gray-800">{c.name}</td>
@@ -596,6 +656,33 @@ function CustomerTab({ customerData, fmt, fmtCurrency }: {
           </tbody>
         </table>
       </div>
+      <div className="mt-4 space-y-3 md:hidden">
+        {customerData.topCustomers.slice(0, 15).map((c, i: number) => (
+          <div key={i} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-bold text-gray-400">#{i + 1}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+              <div>
+                <p className="text-xs text-gray-500">Tên</p>
+                <p className="font-semibold text-gray-800">{c.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">SĐT</p>
+                <p className="text-gray-500">{c.phone}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Tổng chi</p>
+                <p className="font-bold text-gray-900">{fmtCurrency(c.totalSpent)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-gray-500">Lượt</p>
+                <p className="font-semibold text-gray-600">{c.visits}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -605,11 +692,11 @@ function GrowthTab({ growthData, fmt, fmtCurrency }: {
   fmt: FmtFn;
   fmtCurrency: FmtFn;
 }) {
-  const mergedDays = [...new Set([...growthData.current.byDay.map((d: any) => d.date), ...growthData.previous.byDay.map((d: any) => d.date)])].sort()
+  const mergedDays = [...new Set([...growthData.current.byDay.map((d) => d.date), ...growthData.previous.byDay.map((d) => d.date)])].sort()
   const chartData = mergedDays.map((day) => ({
     date: day,
-    current: growthData.current.byDay.find((d: any) => d.date === day)?.value || 0,
-    previous: growthData.previous.byDay.find((d: any) => d.date === day)?.value || 0,
+    current: growthData.current.byDay.find((d) => d.date === day)?.value || 0,
+    previous: growthData.previous.byDay.find((d) => d.date === day)?.value || 0,
   }))
   const fmtChange = (v: number) => `${v > 0 ? '+' : ''}${v}%`
 
@@ -664,7 +751,7 @@ function GrowthTab({ growthData, fmt, fmtCurrency }: {
 function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: {
   taxData: TaxData | null;
   taxYear: number;
-  setTaxYear: (year: number) => void;
+  setTaxYear: (_year: number) => void;
   taxLoading: boolean;
   fmt: FmtFn;
   fmtCurrency: FmtFn;
@@ -678,6 +765,7 @@ function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: 
           value={taxYear}
           onChange={(e) => setTaxYear(Number(e.target.value))}
           className="px-3 py-1.5 border border-gray-200 rounded-xl text-sm font-semibold bg-white"
+          suppressHydrationWarning
         >
           {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -717,7 +805,7 @@ function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: 
 
           <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
             <h4 className="font-bold text-gray-900 mb-3 text-sm">Doanh thu & Thuế theo tháng</h4>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-gray-200">
@@ -731,7 +819,7 @@ function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: 
                   </tr>
                 </thead>
                 <tbody>
-                  {taxData.months.map((m: any) => (
+                  {taxData.months.map((m) => (
                     <tr key={m.month} className="border-b border-gray-50 hover:bg-gray-50">
                       <td className="p-2 font-bold text-gray-800">
                         {new Date(m.month + '-01').toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
@@ -758,6 +846,41 @@ function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: 
                 </tfoot>
               </table>
             </div>
+          </div>
+          <div className="mt-4 space-y-3 md:hidden">
+            {taxData.months.map((m) => (
+              <div key={m.month} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                <p className="font-bold text-gray-800 text-sm">
+                  {new Date(m.month + '-01').toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  <div>
+                    <p className="text-xs text-gray-500">Doanh thu</p>
+                    <p className="font-bold text-gray-900">{fmtCurrency(m.revenue)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Số đơn</p>
+                    <p className="font-semibold text-gray-600">{fmt(m.orders)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Hoa hồng</p>
+                    <p className="font-semibold text-gray-600">{fmtCurrency(m.commission)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Tip</p>
+                    <p className="font-semibold text-pink-600">{fmtCurrency(m.tip)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Thuế GTGT (8%)</p>
+                    <p className="font-bold text-emerald-700">{fmtCurrency(Math.round(m.revenue * 0.08))}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Thuế TNCN (2%)</p>
+                    <p className="font-bold text-amber-700">{fmtCurrency(Math.round(m.revenue * 0.02))}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-800">

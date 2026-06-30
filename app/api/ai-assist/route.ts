@@ -1,6 +1,7 @@
 import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { getSession } from "@/utils/auth";
 
 const SYSTEM_SUMMARIZE = `Bạn là chuyên gia SEO. Tóm tắt văn bản thành 1-2 câu (tối đa 160 ký tự), giữ từ khóa chính. Tiếng Việt có dấu. Trả về JSON: { "summary": "..." }.`;
 
@@ -59,7 +60,7 @@ function fallbackSummary(content: string): string {
   return clean.substring(0, 160).replace(/[,.;:]+$/, '') || 'Bài viết về dịch vụ làm đẹp tại Min Nail & Hair.';
 }
 
-function fallbackImages(title?: string): string[] {
+function fallbackImages(_title?: string): string[] {
   const count = Math.min(4, FALLBACK_IMAGES.length);
   const shuffled = [...FALLBACK_IMAGES].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
@@ -148,6 +149,10 @@ async function fetchSiteContext(): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER' && session.user.role !== 'STAFF')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const { action, content, title, keywords } = await req.json();
 

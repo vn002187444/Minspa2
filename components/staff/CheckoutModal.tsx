@@ -1,20 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { CheckCircle2, Star, ArrowRight, X, Plus, Minus, Copy, FileText } from "lucide-react"
+import { CheckCircle2, Star, ArrowRight, FileText } from "lucide-react"
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { downloadInvoicePDF, shareInvoicePDF } from "@/lib/invoice-pdf"
 import { format } from "date-fns"
 import { vi } from "date-fns/locale"
 import Image from "next/image"
 import LoadingButton from "@/components/LoadingButton"
 import { getCustomerActivePackages } from "@/app/staff/actions"
+import ReviewCustomerModal from "./ReviewCustomerModal"
 import { getBankSettings } from "@/app/admin/actions"
 
 type Props = {
   appt: any
   allServices: any[]
   onClose: () => void
-  onComplete: (extraServices: string[], tip: number, discountPercent: number, paymentMethod: "CASH" | "BANK") => Promise<{ success: boolean; total?: number; error?: string }>
+  onComplete: (_extraServices: string[], _tip: number, _discountPercent: number, _paymentMethod: "CASH" | "BANK") => Promise<{ success: boolean; total?: number; error?: string }>
 }
 
 const TIP_AMOUNTS = [10000, 20000, 30000, 50000]
@@ -69,6 +71,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
   // Step 5: QR
   const [bankConfig, setBankConfig] = useState<any>(null)
   const [paidLoading, setPaidLoading] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
   const [copiedId, setCopiedId] = useState("")
 
   // Package info
@@ -76,13 +79,15 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
   const [coveredServiceId, setCoveredServiceId] = useState<string | null>(null)
 
   // Result
-  const [completedResult, setCompletedResult] = useState<{ total: number; extraServices: string[] } | null>(null)
+  const [_completedResult, setCompletedResult] = useState<{ total: number; extraServices: string[] } | null>(null)
+
+  const trapRef = useFocusTrap(true);
 
   useEffect(() => {
     async function loadPkgInfo() {
       if (appt.is_package_session && appt.use_package_id && appt.customer_id) {
         const pkgs = await getCustomerActivePackages(appt.customer_id)
-        const pkg = pkgs.find((p: any) => p.id === appt.use_package_id)
+        const pkg = pkgs.find((p) => p.id === appt.use_package_id)
         if (pkg) {
           const tp = pkg.treatment_packages?.[0]
           setPackageName(tp?.name || "Gói liệu trình")
@@ -101,14 +106,14 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
   }
 
   // Calculate totals
-  const baseServices = appt.appointment_services?.map((as: any) => ({
+    const baseServices = appt.appointment_services?.map((as: any) => ({
     id: as.service_id || as.services?.id,
     name: as.services?.name || "Dịch vụ",
     price: Number(as.services?.price) || 0,
     isCovered: appt.is_package_session && coveredServiceId && String(as.service_id || as.services?.id) === String(coveredServiceId),
   })) || []
 
-  const extraServiceList = allServices?.filter((s: any) => extraServices.includes(s.id)) || []
+  const extraServiceList = allServices?.filter((s) => extraServices.includes(s.id)) || []
 
   const baseTotal = baseServices.reduce((sum: number, s: any) => sum + (s.isCovered ? 0 : s.price), 0)
   const extraTotal = extraServiceList.reduce((sum: number, s: any) => sum + (Number(s.price) || 0), 0)
@@ -117,8 +122,8 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
   const discValue = Number(discountPercent) || 0
   const totalDiscountAmount = discountType === "per-order"
     ? Math.round(subtotal * (discValue / 100))
-    : Object.entries(itemDiscounts).reduce((sum, [, pct]) => {
-        const svc = [...baseServices, ...extraServiceList].find((s: any) => String(s.id) === String(pct))
+    : Object.entries(itemDiscounts).reduce((sum, [serviceId, pct]) => {
+        const svc = [...baseServices, ...extraServiceList].find((s) => String(s.id) === String(serviceId))
         return sum + (svc ? Math.round((svc.isCovered ? 0 : svc.price) * ((Number(pct) || 0) / 100)) : 0)
       }, 0)
 
@@ -133,7 +138,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
 
   // Service names for QR memo
   const coreServiceNames = appt?.appointment_services?.map((as: any) => as.services?.name).filter(Boolean) || []
-  const extraNames = extraServiceList.map((s: any) => s.name)
+  const extraNames = extraServiceList.map((s) => s.name)
   const allNames = [...coreServiceNames, ...extraNames]
   const rawMemo = allNames.length > 0 ? allNames.join(" ") : "Thanh toan"
   const memoText = removeVietnameseTones(rawMemo)
@@ -163,8 +168,8 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
       } else {
         alert("Lỗi: " + res.error)
       }
-    } catch (err: any) {
-      alert("Lỗi hệ thống: " + (err.message || "Unknown error"))
+    } catch (err: unknown) {
+      alert("Lỗi hệ thống: " + (err instanceof Error ? err.message : "Unknown error"))
     } finally {
       setLoading(false)
     }
@@ -206,7 +211,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
         <div>
           <h4 className="font-bold text-gray-900 text-base mb-3">Dịch vụ đã chọn</h4>
           <div className="space-y-2">
-            {baseServices.map((svc: any) => (
+             {baseServices.map((svc: any) => (
               <div key={svc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-700 truncate">{svc.name}</p>
@@ -224,15 +229,15 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
           <label className="block text-sm font-bold text-gray-700 mb-2.5">
             Thêm dịch vụ phát sinh
           </label>
-          <div className="max-h-48 overflow-y-auto border border-gray-150 rounded-2xl p-3 space-y-2 bg-gray-50">
-            {allServices?.map((s: any) => {
+          <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-2xl p-3 space-y-2 bg-gray-50">
+             {allServices?.map((s: any) => {
               const isSelected = extraServices.includes(s.id)
               return (
                 <label
                   key={s.id}
                   htmlFor={`checkout-extra-${s.id}`}
                   className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${
-                    isSelected ? "bg-emerald-50 border-emerald-300" : "bg-white border-gray-150 hover:bg-gray-50"
+                    isSelected ? "bg-emerald-50 border-emerald-300" : "bg-white border-gray-200 hover:bg-gray-50"
                   }`}
                 >
                   <input
@@ -259,7 +264,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
             <button
               type="button"
               onClick={() => setDiscountType("per-order")}
-              className={`flex-1 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer min-h-[44px] ${
                 discountType === "per-order"
                   ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                   : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
@@ -270,7 +275,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
             <button
               type="button"
               onClick={() => setDiscountType("per-item")}
-              className={`flex-1 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+              className={`flex-1 py-2.5 text-xs font-bold rounded-xl border transition-all cursor-pointer min-h-[44px] ${
                 discountType === "per-item"
                   ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                   : "border-gray-200 bg-white text-gray-500 hover:bg-gray-50"
@@ -298,7 +303,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
             </div>
           ) : (
             <div className="space-y-2 max-h-40 overflow-y-auto">
-              {[...baseServices, ...extraServiceList].map((svc: any) => (
+               {[...baseServices, ...extraServiceList].map((svc: any) => (
                 <div key={svc.id} className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-gray-600 flex-1 truncate">{svc.name}</span>
                   <input
@@ -442,8 +447,8 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
           <p className="text-gray-500 text-sm">Kiểm tra lại thông tin trước khi thanh toán</p>
         </div>
 
-        <div className="bg-gray-50 border border-gray-150 rounded-2xl p-4 space-y-3 text-sm">
-          {baseServices.map((svc: any) => {
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-3 text-sm">
+           {baseServices.map((svc: any) => {
             const discount = discountType === "per-item" && itemDiscounts[svc.id]
               ? Math.round((svc.isCovered ? 0 : svc.price) * ((Number(itemDiscounts[svc.id]) || 0) / 100))
               : 0
@@ -457,7 +462,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
               </div>
             )
           })}
-          {extraServiceList.map((svc: any) => (
+           {extraServiceList.map((svc: any) => (
             <div key={svc.id} className="flex justify-between text-emerald-700">
               <span>{svc.name} <span className="text-[10px] text-emerald-500">(PS)</span></span>
               <span className="font-semibold">+{Number(svc.price).toLocaleString("vi")}đ</span>
@@ -505,7 +510,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
           <p className="text-gray-500 text-sm">Chọn cách khách hàng muốn thanh toán</p>
         </div>
 
-        <div className="bg-gray-50 border border-gray-150 rounded-2xl p-4 space-y-2 text-sm">
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-2 text-sm">
           <div className="flex justify-between">
             <span>Tổng dịch vụ</span>
             <span className="font-bold">{grandTotal.toLocaleString("vi")}đ</span>
@@ -569,7 +574,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
         ) : (
           <div className="space-y-4">
             <div className="bg-gray-50 border border-gray-100 rounded-3xl p-4 flex flex-col items-center justify-center">
-              <div className="bg-white p-3 rounded-2xl border border-gray-150 shadow-sm max-w-[200px] aspect-square relative flex items-center justify-center">
+              <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm max-w-[200px] aspect-square relative flex items-center justify-center">
                 <Image src={qrUrl} alt="VietQR" fill className="object-contain" referrerPolicy="no-referrer" unoptimized />
               </div>
             </div>
@@ -588,7 +593,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
                 </div>
                 <button
                   onClick={() => copyText(bankConfig.account_number, "acc")}
-                  className="text-xs px-3 py-1.5 font-bold rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors cursor-pointer"
+                  className="text-xs px-3 py-2.5 font-bold rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors cursor-pointer min-h-[44px]"
                 >
                   {copiedId === "acc" ? "Đã chép" : "Sao chép"}
                 </button>
@@ -600,7 +605,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
                 </div>
                 <button
                   onClick={() => copyText(String(grandTotal), "amount")}
-                  className="text-xs px-3 py-1.5 font-bold rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors cursor-pointer"
+                  className="text-xs px-3 py-2.5 font-bold rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors cursor-pointer min-h-[44px]"
                 >
                   {copiedId === "amount" ? "Đã chép" : "Sao chép"}
                 </button>
@@ -612,7 +617,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
                 </div>
                 <button
                   onClick={() => copyText(memoText, "memo")}
-                  className="text-xs px-3 py-1.5 font-bold rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors shrink-0 cursor-pointer"
+                  className="text-xs px-3 py-2.5 font-bold rounded-lg bg-pink-50 text-pink-600 hover:bg-pink-100 transition-colors shrink-0 cursor-pointer min-h-[44px]"
                 >
                   {copiedId === "memo" ? "Đã chép" : "Sao chép"}
                 </button>
@@ -706,7 +711,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
           </p>
         </div>
 
-        <div className="bg-gray-50 border border-gray-150 rounded-2xl p-4 space-y-2 text-sm text-left">
+        <div className="bg-gray-50 border border-gray-200 rounded-2xl p-4 space-y-2 text-sm text-left">
           <div className="flex justify-between">
             <span className="text-gray-600">Tổng thanh toán</span>
             <span className="font-bold text-emerald-600">{grandTotal.toLocaleString("vi")}đ</span>
@@ -723,24 +728,32 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={handleShareInvoice}
-            className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            Xem hoá đơn
-          </button>
-          <button
-            type="button"
-            onClick={handleDownloadInvoice}
-            className="flex-1 py-3 text-sm font-bold text-emerald-700 bg-emerald-50 rounded-xl hover:bg-emerald-100 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <FileText className="w-4 h-4" />
-            Tải PDF
-          </button>
-        </div>
+           <div className="flex gap-2">
+             <button
+               type="button"
+               onClick={handleShareInvoice}
+               className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+             >
+               <FileText className="w-4 h-4" />
+               Xem hoá đơn
+             </button>
+             <button
+               type="button"
+               onClick={handleDownloadInvoice}
+               className="flex-1 py-3 text-sm font-bold text-emerald-700 bg-emerald-50 rounded-xl hover:bg-emerald-100 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+             >
+               <FileText className="w-4 h-4" />
+               Tải PDF
+             </button>
+           </div>
+           <button
+             type="button"
+             onClick={() => setShowReviewModal(true)}
+             className="w-full py-3 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-100 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2 border border-blue-100"
+           >
+             <Star className="w-4 h-4" />
+             Đánh giá khách hàng
+           </button>
       </div>
     )
   }
@@ -754,7 +767,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
   }
 
   return (
-    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
+    <div ref={trapRef} role="dialog" aria-modal="true" aria-label="Thanh toán đơn hàng" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:h-auto md:max-h-[90dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         {/* Header */}
         <div className={`p-5 shrink-0 flex justify-between items-center ${
@@ -847,7 +860,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
                 onClick={handleConfirmPayment}
                 isLoading={loading}
                 loadingText="Đang xử lý..."
-                className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-150 active:scale-95 transition-transform cursor-pointer flex items-center justify-center gap-2"
+                className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/30 active:scale-95 transition-transform cursor-pointer flex items-center justify-center gap-2"
               >
                 <CheckCircle2 className="w-5 h-5" />
                 Xác nhận thanh toán
@@ -884,6 +897,13 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
           )}
         </div>
       </div>
+      {showReviewModal && (
+        <ReviewCustomerModal
+          appointmentId={appt.id}
+          customerName={appt.customers?.full_name || "Khách hàng"}
+          onClose={() => setShowReviewModal(false)}
+        />
+      )}
     </div>
   )
 }
