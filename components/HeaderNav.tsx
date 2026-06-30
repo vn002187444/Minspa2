@@ -89,7 +89,7 @@ export default function HeaderNav() {
           </div>
           <div>
             <span className="font-display font-black text-sm md:text-xl tracking-wider text-[#3A2E2B] uppercase block">MIN SALON</span>
-            <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-[#5C4033] uppercase font-bold block -mt-1">Nail &amp; Hair Spa</span>
+
           </div>
         </div>
         

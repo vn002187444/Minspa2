@@ -605,7 +605,7 @@ export default async function Home() {
                   M
                 </div>
                 <div>
-                  <h3 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h3>
+
                   <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
                 </div>
               </div>
