@@ -32,7 +32,7 @@ function openDB(): Promise<IDBRequest<IDBDatabase>['result']> {
   });
 }
 
-async function safeOpenDB<T>(fn: (db: IDBDatabase) => Promise<T>): Promise<T | null> {
+async function safeOpenDB<T>(fn: (_db: IDBDatabase) => Promise<T>): Promise<T | null> {
   try {
     const db = await openDB();
     const result = await fn(db);

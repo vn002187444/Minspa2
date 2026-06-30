@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
+import { useNoindex } from '@/lib/seo';
 
 export default function BookingError({ error, reset }: { error: Error; reset: () => void }) {
+  useNoindex();
   return (
     <div className="min-h-screen bg-[#FAF6F0] flex items-center justify-center px-4">
       <div className="bg-white rounded-3xl p-8 max-w-md text-center shadow-lg border border-[#EADDCD] space-y-4">
@@ -24,3 +26,4 @@ export default function BookingError({ error, reset }: { error: Error; reset: ()
     </div>
   );
 }
+

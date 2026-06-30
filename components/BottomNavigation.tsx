@@ -2,19 +2,20 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, Sparkles, Calendar, BookOpen, User, 
   Clock, CalendarCheck, CheckCircle2, Package, BarChart,
-  ClipboardCheck
+  ClipboardCheck, Menu
 } from 'lucide-react';
 
 interface BottomNavigationProps {
   activeTab?: string;
-  setActiveTab?: (tab: string) => void;
+  setActiveTab?: (_tab: string) => void;
+  onMenuClick?: () => void;
 }
 
-export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavigationProps) {
+export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick }: BottomNavigationProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -44,6 +45,7 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
   const renderItem = (icon: React.ReactNode, label: string, onClick: () => void, isActive: boolean) => (
     <button
       onClick={onClick}
+      aria-current={isActive ? 'page' : undefined}
       className={`flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1.5 transition-all duration-300 relative ${
         isActive 
           ? 'text-[#5C4033] font-bold scale-105' 
@@ -53,7 +55,7 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
       <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-[#FAF0E6] text-[#8D6E53]' : 'bg-transparent'}`}>
         {icon}
       </div>
-      <span className="text-[10px] mt-0.5 font-medium font-sans truncate w-full text-center px-0.5">{label}</span>
+      <span className="text-[11px] mt-0.5 font-medium font-sans truncate w-full text-center px-0.5">{label}</span>
       {isActive && (
         <span className="absolute bottom-0 w-6 h-[3px] bg-[#8D6E53] rounded-full" />
       )}
@@ -63,6 +65,7 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
   const renderLinkItem = (icon: React.ReactNode, label: string, href: string, isActive: boolean) => (
     <Link
       href={href}
+      aria-current={isActive ? 'page' : undefined}
       className={`flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1.5 transition-all duration-300 relative ${
         isActive 
           ? 'text-[#5C4033] font-bold scale-105' 
@@ -72,7 +75,7 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
       <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-[#FAF0E6] text-[#8D6E53]' : 'bg-transparent'}`}>
         {icon}
       </div>
-      <span className="text-[10px] mt-0.5 font-medium font-sans truncate w-full text-center px-0.5">{label}</span>
+      <span className="text-[11px] mt-0.5 font-medium font-sans truncate w-full text-center px-0.5">{label}</span>
       {isActive && (
         <span className="absolute bottom-0 w-6 h-[3px] bg-[#8D6E53] rounded-full" />
       )}
@@ -168,7 +171,7 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
             )}
             {renderLinkItem(
               <ClipboardCheck className="w-5 h-5" />,
-              'Đơn Đặt',
+              'Đơn Hàng',
               '/admin/orders',
               pathname === '/admin/orders'
             )}
@@ -179,16 +182,10 @@ export default function BottomNavigation({ activeTab, setActiveTab }: BottomNavi
               pathname === '/admin/schedule'
             )}
             {renderItem(
-              <Sparkles className="w-5 h-5" />,
-              'Dịch Vụ',
-              () => handleAdminTabChange('SERVICES'),
-              pathname === '/admin' && activeTab === 'SERVICES'
-            )}
-            {renderLinkItem(
-              <BookOpen className="w-5 h-5" />,
-              'Bài Viết',
-              '/admin/blog',
-              pathname === '/admin/blog'
+              <Menu className="w-5 h-5" />,
+              'Menu',
+              () => onMenuClick?.(),
+              false
             )}
           </>
         )}

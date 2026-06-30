@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/utils/auth";
 
 const FALLBACK_IMAGES: Record<string, string[]> = {
   nails: [
@@ -65,7 +66,7 @@ async function searchUnsplash(query: string): Promise<string | null> {
   return null;
 }
 
-async function tryGeminiImage(prompt: string, ai: GoogleGenAI): Promise<string | null> {
+async function tryGeminiImage(_prompt: string, _ai: GoogleGenAI): Promise<string | null> {
   // Gemini image generation is currently unstable or deprecated in public API.
   // We fallback to Unsplash and Stock images for stability.
   return null;
@@ -73,6 +74,10 @@ async function tryGeminiImage(prompt: string, ai: GoogleGenAI): Promise<string |
 
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER' && session.user.role !== 'STAFF')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   try {
     const body = await req.json();
     const prompt = (body.prompt || "").trim();

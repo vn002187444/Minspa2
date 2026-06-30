@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, startTransition, type ReactNode } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
-import { Sparkles, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { playPop, playClick } from '@/lib/sounds'
 import { trackMascotEvent } from '@/lib/analytics'
 import { storage } from '@/lib/storage'
@@ -22,7 +22,7 @@ const defaultConfig: MascotConfig = {
 
 interface MascotContextType {
   config: MascotConfig
-  showMessage: (title: string, body: string, duration?: number) => void
+  showMessage: (_title: string, _body: string, _duration?: number) => void
   dismiss: () => void
 }
 
@@ -46,7 +46,7 @@ const pageMessages: Record<string, { title: string; body: string }> = {
 
 export default function MascotProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<MascotConfig>(defaultConfig)
-  const [configLoaded, setConfigLoaded] = useState(false)
+  const [_configLoaded, setConfigLoaded] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [floatMsg, setFloatMsg] = useState<{ title: string; body: string } | null>(null)
   const [showChat, setShowChat] = useState(false)
@@ -93,11 +93,11 @@ export default function MascotProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const d = storage.get(MASCOT_GLOBAL_DISMISSED_KEY) === 'true'
-    setDismissed(d)
+    startTransition(() => { setDismissed(d); });
     if (!d) {
       const path = window.location.pathname
       const msg = pageMessages[path] || { title: 'Chào bạn!', body: 'Min có thể giúp gì cho bạn?' }
-      setFloatMsg(msg)
+      startTransition(() => { setFloatMsg(msg); });
     }
   }, [])
 
@@ -152,7 +152,7 @@ export default function MascotProvider({ children }: { children: ReactNode }) {
             )}
           </AnimatePresence>
 
-          <motion.button
+          <motion.button suppressHydrationWarning={true}
             onClick={handleChatToggle}
             animate={{ y: [0, -4, 0] }}
             transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}

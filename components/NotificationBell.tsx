@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { createClient } from '@/utils/supabase/client';
+
 
 interface Notification {
   id: string;
@@ -32,30 +32,32 @@ export default function NotificationBell() {
     try {
       const res = await fetch('/api/notifications/unread-count');
       if (res.status === 401) {
-        setAuthenticated(false);
+        startTransition(() => { setAuthenticated(false); });
         return;
       }
-      setAuthenticated(true);
+      startTransition(() => { setAuthenticated(true); });
       if (!res.ok) return;
       const data = await res.json();
-      setUnreadCount(data.count ?? 0);
+      startTransition(() => { setUnreadCount(data.count ?? 0); });
     } catch {
-      setAuthenticated(false);
+      startTransition(() => { setAuthenticated(false); });
     }
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    setLoading(true);
+    startTransition(() => { setLoading(true); });
     try {
       const res = await fetch('/api/notifications?limit=20');
       if (!res.ok) return;
       const data = await res.json();
-      setNotifications(data.data ?? []);
-      setUnreadCount((data.data ?? []).filter((n: Notification) => !n.is_read).length);
+      startTransition(() => {
+        setNotifications(data.data ?? []);
+        setUnreadCount((data.data ?? []).filter((n: Notification) => !n.is_read).length);
+      });
     } catch {
       // silent
     }
-    setLoading(false);
+    startTransition(() => { setLoading(false); });
   }, []);
 
   useEffect(() => {
@@ -91,15 +93,15 @@ export default function NotificationBell() {
        const channel: any = supabase
           .channel('notifications_bell')
           .on(
-            'postgres_changes' as any,
+            'postgres_changes',
             {
               event: 'INSERT',
               schema: 'public',
               table: 'notifications',
               filter: `recipient_type=eq.user`,
             },
-            (payload: any) => {
-              const newNotif = payload.new as Notification;
+            (payload: unknown) => {
+              const newNotif = (payload as { new: Notification }).new;
               if (newNotif.recipient_id !== userIdRef.current) return;
               setUnreadCount((prev) => prev + 1);
               setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
@@ -110,15 +112,15 @@ export default function NotificationBell() {
             }
           )
           .on(
-            'postgres_changes' as any,
+            'postgres_changes',
             {
               event: 'UPDATE',
               schema: 'public',
               table: 'notifications',
               filter: `recipient_type=eq.user`,
             },
-            (payload: any) => {
-              const updated = payload.new as Notification;
+            (payload: unknown) => {
+              const updated = (payload as { new: Notification }).new;
               if (updated.recipient_id !== userIdRef.current) return;
               setNotifications((prev) =>
                 prev.map((n) => (n.id === updated.id ? { ...n, is_read: updated.is_read } : n))
@@ -143,7 +145,10 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (isOpen) {
-      fetchNotifications();
+      const init = async () => {
+        await fetchNotifications();
+      };
+      init();
     }
   }, [isOpen, fetchNotifications]);
 
@@ -188,7 +193,7 @@ export default function NotificationBell() {
       handleMarkAsRead(n.id);
     }
     if (n.link) {
-      window.location.href = n.link;
+      window.location.assign(n.link);
     }
   };
 
@@ -203,7 +208,7 @@ export default function NotificationBell() {
       >
         <Bell className="w-5 h-5" />
          {unreadCount > 0 && (
-           <span className={`absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold text-white bg-red-500 rounded-full shadow-sm ${isBouncing ? 'animate-bounce' : ''}`}>
+           <span className={`absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-[11px] font-bold text-white bg-red-500 rounded-full shadow-sm ${isBouncing ? 'animate-bounce' : ''}`}>
              {unreadCount > 99 ? '99+' : unreadCount}
            </span>
          )}

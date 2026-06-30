@@ -25,7 +25,7 @@ export async function getCustomerCareSuggestion(phone: string): Promise<string> 
 
   const { data: customers } = await supabase
     .from('customers')
-    .select('id, full_name, phone, birthday, dob, birth_date, birth_month')
+    .select('id, full_name, phone, birthday')
     .eq('phone', cleanPhone);
 
   const customer = customers && customers.length > 0 ? customers[0] : null;
@@ -161,7 +161,7 @@ function getServiceStats(appointments: Record<string, unknown>[]) {
   };
 }
 
-function getFallbackSuggestion(customer: Record<string, unknown>, packages: Record<string, unknown>[], appointments: Record<string, unknown>[]): string {
+function getFallbackSuggestion(customer: Record<string, unknown>, packages: Record<string, unknown>[], _appointments: Record<string, unknown>[]): string {
   const currentMonth = new Date().getMonth() + 1;
   if (checkBirthday(customer, currentMonth)) {
     return "Chúc mừng tháng sinh nhật của chị! Min Nail & Hair gửi tặng chị ưu đãi đặc biệt khi trải nghiệm gói Gội D dưỡng sinh Vip Hoàng Gia ngày hôm nay!";

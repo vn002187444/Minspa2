@@ -25,7 +25,7 @@ const checks: OrphanCheck[] = [
   { label: 'Auto assign logs without valid appointment', query: 'SELECT id FROM auto_assign_logs WHERE NOT EXISTS (SELECT 1 FROM appointments WHERE appointments.id = auto_assign_logs.appointment_id)' },
 ];
 
-export async function execute({ fix = false }: { fix?: boolean }) {
+export async function execute({ fix: _fix = false }: { fix?: boolean }) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 

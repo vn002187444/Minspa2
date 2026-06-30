@@ -17,32 +17,32 @@ interface SelectedAppt {
 
 interface AppointmentModalProps {
   selectedAppt: SelectedAppt | null;
-  setSelectedAppt: (v: SelectedAppt | null) => void;
+  setSelectedAppt: (_v: SelectedAppt | null) => void;
   isEditingSelected: boolean;
-  setIsEditingSelected: (v: boolean) => void;
+  setIsEditingSelected: (_v: boolean) => void;
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
   data: { staffList?: { id: string; full_name?: string; username?: string }[]; allServices?: { id: string; name?: string; price?: number }[] };
   timeSlots: string[];
   editFullName: string;
-  setEditFullName: (v: string) => void;
+  setEditFullName: (_v: string) => void;
   editPhone: string;
-  setEditPhone: (v: string) => void;
+  setEditPhone: (_v: string) => void;
   editStaffId: string;
-  setEditStaffId: (v: string) => void;
+  setEditStaffId: (_v: string) => void;
   editStartTime: string;
-  setEditStartTime: (v: string) => void;
+  setEditStartTime: (_v: string) => void;
   editServiceIds: string[];
-  setEditServiceIds: (v: string[]) => void;
+  setEditServiceIds: (_v: string[]) => void;
   editStatus: string;
-  setEditStatus: (v: string) => void;
-  handleSaveEdit: (e: React.FormEvent) => Promise<void>;
+  setEditStatus: (_v: string) => void;
+  handleSaveEdit: (_e: React.FormEvent) => Promise<void>;
   handleCancelAppt: () => Promise<void>;
   handleSwap: () => Promise<void>;
   isSavingEdit: boolean;
   isSwapping: boolean;
   newStaffId: string;
-  setNewStaffId: (v: string) => void;
-  getVNTimeStr: (dateStr: string) => string;
+  setNewStaffId: (_v: string) => void;
+  getVNTimeStr: (_dateStr: string) => string;
 }
 
 export default function AppointmentDetailModal({
@@ -102,7 +102,7 @@ export default function AppointmentDetailModal({
         {isEditingSelected ? (
           <form onSubmit={handleSaveEdit} className="p-6 space-y-4 max-h-[80dvh] overflow-y-auto">
             <div className="space-y-1">
-              <label htmlFor="detail-fullName" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Tên Khách Hàng</label>
+              <label htmlFor="detail-fullName" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Tên Khách Hàng</label>
               <input
                 id="detail-fullName"
                 type="text"
@@ -114,7 +114,7 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="detail-phone" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Số Điện Thoại</label>
+              <label htmlFor="detail-phone" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Số Điện Thoại</label>
               <input
                 id="detail-phone"
                 type="tel"
@@ -126,7 +126,7 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="detail-staffId" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Chọn Kỹ Thuật Viên</label>
+              <label htmlFor="detail-staffId" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Chọn Kỹ Thuật Viên</label>
               <select
                 id="detail-staffId"
                 value={editStaffId}
@@ -134,7 +134,7 @@ export default function AppointmentDetailModal({
                 className="w-full p-2.5 text-xs bg-white border border-[#EADDCD] rounded-xl font-semibold outline-none focus:ring-2 focus:ring-[#8D6E53] cursor-pointer"
               >
                 <option value="_unassigned">⚠️ Chưa Assign / Chờ Phân Bổ Ngẫu Nhiên</option>
-                {data.staffList?.map((s: any) => (
+                {data.staffList?.map((s) => (
                   <option key={s.id} value={s.id}>
                     🌟 {s.full_name || s.username}
                   </option>
@@ -143,7 +143,7 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="detail-startTime" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Giờ Đặt Lịch</label>
+              <label htmlFor="detail-startTime" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Giờ Đặt Lịch</label>
               <select
                 id="detail-startTime"
                 value={editStartTime}
@@ -159,7 +159,7 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-1">
-              <label htmlFor="detail-status" className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Trạng Thế Đơn Hàng</label>
+              <label htmlFor="detail-status" className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Trạng Thế Đơn Hàng</label>
               <select
                 id="detail-status"
                 value={editStatus}
@@ -174,9 +174,9 @@ export default function AppointmentDetailModal({
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block">Chọn dịch vụ sử dụng</label>
+              <label className="text-[11px] font-bold text-gray-500 uppercase tracking-wider block">Chọn dịch vụ sử dụng</label>
               <div className="max-h-36 overflow-y-auto border border-[#EADDCD]/40 rounded-2xl p-3 bg-[#FAF6F0]/20 space-y-2.5">
-                {(data.allServices || []).map((srv: any) => {
+                {(data.allServices || []).map((srv) => {
                   const isChecked = editServiceIds.includes(srv.id);
                   return (
                     <label key={srv.id} htmlFor={`detail-service-${srv.id}`} className="flex items-center gap-2.5 text-xs font-semibold text-gray-700 cursor-pointer select-none">
@@ -270,7 +270,7 @@ export default function AppointmentDetailModal({
             <div className="space-y-2">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Dịch Vụ Đã Đăng Ký</span>
               <div className="max-h-24 overflow-y-auto space-y-1.5 pr-1.5">
-                {selectedAppt.appointment_services?.map((as: any, idx: number) => (
+                {selectedAppt.appointment_services?.map((as, idx: number) => (
                   <div key={idx} className="p-2.5 bg-white rounded-xl text-xs font-bold text-[#5C4033] flex justify-between border border-[#EADDCD]/40">
                     <span>{as.services?.name || 'Dịch vụ'}</span>
                   </div>
@@ -304,8 +304,8 @@ export default function AppointmentDetailModal({
                       <option value="_unassigned">⚠️ Thu hồi ca (Chuyển về Hàng đợi)</option>
                     )}
                     {data.staffList
-                      ?.filter((s: any) => s.id !== selectedAppt.staff_id)
-                      .map((s: any) => (
+                      ?.filter((s) => s.id !== selectedAppt.staff_id)
+                      .map((s) => (
                         <option key={s.id} value={s.id}>
                           🌟 {s.full_name || s.username}
                         </option>
@@ -315,7 +315,7 @@ export default function AppointmentDetailModal({
                     type="button"
                     disabled={!newStaffId || isSwapping}
                     onClick={handleSwap}
-                    className="bg-[#5C4033] hover:bg-[#3A2E2B] disabled:opacity-50 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1 transition-all cursor-pointer shadow-sm"
+                    className="bg-[#5C4033] hover:bg-[#3A2E2B] disabled:opacity-50 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1 transition-all cursor-pointer shadow-sm min-h-[44px]"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isSwapping ? 'animate-spin' : ''}`} />
                     Cập nhật

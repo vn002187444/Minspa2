@@ -1,540 +1,74 @@
-# 🚀 KẾ HOẠCH NÂNG CẤP V3 (EXECUTION PLAN)
+# 🚀 KẾ HOẠCH NÂNG CẤP (UPGRADE_PLAN)
 
-> **Mục tiêu:** Nâng cấp hệ thống lên chuẩn doanh nghiệp, ưu tiên core operations trước, trải nghiệm & mở rộng sau.
-> **Trạng thái:** V3.1–V3.14 ✅ | Tất cả 14 phiên bản V3 đã hoàn thành ✅ | Migrations consolidated → `database.sql`
-
----
-
-## 🧠 BẢN ĐỒ TƯ DUY V3
-
-```
-V3 EXECUTION
-├── 🏆 TRACK A — CORE OPERATIONS (Làm ngay)
-│   ├── V3.1 Staff Checkout & Payment Flow    → Đã xong
-│   ├── V3.2 Staff Booking Hộ Khách           → Đã xong
-│   ├── V3.3 Booking Intelligence              → Đã xong
-│   ├── V3.4 Task Management                   → Đã xong
-│   └── V3.5 Báo cáo & Thống kê Nâng cao      → Đã xong
-│   └── V3.14 Payroll & Code Cleanup              → Đã xong
-├── 🎯 TRACK B — EXPERIENCE & MARKETING
-│   ├── V3.6 Interactive Mascot               → Đã xong
-│   ├── V3.7 UX Polish & PWA                  → Đã xong
-│   ├── V3.8 Real-time Theme                  → Đã xong
-│   └── V3.12 Auto SEO Posting                → Đã xong
-├── 🧹 TRACK C — FINANCIALS & STABILITY
-│   ├── V3.9 Financials & Invoice             → Đã xong
-│   ├── V3.10 Hardening                       → Đã xong
-│   ├── V3.11 Platform Scaling                → Đã xong
-│   └── V3.13 Stability & Polish              → Đã xong
-│   └── V3.14 Payroll & Code Cleanup              → Đã xong
-```
-
-## 🧠 V2 Post-Mortem: Lessons Learned cho V3
-
-| # | Vấn đề | Hậu quả | Cách tránh trong V3 |
-|---|--------|---------|---------------------|
-| 1 | **Orphan features** | Tab Attendance, Settings là orphan | Audit BE→FE mapping đầu session |
-| 2 | **Mojibake** | Text hiển thị sai encoding | Kiểm tra UTF-8 encoding |
-| 3 | **Thiếu Accessibility** | Forms thiếu htmlFor/id, modals thiếu trap | Dùng checklist (htmlFor, id, useFocusTrap) |
-| 4 | **Any types** | Lỗi type cascade khi refactor | Define interface trước khi code |
-| 5 | **Migration messy** | 15+ SQL files trong scripts/ | Move applied → `scripts/archive/` |
-
-## 🧠 V3 Post-Mortem: Lessons Learned (cập nhật 06/2026)
-
-| # | Bài học | Nguyên nhân | Fix áp dụng |
-|---|---------|------------|-------------|
-| 1 | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` KHÔNG chạy qua PgBouncer | PgBouncer transaction mode không pass syntax này | DO block với `pg_publication_tables` check (tránh `pg_publication_rel` — cũng hang qua PgBouncer) |
-| 2 | `database.sql` lỗi thời — thiếu 7 bảng so với thực tế | Rule "NEVER edit database.sql" quá cứng nhắc | Đổi rule → database.sql là schema tổng hợp, cập nhật khi thêm bảng |
-| 3 | Không verify RLS + Realtime sau migrations | Thiếu quy trình hậu migration | Audit RLS + Realtime + database.sql ngay sau mỗi migration |
-| 4 | SKILL.md sai số table (ghi 18 nhưng thực tế 31) | Không cập nhật SKILL.md cùng schema | Cập nhật SKILL.md section 4 + 9 mỗi khi thay đổi DB |
-| 5 | Multi-statement SQL không ổn định qua pooler | PgBouncer xử lý `;`-separated statements không đáng tin | Dùng DO block; `run-migrations.mjs` chạy từng câu riêng |
-| 6 | **Schema mismatch: code tham chiếu column không tồn tại trong DB** | Code được viết dựa trên schema giả định, không verify với DB thật | **Rule mới:** Sau mỗi migration, chạy `schema_sync` tool; code review phải check `.select()` vs `database.sql`; thêm `IF NOT EXISTS` vào mọi ALTER TABLE |
-| 7 | **SecurityError on iOS Safari (Private Browsing / SW)** | Gọi `.register()` hoặc `.subscribe()` tự động ngoài tương tác người dùng | **Sửa đổi:** Bao bọc `.register()` và `indexedDB.open` trong `try-catch`, chỉ gọi `.subscribe()` qua sự kiện click. |
-| 8 | **Session lost / Logout unexpectedly on iOS/Safari** | Sliding session trong Middleware cập nhật cookie mỗi request $\rightarrow$ nếu `decrypt()` lỗi (do race condition hoặc cache), Middleware tự xóa session (`maxAge: 0`) | **Sửa đổi:** Loại bỏ sliding session trong middleware; ngừng tự động xóa session khi decrypt fail; chỉ xóa session khi gọi `logout()`. |
+> **Tất cả 42 tasks đã hoàn thành.** Xem chi tiết tại `PLAN.md` → section **UPGRADE_PLAN — Code Quality Audit**
 
 ---
 
-## 📋 CHECKLIST TRƯỚC KHI BẮT ĐẦU V3
+## 📋 Các mục CHƯA LÀM (UNDONE)
 
-| # | Mục | Trạng thái | Ghi chú |
-|---|-----|-----------|---------|
-| C.1 | Backup database production | [x] | Supabase backup — đã chạy manual |
-| C.2 | Tạo nhánh git `v3-dev` | [-] | Bỏ qua — code trực tiếp trên main (single dev) |
-| C.3 | Kiểm tra build pass (npm run build) | [x] | Pass — 50 static pages |
-| C.4 | Kiểm tra ESLint (npm run lint) | [x] | 0 lỗi |
-| C.5 | Kiểm tra test (npm run test) | [x] | 3 test files pass |
-| C.6 | Đồng bộ code lên NAS | [x] | Script migrate hoạt động |
-| C.7 | Thống báo team/staff về lịch update | [x] | Đã thông báo qua Zalo |
-
----
-
-## 🚀 TRACK A — CORE OPERATIONS (Priority 1)
-
-### ✅ V3.1 — Staff Checkout & Payment Flow
-> **Mục tiêu:** Thiết kế lại luồng hoàn thành đơn hàng của nhân viên.
-> **Flow:** Edit đơn → Đánh giá + Tip → Biên lai → CASH/BANK → QR (nếu BANK) → Cảm ơn
-> **Trạng thái:** ✅ Đã xong
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 1.1 | Thiết kế lại CompleteModal → giao diện edit đơn hàng | [x] | `CheckoutModal.tsx` — multi-step flow |
-| 1.2 | Khuyến mãi linh hoạt: % từng DV hoặc % tổng đơn | [x] | Toggle KM theo dòng / KM toàn đơn |
-| 1.3 | Bỏ ô nhập tip cũ khỏi CompleteModal | [x] | Tách sang step riêng |
-| 1.4 | Giao diện đánh giá DV + chọn tip (10k/20k/30k/50k/custom) | [x] | Rating + quick tags + tip selector |
-| 1.5 | Giao diện biên lai xác nhận dịch vụ | [x] | DV → KM → Tip → Tổng |
-| 1.6 | Tip hiển thị riêng, **không bị giảm giá** | [x] | Tip không nhân discount% |
-| 1.7 | Phương thức thanh toán: CASH / BANK | [x] | Toggle CASH/BANK |
-| 1.8 | QR Code cho BANK (kế thừa PaymentQRModal) | [x] | Giữ VietQR |
-| 1.9 | Màn hình "Cảm ơn đã thực hiện dịch vụ" kết thúc luồng | [x] | Thank-you screen |
-| 1.10 | Xem lại đơn hàng đã hoàn thành sau khi checkout | [x] | `CompletedDetailModal` — xem DV, tổng, tip |
-| 1.11 | Edit tip sau khi hoàn thành (sai sót) | [x] | `updateTip` + `EditTipModal` — staff chỉ trong ngày |
-| 1.12 | Admin: xem & edit tip từ lịch sử đơn hàng | [x] | `adminUpdateTip` + audit log + cột Tip trong table |
-
----
-
-### ✅ V3.2 — Staff Booking Hộ Khách
-> **Mục tiêu:** Nhân viên tại quầy đặt lịch hộ khách.
-> **Trạng thái:** ✅ Đã xong
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 2.1 | Thêm tab "Đặt lịch hộ" trong giao diện Staff | [x] | `/staff` → tab BOOKING, `StaffBookingTab.tsx` |
-| 2.2 | Form tìm kiếm/số điện thoại khách hàng | [x] | Tìm SĐT → chọn/tạo mới `getCustomerByPhone` |
-| 2.3 | Chọn dịch vụ (multi-select) + tổng thời gian | [x] | Checkbox list, total price + duration |
-| 2.4 | Chọn nhân viên (mặc định là chính họ) | [x] | Dropdown staff active, default = self |
-| 2.5 | Chọn ngày giờ + kiểm tra trùng lịch | [x] | Reuse BookingCalendar + slot availability |
-| 2.6 | Áp dụng gói liệu trình của khách | [x] | `getCustomerActivePackages` + select |
-| 2.7 | Ghi chú lịch hẹn | [x] | Textarea → `notes` |
-| 2.8 | Xác nhận & tạo lịch — update realtime | [x] | `submitBooking` + Realtime |
-| 2.9 | In hoá đơn tạm sau khi đặt | [x] | `window.print()` button |
-
----
-
-### ✅ V3.3 — Booking Intelligence
-> **Mục tiêu:** Gợi ý lịch trống thông minh, auto-assign tối ưu.
-> **Trạng thái:** ✅ Đã xong
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 3.1 | `findNextAvailableDate()` — tìm ngày trống sớm nhất | [x] | `lib/booking-engine.ts:285` |
-| 3.2 | Cải tiến auto-assign: xét kỹ năng + chứng chỉ | [x] | Bảng `staff_skills` + `lib/scheduling.ts:208-230` |
-| 3.3 | UI "Gợi ý giờ đẹp" trên booking page | [x] | Đã có `isRecommended` logic + ⭐ badge |
-| 3.4 | Caching slot availability | [x] | `lib/slot-cache.ts` (in-memory, 15-30s TTL) |
-| 3.5 | Cho phép đặt lịch ngày mai dù chưa điểm danh | [x] | `booking-engine.ts:332-338` — skip attendance cho T&gt;today |
-| 3.6 | Giới hạn 1 slot / khung giờ cho ngày mai | [x] | Bảng `slot_limits` + `booking-engine.ts:358-369` |
-| 3.7 | Auto-assign batch: tối ưu workload | [x] | `lib/scheduling.ts:233` — sort by start_time + workload balance |
-| 3.8 | Lịch sử auto-assign: log & undo | [x] | Bảng `auto_assign_logs` + `logAutoAssign()` |
-
----
-
-### ✅ V3.4 — Task Management (Công việc nội bộ)
-> **Mục tiêu:** Phân công việc: Admin tạo → Staff nhận → Theo dõi → Thông báo.
-> **Trạng thái:** ✅ Đã xong
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 4.1 | Tạo bảng `tasks` trong database | [x] | id, title, type (daily/one_time), assignee, deadline, status |
-| 4.2 | Admin UI: tạo công việc mới | [x] | `TabTasks.tsx` — CreateTaskModal |
-| 4.3 | Chọn **daily** → auto nhắc lại hàng ngày | [x] | Cron job `clone-daily-tasks` |
-| 4.4 | Admin: chọn "Toàn bộ NV" hoặc chỉ định | [x] | Radio: All / Specific trong modal |
-| 4.5 | Staff UI: danh sách công việc được giao | [x] | `StaffTasksTab` trong `/staff` |
-| 4.6 | Staff nhận việc (Nhận / Từ chối) | [x] | Nhận → IN_PROGRESS, Từ chối → REJECTED |
-| 4.7 | Staff cập nhật: Đang làm / Hoàn thành | [x] | Đang làm → IN_PROGRESS, Hoàn thành → COMPLETED |
-| 4.8 | Thông báo admin khi NV hoàn thành | [x] | `updateTaskStatus` → insert notifications |
-| 4.9 | Cron job kiểm tra việc chưa nhận quá 2h | [x] | `api/cron/check-tasks/route.ts` (4.9) + overdue check (4.10) |
-| 4.10 | Thông báo khi quá hạn hoàn thành | [x] | Gộp trong cron check-tasks, insert notif cho admin |
-| 4.11 | Dashboard stats trong admin TabTasks | [x] | `getTaskStats()` — tổng/chờ/đang làm/hoàn thành/trễ hạn |
-| 4.12 | Tìm kiếm + lọc theo assignee + lọc theo loại | [x] | Searchbar + advanced filters (assignee, task_type) trong TabTasks |
-
----
-
-### ✅ V3.5 — Báo cáo & Thống kê Nâng cao
-> **Mục tiêu:** Dashboard KPI real-time, báo cáo đa chiều (DV/NV/KH), so sánh tăng trưởng, xuất PDF/Excel, gửi email định kỳ.
-> **Trạng thái:** ✅ Đã xong
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 5.1 | Dashboard tổng quan KPI real-time | [x] | OverviewTab: 4 stat cards + doanh thu chart + top DV/NV |
-| 5.2 | Báo cáo doanh thu theo ngày/tuần/tháng/năm | [x] | RevenueTab: BarChart + AreaChart, range filter |
-| 5.3 | Báo cáo theo dịch vụ (top service, doanh thu từng DV) | [x] | ServiceTab: PieChart + bảng xếp hạng |
-| 5.4 | Báo cáo theo nhân viên (năng suất, doanh thu, tip) | [x] | StaffTab: BarChart ngang + bảng doanh thu/tip/đơn |
-| 5.5 | Báo cáo khách hàng (top chi tiêu, tần suất, retention) | [x] | CustomerTab: KH mới/quay lại, top 15 chi tiêu |
-| 5.6 | So sánh tăng trưởng (YoY / MoM / WoW) | [x] | GrowthTab: bar chart kỳ này/kỳ trước, % tăng trưởng |
-| 5.7 | Custom date range cho mọi báo cáo | [x] | 5 range (7 ngày/tháng/tháng trước/năm/tùy chọn) + compare checkbox |
-| 5.8 | Xuất PDF (`jspdf`) + Excel (`xlsx`) cho mọi báo cáo | [x] | Nút PDF + Excel, jsPDF autoTable, 4 sheet Excel |
-| 5.9 | Lịch gửi báo cáo định kỳ qua email | [x] | Cron job `email-report`, push notification cho admin |
-| 5.10 | Drill-down: click biểu đồ → xem chi tiết | [x] | Modal drill-down, click hàng → xem detail |
-
----
-
-## 🎯 TRACK B — EXPERIENCE & MARKETING (Priority 2)
-
-### 🎯 V3.6 — Interactive Mascot
-> **Mục tiêu:** Mascot vui nhộn, hướng dẫn, tương tác đa bước.
-
-| # | Task | Trạng thái | Ghi chú |
-|:--|------|-----------|---------|
-| 6.1 | Nâng cấp `BookingMascotGuide` động | [x] | Multiple expressions (happy/thinking/excited/idle), idle animation cycle, tip auto-reveal, spring transitions |
-| 6.2 | Gợi ý dịch vụ theo hành vi người dùng | [x] | `currentCategory` → `serviceSuggestions` mapping → clickable suggestion buttons |
-| 6.3 | Sound effect & Micro-interaction | [x] | `lib/sounds.ts` — Web Audio API (pop, success, click) |
-| 6.4 | Admin config mascot (bật/tắt, chọn kiểu) | [x] | TabSettings: enable/disable, 3 characters (Min/Sparkle/Flower), sound toggle |
-| 6.5 | Mascot xuất hiện toàn bộ trang | [x] | `MascotProvider.tsx` — floating mascot bottom-right + context API |
-| 6.6 | Mascot homepage: hướng dẫn DV vui nhộn | [x] | `HomeMascotBanner.tsx` — 4 service tips với dot navigation |
-| 6.7 | A/B test tracking tỷ lệ click/booking | [x] | `trackMascotEvent()` + `getMascotStats()` trong `lib/analytics.ts` |
-
----
-
-### 🎯 V3.7 — UX Polish & PWA
-> **Mục tiêu:** PWA offline, page transitions, UI polish.
-
-| # | Task | Trạng thái | Ghi chú |
-|:--|------|-----------|---------|
-| 7.1 | Service Worker cache-first cho static assets | [x] | `public/sw.js` — cache-first cho JS/CSS/images/fonts, network-first cho pages |
-| 7.2 | Offline fallback cho toàn bộ routes | [x] | `app/offline/page.tsx` + SW serve `/offline` khi offline navigation |
-| 7.3 | IndexedDB queue cho offline booking | [x] | `lib/offline-queue.ts` + `hooks/useOnlineSync.ts` auto-sync |
-| 7.4 | Page transitions (nâng cấp) | [x] | `components/animated-wrapper.tsx` — motion fade + slide, exit animation |
-| 7.5 | Loading skeleton (5/5 pages) | [x] | `Skeleton.tsx` (Card/List/Table) + loading.tsx (root, booking, admin, staff, blog) |
-| 7.6 | Micro-interactions (ripple) | [x] | `components/RippleButton.tsx` + `animate-ripple` keyframe + `hover-magnetic` |
-| 7.7 | Code-split admin tab components | [x] | 14 tabs dùng `next/dynamic` với skeleton fallback |
-| 7.8 | Performance tối ưu | [x] | `poweredByHeader: false`, `minimumCacheTTL: 86400`, preconnect/dns-prefetch/preload |
-
----
-
-### 🎯 V3.8 — Real-time Theme
-> **Mục tiêu:** Giao diện biến đổi theo thời tiết & lễ hội.
-> **Migration:** `scripts/archive/migrations/migrate_theme_settings.sql` — thêm `theme_override`, `theme_particles_enabled` và `seo_settings`
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 8.1 | Open-Meteo API thời tiết | [x] | `lib/weather.ts` — cache 30 phút, decode WMO code → 5 condition |
-| 8.2 | CSS Variable Injector theo thời tiết | [x] | `ThemeProvider.tsx` kết hợp `data-theme` + `getThemeModifier()` |
-| 8.3 | Theme animation: tuyết, lá, hoa | [x] | `components/ThemeParticles.tsx` — Canvas particle system (snow/leaves/petals) |
-| 8.4 | Admin UI: xem trước & lên lịch theme | [x] | TabSettings: dropdown override + preview swatch + particles toggle |
-| 8.5 | Theme persistence (localStorage + DB) | [x] | `localStorage('min_theme_config')` + `seo_settings.theme_override` |
-| 8.6 | Theme-color động cho PWA | [x] | `ThemeProvider` cập nhật `<meta name="theme-color">` khi theme thay đổi |
-
----
-
-### ✅ V3.12 — Tự động đăng bài SEO (Gemini + Cron) [SIMPLIFIED]
-> **Mục tiêu:** Hàng tuần, hệ thống tự động pick topic → research → viết bài → publish → notify.
-> **Migration:** `migrations/migrate_v312_auto_seo.sql` — thêm `status`, `scheduled_at`, `topic_source`, `backlinks`, `blog_slug`, `published_at` vào `seo_articles` + tạo bảng `auto_seo_config`
-> **Trạng thái:** ✅ Đã xong
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 12.1 | Migration: `seo_articles` + `auto_seo_config` | [x] | `migrate_v312_auto_seo.sql` — gộp 3 bảng gốc thành 1 migration |
-| 12.2 | Pipeline core `lib/auto-seo.ts` | [x] | `pickTopic()` → `researchTopic()` → `generateArticle()` → `publishToBlog()` → `saveArticleRecord()` → `notifyAdmin()` |
-| 12.3 | Cron endpoint `app/api/cron/seo-publish/route.ts` | [x] | Auth pattern như `cron/marketing`, gọi `runAutoSeo()` |
-| 12.4 | Admin UI `TabAutoSEO.tsx` — config + lịch sử | [x] | Sub-tab "Auto SEO 🤖" trong TabSEO: toggle, schedule, topic pool, history |
-| 12.5 | Admin actions `getAutoSeoConfig/saveAutoSeoConfig/getAutoSeoHistory` | [x] | `app/admin/actions.ts` |
-| 12.6 | Thông báo admin khi có bài mới | [x] | Email notification trong `notifyAdmin()` |
-
----
-
-## 🧹 TRACK C — STABILITY & SCALING
-
-### ✅ V3.9 — Financials & Invoice ✅
-> **Mục tiêu:** Hoá đơn PDF, dashboard tài chính (P&L), báo cáo thuế, sổ quỹ tiền mặt.
-> **Pivot:** Bỏ MoMo/ZaloPay (không API key). Bỏ Excel export (đã có ở V3.5). Bỏ POS offline (đã có offline queue V3.7).
-> **Nguyên tắc PDF:** Tạo + share/download, không auto-save vào Supabase Storage.
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 9.1 | **Hoá đơn PDF khi thanh toán (CASH/BANK)** | [x] | `lib/invoice-pdf.ts` + nút "Xem hoá đơn" / "Tải PDF" ở Step 6 (Thank you), không lưu Storage |
-| 9.2 | **Dashboard tài chính nâng cao** | [x] | P&L + dòng tiền + cash flow chart trong TabDashboard |
-| 9.3 | **Báo cáo thuế / cuối kỳ** | [x] | Subtab "Thuế" trong TabReports — VAT 8% + TNCN 2%, bảng tháng, tổng năm |
-| 9.4 | **Sổ quỹ tiền mặt** | [x] | TabCashRegister: thu/chi, balance, add/delete transaction |
-
----
-
-### ✅ V3.10 — Hardening (Audited 06/2026)
-> **Mục tiêu:** Bảo mật, chống DDOS, kiểm thử.
-> **Kết quả audit:** 2/8 tasks đã có sẵn. 4 tasks bỏ qua (overkill cho salon nhỏ). 2 tasks cần làm.
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 10.1 | CSP Headers | [x] | Đã có trong `next.config.ts` — 6 headers (CSP, HSTS, XFO, XCTO, Referrer, Perms) |
-| 10.2 | Rate limit mở rộng (booking + cron) | [x] | `lib/rate-limit.ts` có sẵn, mở rộng sang booking + cron endpoints |
-| 10.3 | `npm audit` trong CI pipeline | [x] | Thêm step vào `.github/workflows/ci.yml` |
-| 10.4 | CDN static assets | [-] | **Bỏ qua** — Vercel edge đã đủ cho salon nhỏ |
-| 10.5 | Environment validation runtime | [x] | `lib/env.ts` — Zod schema, throw khi thiếu biến |
-| 10.6 | WAF rule (rate + DDoS) | [-] | **Bỏ qua** — Vercel infra tự xử lý DDoS |
-| 10.7 | Database encryption review | [-] | **Bỏ qua** — không có PII nhạy cảm ngoài tên/SĐT |
-| 10.8 | Pen-test: SQLi, XSS, CSRF | [-] | **Bỏ qua** — CSP + Supabase param queries đã bảo vệ cơ bản |
-
----
-
-### ✅ V3.11 — Platform Scaling + Đa ngôn ngữ (Reviewed 06/2026)
-> **Mục tiêu:** Search, Export, Đa ngôn ngữ (Google Translate Widget), Cleanup critical bugs.
-> **Pivot:** Thay i18n (next-intl) bằng Google Translate Widget — nhẹ, free, 5 phút cài. Huỷ multi-branch.
-
-| # | Task | Trạng thái | Ghi chú |
-|---|------|-----------|---------|
-| 11.1 | **FTS: Full-text search blog & services** | [x] | PostgreSQL tsvector + GIN index + /api/search |
-| 11.2 | **Export dữ liệu (CSV, JSON)** | [x] | `lib/export.ts` + `/api/export` + UI trong TabReports |
-| 11.3 | **Google Translate Widget** | [x] | `components/GoogleTranslate.tsx` — dropdown VI/EN/KO/ZH-CN/JA/TH/FR/DE/ES, fixed top-right, free, 0 code change cho UI |
-| 11.4 | **Multi-branch** | [-] | **Đã huỷ** — salon chỉ 1 cơ sở |
-| 11.5 | **Branch selector UI cho admin** | [-] | **Đã huỷ** |
-| 11.6 | **Report tổng hợp multi-branch** | [-] | **Đã huỷ** |
-
-> **Ghi chú:** i18n next-intl (~1000 strings, 73 files) là overkill. Google Translate Widget là giải pháp thực tế.
-
----
-
-### ✅ V3.13 — Stability & Polish ✅
-> **Mục tiêu:** Sửa critical bugs (schema, RPC, env), làm sạch code, tăng độ ổn định, tối ưu Vercel + Supabase.
-> **Priority:** Cao
-> **Trạng thái:** ✅ Đã xong
-
-| # | Task | Trạng thái | Mức độ | Ghi chú |
-|---|------|-----------|--------|---------|
-| 13.1 | Fix schema `tasks` (thêm: `task_type`, `assignee_type`, `time_slot`, `original_task_id`, `created_by`; đổi: `assigned_to`→`assignee_id`, `due_date`→`deadline`, xoá `assigned_by`) | [x] | 🔴 Critical | Migration + database.sql sync. Xoá hard DELETE (dùng status='cancelled') |
-| 13.2 | Tạo bảng `cron_job_logs` | [x] | 🔴 Critical | + RLS policies + Realtime publication + database.sql sync |
-| 13.3 | Tạo 4 RPC functions + bảng `background_tasks` | [x] | 🔴 Critical | `enqueue_background_task`, `dequeue_all_background_tasks`, `deduct_package_session`, `refund_package_session` |
-| 13.4 | Fix `lib/env.ts` — `SUPABASE_URL` → `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_ANON_KEY` → `NEXT_PUBLIC_SUPABASE_ANON_KEY` | [x] | 🔴 Critical | Thêm env vars: `NEXT_PUBLIC_HOTLINE`, `BANK_ACCOUNT_NUMBER`, `BANK_NAME`, `BANK_ID`, `BANK_ACCOUNT_OWNER` |
-| 13.5 | Chuyển hardcoded bank account + phone từ seed data vào env | [x] | 🟠 High | Tạo `lib/defaults.ts` — shared defaults. Fix bypass password fallback (xóa hardcoded). |
-| 13.6 | Clean `any` types → proper interfaces | [-] | 🟡 Medium | **Bỏ qua** — 55+ chỗ, low ROI, type-safe from new code |
-| 13.7 | Clean console.log trong production code | [x] | 🟡 Medium | Xoá auth leak (3 files), xoá push leak (1 file), xoá reminders verbose (1 file) |
-| 13.8 | Fix silent `.catch(() => {})` | [x] | 🟡 Medium | Fix booking actions (push, email, admin notif) — dùng fire-and-forget with logging |
-| 13.9 | Fix accessibility: thêm `htmlFor`/`id` cho forms | [-] | 🟢 Low | **Bỏ qua** — 30+ chỗ, cosmetic, defer to later |
-| 13.10 | Xoá file chết: `lib/utils.ts`, `lib/api-error.ts` | [x] | 🟢 Low | `cn()` không được import bởi file nào |
-| V3.13+ | **Tối ưu Vercel**: next.config.ts `productionBrowserSourceMaps: false`, vercel.json `functions` config (memory, maxDuration) | [x] | ✅ | Giảm bundle size, kiểm soát cron timeout |
-| V3.13+ | **Tối ưu Supabase**: Tạo bảng `background_tasks`, `cron_job_logs`, 4 RPC functions cho queue/package ops | [x] | ✅ | Giảm N+1, atomic operations |
-
----
-
-## ✅ V3.14 — Payroll + Code Cleanup
-> **Mục tiêu:** Tính lương nhân viên hàng tháng (base salary + commission + tips), dọn technical debt (any types, accessibility).
-> **Trạng thái:** ✅ Đã xong
-
-### A. 💰 Payroll — Tính lương nhân viên
-
-| # | Task | Trạng thái | Mức độ | Chi tiết |
-|---|------|-----------|--------|----------|
-| 1.1 | Migration: thêm `base_salary`, `bank_account` vào `users` | [x] | 🔴 | `migrations/migrate_payroll.sql` + `database.sql` |
-| 1.2 | Tạo bảng `salary_payments` (period, base, commission, tips, bonus, deduction, advance, net, status) + RLS | [x] | 🔴 | Cột: `staff_id`, `period_start`, `period_end`, `base_salary`, `total_commission`, `total_tips`, `bonus`, `deduction`, `advance`, `net_pay`, `status` (PENDING/PAID), `paid_at`, `paid_by`, `notes` |
-| 1.3 | Server action: `calculatePayroll(periodStart, periodEnd)` — query commission + tips + attendance per staff, tính net | [x] | 🔴 | Gộp commission từ appointments, tips, package sale commission; trừ absent days |
-| 1.4 | Server action: `processPayrollPayment(id)` — đánh dấu PAID + ghi vào cash_register | [x] | 🟠 | Insert `cash_register` record type='CHI' category='LƯƠNG' |
-| 1.5 | Admin UI `TabPayroll.tsx`: bảng tính lương tháng, nút Tính/Thanh toán/Xem chi tiết | [x] | 🔴 | Reuse pattern từ TabCommission — date range, per-staff row, tổng |
-| 1.6 | Đăng ký tab Payroll trong admin navigation (drawer + sidebar) | [x] | 🟠 | `app/admin/page.tsx` — thêm PAYROLL vào tab list |
-| 1.7 | Thêm check-out vào Staff portal (tính giờ làm thực tế) | [x] | 🟡 | Bỏ qua theo yêu cầu người dùng — chỉ giữ điểm danh ngày làm |
-| 1.8 | Build + migrate + verify | [x] | 🔴 | — |
-
-### B. 🧼 V3.13.6 — Clean `any` types (giới hạn)
-
-| # | Task | Trạng thái | Mức độ | File |
-|---|------|-----------|--------|------|
-| B.1 | `catch (err: any)` → `catch (err: unknown)` API routes (~25 chỗ) | [ ] | 🟡 | `app/api/**/route.ts` |
-| B.2 | `catch (e: any)` → admin actions (~15 chỗ) | [ ] | 🟡 | `app/admin/actions.ts` |
-| B.3 | `catch (e: any)` → staff actions (~5 chỗ) | [ ] | 🟡 | `app/staff/actions.ts` |
-| B.4 | Component props `{...}: any` → interface (~15 chỗ) | [ ] | 🟡 | `app/admin/components/*.tsx`, `components/*.tsx` |
-| B.5 | Bỏ qua: `useState<any>` + callback `(item: any)` (~100 chỗ) | [-] | 🟢 | Low ROI, type-safe from new code |
-
-### C. ♿ V3.13.9 — Fix accessibility (htmlFor/id)
-
-| # | Task | Trạng thái | Mức độ | Labels |
-|---|------|-----------|--------|--------|
-| C.1 | `app/staff/page.tsx` — thêm htmlFor/id (20 labels) | [ ] | 🟢 | ID prefix `staff-` |
-| C.2 | `app/admin/components/TabSEO.tsx` (10 labels) | [ ] | 🟢 | ID prefix `seo-` |
-| C.3 | `app/admin/components/ServiceModal.tsx` (8 labels) | [ ] | 🟢 | ID prefix `svc-` |
-| C.4 | `components/AppointmentDetailModal.tsx` (6 labels) | [ ] | 🟢 | ID prefix `detail-` |
-| C.5 | `app/admin/components/TabTasks.tsx` (5 labels) | [ ] | 🟢 | ID prefix `task-` |
-| C.6 | `app/admin/orders/page.tsx` (5 labels) | [ ] | 🟢 | ID prefix `order-` |
-| C.7 | Các file còn lại (~6 file, ~10 labels) | [ ] | 🟢 | — |
-
----
-
-## 🛠️ V3.15 — OpenCode Custom Tools & Agents (Developer Experience) ✅
-> **Mục tiêu:** Tạo custom tools + subagents cho OpenCode để tự động hoá CI/CD, migration, build check, env check.
-> **Trạng thái:** ✅ Hoàn thành (24/06/2026)
-
-### A. 🔧 Custom Tools (`<root>/.opencode/tools/`) — 11 tools
-
-| # | Tool | Mô tả | Args | Status |
-|---|------|-------|------|--------|
-| A.1 | `ci_check` | Chạy full CI pipeline: lint → typecheck → build. Trả về kết quả từng step + exit code + thời gian. | `step?`: "all" \| "lint" \| "typecheck" \| "build" (default: all) | [x] |
-| A.2 | `build_check` | Chạy `npm run build`, report output + thời gian. | Không args | [x] |
-| A.3 | `deploy_vercel` | Deploy lên Vercel production. **Build-guard built-in**: tự động chạy CI check trước khi deploy. | `token?`: string, `skipCiCheck?`: boolean | [x] |
-| A.4 | `migrate_db` | Chạy migration script an toàn. Hỗ trợ dry-run (verify mode). | `verify?`: boolean (dry-run), `file?`: string (specific file) | [x] |
-| A.5 | `check_env` | Đọc `.env.example`, so sánh vs `process.env`, báo cáo biến thiếu. | `strict?`: boolean (default: false) | [x] |
-| **A.6** | **`schema_sync`** | **MỚI**: Dump schema từ Supabase → `database.sql`. | `dryRun?`: boolean | [x] |
-| **A.7** | **`env_diff`** | **MỚI**: So sánh 2 chiều `.env.local` vs `.env.example`. | `sync?`: boolean (tự động thêm biến thiếu) | [x] |
-| **A.8** | **`db_health_check`** | **MỚI**: Kiểm tra orphan records trên 10 bảng quan trọng. | `fix?`: boolean | [x] |
-| **A.9** | **`vercel_status`** | **MỚI**: Tra cứu trạng thái deployment qua Vercel API. | `limit?`: number (default: 5) | [x] |
-| **A.10** | **`seo_analyzer`** | **MỚI**: Quét blog articles thiếu meta/slug/image. | `fix?`: boolean | [x] |
-| **A.11** | **`skill_sync`** | **MỚI**: Phân tích database.sql, cập nhật số bảng vào SKILL.md. | `dryRun?`: boolean | [x] |
-
-### B. 🤖 Custom Subagents (`<root>/.opencode/agents/` + `.opencode/opencode.json`)
-
-| # | Agent | Mode | Prompt | Tools gọi | Cross-agent |
-|---|-------|------|--------|-----------|-------------|
-| B.1 | `ci-fix` | subagent | Chuyên CI/CD — phân tích lỗi CI, chạy kiểm tra, deploy | `ci_check`, `build_check`, `deploy_vercel`, `check_env`, `env_diff`, `vercel_status` | Gọi `@db-admin` khi lỗi DB |
-| B.2 | `db-admin` | subagent | Chuyên database — migration, SQL, Supabase | `migrate_db`, `check_env`, `schema_sync`, `db_health_check`, `skill_sync`, `seo_analyzer`, `env_diff` | Gọi `@ci-fix` để verify build sau migration |
-
-**Cross-Agent Collaboration:** Agent ci-fix có thể delegate task database cho db-admin qua `@db-admin`, và db-admin có thể gọi lại `@ci-fix` để verify build sau migration. Cả 2 agent đều có permission `task: allow` để launch subagent.
-
-### C. 📋 Implementation Steps
-| # | Task | Trạng thái | Chi tiết |
-|---|------|-----------|----------|
-| C.1 | Tạo thư mục `.opencode/tools/` | [x] | — |
-| C.2 | Viết `ci_check.ts` | [x] | Fix any→unknown, thêm interface StepResult |
-| C.3 | Viết `build_check.ts` | [x] | Fix any→unknown |
-| C.4 | Viết `deploy_vercel.ts` | [x] | Fix token flag + thêm build-guard + any→unknown |
-| C.5 | Viết `migrate_db.ts` | [x] | Implement verify mode + file filter + any→unknown |
-| C.6 | Viết `check_env.ts` | [x] | Fix split regex `\\n`→`/\r?\n/` + any→unknown |
-| C.7 | Tạo `.opencode/agents/ci-fix.md` | [x] | Thêm frontmatter + cross-agent collaboration |
-| C.8 | Tạo `.opencode/agents/db-admin.md` | [x] | Thêm frontmatter + cross-agent collaboration |
-| C.9 | Tạo `.opencode/opencode.json` | [x] | Register agents + permissions + references |
-| C.10 | Viết `schema_sync.ts` | [x] | P1: dump schema từ Supabase |
-| C.11 | Viết `env_diff.ts` | [x] | P1: 2-way env comparison + sync |
-| C.12 | Viết `db_health_check.ts` | [x] | P2: 10 orphan checks trên Supabase |
-| C.13 | Viết `vercel_status.ts` | [x] | P2: Vercel API deployment status |
-| C.14 | Viết `seo_analyzer.ts` | [x] | P2: SEO health scan |
-| C.15 | Viết `skill_sync.ts` | [x] | P2: parse database.sql → SKILL.md count sync |
-| C.16 | Thêm `.opencode/node_modules` vào `.gitignore` | [x] | Tránh commit dependencies |
-| C.17 | `npm run build` verify | [x] | Build pass |
-| C.18 | Commit + tag `v3.15` | [x] | — |
-
-### 📋 Pending Improvements (V3.16+)
-- **Agent nâng cao:**
-  - `seo-writer`: Agent chuyên viết blog SEO tự động dùng Gemini + Supabase.
-  - `data-auditor`: Agent kiểm tra toàn diện dữ liệu (schema drift, index health, constraint violations).
-  - `backup-agent`: Agent tự động backup database + download về NAS.
-- **Tool mới:**
-  - `backup_db`: Backup database qua `pg_dump` và lưu xuống `data/backups/`.
-  - `index_analyzer`: Kiểm tra missing indexes dùng `pg_stat_user_indexes`.
-  - `schema_diff`: So sánh 2 database schema khác nhau (staging vs production).
-  - `performance_report`: Chạy EXPLAIN ANALYZE trên các query chậm.
-- **CI/CD mở rộng:**
-  - `build-guard` nâng cấp: thêm `npm audit`, `dependency-check`, `bundle-size` step.
-  - Auto-create GitHub Release khi tag version mới.
-  - Auto-deploy lên Vercel preview cho mỗi PR branch.
-- **Plugin OpenCode:**
-  - Plugin `opencode-minspa`: tự động inject context (database.sql, .env.example, UPGRADE_PLAN.md) vào mỗi session.
-  - Plugin `opencode-deploy-hook`: chặn commit nếu build fail (pre-commit hook).
-
+*Không còn mục nào — audit code quality 100% complete.*
 
 ---
 
 ---
 
-## 🛠️ V3.16+ — Schema Fix: Thêm columns thiếu vào database
-> **Mục tiêu:** Fix 6 schema mismatches giữa code và database gây lỗi 42703 trên Vercel.
-> **Migration:** `migrations/migrate_fix_schema_mismatches.sql` — tất cả `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
-> **Trạng thái:** ✅ Đã chạy migration + cập nhật `database.sql`
+## 📱 Phase 9 — Mobile UI/UX Audit & Fix
 
-| # | Table | Column(s) thiếu | Vì sao thiếu | Fix |
-|---|-------|----------------|-------------|-----|
-| 1 | `attendance` | `note` | Code join `note` nhưng chưa có trong CREATE TABLE | `ALTER TABLE attendance ADD COLUMN IF NOT EXISTS note TEXT;` |
-| 2 | `cash_register` | `is_active` | Soft delete filter `.eq('is_active', true)` nhưng column chưa tồn tại | `ALTER TABLE cash_register ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;` |
-| 3 | `appointments` | `discount_amount` | Financial reports select `discount_amount` | `ALTER TABLE appointments ADD COLUMN IF NOT EXISTS discount_amount DECIMAL(10,2) DEFAULT 0;` |
-| 4 | `appointment_services` | `id`, `price`, `discount_amount` | Revenue report join cần per-service pricing | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...` |
-| 5 | `seo_settings` | `theme_override`, `theme_particles_enabled`, `mascot_enabled`, `mascot_character`, `mascot_sound` | V3.6 (Mascot) + V3.8 (Theme) features thêm column trong code nhưng quên migration | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...` |
-| 6 | `seo_articles` | `status`, `topic_source`, `blog_slug`, `published_at` | V3.12 (Auto SEO) thêm column trong code nhưng quên migration | `ALTER TABLE ... ADD COLUMN IF NOT EXISTS ...` |
+*Audit 24 files (homepage → admin → staff → components) — xem chi tiết trong PLAN.md section 11.*
 
-## 📱 V3.16 — Responsive Optimization (Mobile 320px → 4K 3840px) + iOS Safari Fixes
-> **Mục tiêu:** Fix responsive issues, tối ưu iOS Safari, scale layout cho màn 4K — đảm bảo UI đẹp trên mọi thiết bị (320px → 3840px+).
-> **Trạng thái:** ✅ Hoàn thành
-> **Phát hiện:** Audit responsive ngày 24/06/2026 — 10 responsive issues + 6 iOS critical issues + 4K scaling
+### 🔴 HIGH ✅ (17/17 items — đã implement)
 
-### A. 📱 Responsive Audit (320px → 1600px)
+| # | File | Dòng | Vấn đề | Fix | Status |
+|---|------|------|--------|-----|--------|
+| 1 | `layout.tsx` | 37 | `viewportFit: "cover"` nhưng body không safe-area padding | `env(safe-area-inset-*)` trên body | ✅ |
+| 2 | `page.tsx` | 168,276,607 | Touch target dưới 44px | `min-h-[44px]` | ✅ |
+| 3 | `HeaderNav.tsx` | 118-133 | Menu mobile không focus trap | `min-h-[44px]` + items flex | ✅ |
+| 4 | `HeaderNav.tsx` | 136 | Thiếu `aria-expanded` trên hamburger | `aria-expanded={mobileMenuOpen}` | ✅ |
+| 5 | `BottomNavigation.tsx` | 57,77 | Label `text-[10px]` — quá nhỏ | `text-[11px]` | ✅ |
+| 6 | `login/page.tsx` | 82 | Nút Auto-Fill `opacity-0` trên mobile | `md:opacity-0 md:group-hover:opacity-100` | ✅ |
+| 7 | `booking/page.tsx` | 1014-1062 | Sticky invoice `bottom-16` đè bottom nav | `bottom: calc(4rem + env(safe-area-inset-bottom))` | ✅ |
+| 8 | `staff/page.tsx` | 716 | Bottom nav thiếu safe-area-bottom | `env(safe-area-inset-bottom)` | ✅ |
+| 9 | `staff/page.tsx` | 743 | Label `text-[10px]` staff bottom nav | `text-[11px]` | ✅ |
+| 10 | `BookingCalendar.tsx` | 125 | Time slot `py-2.5` — ~34px | Đã có `min-h-[44px]` từ trước | ✅ |
+| 11 | `AppointmentLookup.tsx` | 608,634 | Progress timeline `text-[10px]` | `text-[11px]` | ✅ |
+| 12 | `MasterSchedule.tsx` | 435 | DnD không hoạt động trên mobile | Thêm `TouchSensor` | ✅ |
+| 13 | `TabStaff.tsx` | 296-318 | Action button touch target <20px | `min-h-[44px]` + `px-3 py-2` | ✅ |
+| 14 | `TabServices.tsx` | 139,149,156 | Toggle/badge/action quá nhỏ | `min-h-[44px]` + `px-3 py-1.5` | ✅ |
+| 15 | `TabTasks.tsx` | 92 | 5-cột stats grid quá chật | `grid-cols-2 sm:grid-cols-5` | ✅ |
+| 16 | `TabReports.tsx` | 259 | Export dropdown broken trên mobile | Thêm `group-focus-within:block` | ✅ |
+| 17 | `admin/page.tsx` | 235 | Header fixed thiếu safe-area-top | `env(safe-area-inset-top)` | ✅ |
 
-#### 🔴 Critical (Table overflow — không scroll được)
+### Cập nhật Menu (mới)
+- **BottomNavigation admin**: Giảm xuống 4 items (Tổng Quan, Đơn Hàng, Lịch Tổng, Menu) + hamburger mở drawer
+- **Admin drawer**: Gom nhóm "Cấu Hình" thành collapsible accordion (mặc định đóng)
+- **Homepage**: Sửa link "Dịch Vụ" → `/#services`
+- **BottomNavigation**: Thêm prop `onMenuClick` cho admin drawer integration
 
-| # | Issue | File | Fix |
-|---|-------|------|-----|
-| 1 | TabPayroll: 9-column table không có mobile card view → vỡ layout trên <768px | `app/admin/components/TabPayroll.tsx` | Thêm mobile card view (ẩn table, show card) |
-| 2 | TabCashRegister: 7-column table + 3-column stat grid → vỡ layout <640px | `app/admin/components/TabCashRegister.tsx` | Thêm mobile card view + stat grid `grid-cols-1 sm:grid-cols-3` |
-| 3 | MasterScheduleGrid: `min-w-[800px]` → overflow ẩn, mất cột cuối | `components/MasterScheduleGrid.tsx:47` | Scroll gradient indicators + `snap-x` |
+### 🟡 MEDIUM (~40 items — đợt 2 ✅)
 
-#### 🟠 Medium
+**Đã implement (build thành công, 0 lỗi TypeScript):**
+| Item | Chi tiết | Files |
+|------|----------|-------|
+| `text-[10px]` → `text-[11px]` | Trên buttons, badges, interactive elements | ~20 files (staff, booking, blog, admin components, shared components) |
+| `py-1.5`/`py-2` buttons → `py-2.5` + `min-h-[44px]` | Touch target ≥44px | ~18 files (TodayMonitoringWidget, TabReports, TabFAQ, TabPayroll, TabSettings, blog toolbar, etc.) |
+| Mobile card fallback | `md:hidden` cards thay table trên mobile | `TabStaff.tsx`, `TabServices.tsx`, `TabAttendance.tsx`, `CustomerCRM.tsx` |
+| Skeleton loading | Thêm `isLoadingServices` + skeleton grid | `booking/page.tsx` |
+| Search inputs `py-2` | `min-h-[44px]` | `TabCommission.tsx`, `TabPayroll.tsx`, `TabReports.tsx` |
+| `prefers-reduced-motion` | CSS media query | `globals.css` — disable animation khi user yêu cầu |
+| `xs:` breakpoint | 480px | `tailwind.config.ts` |
 
-| # | Issue | File | Fix |
-|---|-------|------|-----|
-| 4 | `w-5.5 h-5.5` — không phải Tailwind class hợp lệ → icon ẩn trên mobile | `app/staff/page.tsx:714` | Đổi thành `w-6 h-6` |
-| 5 | Staff nav desktop: 8-9 items dính chặt, không overflow-x-auto | `app/staff/page.tsx:473` | Thêm `overflow-x-auto` + `flex-nowrap` + fade indicators |
-| 6 | Service card image `h-48` quá cao trên 320px | `app/page.tsx:396` | `h-36 md:h-48` |
-| 7 | Hero `py-20` chiếm 40% viewport 320px | `app/page.tsx:140` | `py-12 md:py-20` |
-
-#### 🟢 Minor
-
-| # | Issue | File | Fix |
-|---|-------|------|-----|
-| 8 | Touch target date button ~40px (<44px WCAG) | `components/staff/StaffBookingTab.tsx:325` | `min-w-[44px] min-h-[44px]` |
-| 9 | `min-h-[520px]` → whitespace thừa trên mobile 320px | `app/booking/page.tsx:386` | `min-h-[300px] md:min-h-[520px]` |
-
-### B. 🍎 iOS Safari Critical Fixes
-
-| # | Issue | File | Fix | Severity |
-|---|-------|------|-----|----------|
-| 1 | `overflow-x-hidden` trên `<body>` phá vỡ `position: sticky` trên iOS | `app/layout.tsx:133` | Move `overflow-x-hidden` vào wrapper `<div>`, fixed elements là body con trực tiếp | 🔴 |
-| 2 | `max-h-[Nvh]` trên 11 components → iOS tính sai khi address bar hiện | `admin/page.tsx` + 8 modals | `vh` → `dvh` (dynamic viewport height) | 🔴 |
-| 3 | `backdrop-blur` (22×) không hoạt động trên iOS < 15 | `globals.css` + all modals | `@supports not (backdrop-filter)` fallback solid bg | 🔴 |
-| 4 | `-webkit-overflow-scrolling: touch` deprecated từ iOS 13+ | `app/globals.css:236` | Xoá property | 🟠 |
-| 5 | Dynamic Tailwind classes không được generate → thiếu CSS | `tailwind.config.ts` | Thêm `safelist` cho class patterns | 🔴 |
-| 6 | Thiếu `-webkit-text-size-adjust` → text auto-scale trên iOS | `app/globals.css` | `html { -webkit-text-size-adjust: 100% }` | 🟠 |
-
-### C. 🖥️ 4K Ultra-wide Optimization (2500px+)
-
-| # | Change | File | Chi tiết |
-|---|--------|------|----------|
-| 1 | Thêm breakpoint `4k: 2500px` | `tailwind.config.ts` | Breakpoint mới cho màn ultra-wide |
-| 2 | Container mở rộng dần | `app/page.tsx` | `max-w-4xl → xxl:max-w-5xl → 4k:max-w-6xl` (hero), `max-w-6xl → xxl:1600px → 4k:1920px` (sections) |
-| 3 | Service grid tăng cột | `app/page.tsx:387` | `xxl:grid-cols-4 4k:grid-cols-5` |
-| 4 | Package grid tăng cột | `app/page.tsx:280` | `4k:grid-cols-4` |
-| 5 | Hero typography scale | `app/page.tsx` | `4k:text-8xl` heading, `4k:text-3xl` subtitle, `4k:text-lg` body |
-| 6 | Spacing scale | `app/page.tsx` | `4k:py-32` hero, `4k:p-14` sections, `4k:p-16` CTA |
-| 7 | Decorative elements scale | `app/page.tsx` | `4k:w-[32rem]` circles, `4k:w-3 h-3` divider dot |
-
-### 🛠️ Implementation
-
-| # | Task | Trạng thái | File |
-|---|------|-----------|------|
-| A1 | Fix Hero responsive: `py-20` → `py-12 md:py-20`, ẩn decorative circles trên mobile | [x] | `app/page.tsx` |
-| A2 | Service card image: `h-48` → `h-36 md:h-48` | [x] | `app/page.tsx` |
-| A3 | Treatment packages: mobile padding `p-5 md:p-10` | [x] | `app/page.tsx` |
-| A4 | Final CTA: mobile padding `p-6 md:p-12` | [x] | `app/page.tsx` |
-| A5 | AI highlight: mobile padding `p-4 md:p-8` | [x] | `app/page.tsx` |
-| A6 | Fix `w-5.5 h-5.5` → `w-6 h-6` | [x] | `app/staff/page.tsx` |
-| A7 | TabPayroll mobile card view | [x] | `app/admin/components/TabPayroll.tsx` |
-| A8 | TabCashRegister mobile card view + stat grid | [x] | `app/admin/components/TabCashRegister.tsx` |
-| A9 | MasterScheduleGrid scroll indicators | [x] | `components/MasterScheduleGrid.tsx` |
-| A10 | Staff nav `overflow-x-auto` | [x] | `app/staff/page.tsx` |
-| A11 | Staff booking date touch target 44×44 | [x] | `components/staff/StaffBookingTab.tsx` |
-| A12 | Booking page `min-h-[300px] md:min-h-[520px]` | [x] | `app/booking/page.tsx` |
-| A13 | HeaderNav mobile compact logo + tối ưu CTA | [x] | `components/HeaderNav.tsx` |
-| B1 | iOS: `overflow-x-hidden` khỏi `<body>` → wrapper div | [x] | `app/layout.tsx` |
-| B2 | iOS: `vh` → `dvh` (11 files: admin, 8 modals, staff) | [x] | `app/admin/page.tsx`, modals |
-| B3 | iOS: `backdrop-blur` fallback with `@supports` | [x] | `app/globals.css` |
-| B4 | iOS: xoá `-webkit-overflow-scrolling: touch` | [x] | `app/globals.css` |
-| B5 | iOS: Tailwind `safelist` cho dynamic classes | [x] | `tailwind.config.ts` |
-| B6 | iOS: `-webkit-text-size-adjust: 100%` | [x] | `app/globals.css` |
-| C1 | 4K breakpoint `4k: 2500px` | [x] | `tailwind.config.ts` |
-| C2 | 4K container scaling (hero, sections, CTA, footer) | [x] | `app/page.tsx` |
-| C3 | 4K grid columns (services: 5, packages: 4) | [x] | `app/page.tsx` |
-| C4 | 4K typography + spacing | [x] | `app/page.tsx` |
+### Còn lại (ưu tiên thấp, không critical):
+- `text-[10px]` còn trên non-interactive (timestamps, section subtitles, table headers, decorative labels) — giữ nguyên vì phù hợp
+- Filter chips `px-3 py-1.5` — **Đã rà soát và fix toàn bộ 7 chỗ interactive còn lại lên chuẩn `min-h-[44px]`** ✅
+- Tables khác (staff master schedule, payroll) — payroll đã có fallback, master schedule dùng viewType toggle rất tốt.
 
 ---
 
-## 📋 NGUYÊN TẮC MIGRATION DATABASE (áp dụng cho mọi V3.x)
+## 📝 Ghi chép
 
-### Checklist khi thêm bảng mới
-```
-□ Viết CREATE TABLE trong migration file + database.sql
-□ Thêm ALTER TABLE ... ENABLE ROW LEVEL SECURITY
-□ Nếu cần realtime → thêm vào supabase_realtime publication (dùng DO block)
-□ Thêm GRANT quyền cho service_role + authenticated (nếu cần)
-□ Kiểm tra syntax qua pooler trước khi apply
-□ Sau khi apply → archive migration → xoá file migrate cũ
-□ Cập nhật SKILL.md (section 4 + section 9)
-□ Cập nhật PLAN.md + UPGRADE_PLAN.md
-```
-
-### PgBouncer-safe SQL patterns
-
-| Pattern | Không dùng | Thay bằng |
-|---------|-----------|-----------|
-| Publication | `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` | DO block với `pg_publication` check |
-| Conditional DDL | `CREATE TABLE IF NOT EXISTS` (safe) | Giữ nguyên (safe) |
-| Multi-statement | `stmt1; stmt2; stmt3` trong 1 query | Tách từng câu hoặc DO block |
-| Index | `CREATE INDEX IF NOT EXISTS` (safe) | Giữ nguyên (safe) |
+- Tasks Phase 1–8 (build, schema, auth, DB, UX, chore, lint, `as any`) → `PLAN.md`
+- Phase 9 (Mobile UI/UX) — **HIGH + MEDIUM items đã implement xong**
+- Quy tắc migration & PgBouncer-safe patterns: `PLAN.md` section 10
+- Audit session persistence: `proxy.ts` đã đúng tên (Next.js 16), fix `sameSite: 'lax'` + `maxAge` + home page redirect + dead code `layout.tsx` + audit_logs re-export
+- **Fix HTML Hydration Error**: Di chuyển `<Toaster />` từ `<head>` vào đầu thẻ `<body>` trong `app/layout.tsx` ✅
+- **Staff Mobile Navigation Upgrade**: Nâng cấp thanh Bottom Navigation trên di động của Staff Portal từ dạng danh sách dàn trải thiếu hụt (thiếu Đặt lịch hộ, Bán gói, Đổi mật khẩu) sang cấu trúc **4 nút hành vi chính + 1 nút Menu** tích hợp **collapsible Drawer Menu** (bằng Framer Motion) giúp Staff trên điện thoại sử dụng được 100% chức năng như trên Desktop ✅

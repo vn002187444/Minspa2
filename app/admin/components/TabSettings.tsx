@@ -56,7 +56,7 @@ export default function TabSettings() {
   const [themeLoading, setThemeLoading] = useState(false);
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeMsg, setThemeMsg] = useState<string | null>(null);
-  const [themePreview, setThemePreview] = useState<string>('default');
+  const [_themePreview, setThemePreview] = useState<string>('default');
 
   // Backup
   const [backupLoading, setBackupLoading] = useState(false);
@@ -185,7 +185,7 @@ export default function TabSettings() {
           <button
             onClick={checkHealth}
             disabled={healthLoading}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="px-3 py-2.5 min-h-[44px] text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
           >
             {healthLoading ? "Đang kiểm tra..." : "Kiểm tra"}
           </button>
@@ -220,7 +220,7 @@ export default function TabSettings() {
           <button
             onClick={loadCronStatuses}
             disabled={cronLoading}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+            className="px-3 py-2.5 min-h-[44px] text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
           >
             {cronLoading ? "Đang tải..." : "Làm mới"}
           </button>
@@ -255,7 +255,7 @@ export default function TabSettings() {
                 </div>
                 <button
                   onClick={() => handleTriggerCron(job.id)}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#8D6E53] text-white hover:bg-[#7A5F47] transition-colors"
+                  className="px-3 py-2.5 min-h-[44px] text-xs font-semibold rounded-lg bg-[#8D6E53] text-white hover:bg-[#7A5F47] transition-colors"
                 >
                   Chạy ngay
                 </button>
@@ -274,7 +274,7 @@ export default function TabSettings() {
           </div>
           <button
             onClick={loadMascot}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            className="px-3 py-1.5 min-h-[44px] flex items-center justify-center text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
           >
             {mascotLoading ? "Đang tải..." : "Tải"}
           </button>
@@ -306,7 +306,7 @@ export default function TabSettings() {
                     }`}
                   >
                     <p className="text-lg">{char.emoji}</p>
-                    <p className="text-[10px] font-bold mt-0.5">{char.label.split(' ')[0]}</p>
+                    <p className="text-[11px] font-bold mt-0.5">{char.label.split(' ')[0]}</p>
                     <p className="text-[9px] text-gray-400">{char.desc}</p>
                   </button>
                 ))}
@@ -356,7 +356,7 @@ export default function TabSettings() {
           </div>
           <button
             onClick={loadTheme}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            className="px-3 py-1.5 min-h-[44px] flex items-center justify-center text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
           >
             {themeLoading ? "Đang tải..." : "Tải"}
           </button>
@@ -431,7 +431,7 @@ export default function TabSettings() {
           </div>
           <button
             onClick={loadBanner}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            className="px-3 py-1.5 min-h-[44px] flex items-center justify-center text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
           >
             {bannerLoading ? "Đang tải..." : "Tải"}
           </button>

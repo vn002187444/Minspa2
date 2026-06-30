@@ -1,5 +1,4 @@
 import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
 import { join } from 'path';
 
 export const description = 'Runs database migration scripts safely. In verify mode, shows what would be run without applying.';

@@ -43,7 +43,7 @@ export const createClient = async () => {
           return { data: { user: parsed.user }, error: null } as any;
         }
       }
-    } catch (e) {
+    } catch {
       // Session cookie not available (e.g. called outside request context)
     }
     return { data: { user: null }, error: null } as any;

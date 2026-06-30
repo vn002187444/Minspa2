@@ -9,7 +9,7 @@ export default function OfflinePage() {
         </div>
         <h1 className="text-lg font-bold text-[#3A2E2B]">Mất kết nối mạng</h1>
         <p className="text-sm text-gray-500">Vui lòng kiểm tra kết nối Internet và thử lại.</p>
-        <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-[#5C4033] text-white text-sm font-bold rounded-xl hover:bg-[#4A3227] transition-colors">
+        <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-[#5C4033] text-white text-sm font-bold rounded-xl hover:bg-[#4A3227] transition-colors min-h-[44px]">
           Thử lại
         </button>
       </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { THEME_BANNERS, getWeatherBanner } from '@/lib/theme-banners';
+import { THEME_BANNERS, getWeatherBanner, type WeatherBanner } from '@/lib/theme-banners';
 import { X } from 'lucide-react';
 import { storage } from '@/lib/storage';
 
@@ -18,12 +18,12 @@ export default function ThemeBanner() {
     return !!THEME_BANNERS[t as keyof typeof THEME_BANNERS];
   };
 
-  const getBannerId = () => {
+  const getBannerId = useCallback(() => {
     const t = theme;
     if (isHolidayOrSeasonal(t)) return `theme:${t}`;
     if (weather && getWeatherBanner(weather)) return `weather:${weather}`;
     return '';
-  };
+  }, [theme, weather]);
 
   const checkTheme = useCallback(() => {
     const htmlTheme = document.documentElement.getAttribute('data-theme') || '';
@@ -50,11 +50,14 @@ export default function ThemeBanner() {
       document.body.style.paddingTop = '';
       setVisible(false);
     }
-  }, []);
+  }, [getBannerId]);
 
   useEffect(() => {
-    setMounted(true);
-    checkTheme();
+    const init = async () => {
+      setMounted(true);
+      checkTheme();
+    };
+    init();
 
     const observer = new MutationObserver(checkTheme);
     observer.observe(document.documentElement, {
@@ -89,7 +92,7 @@ export default function ThemeBanner() {
   if (!banner) return null;
 
   const style = isWeatherBanner
-    ? { backgroundColor: (banner as any).bg }
+    ? { backgroundColor: (banner as WeatherBanner).bg }
     : {};
 
   return (

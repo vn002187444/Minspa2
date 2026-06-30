@@ -16,12 +16,12 @@ export interface ApptInfo {
 interface GridViewProps {
   activeTimeSlots: string[];
   displayStaffList: StaffInfo[];
-  getSlotAppointment: (staffId: string, slot: string) => ApptInfo | null;
-  getSlotLock: (staffId: string, slot: string) => object | null;
-  getStatusStyle: (appt: ApptInfo) => string;
-  isCascadeShifted: (appt: ApptInfo) => boolean;
+  getSlotAppointment: (_staffId: string, _slot: string) => ApptInfo | null;
+  getSlotLock: (_staffId: string, _slot: string) => object | null;
+  getStatusStyle: (_appt: ApptInfo) => string;
+  isCascadeShifted: (_appt: ApptInfo) => boolean;
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
-  handleSelectAppt: (appt: ApptInfo) => void;
+  handleSelectAppt: (_appt: ApptInfo) => void;
 }
 
 export default React.memo(function MasterScheduleGrid({

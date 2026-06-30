@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 export const description = 'Updates SKILL.md with current database table count and realtime publication status. Reads database.sql for table list.';
@@ -54,8 +54,8 @@ export async function execute({ dryRun = false }: { dryRun?: boolean }) {
     const tableCount = uniqueTables.length;
     const realtimeCount = uniqueRealtime.length;
 
-    const newSection4 = `## 4. Database Quick Ref (${tableCount} tables)`;
-    const newSection9Realtime = `| Table | Realtime | Why |`;
+    const _newSection4 = `## 4. Database Quick Ref (${tableCount} tables)`;
+    const _newSection9Realtime = `| Table | Realtime | Why |`;
 
     const updates: string[] = [];
 

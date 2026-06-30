@@ -1,11 +1,12 @@
-import type { Config } from "tailwindcss";
+import { type Config } from 'tailwindcss';
+import animate from 'tailwindcss-animate';
 
 const config: Config = {
   content: [
-    "./app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
-    "./utils/**/*.{js,ts,jsx,tsx,mdx}",
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './lib/**/*.{js,ts,jsx,tsx,mdx}',
+    './utils/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -24,23 +25,16 @@ const config: Config = {
         ripple: "ripple 0.6s ease-out forwards",
       },
       screens: {
+        'xs': '480px',
         'xxl': '1600px',
         '4k': '2500px',
       },
       keyframes: {
         blob: {
-          "0%": {
-            transform: "translate(0px, 0px) scale(1)",
-          },
-          "33%": {
-            transform: "translate(30px, -50px) scale(1.1)",
-          },
-          "66%": {
-            transform: "translate(-20px, 20px) scale(0.9)",
-          },
-          "100%": {
-            transform: "translate(0px, 0px) scale(1)",
-          },
+          "0%": { transform: "translate(0px, 0px) scale(1)" },
+          "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+          "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+          "100%": { transform: "translate(0px, 0px) scale(1)" },
         },
         fadeIn: {
           from: { opacity: "0" },
@@ -73,6 +67,7 @@ const config: Config = {
     'bg-blue-50', 'border-blue-200', 'text-blue-600',
     'bg-gray-50', 'border-gray-200', 'text-gray-500',
   ],
-  plugins: [],
+  plugins: [animate],
 };
+
 export default config;

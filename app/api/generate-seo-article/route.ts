@@ -1,5 +1,6 @@
 import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/utils/auth";
 
 const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
@@ -20,6 +21,10 @@ const ARTICLE_SCHEMA = {
 };
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER' && session.user.role !== 'STAFF')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   let topic = "";
   let keywords = "";
   try {

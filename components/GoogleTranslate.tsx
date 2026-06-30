@@ -3,16 +3,17 @@
 import { useEffect, useRef } from 'react'
 
 declare global {
+  // eslint-disable-next-line no-unused-vars
   interface Window {
     googleTranslateElementInit: () => void
     google: {
       translate: {
-        TranslateElement: new (config: {
+        TranslateElement: new (_config: {
           pageLanguage: string
           includedLanguages: string
           layout: number
           autoDisplay: boolean
-        }, element: string) => void
+        }, _element: string) => void
       }
     }
   }

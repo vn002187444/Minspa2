@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { storage } from '@/lib/storage';
 import { detectTheme, getParticleType, getThemeColor, type ThemeName, type ParticleType } from '@/lib/themes';
-import { getWeather, getThemeModifier } from '@/lib/weather';
+import { getWeather } from '@/lib/weather';
 import dynamic from 'next/dynamic';
 
 const ThemeParticles = dynamic(() => import('@/components/ThemeParticles'), { ssr: false });
@@ -25,7 +25,6 @@ function loadConfig(): ThemeConfig {
 }
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [themeName, setThemeName] = useState<ThemeName>('default');
   const [particleType, setParticleType] = useState<ParticleType>('none');
   const [particlesEnabled, setParticlesEnabled] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -59,7 +58,6 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       }
     } catch {}
 
-    setThemeName(activeTheme);
     document.documentElement.setAttribute('data-theme', activeTheme);
 
     // Fetch weather and set data-weather for banner
@@ -84,8 +82,11 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   }, []);
 
   useEffect(() => {
-    setMounted(true);
-    applyTheme();
+    const init = async () => {
+      setMounted(true);
+      await applyTheme();
+    };
+    init();
 
     // Refresh theme + weather every 30 min
     const interval = setInterval(applyTheme, 30 * 60 * 1000);

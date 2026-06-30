@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Search, User, Clock, CalendarCheck, Package, CheckCircle2, ChevronRight, ChevronLeft, Printer, X } from "lucide-react"
+import { Search, User, CalendarCheck, Package, CheckCircle2, ChevronRight, ChevronLeft, Printer } from "lucide-react"
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { toast } from "sonner"
 import { submitBooking } from "@/app/booking/actions/booking"
 import { getCustomerByPhone } from "@/app/admin/actions"
@@ -54,14 +55,17 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
   const [confirmed, setConfirmed] = useState(false)
 
   const totalDuration = selectedServiceIds.reduce((sum, id) => {
-    const svc = allServices.find((s: any) => s.id === id)
+    const svc = allServices.find((s) => s.id === id)
     return sum + (svc?.duration || 30)
   }, 0)
 
   useEffect(() => {
-    const today = new Date()
-    setSelectedDate(today.toISOString().split("T")[0])
-  }, [])
+    const init = async () => {
+      const today = new Date();
+      setSelectedDate(today.toISOString().split("T")[0]);
+    };
+    init();
+  }, []);
 
   const searchCustomer = useCallback(async () => {
     const phone = phoneSearch.trim()
@@ -70,7 +74,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
     try {
       const cust = await getCustomerByPhone(phone)
       if (cust) {
-        setFoundCustomer(cust as any)
+        setFoundCustomer(cust as CustomerInfo)
         setCustomerName(cust.full_name)
         const pkgs = await getCustomerActivePackages(cust.id)
         setCustomerPackages(pkgs || [])
@@ -94,19 +98,23 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
   }, [phoneSearch, searchCustomer])
 
   useEffect(() => {
-    if (selectedDate && selectedServiceIds.length > 0) {
-      const fetchSlots = async () => {
-        const slots = await getSlotAvailability(selectedDate, selectedServiceIds, allServices.map((s: any) => ({ id: s.id, duration: s.duration })))
+    const init = async () => {
+      if (selectedDate && selectedServiceIds.length > 0) {
+        const slots = await getSlotAvailability(selectedDate, selectedServiceIds, allServices.map((s) => ({ id: s.id, duration: s.duration })))
         setSlotAvailability(slots)
       }
-      fetchSlots()
-    }
+    };
+    init();
   }, [selectedDate, selectedServiceIds, allServices])
 
   useEffect(() => {
-    if (foundCustomer) {
-      getCustomerActivePackages(foundCustomer.id).then((pkgs) => setCustomerPackages(pkgs || [])).catch(() => {})
-    }
+    const init = async () => {
+      if (foundCustomer) {
+        const pkgs = await getCustomerActivePackages(foundCustomer.id);
+        setCustomerPackages(pkgs || []);
+      }
+    };
+    init();
   }, [foundCustomer])
 
   function resetForm() {
@@ -147,8 +155,8 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
       } else {
         toast.error("Lỗi: " + res.error)
       }
-    } catch (err: any) {
-      toast.error("Lỗi hệ thống: " + (err.message || "Không thể tạo lịch"))
+    } catch (err: unknown) {
+      toast.error("Lỗi hệ thống: " + (err instanceof Error ? err.message : "Không thể tạo lịch"))
     } finally {
       setLoading(false)
     }
@@ -218,7 +226,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
         </div>
 
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {allServices.map((svc: any) => {
+          {allServices.map((svc) => {
             const isSelected = selectedServiceIds.includes(svc.id)
             return (
               <label
@@ -253,7 +261,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
             <span className="text-gray-600">{selectedServiceIds.length} dịch vụ</span>
             <span className="text-pink-600 font-bold">
               {selectedServiceIds.reduce((sum, id) => {
-                const svc = allServices.find((s: any) => s.id === id)
+                const svc = allServices.find((s) => s.id === id)
                 return sum + (svc?.price || 0)
               }, 0).toLocaleString("vi")}đ
             </span>
@@ -272,7 +280,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
         </div>
 
         <div className="space-y-2">
-          {staffList.map((staff: any) => (
+          {staffList.map((staff) => (
             <button
               key={staff.id}
               type="button"
@@ -329,7 +337,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
                 }`}
               >
                 <span className="block">{isToday ? "Hôm nay" : d.toLocaleDateString("vi-VN", { weekday: "short" })}</span>
-                <span className="block text-[10px] opacity-80">{d.getDate()}/{d.getMonth() + 1}</span>
+                <span className="block text-[11px] opacity-80">{d.getDate()}/{d.getMonth() + 1}</span>
               </button>
             )
           })}
@@ -365,7 +373,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
           <div>
             <p className="text-sm font-bold text-gray-700 mb-2.5">Gói liệu trình của khách</p>
             <div className="space-y-2">
-              {customerPackages.map((pkg: any) => {
+              {customerPackages.map((pkg) => {
                 const isSelected = selectedPackageId === pkg.id
                 const tp = pkg.treatment_packages?.[0]
                 return (
@@ -413,10 +421,10 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
   }
 
   function renderConfirmStep() {
-    const selectedServices = allServices.filter((s: any) => selectedServiceIds.includes(s.id))
-    const selectedStaff = staffList.find((s: any) => s.id === selectedStaffId)
-    const totalPrice = selectedServices.reduce((sum: number, s: any) => sum + (s.price || 0), 0)
-    const selectedPkg = customerPackages.find((p: any) => p.id === selectedPackageId)
+    const selectedServices = allServices.filter((s) => selectedServiceIds.includes(s.id))
+    const selectedStaff = staffList.find((s) => s.id === selectedStaffId)
+    const totalPrice = selectedServices.reduce((sum: number, s) => sum + (s.price || 0), 0)
+    const selectedPkg = customerPackages.find((p) => p.id === selectedPackageId)
     const endTime = selectedTime ? (() => {
       const [h, m] = selectedTime.split(":").map(Number)
       const endMin = h * 60 + m + totalDuration
@@ -442,7 +450,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
           <div className="border-t border-gray-200" />
           <div className="flex justify-between">
             <span className="text-gray-500">Dịch vụ</span>
-            <span className="font-bold text-right">{selectedServices.map((s: any) => s.name).join(", ")}</span>
+            <span className="font-bold text-right">{selectedServices.map((s) => s.name).join(", ")}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Thời gian</span>
@@ -474,9 +482,9 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
   }
 
   function renderConfirmed() {
-    const selectedServices = allServices.filter((s: any) => selectedServiceIds.includes(s.id))
-    const selectedStaff = staffList.find((s: any) => s.id === selectedStaffId)
-    const totalPrice = selectedServices.reduce((sum: number, s: any) => sum + (s.price || 0), 0)
+    const selectedServices = allServices.filter((s) => selectedServiceIds.includes(s.id))
+    const selectedStaff = staffList.find((s) => s.id === selectedStaffId)
+    const totalPrice = selectedServices.reduce((sum: number, s) => sum + (s.price || 0), 0)
 
     return (
       <div className="space-y-5 text-center">
@@ -495,7 +503,7 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Dịch vụ</span>
-            <span className="font-bold">{selectedServices.map((s: any) => s.name).join(", ")}</span>
+            <span className="font-bold">{selectedServices.map((s) => s.name).join(", ")}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-500">Giờ</span>
@@ -534,10 +542,11 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
     }
   }
 
+  const trapRef = useFocusTrap(step > 1);
   if (confirmed) return renderConfirmed()
 
   return (
-    <div className="max-w-lg mx-auto">
+    <div ref={trapRef} role="region" aria-label="Đặt lịch hẹn cho khách" className="max-w-lg mx-auto">
       <div className="flex items-center justify-center gap-1.5 mb-6">
         {[
           { num: 1, label: "KH" },
@@ -548,12 +557,12 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
           { num: 6, label: "XN" },
         ].map((s, i) => (
           <div key={s.num} className="flex items-center gap-1">
-            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-              s.num <= step ? "bg-pink-500 text-white" : "bg-gray-100 text-gray-400"
-            }`}>
+            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-bold transition-all ${
+               s.num <= step ? "bg-pink-500 text-white" : "bg-gray-100 text-gray-400"
+             }`}>
               {s.num < step ? <CheckCircle2 className="w-3.5 h-3.5" /> : s.num}
             </div>
-            <span className={`text-[10px] font-semibold ${s.num <= step ? "text-pink-700" : "text-gray-400"}`}>
+            <span className={`text-[11px] font-semibold ${s.num <= step ? "text-pink-700" : "text-gray-400"}`}>
               {s.label}
             </span>
             {i < 5 && <div className={`w-3 h-0.5 ${s.num < step ? "bg-pink-500" : "bg-gray-200"}`} />}

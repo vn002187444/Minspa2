@@ -31,7 +31,7 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
   const [customerName, setCustomerName] = useState("");
   const [selectedPackageId, setSelectedPackageId] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [isNewCustomer, setIsNewCustomer] = useState(false);
+  const [_isNewCustomer, setIsNewCustomer] = useState(false);
   const [foundCustomer, setFoundCustomer] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [sellMessage, setSellMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -40,8 +40,8 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
   useEffect(() => {
     const cleanedPhone = phone.trim().replace(/\s+/g, "");
     if (cleanedPhone.length >= 9) {
-      setIsSearching(true);
       const timer = setTimeout(async () => {
+        setIsSearching(true);
         try {
           const cust = await getCustomerByPhone(cleanedPhone);
           if (cust) {
@@ -61,9 +61,12 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
       }, 400);
       return () => clearTimeout(timer);
     } else {
-      setFoundCustomer(null);
-      setIsNewCustomer(false);
-      setIsSearching(false);
+      const timer = setTimeout(() => {
+        setFoundCustomer(null);
+        setIsNewCustomer(false);
+        setIsSearching(false);
+      }, 0);
+      return () => clearTimeout(timer);
     }
   }, [phone]);
 
@@ -91,8 +94,8 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
       } else {
         setSellMessage({ type: "error", text: res.error || "Có lỗi xảy ra" });
       }
-    } catch (err: any) {
-      setSellMessage({ type: "error", text: "Lỗi kết nối máy chủ: " + err.message });
+    } catch (err: unknown) {
+      setSellMessage({ type: "error", text: "Lỗi kết nối máy chủ: " + (err instanceof Error ? err.message : 'Lỗi không xác định') });
     } finally {
       setSubmitting(false);
     }
@@ -117,8 +120,8 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
       } else {
         setSearchError(res.error || "Không tìm thấy dữ liệu.");
       }
-    } catch (err: any) {
-      setSearchError("Lỗi kết nối máy chủ: " + err.message);
+    } catch (err: unknown) {
+      setSearchError("Lỗi kết nối máy chủ: " + (err instanceof Error ? err.message : 'Lỗi không xác định'));
     } finally {
       setFindingProgress(false);
     }
@@ -198,7 +201,7 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
               <div className="space-y-4 animate-in fade-in duration-300">
                 {/* Customer header */}
                 <div className="bg-[#FAF5F0] p-6 rounded-3xl border border-[#F0E6DD] shadow-xs">
-                  <p className="text-[10px] text-[#A68F7B] font-bold uppercase tracking-wider">Thông tin khách hàng</p>
+                  <p className="text-[11px] text-[#A68F7B] font-bold uppercase tracking-wider">Thông tin khách hàng</p>
                   <h3 className="text-lg font-black text-stone-900 mt-1">{searchResult.customer.full_name}</h3>
                   <p className="text-xs text-stone-500 font-mono font-bold mt-0.5">{searchResult.customer.phone}</p>
                 </div>
@@ -224,7 +227,7 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
                           </div>
                           
                           <div className="text-right">
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Số buổi còn lại</p>
+                            <p className="text-[11px] text-gray-400 font-bold uppercase tracking-wider">Số buổi còn lại</p>
                             <p className="text-xl font-black text-[#8D6E53] font-mono mt-0.5">
                               {cp.remaining_sessions} <span className="text-xs font-normal text-gray-400 font-sans">/ {cp.total_sessions} buổi</span>
                             </p>
@@ -256,7 +259,7 @@ export default function TabSellAndProgress({ packages, onReload }: { packages: P
                                       Thực hiện bởi: {log.appointments?.users?.full_name || 'Hệ thống'}
                                     </p>
                                   </div>
-                                  <span className="text-[10px] font-mono text-gray-400">
+                                  <span className="text-[11px] font-mono text-gray-400">
                                     {format(new Date(log.used_at), 'dd/MM/yyyy HH:mm')}
                                   </span>
                                 </div>

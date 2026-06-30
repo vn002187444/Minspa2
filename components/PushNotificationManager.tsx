@@ -28,15 +28,6 @@ export default function PushNotificationManager({ customerId }: { customerId?: s
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      setIsSupported(true);
-      checkSubscription();
-    } else {
-      setLoading(false);
-    }
-  }, []);
-
   const checkSubscription = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -48,6 +39,18 @@ export default function PushNotificationManager({ customerId }: { customerId?: s
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const init = async () => {
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        setIsSupported(true);
+        await checkSubscription();
+      } else {
+        setLoading(false);
+      }
+    };
+    init();
+  }, []);
 
   const subscribe = async () => {
     setLoading(true);

@@ -30,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (services && services.length > 0) {
       servicesRoutes = services.map((svc: any) => ({
-        url: `${baseUrl}/#service-${svc.id}`,
+        url: `${baseUrl}/booking?service=${svc.id}`,
         lastModified: new Date().toISOString(),
         changeFrequency: 'weekly' as const,
         priority: 0.6,

@@ -33,6 +33,9 @@ CREATE TABLE customers (
   full_name VARCHAR(255) NOT NULL,
   phone VARCHAR(20) UNIQUE NOT NULL,
   notification_token JSONB,
+  email VARCHAR(255),
+  birthday DATE,
+  last_booking_date TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
@@ -130,7 +133,8 @@ CREATE TABLE customer_packages (
   expires_at TIMESTAMP WITH TIME ZONE DEFAULT (timezone('utc', now()) + INTERVAL '2 years'),
   sold_by_staff_id UUID REFERENCES users(id) ON DELETE SET NULL,
   commission_amount DECIMAL(10, 2) DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
 -- Add FK constraints for appointment package columns (after customer_packages is created)
@@ -216,6 +220,8 @@ CREATE TABLE seo_settings (
   online_discount_percent DECIMAL(5,2) DEFAULT 5.00,
   default_commission_percent DECIMAL(5,2) DEFAULT 15.00,
   hotline VARCHAR(20) DEFAULT '0934 323 878',
+  facebook_url VARCHAR(500) DEFAULT 'https://facebook.com/minnailhair',
+  zalo_url VARCHAR(500) DEFAULT 'https://zalo.me/0934323878',
   theme_override VARCHAR(50),
   theme_particles_enabled BOOLEAN DEFAULT TRUE,
   mascot_enabled BOOLEAN DEFAULT TRUE,
@@ -377,18 +383,15 @@ CREATE INDEX idx_blog_stats_date ON blog_stats(date);
 
 -- Rate limits (V3.10)
 CREATE TABLE IF NOT EXISTS rate_limits (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  key TEXT NOT NULL UNIQUE,
-  count INT NOT NULL DEFAULT 0,
-  window_start TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+  key TEXT PRIMARY KEY,
+  request_count INT NOT NULL DEFAULT 0,
+  last_request TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- AI cache (V3.11)
 CREATE TABLE IF NOT EXISTS ai_cache (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  prompt_hash VARCHAR(64) NOT NULL UNIQUE,
-  response TEXT NOT NULL,
-  model VARCHAR(50) NOT NULL,
+  id TEXT PRIMARY KEY,
+  response JSONB NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -465,7 +468,7 @@ CREATE TABLE IF NOT EXISTS cash_register (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type VARCHAR(10) NOT NULL CHECK (type IN ('THU', 'CHI')),
   category VARCHAR(50) NOT NULL,
-  amount INTEGER NOT NULL CHECK (amount > 0),
+  amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
   description TEXT DEFAULT '',
   reference_type VARCHAR(30),
   reference_id UUID,
@@ -519,6 +522,20 @@ CREATE TABLE IF NOT EXISTS salary_payments (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- FAQs (V3.15 SEO FAQ System)
+CREATE TABLE IF NOT EXISTS faqs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  question TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  category VARCHAR(50) NOT NULL DEFAULT 'general',
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category);
+CREATE INDEX IF NOT EXISTS idx_faqs_is_active ON faqs(is_active);
+
 -- ========================================
 -- Row Level Security (RLS) for ALL tables
 -- ========================================
@@ -533,8 +550,14 @@ ALTER TABLE auto_seo_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cash_register ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cron_job_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE background_tasks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for new tables added via V3.9/V3.13
+CREATE POLICY faqs_admin_all ON faqs
+  FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY faqs_public_read ON faqs
+  FOR SELECT USING (true);
 CREATE POLICY cash_register_admin_all ON cash_register
   FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
 
@@ -566,6 +589,7 @@ ALTER TABLE seo_articles ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_seo_articles_search_vector ON seo_articles USING GIN (search_vector);
 ALTER TABLE seo_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE slot_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_skills ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
@@ -610,13 +634,14 @@ END $$;
 -- ========================================
 -- Database Review Summary (June 2026)
 -- ========================================
--- TOTAL TABLES: 34 (all ✅ RLS enabled)
+-- TOTAL TABLES: 35 (all ✅ RLS enabled)
 --
 -- Bảng có Realtime (8): appointments, appointment_services, attendance,
 --   auto_assign_logs, cron_job_logs, notifications, staff_skills, tasks, time_slot_locks
 --
--- Bảng KHÔNG có Realtime (26): ai_cache, attendance_reminders_log,
+-- Bảng KHÔNG có Realtime (27): ai_cache, attendance_reminders_log,
 --   audit_logs, auto_seo_config, background_tasks, bank_settings, banner_settings,
+--   faqs,
 --   blog_stats, blog_views, blogs, cash_register, customer_packages, customers,
 --   package_usage_logs, random_booking_reminders_log, rate_limits, reviews,
 --   seo_articles, seo_settings, services, slot_limits, treatment_packages,
@@ -673,6 +698,8 @@ END;
 $$;
 
 -- deduct_package_session: Atomically deduct a session from customer_packages
+-- Note: DB has TWO overloads — this is the jsonb version (SECURITY DEFINER, full logic).
+-- The void version (used by staff/actions.ts) is simpler and does not reference updated_at.
 CREATE OR REPLACE FUNCTION deduct_package_session(
   p_customer_package_id UUID,
   p_appointment_id UUID,
@@ -697,10 +724,36 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'No remaining sessions');
   END IF;
 
-  INSERT INTO package_usage_logs (customer_package_id, appointment_id, deducted_by)
+  INSERT INTO package_usage_logs (customer_package_id, appointment_id, staff_id)
   VALUES (p_customer_package_id, p_appointment_id, p_staff_id);
 
   RETURN jsonb_build_object('success', true, 'remaining', v_remaining);
+END;
+$$;
+
+-- Void overload of deduct_package_session (used by staff complete appointment flow)
+CREATE OR REPLACE FUNCTION deduct_package_session(
+  p_pkg_id UUID,
+  p_appt_id UUID,
+  p_used_at TIMESTAMP WITH TIME ZONE
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE customer_packages
+  SET remaining_sessions = remaining_sessions - 1,
+      status = CASE
+        WHEN remaining_sessions - 1 <= 0 THEN 'EXHAUSTED'
+        ELSE 'ACTIVE'
+      END
+  WHERE id = p_pkg_id
+    AND remaining_sessions > 0;
+
+  IF FOUND THEN
+    INSERT INTO package_usage_logs (customer_package_id, appointment_id, used_at, notes)
+    VALUES (p_pkg_id, p_appt_id, p_used_at, 'Khấu trừ tự động 1 buổi khi hoàn thành lịch hẹn');
+  END IF;
 END;
 $$;
 
@@ -717,7 +770,7 @@ DECLARE
   v_remaining INTEGER;
   v_total_sessions INTEGER;
 BEGIN
-  SELECT tp.session_count INTO v_total_sessions
+  SELECT tp.total_sessions INTO v_total_sessions
   FROM customer_packages cp
   JOIN treatment_packages tp ON tp.id = cp.package_id
   WHERE cp.id = p_customer_package_id;
@@ -735,3 +788,95 @@ BEGIN
   RETURN jsonb_build_object('success', true, 'remaining', v_remaining);
 END;
 $$;
+
+-- Void overload of refund_package_session (used by customer cancel flow)
+CREATE OR REPLACE FUNCTION refund_package_session(
+  p_pkg_id UUID,
+  p_appt_id UUID,
+  p_used_at TIMESTAMP WITH TIME ZONE
+)
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  UPDATE customer_packages
+  SET remaining_sessions = remaining_sessions + 1,
+      status = CASE
+        WHEN status = 'EXHAUSTED' THEN 'ACTIVE'
+        ELSE status
+      END
+  WHERE id = p_pkg_id;
+
+  IF FOUND THEN
+    INSERT INTO package_usage_logs (customer_package_id, appointment_id, used_at, notes)
+    VALUES (p_pkg_id, p_appt_id, p_used_at, 'Hoàn buổi do khách hàng hủy lịch');
+  END IF;
+END;
+$$;
+
+-- ========================================
+-- FK Indexes (Phase 4 — Database Hardening)
+-- ========================================
+CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_use_package_id ON appointments(use_package_id);
+CREATE INDEX IF NOT EXISTS idx_appointment_services_service_id ON appointment_services(service_id);
+CREATE INDEX IF NOT EXISTS idx_customer_packages_package_id ON customer_packages(package_id);
+CREATE INDEX IF NOT EXISTS idx_customer_packages_customer_id ON customer_packages(customer_id);
+CREATE INDEX IF NOT EXISTS idx_customer_packages_sold_by_staff_id ON customer_packages(sold_by_staff_id);
+CREATE INDEX IF NOT EXISTS idx_package_usage_logs_customer_package_id ON package_usage_logs(customer_package_id);
+CREATE INDEX IF NOT EXISTS idx_package_usage_logs_appointment_id ON package_usage_logs(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_package_usage_logs_staff_id ON package_usage_logs(staff_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by);
+CREATE INDEX IF NOT EXISTS idx_salary_payments_staff_id ON salary_payments(staff_id);
+CREATE INDEX IF NOT EXISTS idx_salary_payments_paid_by ON salary_payments(paid_by);
+CREATE INDEX IF NOT EXISTS idx_cash_register_recorded_by ON cash_register(recorded_by);
+CREATE INDEX IF NOT EXISTS idx_reviews_appointment_id ON reviews(appointment_id);
+CREATE INDEX IF NOT EXISTS idx_auto_assign_logs_appointment_id ON auto_assign_logs(appointment_id);
+
+-- ========================================
+-- updated_at auto trigger
+-- ========================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DO $$
+DECLARE
+  tbl text;
+  tables_with_updated_at text[] := ARRAY[
+    'customer_packages', 'blogs', 'cash_register', 'background_tasks',
+    'faqs', 'auto_seo_config', 'tasks', 'seo_settings',
+    'banner_settings', 'bank_settings'
+  ];
+BEGIN
+  FOREACH tbl IN ARRAY tables_with_updated_at
+  LOOP
+    IF NOT EXISTS (
+      SELECT 1 FROM pg_trigger
+      WHERE tgname = 'trigger_update_updated_at'
+        AND tgrelid = quote_ident(tbl)::regclass
+    ) THEN
+      EXECUTE format(
+        'CREATE TRIGGER trigger_update_updated_at BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()',
+        tbl
+      );
+    END IF;
+  END LOOP;
+END $$;
+
+-- ========================================
+-- CHECK constraints
+-- ========================================
+ALTER TABLE time_slot_locks DROP CONSTRAINT IF EXISTS chk_time_slot_locks_end_gt_start;
+ALTER TABLE time_slot_locks ADD CONSTRAINT chk_time_slot_locks_end_gt_start CHECK (end_time > start_time);
+
+ALTER TABLE salary_payments DROP CONSTRAINT IF EXISTS chk_salary_payments_period_end_gt_start;
+ALTER TABLE salary_payments ADD CONSTRAINT chk_salary_payments_period_end_gt_start CHECK (period_end > period_start);
+
+ALTER TABLE customers DROP CONSTRAINT IF EXISTS chk_customers_email_format;
+ALTER TABLE customers ADD CONSTRAINT chk_customers_email_format CHECK (email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');

@@ -1,12 +1,12 @@
 'use client'
 import BottomNavigation from '@/components/BottomNavigation';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { 
-  ArrowLeft, Search, Filter, Calendar, ClipboardCheck, Trash2, 
-  User, CheckCircle2, Clock, X, AlertTriangle, Play, Check, Ban, ShieldAlert, Star, DollarSign
+  ArrowLeft, Filter, ClipboardCheck, Trash2, 
+  CheckCircle2, Clock, X, AlertTriangle, ShieldAlert, Star, DollarSign
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { getFilteredAppointments, deleteAppointment, getAdminSessionInfo, adminUpdateTip } from '../actions';
@@ -33,33 +33,7 @@ export default function AdminOrdersPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editTipModal, setEditTipModal] = useState<{ isOpen: boolean; appt: any }>({ isOpen: false, appt: null });
 
-  // Load session user and fetch initial data
-  useEffect(() => {
-    async function init() {
-      try {
-        const user = await getAdminSessionInfo();
-        if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
-          router.push('/login');
-          return;
-        }
-        setSessionUser(user);
-        await handleFetch();
-      } catch (err) {
-        console.error(err);
-        router.push('/login');
-      }
-    }
-    init();
-  }, []);
-
-  // Fetch when filters change
-  useEffect(() => {
-    if (sessionUser) {
-      handleFetch();
-    }
-  }, [statusFilter, dateRangeFilter, startDateStr, endDateStr]);
-
-  const handleFetch = async () => {
+  const handleFetch = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getFilteredAppointments({
@@ -75,7 +49,35 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, dateRangeFilter, startDateStr, endDateStr]);
+
+  // Load session user
+  useEffect(() => {
+    async function init() {
+      try {
+        const user = await getAdminSessionInfo();
+        if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
+          router.push('/login');
+          return;
+        }
+        setSessionUser(user);
+      } catch (err) {
+        console.error(err);
+        router.push('/login');
+      }
+    }
+    init();
+  }, [router]);
+
+  // Fetch when filters or sessionUser changes
+  useEffect(() => {
+    if (sessionUser) {
+      const tid = setTimeout(() => {
+        handleFetch();
+      }, 0);
+      return () => clearTimeout(tid);
+    }
+  }, [statusFilter, dateRangeFilter, startDateStr, endDateStr, sessionUser, handleFetch]);
 
   const clearMessages = () => {
     setErrorMessage(null);
@@ -127,7 +129,7 @@ export default function AdminOrdersPage() {
     try {
       const d = new Date(isoString);
       return format(d, 'dd/MM/yyyy HH:mm');
-    } catch (e) {
+    } catch {
       return '--/--/---- --:--';
     }
   };
@@ -255,7 +257,7 @@ export default function AdminOrdersPage() {
               <select
                 id="order-dateRange"
                 value={dateRangeFilter}
-                onChange={(e) => setDateRangeFilter(e.target.value as any)}
+                onChange={(e) => setDateRangeFilter(e.target.value as "today" | "week" | "month" | "custom" | "all")}
                 className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]"
               >
                 <option value="today">Sản phẩm Hôm nay</option>
@@ -415,7 +417,7 @@ export default function AdminOrdersPage() {
                               <>
                                 <LoadingButton
                                   onClick={() => handleStatusUpdate(appt.id, 'IN_PROGRESS')}
-                                  className="px-2 py-1 bg-blue-50 text-blue-600 rounded hover:bg-blue-105 hover:bg-blue-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  className="px-2 py-2.5 bg-blue-50 text-blue-600 rounded hover:bg-blue-105 hover:bg-blue-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center"
                                   title="Bắt đầu phục vụ"
                                   isLoading={updatingId === appt.id}
                                   loadingText="Đang cập nhật..."
@@ -426,7 +428,7 @@ export default function AdminOrdersPage() {
                                 </LoadingButton>
                                 <LoadingButton
                                   onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
-                                  className="px-2 py-1 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  className="px-2 py-2.5 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center"
                                   title="Hủy đơn"
                                   isLoading={updatingId === appt.id}
                                   loadingText="Đang cập nhật..."
@@ -441,7 +443,7 @@ export default function AdminOrdersPage() {
                               <>
                                 <LoadingButton
                                   onClick={() => handleStatusUpdate(appt.id, 'COMPLETED')}
-                                  className="px-2 py-1 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  className="px-2 py-2.5 bg-emerald-50 text-emerald-600 rounded hover:bg-emerald-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center"
                                   title="Hoàn thành lịch"
                                   isLoading={updatingId === appt.id}
                                   loadingText="Đang cập nhật..."
@@ -452,7 +454,7 @@ export default function AdminOrdersPage() {
                                 </LoadingButton>
                                 <LoadingButton
                                   onClick={() => handleStatusUpdate(appt.id, 'CANCELLED')}
-                                  className="px-2 py-1 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  className="px-2 py-2.5 bg-rose-50 text-rose-500 rounded hover:bg-rose-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center"
                                   title="Hủy đơn"
                                   isLoading={updatingId === appt.id}
                                   loadingText="Đang cập nhật..."
@@ -468,7 +470,7 @@ export default function AdminOrdersPage() {
                                 <span className="text-gray-400 text-[10px] font-bold">Xong</span>
                                 <button
                                   onClick={() => setEditTipModal({ isOpen: true, appt })}
-                                  className="px-2 py-1 bg-pink-50 text-pink-600 rounded hover:bg-pink-100 text-[10px] font-extrabold cursor-pointer transition-colors"
+                                  className="px-2 py-2.5 bg-pink-50 text-pink-600 rounded hover:bg-pink-100 text-[11px] font-extrabold cursor-pointer transition-colors min-h-[44px] flex items-center"
                                   title="Sửa tiền tip"
                                 >
                                   <DollarSign className="w-3 h-3 inline" /> Tip

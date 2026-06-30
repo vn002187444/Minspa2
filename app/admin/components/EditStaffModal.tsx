@@ -90,7 +90,7 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: E
           <button
             onClick={handleResetPassword}
             disabled={resetting}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-bold transition-colors cursor-pointer"
           >
             <Key className="w-3.5 h-3.5" />
             {resetting ? "Đang xử lý..." : "🔒 Reset Mật khẩu"}

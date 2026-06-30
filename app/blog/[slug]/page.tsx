@@ -5,9 +5,12 @@ import ShareButton from './ShareButton';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Star, ArrowLeft, Calendar, Share, Sparkles, ChevronRight, User, BookOpen, Clock } from 'lucide-react';
+import { ArrowLeft, Calendar, Sparkles, User, BookOpen, Clock } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import ViewTracker from '@/components/ViewTracker';
+import ArticleSchema from '@/components/ArticleSchema';
+import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import BreadcrumbNav from '@/components/BreadcrumbNav';
 
 export const revalidate = 60; // Revalidate every minute
 
@@ -19,16 +22,37 @@ export async function generateMetadata({ params }: Props) {
   const resolvedParams = await params;
   const post = await getBlogPostBySlug(resolvedParams.slug);
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+
   if (!post) {
     return {
       title: "Không tìm thấy bài viết | Min Nail & Hair",
-      description: "Bài viết không khả dụng hoặc đã bị gỡ."
+      description: "Bài viết không khả dụng hoặc đã bị gỡ.",
+      robots: { index: false },
     };
   }
+
+  const ogImage = post.image_url || `${baseUrl}/icons/icon-512.png`;
 
   return {
     title: `${post.title} - Min Nail & Hair`,
     description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
+    alternates: { canonical: `${baseUrl}/blog/${resolvedParams.slug}` },
+    openGraph: {
+      type: "article",
+      locale: "vi_VN",
+      siteName: "Min Nail & Hair",
+      title: `${post.title} - Min Nail & Hair`,
+      description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
+      url: `${baseUrl}/blog/${resolvedParams.slug}`,
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${post.title} - Min Nail & Hair`,
+      description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
+      images: [ogImage],
+    },
   };
 }
 
@@ -52,8 +76,24 @@ export default async function BlogPostDetailPage({ params }: Props) {
   const wordCount = post.content ? post.content.trim().split(/\s+/).filter(Boolean).length : 0;
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+
   return (
     <>
+      <ArticleSchema
+        title={post.title}
+        description={post.summary || ''}
+        image={post.image_url || ''}
+        datePublished={post.created_at || ''}
+        dateModified={post.updated_at || post.created_at || ''}
+        author="Min Nail & Hair"
+        baseUrl={`${baseUrl}/blog/${resolvedParams.slug}`}
+      />
+      <BreadcrumbSchema items={[
+        { name: "Trang chủ", url: baseUrl },
+        { name: "Blog", url: `${baseUrl}/blog` },
+        { name: post.title, url: `${baseUrl}/blog/${resolvedParams.slug}` },
+      ]} />
       <ViewTracker postId={post.id} />
     <div className="min-h-screen bg-[#FAF6F0] text-[#3A2E2B] font-sans pb-16">
       {/* Blog Detail Header */}
@@ -82,8 +122,16 @@ export default async function BlogPostDetailPage({ params }: Props) {
         </div>
       </header>
 
+      {/* Breadcrumb */}
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-4">
+        <BreadcrumbNav items={[
+          { name: "Trang chủ", url: "/" },
+          { name: "Blog", url: "/blog" },
+          { name: post.title, url: `/blog/${resolvedParams.slug}` },
+        ]} />
+      </div>
       {/* Main Container */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-6 mt-6 md:mt-10">
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 mt-2 md:mt-4">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Article Main Content (8 cols) */}
@@ -113,7 +161,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
                   <User className="w-4 h-4 text-[#8D6E53]" />
                   <span>Biên tập viên Min Salon</span>
                 </div>
-                <div className="inline-flex items-center gap-1 bg-[#8D6E53]/10 text-[#8D6E53] px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider" id="reading-time-badge">
+                <div className="inline-flex items-center gap-1 bg-[#8D6E53]/10 text-[#8D6E53] px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider" id="reading-time-badge">
                   <Clock className="w-3.5 h-3.5" />
                   <span>{readingTime} min read</span>
                 </div>
@@ -231,7 +279,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
 
             {/* Backlink & Internal Promotion block */}
             <div className="mt-8 p-6 bg-[#FAF0E6] rounded-2xl border-2 border-[#EADDCD] space-y-3">
-              <span className="inline-flex items-center gap-1 bg-[#8D6E53] text-white font-bold text-[10px] tracking-wider px-2.5 py-1 rounded-full uppercase">
+              <span className="inline-flex items-center gap-1 bg-[#8D6E53] text-white font-bold text-[11px] tracking-wider px-2.5 py-1 rounded-full uppercase">
                 <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Ưu đãi đặt lịch
               </span>
               <h4 className="font-bold text-base text-[#5C4033]">Bấm máy Đặt Lịch hoặc Chọn gói combo làm đẹp ngay hôm nay!</h4>

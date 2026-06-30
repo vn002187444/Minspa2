@@ -2,13 +2,12 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
-import { format, startOfDay, endOfDay } from "date-fns";
 
 export async function getScheduleData(dateStr?: string) {
   let session = null;
   try {
     session = await getSession();
-  } catch (e) {
+    } catch {
     // anonymous user is fine
   }
 
@@ -53,7 +52,7 @@ export async function getScheduleData(dateStr?: string) {
       is_present: presentStaffIds.includes(staff.id),
     }));
 
-    // 3. Get today's appointments
+    // 3. Get today's appointments (exclude cancelled/completed)
     const { data: appointments } = await supabase
       .from('appointments')
       .select(`
@@ -64,6 +63,8 @@ export async function getScheduleData(dateStr?: string) {
           services ( id, name )
         )
       `)
+      .not('status', 'in', ['CANCELLED', 'COMPLETED'])
+      .order('start_time', { ascending: true })
       .gte('start_time', startISO)
       .lte('start_time', endISO)
       .limit(500);

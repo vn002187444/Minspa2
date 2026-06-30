@@ -15,8 +15,8 @@ export async function GET(req: Request) {
   
   // Calculate Vietnam Time (GMT+7)
   const vnTime = new Date(now.getTime() + 7 * 60 * 60 * 1000);
-  const todayStr = vnTime.toISOString().split('T')[0]; // YYYY-MM-DD
-  const vnHour = vnTime.getUTCHours(); 
+  const _todayStr = vnTime.toISOString().split('T')[0]; // YYYY-MM-DD
+  const _vnHour = vnTime.getUTCHours(); 
 
   // We are looking for appointments approaching in 10 minutes
   // meaning: start_time > now AND start_time <= now + 10 mins

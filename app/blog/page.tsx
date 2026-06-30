@@ -108,7 +108,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute top-4 left-4 bg-[#8D6E53] text-white text-[10px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-full shadow-sm">
+                    <div className="absolute top-4 left-4 bg-[#8D6E53] text-white text-[11px] uppercase tracking-wider font-extrabold px-3 py-1.5 rounded-full shadow-sm">
                       Làm Đẹp
                     </div>
                   </Link>

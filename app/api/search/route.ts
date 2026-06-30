@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     const allArticles = [
       ...(blogPosts || []).map(p => ({ ...p, type: 'manual', link: `/blog/${p.slug}` })),
       ...(seoArticles || []).map(p => ({ ...p, type: 'auto', title: p.topic, link: `/blog/${p.id}` }))
-    ].sort((a, b) => 0); // could add ranking here
+    ]        .sort((_a, _b) => 0); // could add ranking here
 
     return NextResponse.json({
       success: true,

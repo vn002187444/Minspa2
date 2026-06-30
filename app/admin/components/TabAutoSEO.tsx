@@ -149,7 +149,7 @@ export default function TabAutoSEO() {
           <p className="text-xs text-gray-400 font-semibold py-8 text-center">Chưa có bài viết tự động nào.</p>
         ) : (
           <div className="space-y-2 max-h-96 overflow-y-auto">
-            {history.map((h: any) => (
+            {history.map((h) => (
               <div key={h.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                 <div>
                   <p className="text-xs font-bold text-gray-800">{h.topic}</p>

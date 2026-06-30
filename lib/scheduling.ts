@@ -21,7 +21,7 @@ export async function autoAssignStaff(
   const end = new Date(endTime);
   const dateStr = start.toISOString().split('T')[0];
 
-  const [presentResult, busyResult, locksResult, servicesResult, skillsResult] = await Promise.all([
+  const [presentResult, busyResult, locksResult, _servicesResult, skillsResult] = await Promise.all([
     checkAttendance(dateStr, supabase),
     supabase
       .from('appointments')
@@ -155,7 +155,7 @@ export async function autoAssignStaff(
     }
   }
 
-  const reqDuration = (end.getTime() - start.getTime()) / 60000;
+  const _reqDuration = (end.getTime() - start.getTime()) / 60000;
 
   const candidates: StaffCandidate[] = staffUsers.map((staff) => {
     const staffSkills = skillMap.get(staff.id);

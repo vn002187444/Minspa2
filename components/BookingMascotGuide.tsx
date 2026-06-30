@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Sparkles, X, Lightbulb, ThumbsUp, Star, ChevronRight } from 'lucide-react'
 import { playPop, playClick } from '@/lib/sounds'
@@ -48,19 +48,21 @@ const serviceSuggestions: Record<string, string[]> = {
 interface BookingMascotGuideProps {
   step: number
   currentCategory?: string
-  onSuggestionClick?: (name: string) => void
+  onSuggestionClick?: (_name: string) => void
   soundEnabled?: boolean
 }
 
 export default function BookingMascotGuide({ step, currentCategory, onSuggestionClick, soundEnabled = true }: BookingMascotGuideProps) {
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return storage.get(MASCOT_DISMISSED_KEY) === 'true'
-  })
+  const [dismissed, setDismissed] = useState(false)
   const [showTip, setShowTip] = useState(false)
   const [expression, setExpression] = useState<keyof typeof mascotExpressions>('idle')
   const [idleAnim, setIdleAnim] = useState<'idle' | 'wave' | 'bounce'>('idle')
   const [themeStyle, setThemeStyle] = useState(getMascotStyle('default'))
+
+  // Hydrate dismissed state from localStorage after mount
+  useEffect(() => {
+    setDismissed(storage.get(MASCOT_DISMISSED_KEY) === 'true')
+  }, [])
 
   // Theme-aware styling
   useEffect(() => {
@@ -77,9 +79,11 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
   const msg = stepMessages[step] || stepMessages[1]
 
   useEffect(() => {
-    setExpression(msg.expression)
-    setShowTip(false)
-    const timer = setTimeout(() => setShowTip(true), 3000)
+    startTransition(() => {
+      setExpression(msg.expression)
+      setShowTip(false)
+    })
+    const timer = setTimeout(() => startTransition(() => { setShowTip(true) }), 3000)
     return () => clearTimeout(timer)
   }, [step, msg.expression])
 
@@ -89,7 +93,7 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
     const intervals = ['idle', 'wave', 'bounce', 'idle', 'idle', 'wave'] as const
     let i = 0
     const tick = () => {
-      setIdleAnim(intervals[i % intervals.length])
+      startTransition(() => { setIdleAnim(intervals[i % intervals.length]) })
       i++
     }
     const id = setInterval(tick, 4000)
@@ -196,7 +200,7 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
                 <button
                   key={name}
                   onClick={() => handleSuggestionClick(name)}
-                  className="w-full flex items-center gap-1.5 text-xs text-left text-[#5C4033] bg-pink-50/70 hover:bg-pink-100 rounded-lg px-2 py-1.5 transition-colors cursor-pointer"
+                  className="w-full flex items-center gap-1.5 text-xs text-left text-[#5C4033] bg-pink-50/70 hover:bg-pink-100 rounded-lg px-2 py-2.5 transition-colors cursor-pointer min-h-[44px]"
                 >
                   <ThumbsUp className="w-3 h-3 shrink-0" />
                   <span className="font-medium">{name}</span>

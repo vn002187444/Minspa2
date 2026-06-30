@@ -110,7 +110,7 @@ export async function cascadeShiftForward(
   if (!completedAppt) return;
 
   const compDate = new Date(completedAppt.start_time);
-  const dayStart = new Date(Date.UTC(compDate.getUTCFullYear(), compDate.getUTCMonth(), compDate.getUTCDate(), 0, 0, 0)).toISOString();
+  const _dayStart = new Date(Date.UTC(compDate.getUTCFullYear(), compDate.getUTCMonth(), compDate.getUTCDate(), 0, 0, 0)).toISOString();
   const dayEnd = new Date(Date.UTC(compDate.getUTCFullYear(), compDate.getUTCMonth(), compDate.getUTCDate(), 23, 59, 59, 999)).toISOString();
 
   const { data: nextAppts } = await supabase
@@ -282,7 +282,7 @@ export async function findNextAvailableDate(
 ): Promise<{ date: string; slots: SlotAvailability[] } | null> {
   const today = new Date();
   const totalDuration = calculateProgressiveDuration(serviceIds, services);
-  const durationMinutes = totalDuration > 0 ? totalDuration : 60;
+  const _durationMinutes = totalDuration > 0 ? totalDuration : 60;
 
   for (let i = 0; i < maxDays; i++) {
     const d = new Date(today);

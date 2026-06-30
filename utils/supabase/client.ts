@@ -1,11 +1,16 @@
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient, SupabaseClient } from '@supabase/supabase-js';
+
+let cachedClient: SupabaseClient | null = null;
 
 export const createClient = () => {
+  if (cachedClient) return cachedClient;
+
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return createSupabaseClient(
+    cachedClient = createSupabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     );
+    return cachedClient;
   }
 
   return {

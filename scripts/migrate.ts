@@ -84,7 +84,7 @@ async function migrate() {
   if (data.appointments?.length) {
     console.log(`Migrating ${data.appointments.length} appointments...`);
     const appointmentsToInsert = data.appointments.map((a: any) => {
-      const { is_package_session, use_package_id, buy_package_id, ...rest } = a;
+      const { is_package_session: _is_package_session, use_package_id: _use_package_id, buy_package_id: _buy_package_id, ...rest } = a;
       return {
         ...rest,
         id: toUUID(a.id),
@@ -107,7 +107,7 @@ async function migrate() {
   if (data.appointment_services?.length) {
     console.log(`Migrating ${data.appointment_services.length} appointment services...`);
     const apptServicesToInsert = data.appointment_services.map((as: any) => {
-      const { created_at, id, ...rest } = as; // created_at is optional, ignore if present
+      const { created_at: _created_at, id: _id, ...rest } = as; // created_at is optional, ignore if present
       return {
         ...rest,
         appointment_id: toUUID(as.appointment_id),

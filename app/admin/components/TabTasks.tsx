@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, startTransition } from 'react'
 import { toast } from 'sonner'
-import { Plus, Filter, CheckCircle2, Clock, XCircle, AlertTriangle, ChevronDown, Search, ListTodo, RefreshCw, User, Calendar, Hourglass, AlertCircle } from 'lucide-react'
+import { Plus, Filter, CheckCircle2, Clock, XCircle, Search, ListTodo, RefreshCw, User, Calendar, AlertCircle } from 'lucide-react'
 import LoadingButton from '@/components/LoadingButton'
-import { getTasks, createTask, updateTaskStatus, deleteTask, getStaffs, getTaskStats } from '../actions'
+import { getTasks, createTask, deleteTask, getStaffs, getTaskStats } from '../actions'
 
 export default function TabTasks() {
   const [tasks, setTasks] = useState<any[]>([])
@@ -18,8 +18,8 @@ export default function TabTasks() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false)
 
-  const loadTasks = async () => {
-    setLoading(true)
+  const loadTasks = useCallback(async () => {
+    startTransition(() => { setLoading(true) })
     const filters: any = {}
     if (statusFilter !== 'ALL') filters.status = statusFilter
     if (searchTerm.trim()) filters.search = searchTerm.trim()
@@ -30,13 +30,17 @@ export default function TabTasks() {
       getStaffs(),
       getTaskStats(),
     ])
-    setTasks(t)
-    setStaffs(st || [])
-    setStats(s)
-    setLoading(false)
-  }
+    startTransition(() => {
+      setTasks(t)
+      setStaffs(st || [])
+      setStats(s)
+    })
+    startTransition(() => { setLoading(false) })
+  }, [statusFilter, searchTerm, assigneeFilter, typeFilter])
 
-  useEffect(() => { loadTasks() }, [statusFilter, assigneeFilter, typeFilter])
+  useEffect(() => {
+    loadTasks()
+  }, [loadTasks])
 
   const isOverdue = (task: { status: string; deadline?: string | null }) => {
     if (task.status === 'COMPLETED' || task.status === 'CANCELLED') return false
@@ -85,7 +89,7 @@ export default function TabTasks() {
 
       {/* Stats Cards (4.11) */}
       {stats && (
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
           <StatBadge label="Tổng" value={stats.total} color="bg-gray-100 text-gray-700" />
           <StatBadge label="Chưa nhận" value={stats.pending} color="bg-amber-100 text-amber-800" />
           <StatBadge label="Đang làm" value={stats.inProgress} color="bg-blue-100 text-blue-800" />
@@ -149,7 +153,7 @@ export default function TabTasks() {
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 min-h-[44px] rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center justify-center ${
               statusFilter === s ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
@@ -178,20 +182,20 @@ export default function TabTasks() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${statusColors[task.status] || 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${statusColors[task.status] || 'bg-gray-100 text-gray-600'}`}>
                         <StatusIcon className="w-3 h-3 inline mr-1" />
                         {task.status === 'PENDING' ? 'Chưa nhận' : task.status === 'IN_PROGRESS' ? 'Đang làm' : task.status === 'COMPLETED' ? 'Hoàn thành' : task.status === 'REJECTED' ? 'Từ chối' : 'Đã hủy'}
                       </span>
                       {overdue && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-100 text-red-700">
                           <AlertCircle className="w-3 h-3 inline mr-1" />Trễ hạn
                         </span>
                       )}
-                      <span className={`text-[10px] font-bold ${priorityColors[task.priority] || 'text-gray-400'}`}>
+                      <span className={`text-[11px] font-bold ${priorityColors[task.priority] || 'text-gray-400'}`}>
                         {task.priority === 'urgent' ? '🔴 Khẩn cấp' : task.priority === 'high' ? '🟠 Cao' : task.priority === 'medium' ? '🟡 Trung bình' : '🟢 Thấp'}
                       </span>
                       {task.task_type === 'daily' && (
-                        <span className="text-[10px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">Hàng ngày</span>
+                        <span className="text-[11px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded">Hàng ngày</span>
                       )}
                     </div>
                     <h4 className="font-bold text-gray-900">{task.title}</h4>
@@ -263,7 +267,7 @@ function StatBadge({ label, value, color }: { label: string; value: number; colo
   return (
     <div className={`p-3 rounded-xl text-center ${color}`}>
       <div className="text-lg font-extrabold">{value}</div>
-      <div className="text-[10px] font-bold uppercase opacity-75">{label}</div>
+      <div className="text-[11px] font-bold uppercase opacity-75">{label}</div>
     </div>
   )
 }
@@ -314,8 +318,8 @@ function CreateTaskModal({ staffs, onClose, onSaved }: CreateTaskModalProps) {
       } else {
         toast.error(res.error || 'Lỗi khi tạo công việc')
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Lỗi không xác định')
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Lỗi không xác định')
     } finally {
       setSaving(false)
     }

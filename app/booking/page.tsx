@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { getPublicServices, getPublicSeoSettings } from './actions/public';
@@ -14,7 +14,7 @@ import { enqueue } from '@/lib/offline-queue';
 import { trackEvent, trackMascotEvent } from '@/lib/analytics';
 import { stripHtml } from '@/lib/sanitize';
 import { storage } from '@/lib/storage';
-import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, CloudOff, AlertTriangle } from 'lucide-react';
+import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, AlertTriangle } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
@@ -23,6 +23,36 @@ import BookingMascotGuide from '@/components/BookingMascotGuide';
 import GlobalSearch from '@/components/GlobalSearch';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
+
+const CACHE_HISTORY_PREFIX = 'min_salon_cust_';
+const CACHE_PACKAGES_PREFIX = 'min_salon_pkg_';
+const CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function getCachedHistory(phone: string): any | null {
+  try {
+    const raw = storage.get(CACHE_HISTORY_PREFIX + phone);
+    if (!raw) return null;
+    const { data, timestamp } = JSON.parse(raw);
+    if (Date.now() - timestamp > CACHE_TTL) {
+      storage.remove(CACHE_HISTORY_PREFIX + phone);
+      return null;
+    }
+    return data;
+  } catch { return null; }
+}
+
+function setCachedHistory(phone: string, data: any) {
+  try {
+    storage.set(CACHE_HISTORY_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
+  } catch { /* quota exceeded */ }
+}
+
+function invalidateCustomerCache(phone: string) {
+  try {
+    storage.remove(CACHE_HISTORY_PREFIX + phone);
+    storage.remove(CACHE_PACKAGES_PREFIX + phone);
+  } catch { /* ignore */ }
+}
 
 export default function BookingPage() {
   const router = useRouter();
@@ -61,59 +91,16 @@ export default function BookingPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('Tất cả');
+  const [isLoadingServices, setIsLoadingServices] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
-  const CACHE_HISTORY_PREFIX = 'min_salon_cust_';
-  const CACHE_PACKAGES_PREFIX = 'min_salon_pkg_';
-  const CACHE_TTL = 24 * 60 * 60 * 1000;
-  const CACHE_PACKAGES_TTL = 5 * 60 * 1000;
-
-  function getCachedHistory(phone: string): any | null {
-    try {
-      const raw = storage.get(CACHE_HISTORY_PREFIX + phone);
-      if (!raw) return null;
-      const { data, timestamp } = JSON.parse(raw);
-      if (Date.now() - timestamp > CACHE_TTL) {
-        storage.remove(CACHE_HISTORY_PREFIX + phone);
-        return null;
-      }
-      return data;
-    } catch { return null; }
-  }
-
-  function setCachedHistory(phone: string, data: any) {
-    try {
-      storage.set(CACHE_HISTORY_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
-    } catch { /* quota exceeded */ }
-  }
-
-  function getCachedPackages(phone: string): any | null {
-    try {
-      const raw = storage.get(CACHE_PACKAGES_PREFIX + phone);
-      if (!raw) return null;
-      const { data, timestamp } = JSON.parse(raw);
-      if (Date.now() - timestamp > CACHE_PACKAGES_TTL) {
-        storage.remove(CACHE_PACKAGES_PREFIX + phone);
-        return null;
-      }
-      return data;
-    } catch { return null; }
-  }
-
-  function setCachedPackages(phone: string, data: any) {
-    try {
-      storage.set(CACHE_PACKAGES_PREFIX + phone, JSON.stringify({ data, timestamp: Date.now() }));
-    } catch { /* quota exceeded */ }
-  }
-
-  function invalidateCustomerCache(phone: string) {
-    try {
-      storage.remove(CACHE_HISTORY_PREFIX + phone);
-      storage.remove(CACHE_PACKAGES_PREFIX + phone);
-    } catch { /* ignore */ }
-  }
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     async function loadServices() {
+      setIsLoadingServices(true);
       const data = await getPublicServices();
       if (data) {
         // Normalize categories for alignment with flyer groups in Booking too
@@ -138,6 +125,7 @@ export default function BookingPage() {
         });
         setServices(normalized);
       }
+      setIsLoadingServices(false);
     }
 
     async function loadPackages() {
@@ -160,10 +148,12 @@ export default function BookingPage() {
       if (buyPkgParam) {
         const pkg = allPackages.find(p => p.id === buyPkgParam);
         if (pkg) {
-          setBuyPackageId(pkg.id);
-          if (pkg.service_id) {
-            setSelectedServices([String(pkg.service_id)]);
-          }
+          setTimeout(() => {
+            setBuyPackageId(pkg.id);
+            if (pkg.service_id) {
+              setSelectedServices([String(pkg.service_id)]);
+            }
+          }, 0);
         }
       }
     }
@@ -175,7 +165,9 @@ export default function BookingPage() {
       const savedPhone = storage.get('min_salon_customer_phone');
       if (savedPhone) {
         restoredRef.current = true;
-        setPhone(savedPhone);
+        setTimeout(() => {
+          setPhone(savedPhone);
+        }, 0);
         setTimeout(async () => {
           try {
             let result = getCachedHistory(savedPhone);
@@ -210,7 +202,7 @@ export default function BookingPage() {
         cached = await checkCustomerHistory(phone);
         if (cached.found) setCachedHistory(phone, cached);
       }
-      const { found, name: foundName, id, history, activePackages: foundPackages, groupedPackages: foundGrouped } = cached;
+      const { found, name: foundName, id, history: _history, activePackages: foundPackages, groupedPackages: foundGrouped } = cached;
       if (found) {
         setName(foundName);
         setCustomerId(id);
@@ -250,9 +242,12 @@ export default function BookingPage() {
 
   useEffect(() => {
     if (phone.length < 10) {
-      setActivePackages([]);
-      setGroupedPackages({});
-      setSelectedPackageId(null);
+      const id = setTimeout(() => {
+        setActivePackages([]);
+        setGroupedPackages({});
+        setSelectedPackageId(null);
+      }, 0);
+      return () => clearTimeout(id);
     }
   }, [phone]);
 
@@ -264,11 +259,13 @@ export default function BookingPage() {
     async function fetchSlotAvail() {
       if (selectedDate) {
         const slots = await getSlotAvailability(selectedDate, selectedServices, services);
-        setSlotAvailability(slots || []);
+        startTransition(() => {
+          setSlotAvailability(slots || []);
+        });
       }
     }
     fetchSlotAvail();
-  }, [selectedDate]);
+  }, [selectedDate, selectedServices, services]);
 
   useEffect(() => {
     async function fetchStaff() {
@@ -391,7 +388,7 @@ export default function BookingPage() {
             <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full mix-blend-overlay filter blur-xl transform translate-x-10 -translate-y-10"></div>
             <button 
               onClick={() => router.push('/')}
-              className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-[#FAF6F0] transition-all flex items-center justify-center"
+              className="absolute top-4 left-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-[#FAF6F0] transition-all flex items-center justify-center min-h-[44px] min-w-[44px]"
               aria-label="Về trang chủ"
             >
               <ArrowLeft className="w-4 h-4" />
@@ -414,7 +411,7 @@ export default function BookingPage() {
         <div className="flex flex-col lg:flex-row flex-1 min-h-0">
           
           {/* Left Column: Core Booking Wizard Steps */}
-          <div className="p-5 sm:p-6 md:p-8 flex-1 flex flex-col h-full overflow-y-auto lg:w-3/5">
+          <div className="p-5 sm:p-6 md:p-8 flex-1 flex flex-col h-full overflow-y-auto lg:w-3/5 lg:pb-0 pb-32">
             {errorMsg && (
               <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-xl text-sm font-medium animate-in fade-in">
                 {errorMsg}
@@ -473,7 +470,7 @@ export default function BookingPage() {
                                      setShowNotifBanner(false);
                                    }
                                  }}
-                                 className="w-full text-left bg-white/80 hover:bg-white rounded-lg p-2.5 transition-colors border border-[#EADDCD]/50"
+                                 className="w-full text-left bg-white/80 hover:bg-white rounded-lg p-2.5 transition-colors border border-[#EADDCD]/50 min-h-[44px]"
                                >
                                  <p className="text-xs font-semibold text-[#3A2E2B]">{n.title}</p>
                                  <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{n.content}</p>
@@ -536,7 +533,7 @@ export default function BookingPage() {
                               </p>
 
                               {sortedPkgs.length === 1 ? (
-                                <label htmlFor={`booking-pkg-${sortedPkgs[0].id}`} className="flex items-center gap-3 p-3 bg-white border border-[#EADDCD] rounded-xl cursor-pointer hover:border-amber-400 transition-all">
+                                <label htmlFor={`booking-pkg-${sortedPkgs[0].id}`} className="flex items-center gap-3 p-3 bg-white border border-[#EADDCD] rounded-xl cursor-pointer hover:border-amber-400 transition-all min-h-[44px]">
                                   <input
                                     id={`booking-pkg-${sortedPkgs[0].id}`}
                                     type="radio"
@@ -568,7 +565,7 @@ export default function BookingPage() {
                                   {sortedPkgs.map((pkg: any, idx: number) => (
                                     <label
                                       key={pkg.id}
-                                      className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${
+                                      className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all min-h-[44px] ${
                                         idx === 0 && selectedPackageId === pkg.id
                                           ? 'ring-2 ring-amber-400 bg-amber-50/50 border-amber-300'
                                           : idx === 0
@@ -612,7 +609,7 @@ export default function BookingPage() {
                         <button
                           type="button"
                           onClick={() => setSelectedPackageId(null)}
-                          className={`w-full px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          className={`w-full px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer min-h-[44px] flex items-center justify-center ${
                             selectedPackageId === null
                               ? 'bg-[#3A2E2B] text-white shadow-sm'
                               : 'bg-white text-gray-700 border border-gray-250 hover:bg-gray-50'
@@ -642,7 +639,7 @@ export default function BookingPage() {
                              setBuyPackageId(null);
                              setSelectedServices([]);
                            }}
-                           className="text-[10px] font-bold text-[#8D6E53] underline hover:text-pink-700 block mt-1 cursor-pointer"
+                           className="text-[11px] font-bold text-[#8D6E53] underline hover:text-pink-700 block mt-1 cursor-pointer"
                          >
                            Hủy đăng ký mua gói, đổi sang dịch vụ lẻ
                          </button>
@@ -712,11 +709,11 @@ export default function BookingPage() {
                          key={cat}
                          type="button"
                          onClick={() => setActiveCategory(cat)}
-                         className={`snap-start shrink-0 px-3.5 py-1.5 rounded-full text-[11px] font-semibold tracking-wider border transition-all uppercase ${
-                           activeCategory === cat
-                             ? 'bg-[#8D6E53] border-[#8D6E53] text-[#FAF6F0] shadow-sm'
-                             : 'bg-white border-[#EADDCD] text-gray-600 hover:border-[#8D6E53]'
-                         }`}
+className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semibold tracking-wider border transition-all uppercase min-h-[44px] flex items-center ${
+                            activeCategory === cat
+                              ? 'bg-[#8D6E53] border-[#8D6E53] text-[#FAF6F0] shadow-sm'
+                              : 'bg-white border-[#EADDCD] text-gray-600 hover:border-[#8D6E53]'
+                          }`}
                        >
                          {cat}
                        </button>
@@ -725,7 +722,15 @@ export default function BookingPage() {
 
                    <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-3">Lựa chọn dịch vụ làm đẹp</label>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
-                      {filteredServices.map(s => (
+                      {isLoadingServices ? (
+                        Array.from({ length: 6 }).map((_, i) => (
+                          <div key={i} className="p-3 border border-[#EADDCD] rounded-xl animate-pulse">
+                            <div className="h-3 bg-gray-200 rounded w-3/4 mb-2" />
+                            <div className="h-2 bg-gray-100 rounded w-1/4 mb-2" />
+                            <div className="h-3 bg-gray-200 rounded w-1/3" />
+                          </div>
+                        ))
+                      ) : filteredServices.map(s => (
                         <button
                           key={s.id}
                           type="button"
@@ -736,11 +741,11 @@ export default function BookingPage() {
                               setSelectedServices([...selectedServices, s.id]);
                             }
                           }}
-                          className={`p-3 text-left border rounded-xl transition-all flex flex-col gap-1 relative ${
-                            selectedServices.includes(s.id) 
-                              ? 'border-[#8D6E53] bg-[#FAF0E6]/60 ring-1 ring-[#8D6E53]' 
-                              : 'border-[#EADDCD] bg-white hover:border-[#8D6E53] hover:bg-[#FAF6F0]/40'
-                          }`}
+ className={`p-3 text-left border rounded-xl transition-all flex flex-col gap-1 relative min-h-[44px] ${
+                             selectedServices.includes(s.id) 
+                               ? 'border-[#8D6E53] bg-[#FAF0E6]/60 ring-1 ring-[#8D6E53]' 
+                               : 'border-[#EADDCD] bg-white hover:border-[#8D6E53] hover:bg-[#FAF6F0]/40'
+                           }`}
                         >
                           <span className="font-semibold text-xs text-[#3A2E2B] leading-tight pr-6">{s.name}</span>
                           <span className="text-[10px] text-gray-400 font-medium">{s.duration || 30} phút</span>
@@ -750,7 +755,7 @@ export default function BookingPage() {
                           )}
                         </button>
                       ))}
-                      {filteredServices.length === 0 && (
+                      {!isLoadingServices && filteredServices.length === 0 && (
                         <div className="col-span-full py-8 text-center text-xs text-gray-400 font-medium italic">
                           Không có dịch vụ nào trong chuyên mục này.
                         </div>
@@ -761,7 +766,7 @@ export default function BookingPage() {
                   <div className="pt-4">
                     <LoadingButton
                       onClick={handleNext}
-                      className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 group tracking-widest uppercase text-xs shadow-md"
+                      className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 group tracking-widest uppercase text-xs shadow-md min-h-[44px]"
                     >
                       Tiếp tục lựa chọn <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </LoadingButton>
@@ -777,36 +782,42 @@ export default function BookingPage() {
 
                  <div>
                     <label htmlFor="date-picker" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn ngày hẹn đẹp nhất</label>
-                    <div id="date-picker" className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
-                       {Array.from({ length: 14 }, (_, i) => i).map(offset => {
-                        const d = addDays(new Date(), offset);
-                        const dateStr = format(d, 'yyyy-MM-dd');
-                        const isSelected = selectedDate === dateStr;
-                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                        return (
-                          <button
-                            key={dateStr}
-                            type="button"
-                            onClick={() => setSelectedDate(dateStr)}
-                            className={`snap-start shrink-0 flex flex-col items-center justify-center w-14 h-16 rounded-xl border transition-all relative ${
-                              isSelected 
-                                ? 'bg-[#5C4033] border-[#5C4033] text-white shadow-md' 
-                                : 'bg-white border-[#EADDCD] text-gray-600 hover:border-[#8D6E53]'
-                            }`}
-                          >
-                             <span className={`text-[9px] font-bold uppercase mb-1 ${isWeekend && !isSelected ? 'text-rose-500' : ''}`}>
-                               {format(d, 'EEE', { locale: vi })}
-                             </span>
-                             <span className={`text-base font-bold ${isSelected ? 'text-white' : 'text-[#3A2E2B]'} ${isWeekend && !isSelected ? 'text-rose-500' : ''}`}>
-                               {format(d, 'dd')}
-                             </span>
-                             {isWeekend && (
-                               <span className="absolute top-1 right-1 w-1 h-1 rounded-full bg-rose-400"></span>
-                             )}
-                          </button>
-                        );
-                      })}
-                   </div>
+                     <div id="date-picker" className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
+                        {mounted ? (
+                          Array.from({ length: 14 }, (_, i) => i).map(offset => {
+                            const d = addDays(new Date(), offset);
+                            const dateStr = format(d, 'yyyy-MM-dd');
+                            const isSelected = selectedDate === dateStr;
+                            const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+                            return (
+                              <button
+                                key={dateStr}
+                                type="button"
+                                onClick={() => setSelectedDate(dateStr)}
+                                className={`snap-start shrink-0 flex flex-col items-center justify-center w-14 h-16 rounded-xl border transition-all relative ${
+                                  isSelected 
+                                    ? 'bg-[#5C4033] border-[#5C4033] text-white shadow-md' 
+                                    : 'bg-white border-[#EADDCD] text-gray-600 hover:border-[#8D6E53]'
+                                  }`}
+                              >
+                                 <span className={`text-[9px] font-bold uppercase mb-1 ${isWeekend && !isSelected ? 'text-rose-500' : ''}`}>
+                                   {format(d, 'EEE', { locale: vi })}
+                                 </span>
+                                 <span className={`text-base font-bold ${isSelected ? 'text-white' : 'text-[#3A2E2B]'} ${isWeekend && !isSelected ? 'text-rose-500' : ''}`}>
+                                   {format(d, 'dd')}
+                                 </span>
+                                 {isWeekend && (
+                                   <span className="absolute top-1 right-1 w-1 h-1 rounded-full bg-rose-400"></span>
+                                 )}
+                              </button>
+                            );
+                          })
+                        ) : (
+                          Array.from({ length: 14 }).map((_, idx) => (
+                            <div key={idx} className="shrink-0 flex flex-col items-center justify-center w-14 h-16 rounded-xl border border-gray-100 bg-gray-50/70 animate-pulse" />
+                          ))
+                        )}
+                     </div>
                  </div>
 
                   <div>
@@ -850,7 +861,7 @@ export default function BookingPage() {
                       onClick={handleSubmit}
                       isLoading={isSubmitting}
                       loadingText="Đang lưu lịch hẹn..."
-                      className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md uppercase tracking-wider text-xs"
+                      className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md uppercase tracking-wider text-xs min-h-[44px]"
                     >
                       Hoàn tất gửi lịch hẹn
                     </LoadingButton>
@@ -870,15 +881,15 @@ export default function BookingPage() {
                      <div className="flex gap-3">
                        <button 
                          onClick={handleRetry}
-                         className="bg-[#8D6E53] hover:bg-[#5C4033] text-white font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors"
-                       >
-                         Thử lại
+className="bg-[#8D6E53] hover:bg-[#5C4033] text-white font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
+                        >
+                          Thử lại
                        </button>
                        <button 
                          onClick={() => router.push('/')}
-                         className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors"
-                       >
-                         Về trang chủ
+className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
+                        >
+                          Về trang chủ
                        </button>
                      </div>
                     </>
@@ -893,9 +904,9 @@ export default function BookingPage() {
                    </p>
                    <button 
                      onClick={() => router.push('/')}
-                     className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors"
-                   >
-                     Xem Bảng Giá Khác
+className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
+                    >
+                      Xem Bảng Giá Khác
                    </button>
                     </>
                    )}
@@ -1023,10 +1034,10 @@ export default function BookingPage() {
 
       {/* Mobile Sticky Invoice Summary */}
       {step < 3 && selectedItemsData.length > 0 && (
-        <div className="lg:hidden fixed bottom-16 inset-x-0 z-40 bg-white border-t border-[#EADDCD] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <div className="lg:hidden fixed inset-x-0 z-40 bg-white border-t border-[#EADDCD] shadow-[0_-4px_20px_rgba(0,0,0,0.08)]" style={{ bottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}>
           <button
             onClick={() => setShowMobileInvoice(!showMobileInvoice)}
-            className="w-full px-4 py-3 flex items-center justify-between"
+            className="w-full px-4 py-3 flex items-center justify-between min-h-[44px]"
           >
             <div className="text-left">
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{selectedServices.length} dịch vụ</p>

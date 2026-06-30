@@ -1,5 +1,6 @@
 import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/utils/auth";
 
 const SYSTEM_INSTRUCTION = `Bạn là cố vấn SEO cho chuỗi dịch vụ "Min Nail & Hair" tại TP.HCM.
 Sử dụng Google Search để tra cứu xu hướng thực tế. Trả về JSON đúng schema. Tiếng Việt có dấu.`;
@@ -20,6 +21,10 @@ const SEO_SCHEMA = {
 };
 
 export async function POST(req: NextRequest) {
+  const session = await getSession();
+  if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER' && session.user.role !== 'STAFF')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
   let query = "";
   let keywords = "";
   try {

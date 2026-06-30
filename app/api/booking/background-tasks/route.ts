@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server';
 import { enqueueTask } from '@/lib/queue';
+import { getSession } from '@/utils/auth';
 
 export async function POST(req: Request) {
   try {
+    const session = await getSession();
+    if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const body = await req.json();
-    const { appointmentId, customerId, staffId, commission, total, discountedTotal, staffName, customerName, appointmentDate, appointmentTime } = body;
+    const { appointmentId, customerId, staffId, commission, total: _total, discountedTotal, staffName: _staffName, customerName, appointmentDate, appointmentTime } = body;
 
     if (!appointmentId) {
       return NextResponse.json({ error: 'Missing appointmentId' }, { status: 400 });

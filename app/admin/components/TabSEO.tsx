@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, startTransition } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import TabAutoSEO from "./TabAutoSEO";
 import Image from "next/image";
-import { Globe, Sparkles, Search, PenTool, ImageIcon, FileText, CheckCircle2, Facebook, Twitter, Send, Trash2, RefreshCw } from "lucide-react";
+import { Globe, Sparkles, Search, PenTool, ImageIcon, FileText, CheckCircle2, Facebook, Twitter, Send, Trash2 } from "lucide-react";
 import {
   getBannerSettings,
   saveBannerSettings,
@@ -14,9 +14,6 @@ import {
   saveSeoArticle,
   deleteSeoArticle,
   publishSeoArticleToBlog,
-  getAutoSeoConfig,
-  saveAutoSeoConfig,
-  getAutoSeoHistory,
 } from "../actions";
 
 interface SeoData {
@@ -28,6 +25,8 @@ interface SeoData {
   online_discount_percent: number;
   default_commission_percent: number;
   hotline: string;
+  facebook_url: string;
+  zalo_url: string;
 }
 
 export default function TabSEO({ data, userRole, onReload }: { data: SeoData | null; userRole: string; onReload: () => void }) {
@@ -47,9 +46,11 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       try {
         const res = await getBannerSettings();
         if (res) {
-          setBannerForm({
-            is_enabled: res.is_enabled !== undefined ? res.is_enabled : true,
-            content: res.content || ""
+          startTransition(() => {
+            setBannerForm({
+              is_enabled: res.is_enabled !== undefined ? res.is_enabled : true,
+              content: res.content || ""
+            });
           });
         }
       } catch (err) {
@@ -83,13 +84,15 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       online_discount_percent: 5,
       default_commission_percent: 15,
       hotline: "0934 323 878",
+      facebook_url: "https://facebook.com/minnailhair",
+      zalo_url: "https://zalo.me/0934323878",
     }
   );
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
 
   useEffect(() => {
-    if (data) setForm(data);
+    if (data) startTransition(() => { setForm(data); });
   }, [data]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,22 +143,22 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
     setTimeout(() => setToastMsg(null), 3000);
   };
 
-  const loadSavedArticles = async () => {
-    setIsLoadingArticles(true);
+  const loadSavedArticles = useCallback(async () => {
+    startTransition(() => { setIsLoadingArticles(true); });
     try {
       const arts = await getSeoArticles();
-      setSavedArticles(arts || []);
+      startTransition(() => { setSavedArticles(arts || []); });
     } catch (e) {
       console.error(e);
     }
-    setIsLoadingArticles(false);
-  };
+    startTransition(() => { setIsLoadingArticles(false); });
+  }, []);
 
   useEffect(() => {
     if (subTab === "SAVED_ARTICLES") {
       loadSavedArticles();
     }
-  }, [subTab]);
+  }, [subTab, loadSavedArticles]);
 
   const handleResearchAI = async () => {
     if (!seoTopic) {
@@ -178,7 +181,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       } else {
         setSeoResearchText("Không tìm thấy kết quả nghiên cứu. Vui lòng thử lại.");
       }
-    } catch (e) {
+    } catch {
       setSeoResearchText("Lỗi tìm kiếm nghiên cứu SEO.");
     }
     setIsResearchLoading(false);
@@ -203,7 +206,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       } else {
         setSeoArticleText("Có lỗi xảy ra khi gọi AI tạo bài viết. Vui lòng kiểm tra API key.");
       }
-    } catch (e) {
+    } catch {
       setSeoArticleText("Lỗi kết nối dịch vụ tạo bài viết.");
     }
     setIsArticleLoading(false);
@@ -258,8 +261,8 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       } else {
         showToast("Lỗi khi lưu bài viết: " + res.error);
       }
-    } catch (e: any) {
-      showToast("Lỗi hệ thống: " + e.message);
+    } catch (e: unknown) {
+      showToast("Lỗi hệ thống: " + (e instanceof Error ? e.message : 'Lỗi không xác định'));
     }
     setIsSavingArticle(false);
   };
@@ -317,7 +320,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       } else {
         showToast("Lỗi khi xóa bài viết");
       }
-    } catch (err) {
+    } catch {
       showToast("Lỗi hệ thống khi xóa bài viết");
     }
   };
@@ -338,7 +341,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       } else {
         showToast("Lỗi khi cập nhật bài viết");
       }
-    } catch (err) {
+    } catch {
       showToast("Lỗi hệ thống khi lưu");
     }
   };
@@ -485,7 +488,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
                     } else {
                       showToast(`Lỗi khi cập nhật trạng thái banner: ${res.error}`);
                     }
-                  } catch (e) {
+                  } catch {
                     showToast("Đã xảy ra lỗi hệ thống khi chuyển đổi.");
                   } finally {
                     setBannerLoading(false);
@@ -640,15 +643,37 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
                 <span className="text-xs font-bold text-gray-500">%</span>
                 <p className="text-[10px] text-gray-400 ml-2">Áp dụng khi dịch vụ/gói không có tỷ lệ riêng</p>
               </div>
-              <div className="flex items-center gap-3">
-                <label htmlFor="seo-hotline" className="text-xs font-semibold text-gray-600 shrink-0">Số hotline:</label>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <label htmlFor="seo-hotline" className="text-xs font-semibold text-gray-600 shrink-0 sm:w-28">Số hotline:</label>
                 <input
                   id="seo-hotline"
                   type="text"
                   value={form.hotline || ""}
                   onChange={(e) => setForm({ ...form, hotline: e.target.value })}
                   placeholder="VD: 0934 323 878"
-                  className="w-56 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-xs font-semibold text-gray-800"
+                  className="w-full sm:w-56 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-xs font-semibold text-gray-800"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <label htmlFor="seo-facebook" className="text-xs font-semibold text-gray-600 shrink-0 sm:w-28">Link Facebook:</label>
+                <input
+                  id="seo-facebook"
+                  type="text"
+                  value={form.facebook_url || ""}
+                  onChange={(e) => setForm({ ...form, facebook_url: e.target.value })}
+                  placeholder="VD: https://facebook.com/minnailhair"
+                  className="w-full sm:w-96 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-xs font-semibold text-gray-800"
+                />
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <label htmlFor="seo-zalo" className="text-xs font-semibold text-gray-600 shrink-0 sm:w-28">Link Zalo:</label>
+                <input
+                  id="seo-zalo"
+                  type="text"
+                  value={form.zalo_url || ""}
+                  onChange={(e) => setForm({ ...form, zalo_url: e.target.value })}
+                  placeholder="VD: https://zalo.me/0934323878"
+                  className="w-full sm:w-96 p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-xs font-semibold text-gray-800"
                 />
               </div>
             </div>

@@ -272,6 +272,119 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 
 ---
 
+### 🟢 V3.15 — OpenCode Custom Tools & Agents ✅
+- [x] 11 custom tools: ci_check, build_check, deploy_vercel, migrate_db, check_env, schema_sync, env_diff, db_health_check, vercel_status, seo_analyzer, skill_sync
+- [x] 2 subagents: ci-fix, db-admin với cross-agent collaboration
+- [x] Register trong `.opencode/opencode.json`
+
+### 🟢 V3.16 — Responsive Optimization (320px → 4K) ✅
+- [x] Fix 9 responsive issues (cards, tables, nav, hero, touch targets)
+- [x] Fix 6 iOS Safari critical bugs (overflow, dvh, backdrop-blur, safelist)
+- [x] 4K ultra-wide: breakpoint, grid columns, typography, spacing
+
+### 🟢 V3.17 — Schema Audit & Bug Fixes ✅
+- [x] Fix 6 critical bugs (trigger columns, notification insert, RPC params, column mismatches)
+- [x] Fix 5 DB bugs (customer_packages updated_at, trigger case, overload sync)
+- [x] Đồng bộ database.sql với DB thật (customers, rate_limits, ai_cache)
+- [x] Next.js 16 migration: `middleware.ts` → `proxy.ts`
+- [x] Admin menu: flat list → 5 groups + section headers
+
+### 🟢 SEO Schema (JSON-LD Structured Data) ✅
+- [x] 11/13 schema types: LocalBusiness, PostalAddress, OpeningHours, FAQPage, Product, Service, WebSite, BreadcrumbList, Article, ItemList, GeoCoordinates, AggregateRating
+- [x] ImageGallery: huỷ (chưa có gallery)
+- [x] Tất cả server component, không `'use client'`
+
+### 🟢 Session Audit Fix ✅
+- [x] Phase 1: Verify middleware registration (proxy.ts) — compiled, build output shows `ƒ Proxy (Middleware)` ✅
+- [x] Phase 2: Fix login cookie flush — dùng `redirect()` thay `window.location.href`
+- [x] Phase 3: Remove session clear on decrypt fail
+- [x] Phase 4: maxAge đã có sẵn trong cookie
+- [x] Phase 5: Sliding session — re-encrypt JWT mỗi request
+- [ ] ⚠️ Phase 6: Runtime test (dev server + browser) — build TypeScript ✅, cần smoke test manual
+
+### 🟢 Orphan Cleanup ✅
+- [x] Xoá 11 orphan API routes không frontend reference
+- [x] staff_skills UI CRUD: `StaffSkillsModal.tsx` + TabStaff integration (đã có sẵn)
+- [x] submitReview UI: `ReviewCustomerModal.tsx` + CheckoutModal step 6 (đã có sẵn)
+- [x] 🔴 Bug H.1: MasterSchedule filter CANCELLED + thêm `.order('start_time')` ✅
+- [x] 🔴 Bug H.2: Orphaned locks khi COMPLETED — unlock trước lock đã có sẵn ✅
+- [x] 🟢 Dead code: Xoá `lib/auto-seo.ts` (toàn bộ file unreferenced) ✅
+
+### 🟢 UPGRADE_PLAN — Code Quality Audit (42 tasks, all ✅)
+
+> **Audit hoàn tất:** 2026-06-27 — 6 mảng, ~60 issues (10 critical, 7 high, 20+ medium)
+
+| Phase | Mục tiêu | Tasks | Trạng thái |
+|-------|----------|-------|------------|
+| 1 | Fix build & dev (critical path) | 5 | ✅ |
+| 2 | Schema & structured data (SEO) | 5 | ✅ |
+| 3 | Auth & security | 4 | ✅ |
+| 4 | Database hardening | 4 | ✅ |
+| 5 | Missing pages & UX | 4 | ✅ |
+| 6 | Chore | 7 | ✅ |
+| 7 | Lint warnings cleanup | 12 | ✅ |
+| +8 | `as any` audit & reduce (47→29) | 1 | ✅ |
+
+#### Phase 1 — Fix Build & Dev ✅
+- [x] Gộp Tailwind config (`tailwind.config.ts`, `tailwind.config.cjs`)
+- [x] Fix `next dev` trên Windows — thêm `--webpack` (`package.json`)
+- [x] Tạo root `not-found.tsx` (`app/not-found.tsx`)
+- [x] Xoá `userScalable: false` (`app/layout.tsx`)
+- [x] Verify build
+
+#### Phase 2 — Schema & Structured Data ✅
+- [x] Import ArticleSchema vào blog detail (`app/blog/[slug]/page.tsx`)
+- [x] Import BreadcrumbSchema vào layout (`app/layout.tsx`)
+- [x] Thêm `@id` cho tất cả schema entities (6 files `components/*Schema.tsx` + `layout.tsx`)
+- [x] ArticleSchema: thêm `dateModified`, `publisher`, `mainEntityOfPage` (`components/ArticleSchema.tsx`)
+- [x] Fix sitemap: bỏ hash fragment (`app/sitemap.ts`)
+
+#### Phase 3 — Auth & Security ✅
+- [x] Thêm auth guard cho 15+ server actions (`app/staff/actions.ts`, `app/admin/schedule/actions.ts`, `app/booking/actions/*`)
+- [x] Thêm auth guard cho API routes (`app/api/*/route.ts`)
+- [x] Xoá plaintext password fallback (`app/login/actions.ts`, `app/admin/actions.ts`)
+- [x] `sameSite: 'lax'` → `'strict'` (`utils/auth.ts`, `proxy.ts`)
+
+#### Phase 4 — Database Hardening ✅
+- [x] Thêm 20+ FK indexes (`database.sql`)
+- [x] Thêm `updated_at` auto trigger (`database.sql`)
+- [x] `cash_register.amount` → `DECIMAL(10,2)` (`database.sql`)
+- [x] Thêm CHECK constraints (`database.sql`)
+
+#### Phase 5 — Missing Pages & UX ✅
+- [x] Add `loading.tsx` — 4 routes (`app/blog/[slug]/loading.tsx`, etc.)
+- [x] Add `error.tsx` — 2 routes (`app/blog/[slug]/error.tsx`, etc.)
+- [x] Thêm `toast.error` cho catch blocks (`components/GlobalSearch.tsx`, etc.)
+- [x] ARIA + focus trap cho staff modals (`components/staff/*`)
+
+#### Phase 6 — Chore ✅
+- [x] Xoá `.eslintrc.json` (root)
+- [x] SkipLink tiếng Việt + `#main-content` (`components/SkipLink.tsx`)
+- [x] IosErrorHandler gating (`components/IosErrorHandler.tsx`)
+- [x] BottomNavigation `aria-current` (`components/BottomNavigation.tsx`)
+- [x] Double-check: `as any` giảm dần (toàn bộ codebase, 47→29)
+- [x] Xoá `uuid` khỏi dependencies (`package.json`)
+- [x] Thêm CI step `npm audit --audit-level=moderate` (CI config)
+
+#### Phase 7 — Lint Warnings Cleanup ✅
+- [x] Fix `react-hooks/rules-of-hooks` — 3 errors (`IosErrorHandler.tsx`)
+- [x] Fix `react-hooks/set-state-in-effect` — ~30 warnings (7 files)
+- [x] Fix `react-hooks/exhaustive-deps` — ~10 warnings (4 files)
+- [x] Fix `@next/next/no-img-element` (best practice)
+- [x] Fix `import/no-anonymous-default-export` (rule không active)
+- [x] Xoá `no-unused-vars` dư thừa — 272→0 warnings (50+ files)
+- [x] Fix `react-hooks/immutability` (2 files)
+- [x] Verify — `npm run lint` + `npx tsc --noEmit` (0 err, 0 TS err)
+- [x] Tạo PWA icons — icon-192.png / icon-512.png (`public/icons/`)
+- [x] Fix Multiple GoTrueClient instances (`lib/realtime.ts`)
+- [x] Set JWT_SECRET (`.env.local`)
+- [x] Thêm `loading.tsx` cho các route còn lại (4 routes)
+
+#### Phase 8 — `as any` Audit & Reduce ✅
+- [x] Giảm `as any` từ 47 xuống 29 occurrences (toàn bộ codebase)
+
+---
+
 ### 9. Bài học rút ra (Lessons Learned — cập nhật sau mỗi session)
 
 | # | Bài học | Nguyên nhân | Fix |
@@ -282,6 +395,11 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 | 4 | Số table trong SKILL.md sai (ghi 18, thực tế 34) | Không cập nhật SKILL.md khi thêm bảng | Cập nhật section 4 + 9 mỗi khi thay đổi schema |
 | 5 | Multi-statement SQL không đáng tin qua PgBouncer | Pooler transaction mode xử lý multi-statement không ổn định | Dùng DO block thay vì `;`-separated statements; script `run-migrations.mjs` chạy từng câu riêng |
 | 6 | **SecurityError on iOS Safari (Private Browsing / SW)** | Gọi `.register()` hoặc `.subscribe()` tự động ngoài tương tác người dùng | Bao bọc `.register()` và `indexedDB.open` trong `try-catch`, chỉ gọi `.subscribe()` qua sự kiện click. |
+| 7 | **`cookies().set()` + client redirect không flush cookie** | Server action set cookie rồi return JSON; client `window.location.href` không đợi cookie flush → login loop | Dùng `redirect()` từ `next/navigation` sau `cookies().set()` — NEXT_REDIRECT throw flush cookie trong cùng response (xem `app/login/actions.ts`) |
+| 8 | **Column existence not verified before upsert** | `saveStaffSkill()` gửi `updated_at` trong upsert nhưng column không tồn tại trong `staff_skills` — Supabase silently bỏ qua | Kiểm tra `database.sql` table definition trước khi gọi `.upsert()`. Nếu column không có → hoặc thêm migration hoặc xoá khỏi query. |
+| 9 | **Docs/plan nói "no UI" nhưng UI đã có sẵn** | UPGRADE_PLAN.md liệt kê `staff_skills` là orphan feature nhưng `StaffSkillsModal.tsx` (292 dòng) đã tồn tại với full CRUD | Trước khi code, grep tên table/feature trong FE. Tìm file pattern modal/dialog. Kiểm tra imports trong parent components. Chỉ treat là orphan khi thực sự không có reference. |
+| 10 | **Orphan route detection method** | 11 orphan API routes tồn tại không frontend reference — phát hiện thủ công qua grep từng route trong FE imports | Cross-reference: `ls app/api/` → từng route grep trong FE (`grep -r "api/X" app/ components/`). Route chỉ có trong `app/api/` mà không FE import → orphan. |
+| 11 | **UPGRADE_PLAN.md cleanup methodology** | Sau cleanup 750→94 lines, cần đảm bảo không mất pending item | Khi strip done items, git diff để verify. UPGRADE_PLAN.md chỉ chứa UNDONE items (<100 lines). Done items chuyển vào PLAN.md section tương ứng + docs/Log.md + docs/Audit.md. |
 
 ### 10. Quy tắc bổ sung cho migrations
 
@@ -293,6 +411,47 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 □ Dùng DO block thay IF NOT EXISTS cho publication
 □ Kiểm tra syntax qua pooler (chạy thử 1 lần) trước khi apply
 ```
+
+---
+
+### 11. Phase 9 — Mobile UI/UX Audit & Fix
+
+**Tổng quan:** Audit 24 files (homepage → admin → staff → components) — 17 HIGH items đã implement, ~40 MEDIUM items còn lại.
+
+**HIGH items đã fix:**
+| # | File | Fix |
+|---|------|-----|
+| 1 | `layout.tsx` | `env(safe-area-inset-*)` trên body |
+| 2 | `page.tsx` | `min-h-[44px]` trên badge, pills, footer links |
+| 3 | `HeaderNav.tsx` | Mobile menu items `min-h-[44px]` + `flex items-center` |
+| 4 | `HeaderNav.tsx` | `aria-expanded={mobileMenuOpen}` trên hamburger |
+| 5 | `BottomNavigation.tsx` | Label `text-[10px]` → `text-[11px]` |
+| 6 | `login/page.tsx` | Auto-Fill btn `opacity-0` → `md:opacity-0` |
+| 7 | `booking/page.tsx` | Sticky invoice `bottom: calc(4rem + env(safe-area-inset-bottom))` |
+| 8 | `staff/page.tsx` | Bottom nav `env(safe-area-inset-bottom)` |
+| 9 | `staff/page.tsx` | Label `text-[10px]` → `text-[11px]` |
+| 10 | `BookingCalendar.tsx` | Đã có `min-h-[44px]` từ trước |
+| 11 | `AppointmentLookup.tsx` | Progress timeline `text-[10px]` → `text-[11px]` |
+| 12 | `MasterSchedule.tsx` | Thêm `TouchSensor` + `PointerSensor` với activationConstraint |
+| 13 | `TabStaff.tsx` | Action buttons `min-h-[44px]` + `px-3 py-2` |
+| 14 | `TabServices.tsx` | Toggle/badge `min-h-[44px]` + `px-3 py-1.5` |
+| 15 | `TabTasks.tsx` | Stats grid `grid-cols-2 sm:grid-cols-5` |
+| 16 | `TabReports.tsx` | Export dropdown thêm `group-focus-within:block` |
+| 17 | `admin/page.tsx` | Header mobile `env(safe-area-inset-top)` |
+
+**Menu cập nhật thêm:**
+- BottomNavigation admin: 4 items + hamburger mở drawer (thêm prop `onMenuClick`)
+- Admin drawer: Cấu Hình collapsible accordion (mặc định đóng)
+- Homepage "Dịch Vụ" link → `/#services`
+
+**MEDIUM items (đã implement):**
+- `text-[10px]` → `text-[11px]` trên buttons/badges interactive ✅
+- `py-1.5`/`py-2` buttons → `py-2.5` + `min-h-[44px]` ✅
+- Mobile card fallback: TabStaff, TabServices, TabAttendance, CustomerCRM ✅
+- Skeleton loading trong booking flow ✅
+- Search inputs `py-2` → `min-h-[44px]` ✅
+- `prefers-reduced-motion` support trong globals.css ✅
+- `xs:` breakpoint (480px) trong tailwind.config.ts ✅
 
 ---
 

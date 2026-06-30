@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { createClient, RealtimeChannel } from '@supabase/supabase-js';
+import { RealtimeChannel } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/client';
 
 /**
  * Safely subscribe to a Supabase Realtime channel.
@@ -38,20 +39,23 @@ export function useScheduleRealtime({ date, onDataChanged, enabled = true }: Use
   useEffect(() => {
     if (!enabled || !date) return;
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
+    const supabase = createClient();
 
     const dayStart = `${date}T00:00:00+07:00`;
     const dayEnd = `${date}T23:59:59.999+07:00`;
+
+    // Clean up any existing channel first
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
 
     const channel = supabase
       .channel('schedule_updates')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'appointments' },
-        (payload) => {
+        (payload: Record<string, unknown>) => {
           const newRecord = payload.new as Record<string, unknown> | undefined;
           const oldRecord = payload.old as Record<string, unknown> | undefined;
           const start = (newRecord?.start_time || oldRecord?.start_time) as string | undefined;
@@ -63,7 +67,7 @@ export function useScheduleRealtime({ date, onDataChanged, enabled = true }: Use
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'time_slot_locks' },
-        (payload) => {
+        (payload: Record<string, unknown>) => {
           const newRecord = payload.new as Record<string, unknown> | undefined;
           const lockDate = (newRecord?.lock_date) as string | undefined;
           if (lockDate === date) {
@@ -80,7 +84,7 @@ export function useScheduleRealtime({ date, onDataChanged, enabled = true }: Use
           // Poll every 5 minutes as a safe alternative.
           fallbackTimerRef.current = setInterval(onDataChanged, 5 * 60 * 1000);
         } else {
-          channelRef.current = channel as unknown as RealtimeChannel;
+          channelRef.current = channel;
         }
       } catch (e) {
         console.warn('[Realtime] Safe subscription failed:', e);
@@ -91,6 +95,9 @@ export function useScheduleRealtime({ date, onDataChanged, enabled = true }: Use
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
+      } else if (channel) {
+        // Cleanup channel even if subscription failed/never assigned to ref
+        supabase.removeChannel(channel);
       }
       if (fallbackTimerRef.current) {
         clearInterval(fallbackTimerRef.current);

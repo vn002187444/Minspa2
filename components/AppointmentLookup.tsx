@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { motion } from 'motion/react';
-import { Search, Calendar, Clock, User, Sparkles, Check, ChevronDown, CheckCircle, ShieldAlert, BadgeInfo, X, Star, AlertTriangle, Trash2 } from 'lucide-react';
+import { Search, Calendar, Clock, Sparkles, Check, CheckCircle, ShieldAlert, BadgeInfo, X, Star, AlertTriangle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { lookupAppointmentsByPhone, submitAppointmentReview, cancelAppointmentByCustomer } from '@/app/booking/actions/customer';
@@ -58,7 +58,7 @@ interface ExistingReview {
   comment?: string | null;
 }
 
-function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }: { apptId: string; existingReview: ExistingReview | null; onReviewSubmitted: (rating: number, tags: string[], comment?: string) => void }) {
+function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }: { apptId: string; existingReview: ExistingReview | null; onReviewSubmitted: (_rating: number, _tags: string[], _comment?: string) => void }) {
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -87,7 +87,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
       } else {
         setSubmitError(res.error || 'Đã xảy ra lỗi khi gửi đánh giá.');
       }
-    } catch (err) {
+    } catch {
       setSubmitError('Lỗi kết nối máy chủ.');
     } finally {
       setIsSubmitting(false);
@@ -151,7 +151,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="text-[11px] font-bold uppercase tracking-wider text-white bg-[#8D6E53] hover:bg-[#5C4033] px-3.5 py-1.5 rounded-xl transition-all shadow-sm cursor-pointer hover:shadow"
+          className="text-[11px] font-bold uppercase tracking-wider text-white bg-[#8D6E53] hover:bg-[#5C4033] px-3.5 py-2.5 rounded-xl transition-all shadow-sm cursor-pointer hover:shadow min-h-[44px]"
         >
           Đánh giá ngay
         </button>
@@ -209,7 +209,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
 
       {/* Quick Tags Selector */}
       <div className="space-y-1.5">
-        <div className="text-[10px] uppercase font-bold text-[#8D6E53] tracking-wider">Chọn nhận xét nhanh:</div>
+          <div className="text-[11px] uppercase font-bold text-[#8D6E53] tracking-wider">Chọn nhận xét nhanh:</div>
         <div className="flex flex-wrap gap-1.5">
           {tags.map((tag) => {
             const isSelected = selectedTags.includes(tag);
@@ -218,7 +218,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
                 key={tag}
                 type="button"
                 onClick={() => toggleTag(tag)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer border ${
+                className={`px-3 py-2.5 rounded-lg text-xs font-medium transition-all cursor-pointer border min-h-[44px] ${
                   isSelected
                     ? 'bg-[#5C4033] border-[#5C4033] text-white shadow-sm'
                     : 'bg-white border-[#EADDCD] text-gray-600 hover:border-[#8D6E53]'
@@ -233,7 +233,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
 
       {/* Text Comment Input Area */}
       <div className="space-y-1.5">
-        <label htmlFor="lookup-comment" className="text-[10px] uppercase font-bold text-[#8D6E53] tracking-wider block">Ý kiến đóng góp khác (Nếu có):</label>
+        <label htmlFor="lookup-comment" className="text-[11px] uppercase font-bold text-[#8D6E53] tracking-wider block">Ý kiến đóng góp khác (Nếu có):</label>
         <textarea
           id="lookup-comment"
           value={comment}
@@ -255,7 +255,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
         type="button"
         onClick={handleSubmit}
         disabled={isSubmitting}
-        className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+        className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 min-h-[44px]"
       >
         {isSubmitting ? (
           <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -283,7 +283,7 @@ function CancelAppointmentManager({ apptId, startTime, onCancelled }: { apptId: 
       } else {
         setError(res.error || "Gặp lỗi ngoài ý muốn khi hủy lịch.");
       }
-    } catch (err) {
+    } catch {
       setError("Lỗi kết nối máy chủ.");
     } finally {
       setIsSubmitting(false);
@@ -309,14 +309,14 @@ function CancelAppointmentManager({ apptId, startTime, onCancelled }: { apptId: 
           <button
             onClick={() => setShowConfirm(false)}
             disabled={isSubmitting}
-            className="px-3.5 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500 font-bold text-[10px] uppercase tracking-wider cursor-pointer transition-all"
+            className="px-3.5 py-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-500 font-bold text-[11px] uppercase tracking-wider cursor-pointer transition-all min-h-[44px]"
           >
             Giữ lại lịch
           </button>
           <button
             onClick={handleCancel}
             disabled={isSubmitting}
-            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[10px] uppercase tracking-wider cursor-pointer shadow-sm active:scale-95 transition-all flex items-center gap-1"
+            className="px-3.5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-[11px] uppercase tracking-wider cursor-pointer shadow-sm active:scale-95 transition-all flex items-center gap-1 min-h-[44px]"
           >
             {isSubmitting ? (
               <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -335,7 +335,7 @@ function CancelAppointmentManager({ apptId, startTime, onCancelled }: { apptId: 
       <button
         type="button"
         onClick={() => setShowConfirm(true)}
-        className="text-[10px] font-bold uppercase tracking-widest text-[#8D6E53] hover:text-white bg-[#FAF0E6] hover:bg-rose-600 px-3.5 py-1.5 rounded-xl transition-all border border-[#EADDCD] hover:border-rose-600 cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow"
+        className="text-[11px] font-bold uppercase tracking-widest text-[#8D6E53] hover:text-white bg-[#FAF0E6] hover:bg-rose-600 px-3.5 py-2.5 rounded-xl transition-all border border-[#EADDCD] hover:border-rose-600 cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow min-h-[44px]"
       >
         <Trash2 className="w-3.5 h-3.5" />
         Hủy lịch đặt này
@@ -383,7 +383,9 @@ function AiPostCareAdviceCard({ services }: { services: { name: string }[] }) {
       tips.push("• Chăm sóc bảo vệ làn da của bạn luôn đủ ẩm và tránh nắng trực tiếp sau khi làm dịch vụ.");
     }
 
-    setAdvice(tips.join('\n'));
+    startTransition(() => {
+      setAdvice(tips.join('\n'));
+    });
   }, [services]);
 
   return (
@@ -411,7 +413,7 @@ export default function AppointmentLookup() {
 
   const handleReviewSubmitted = (apptId: string, rating: number, quickTags: string[], comment?: string) => {
     if (!results || !results.appointments) return;
-    const updated = results.appointments.map((appt: any) => {
+    const updated = results.appointments.map((appt) => {
       if (appt.id === apptId) {
         return {
           ...appt,
@@ -428,7 +430,7 @@ export default function AppointmentLookup() {
 
   const handleAppointmentCancelled = (apptId: string) => {
     if (!results || !results.appointments) return;
-    const updated = results.appointments.map((appt: any) => {
+    const updated = results.appointments.map((appt) => {
       if (appt.id === apptId) {
         return {
           ...appt,
@@ -455,7 +457,7 @@ export default function AppointmentLookup() {
     try {
       const res = await lookupAppointmentsByPhone(cleanPhone);
       setResults(res);
-    } catch (err) {
+    } catch {
       setResults({ success: false, error: 'Đã xảy ra hệ thống ngoài ý muốn. Vui lòng thử lại sau.' });
     } finally {
       setIsLoading(false);
@@ -545,7 +547,7 @@ export default function AppointmentLookup() {
                   {/* Appointments Timeline / List */}
                   {results.appointments && results.appointments.length > 0 ? (
                     <div className="space-y-6">
-                      {results.appointments.map((appt: any, idx: number) => {
+                      {results.appointments.map((appt, _idx: number) => {
                         const statusInfo = STATUS_CONFIG[appt.status] || STATUS_CONFIG['PENDING_RANDOM'];
                         const isCancelled = appt.status === 'CANCELLED';
                         const isCompleted = appt.status === 'COMPLETED';
@@ -629,7 +631,7 @@ export default function AppointmentLookup() {
                                             )}
                                           </div>
                                           <span
-                                            className={`text-[10px] mt-2 font-bold uppercase tracking-wider block ${
+                                            className={`text-[11px] mt-2 font-bold uppercase tracking-wider block ${
                                               isCurrent ? 'text-[#8D6E53]' : isPassed ? 'text-gray-700' : 'text-gray-400'
                                             }`}
                                           >

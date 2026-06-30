@@ -96,7 +96,7 @@ export default function HomeMascotBanner() {
               </div>
               <button
                 onClick={() => setCurrentTip((currentTip + 1) % tips.length)}
-                className="ml-auto text-[10px] font-bold theme-text-secondary hover:text-[#5C4033] flex items-center gap-0.5 cursor-pointer"
+                className="ml-auto text-[11px] font-bold theme-text-secondary hover:text-[#5C4033] flex items-center gap-0.5 cursor-pointer"
               >
                 Xem tiếp <ChevronRight className="w-3 h-3" />
               </button>
@@ -125,7 +125,7 @@ export default function HomeMascotBanner() {
 
             <button
               onClick={() => setShowAll(!showAll)}
-              className="mt-2 text-[10px] font-bold text-pink-600 hover:text-pink-700 cursor-pointer flex items-center gap-1"
+              className="mt-2 text-[11px] font-bold text-pink-600 hover:text-pink-700 cursor-pointer flex items-center gap-1"
             >
               <Heart className="w-3 h-3" />
               {showAll ? 'Thu gọn' : 'Xem tất cả dịch vụ Min đề xuất'}

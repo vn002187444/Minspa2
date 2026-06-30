@@ -87,7 +87,7 @@ export default function StaffDetailModal({ staff, stats, onClose }: StaffDetailM
                     {stats.topServices.length === 0 && (
                       <p className="text-gray-500 text-sm">Chưa có dữ liệu</p>
                     )}
-                    {stats.topServices.map((s: any, i: number) => (
+                    {stats.topServices.map((s, i: number) => (
                       <div
                         key={i}
                         className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded-lg"
@@ -108,7 +108,7 @@ export default function StaffDetailModal({ staff, stats, onClose }: StaffDetailM
                     {stats.topCustomers.length === 0 && (
                       <p className="text-gray-500 text-sm">Chưa có dữ liệu</p>
                     )}
-                    {stats.topCustomers.map((c: any, i: number) => (
+                    {stats.topCustomers.map((c, i: number) => (
                       <div
                         key={i}
                         className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded-lg"

@@ -45,7 +45,7 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: E
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const activeServices = services.filter((s:any) => s.is_active);
+  const activeServices = services.filter((s) => s.is_active);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,7 +132,7 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: E
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#8D6E53]/20 focus:border-[#8D6E53] outline-none transition-all text-sm font-medium bg-white"
             >
               <option value="">-- Chọn dịch vụ --</option>
-              {activeServices.map((s: any) => (
+              {activeServices.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name} ({Number(s.price).toLocaleString("vi")}đ)
                 </option>
@@ -210,12 +210,12 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: E
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-[#8D6E53]/20 focus:border-[#8D6E53] outline-none transition-all text-sm font-medium font-mono"
               placeholder="VD: 10"
             />
-            <p className="text-[10px] text-gray-400 mt-1">Khi nhân viên bán thành công gói này, thợ được nhận: <strong className="text-pink-600">{Math.round((Number(form.price) || 0) * (Number(form.commission_percentage) || 0) / 100).toLocaleString("vi")}đ</strong> hoa hồng.</p>
+            <p className="text-[11px] text-gray-400 mt-1">Khi nhân viên bán thành công gói này, thợ được nhận: <strong className="text-pink-600">{Math.round((Number(form.price) || 0) * (Number(form.commission_percentage) || 0) / 100).toLocaleString("vi")}đ</strong> hoa hồng.</p>
           </div>
 
           {pkg.id && (
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
-              <input type="checkbox" id="pkg_is_active" checked={form.is_active !== false} onChange={(e) => setForm((prev: any) => ({ ...prev, is_active: e.target.checked }))} className="w-4 h-4 rounded border-gray-300 text-[#8D6E53] focus:ring-[#8D6E53] cursor-pointer" />
+              <input type="checkbox" id="pkg_is_active" checked={form.is_active !== false} onChange={(e) => setForm((prev) => ({ ...prev, is_active: e.target.checked }))} className="w-4 h-4 rounded border-gray-300 text-[#8D6E53] focus:ring-[#8D6E53] cursor-pointer" />
               <label htmlFor="pkg_is_active" className="text-sm font-medium text-gray-700 cursor-pointer">Gói đang kích hoạt (hiển thị trên website)</label>
             </div>
           )}

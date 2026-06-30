@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 
+// Only show in development — never expose runtime errors to users in production
+
 interface ErrorInfo {
   message: string;
   source?: string;
@@ -15,6 +17,7 @@ export default function IosErrorHandler() {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
     if (typeof window === 'undefined') return;
 
     const oldHandler = window.onerror;

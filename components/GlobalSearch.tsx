@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Search, X, BookOpen, Sparkles, ArrowRight } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface SearchResult {
   id: string;
@@ -48,7 +50,7 @@ export default function GlobalSearch() {
         if (data.success) {
           setResults({
             articles: data.results.articles,
-            services: data.results.services.map((s: any) => ({
+             services: data.results.services.map((s: any) => ({
               id: s.id,
               title: s.name,
               link: '/booking',
@@ -57,8 +59,8 @@ export default function GlobalSearch() {
             })),
           });
         }
-      } catch (err) {
-        console.error('Search error:', err);
+      } catch {
+        toast.error('Lỗi tìm kiếm, vui lòng thử lại');
       } finally {
         setIsLoading(false);
       }
@@ -114,7 +116,7 @@ export default function GlobalSearch() {
                           >
                             {art.imageUrl && (
                               <div className="w-10 h-10 rounded-lg overflow-hidden bg-stone-100 shrink-0">
-                                <img src={art.imageUrl} alt="" className="w-full h-full object-cover" />
+                                <Image src={art.imageUrl} alt="" width={40} height={40} className="w-full h-full object-cover" />
                               </div>
                             )}
                             <div className="flex-1 min-w-0">

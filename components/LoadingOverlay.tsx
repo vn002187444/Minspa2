@@ -1,7 +1,6 @@
 'use client';
 
 import { useFocusTrap } from '@/hooks/useFocusTrap';
-import { Loader2 } from 'lucide-react';
 
 interface LoadingOverlayProps {
   isVisible: boolean;

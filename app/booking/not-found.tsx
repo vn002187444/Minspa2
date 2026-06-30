@@ -1,5 +1,8 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { SearchX } from 'lucide-react';
+
+export const metadata: Metadata = { robots: { index: false } };
 
 export default function BookingNotFound() {
   return (

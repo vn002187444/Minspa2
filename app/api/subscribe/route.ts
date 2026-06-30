@@ -23,13 +23,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (!targetUserId && !customerId) {
-      return NextResponse.json({ 
-        success: false, 
-        message: 'No authenticated user or customer identified to link. Storing subscription deferred.' 
-      });
-    }
-
     let resultError = null;
 
     if (targetUserId) {

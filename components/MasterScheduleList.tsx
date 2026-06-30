@@ -11,23 +11,23 @@ interface StaffInfo {
 interface ListViewProps {
   viewType: 'grid' | 'list';
   listGroupType: 'time' | 'staff';
-  setListGroupType: (v: 'time' | 'staff') => void;
+  setListGroupType: (_v: 'time' | 'staff') => void;
   hideEmptySlots: boolean;
-  setHideEmptySlots: (v: boolean) => void;
+  setHideEmptySlots: (_v: boolean) => void;
   filterStaffId: string;
-  setFilterStaffId: (v: string) => void;
+  setFilterStaffId: (_v: string) => void;
   timeSlots: string[];
   displayStaffList: StaffInfo[];
-  getSlotAppointment: (staffId: string, slot: string) => ApptInfo | null;
-  getSlotLock: (staffId: string, slot: string) => object | null;
-  getStatusStyle: (appt: ApptInfo) => string;
-  isCascadeShifted: (appt: ApptInfo) => boolean;
+  getSlotAppointment: (_staffId: string, _slot: string) => ApptInfo | null;
+  getSlotLock: (_staffId: string, _slot: string) => object | null;
+  getStatusStyle: (_appt: ApptInfo) => string;
+  isCascadeShifted: (_appt: ApptInfo) => boolean;
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
-  handleSelectAppt: (appt: ApptInfo) => void;
+  handleSelectAppt: (_appt: ApptInfo) => void;
   data: { appointments: ApptInfo[] };
-  getVNTimeStr: (dateStr: string) => string;
-  getEffectiveStart: (appt: ApptInfo) => string;
-  getEffectiveEnd: (appt: ApptInfo) => string;
+  getVNTimeStr: (_dateStr: string) => string;
+  getEffectiveStart: (_appt: ApptInfo) => string;
+  getEffectiveEnd: (_appt: ApptInfo) => string;
 }
 
 const MasterScheduleList = React.memo(function MasterScheduleList({
@@ -41,7 +41,6 @@ const MasterScheduleList = React.memo(function MasterScheduleList({
   timeSlots,
   displayStaffList,
   getSlotAppointment,
-  getSlotLock,
   getStatusStyle,
   isCascadeShifted,
   mode,
@@ -58,7 +57,7 @@ const MasterScheduleList = React.memo(function MasterScheduleList({
           <button
             type="button"
             onClick={() => setListGroupType('time')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
               listGroupType === 'time'
                 ? 'bg-[#5C4033] text-white shadow-xs'
                 : 'text-gray-500 hover:text-gray-900'
@@ -69,7 +68,7 @@ const MasterScheduleList = React.memo(function MasterScheduleList({
           <button
             type="button"
             onClick={() => setListGroupType('staff')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[44px] ${
               listGroupType === 'staff'
                 ? 'bg-[#5C4033] text-white shadow-xs'
                 : 'text-gray-500 hover:text-gray-900'
@@ -84,7 +83,7 @@ const MasterScheduleList = React.memo(function MasterScheduleList({
             <button
               type="button"
               onClick={() => setHideEmptySlots(!hideEmptySlots)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+              className={`px-3 py-2.5 rounded-xl text-xs font-bold border transition-all cursor-pointer min-h-[44px] ${
                 hideEmptySlots
                   ? 'bg-[#563c30] text-white border-[#563c30]'
                   : 'bg-white text-gray-600 border-[#EADDCD] hover:border-[#8D6E53]'
@@ -148,14 +147,14 @@ interface TimeGroupedViewProps {
   displayStaffList: StaffInfo[];
   filterStaffId: string;
   hideEmptySlots: boolean;
-  getSlotAppointment: (staffId: string, slot: string) => ApptInfo | null;
+  getSlotAppointment: (_staffId: string, _slot: string) => ApptInfo | null;
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
-  handleSelectAppt: (appt: ApptInfo) => void;
-  isCascadeShifted: (appt: ApptInfo) => boolean;
-  getStatusStyle: (appt: ApptInfo) => string;
-  getVNTimeStr: (dateStr: string) => string;
-  getEffectiveStart: (appt: ApptInfo) => string;
-  getEffectiveEnd: (appt: ApptInfo) => string;
+  handleSelectAppt: (_appt: ApptInfo) => void;
+  isCascadeShifted: (_appt: ApptInfo) => boolean;
+  getStatusStyle: (_appt: ApptInfo) => string;
+  getVNTimeStr: (_dateStr: string) => string;
+  getEffectiveStart: (_appt: ApptInfo) => string;
+  getEffectiveEnd: (_appt: ApptInfo) => string;
 }
 
 function TimeGroupedView({
@@ -167,7 +166,6 @@ function TimeGroupedView({
   mode,
   handleSelectAppt,
   isCascadeShifted,
-  getStatusStyle,
   getVNTimeStr,
   getEffectiveStart,
   getEffectiveEnd,
@@ -250,7 +248,7 @@ function TimeGroupedView({
                           <div className="space-y-1 flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span
-                                className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md uppercase tracking-wider ${
+                                className={`px-2 py-0.5 text-[11px] font-extrabold rounded-md uppercase tracking-wider ${
                                   appt.status === 'CONFIRMED'
                                     ? 'bg-amber-50 text-amber-700 border border-amber-200'
                                     : appt.status === 'IN_PROGRESS'
@@ -338,13 +336,13 @@ function TimeGroupedView({
 interface StaffGroupedViewProps {
   displayStaffList: StaffInfo[];
   mode: 'READ_ONLY' | 'STAFF' | 'ADMIN';
-  handleSelectAppt: (appt: ApptInfo) => void;
-  isCascadeShifted: (appt: ApptInfo) => boolean;
-  getStatusStyle: (appt: ApptInfo) => string;
+  handleSelectAppt: (_appt: ApptInfo) => void;
+  isCascadeShifted: (_appt: ApptInfo) => boolean;
+  getStatusStyle: (_appt: ApptInfo) => string;
   data: { appointments: ApptInfo[] };
-  getVNTimeStr: (dateStr: string) => string;
-  getEffectiveStart: (appt: ApptInfo) => string;
-  getEffectiveEnd: (appt: ApptInfo) => string;
+  getVNTimeStr: (_dateStr: string) => string;
+  getEffectiveStart: (_appt: ApptInfo) => string;
+  getEffectiveEnd: (_appt: ApptInfo) => string;
 }
 
 function StaffGroupedView({
@@ -352,7 +350,6 @@ function StaffGroupedView({
   mode,
   handleSelectAppt,
   isCascadeShifted,
-  getStatusStyle,
   data,
   getVNTimeStr,
   getEffectiveStart,
@@ -389,7 +386,7 @@ function StaffGroupedView({
                   </span>
                   <span className="font-bold text-sm text-[#3A2E2B]">{staff.full_name || staff.username}</span>
                 </div>
-              <span className="text-[10px] bg-white px-2.5 py-1 rounded-full text-gray-500 border border-[#EADDCD]/40">
+              <span className="text-[11px] bg-white px-2.5 py-1 rounded-full text-gray-500 border border-[#EADDCD]/40">
                 {staffAppts.length} ca đặt hẹn
               </span>
             </div>
@@ -446,7 +443,7 @@ function StaffGroupedView({
                         </div>
 
                         <span
-                          className={`px-2 py-0.5 text-[10px] font-extrabold rounded-md uppercase shrink-0 tracking-wider ${
+                          className={`px-2 py-0.5 text-[11px] font-extrabold rounded-md uppercase shrink-0 tracking-wider ${
                             appt.status === 'CONFIRMED'
                               ? 'bg-amber-50 text-amber-700 border border-amber-200'
                               : appt.status === 'IN_PROGRESS'

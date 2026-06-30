@@ -1,5 +1,6 @@
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
+import { type NextResponse } from 'next/server';
 
 let _key: Uint8Array | null = null;
 function getKey(): Uint8Array {
@@ -51,6 +52,7 @@ export async function createSession(user: { id: string; role: string; username: 
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
+    maxAge: 30 * 24 * 60 * 60,
   });
 }
 
@@ -60,6 +62,16 @@ export async function getSession() {
   if (!session) return null;
   const parsed = await decrypt(session);
   return parsed;
+}
+
+export function setSessionCookie(response: NextResponse, token: string) {
+  response.cookies.set('session', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  });
 }
 
 export async function logout() {
