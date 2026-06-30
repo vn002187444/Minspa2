@@ -35,7 +35,7 @@ export default function ArticleSchema({
       name: "Min Nail & Hair",
       logo: {
         "@type": "ImageObject",
-        url: `${baseUrl || ''}/icons/icon-512.svg`,
+        url: `${baseUrl || ''}/icons/icon-512.png`,
       },
     },
     mainEntityOfPage: {

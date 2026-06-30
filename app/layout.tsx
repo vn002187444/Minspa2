@@ -154,7 +154,11 @@ export default function RootLayout({
               "@type": "LocalBusiness",
               "@id": "#local-business",
               "name": "Min Nail & Hair",
-              "image": `${baseUrl}/icons/icon-512.svg`,
+              "image": `${baseUrl}/icons/icon-512.png`,
+              "logo": {
+                "@type": "ImageObject",
+                "url": `${baseUrl}/icons/icon-512.png`,
+              },
               "url": baseUrl,
               "telephone": "+84934323878",
               "address": {

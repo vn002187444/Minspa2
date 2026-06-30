@@ -1344,7 +1344,7 @@ export async function getSystemHealth() {
   }
 }
 
-export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_assign') {
+export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_assign' | 'seo_publish') {
   const session = await getSession();
   if (!session || session.user.role !== 'ADMIN') throw new Error('Unauthorized');
 
@@ -1353,6 +1353,7 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
     reminders: `${baseUrl}/api/cron/reminders`,
     marketing: `${baseUrl}/api/cron/marketing`,
     auto_assign: `${baseUrl}/api/cron/auto-assign`,
+    seo_publish: `${baseUrl}/api/cron/seo-publish`,
   };
 
   try {
@@ -2007,14 +2008,14 @@ export async function getAutoSeoConfig() {
   try {
     const supabase = await createClient();
     const { data } = await supabase.from('auto_seo_config').select('*').eq('id', 1).single();
-    return data || { enabled: false, schedule_day: 'THU', schedule_hour: 20, topic_pool: [] };
+    return data || { enabled: false, schedule_days: ['THU'], schedule_hour: 20, topic_pool: [] };
   } catch {
-    return { enabled: false, schedule_day: 'THU', schedule_hour: 20, topic_pool: [] };
+    return { enabled: false, schedule_days: ['THU'], schedule_hour: 20, topic_pool: [] };
   }
 }
 
 export async function saveAutoSeoConfig(payload: {
-  enabled: boolean; schedule_day: string; schedule_hour: number; topic_pool: string[];
+  enabled: boolean; schedule_days: string[]; schedule_hour: number; topic_pool: string[];
 }) {
   await checkAdminOrManager();
   try {

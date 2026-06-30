@@ -193,6 +193,33 @@ export default function AdminBlogPage() {
   };
 
   const [suggestedImages, setSuggestedImages] = useState<string[]>([]);
+  const suggestedImagesRef = useRef<string[]>([]);
+  const autoSuggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-suggest images when title changes
+  useEffect(() => {
+    if (autoSuggestTimer.current) clearTimeout(autoSuggestTimer.current);
+    const t = (title || aiTopic || '').trim();
+    if (!t) return;
+    // Don't re-trigger if images already loaded for this session
+    if (suggestedImagesRef.current.length > 0) return;
+    autoSuggestTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/ai-assist', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'suggestImages', title: t }),
+        });
+        const data = await res.json();
+        if (data.images?.length > 0) {
+          suggestedImagesRef.current = data.images;
+          setSuggestedImages(data.images);
+          startTransition(() => setImageUrl(data.images[0]));
+        }
+      } catch { /* silent */ }
+    }, 1500);
+    return () => { if (autoSuggestTimer.current) clearTimeout(autoSuggestTimer.current); };
+  }, [title, aiTopic]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -202,6 +229,7 @@ export default function AdminBlogPage() {
     setContent('');
     setImageUrl('');
     setSuggestedImages([]);
+    suggestedImagesRef.current = [];
     setError('');
   };
 
@@ -545,20 +573,33 @@ export default function AdminBlogPage() {
                     className="w-full bg-[#FAF6F0] border-2 border-[#EADDCD] rounded-2xl pl-10 pr-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]/50 text-stone-800 font-semibold text-[11px]"
                   />
                 </div>
-                {suggestedImages.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto pb-1 pt-1">
-                    {suggestedImages.map((img, idx) => (
+                <div className="flex gap-2 overflow-x-auto pb-1 pt-1 min-h-[3.5rem]">
+                  {Array.from({ length: 4 }).map((_, idx) => {
+                    const img = suggestedImages[idx];
+                    const isSelected = img && imageUrl === img;
+                    return (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setImageUrl(img)}
-                        className={`shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${imageUrl === img ? 'border-purple-500 ring-2 ring-purple-300' : 'border-[#EADDCD] hover:border-[#8D6E53]'}`}
+                        onClick={() => { if (img) setImageUrl(img); }}
+                        disabled={!img}
+                        className={`shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center ${
+                          isSelected
+                            ? 'border-purple-500 ring-2 ring-purple-300'
+                            : img
+                              ? 'border-[#EADDCD] hover:border-[#8D6E53]'
+                              : 'border-dashed border-gray-300 bg-gray-50 cursor-default'
+                        }`}
                       >
-                        <Image src={img} alt={`suggest ${idx}`} width={80} height={56} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} unoptimized />
+                        {img ? (
+                          <Image src={img} alt={`gợi ý ${idx + 1}`} width={80} height={56} className="w-full h-full object-cover" unoptimized />
+                        ) : (
+                          <span className="text-[18px] text-gray-300 font-light leading-none">+</span>
+                        )}
                       </button>
-                    ))}
-                  </div>
-                )}
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Content Textarea */}

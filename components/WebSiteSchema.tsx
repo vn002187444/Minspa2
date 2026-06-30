@@ -8,6 +8,8 @@ export default function WebSiteSchema({ baseUrl }: WebSiteSchemaProps) {
     "@type": "WebSite",
     "@id": "#website",
     url: baseUrl,
+    name: "Min Nail & Hair",
+    publisher: { "@id": "#local-business" },
     potentialAction: {
       "@type": "SearchAction",
       target: `${baseUrl}/search?q={search_term_string}`,
