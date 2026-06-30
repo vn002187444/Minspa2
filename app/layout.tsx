@@ -69,6 +69,7 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [`${baseUrl}/icons/icon-512.png`],
     },
     appleWebApp: { capable: true, statusBarStyle: "default", title: "Min Salon" },
+    robots: { index: true, follow: true },
   };
 
   try {
