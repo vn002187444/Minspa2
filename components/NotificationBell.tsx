@@ -64,11 +64,15 @@ export default function NotificationBell() {
     fetchUnreadCount().then(() => {
       // Get current user ID for Realtime subscription
       fetch('/api/auth/me').then(async (res) => {
+        if (res.status === 401) {
+          startTransition(() => { setAuthenticated(false); });
+          return;
+        }
         if (res.ok) {
           const me = await res.json();
           if (me.authenticated && me.user) {
             userIdRef.current = me.user.id;
-            setAuthenticated(true);
+            startTransition(() => { setAuthenticated(true); });
           }
         }
       }).catch(() => {});

@@ -82,16 +82,18 @@ export default function HomeMascotBanner() {
             </AnimatePresence>
 
             <div className="flex items-center gap-2 mt-3">
-              <div className="flex gap-1.5">
+              <div className="flex gap-1">
                 {tips.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentTip(i)}
-                    className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                      i === currentTip ? 'theme-bg-accent w-4' : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
-                    aria-label={`Tip ${i + 1}`}
-                  />
+                    className="p-2 rounded-full transition-all cursor-pointer"
+                    aria-label={`Mẹo ${i + 1}`}
+                  >
+                    <span className={`block rounded-full transition-all ${
+                      i === currentTip ? 'w-5 h-2 bg-[#8D6E53]' : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+                    }`} />
+                  </button>
                 ))}
               </div>
               <button

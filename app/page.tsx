@@ -341,6 +341,7 @@ export default async function Home() {
                     <Link 
                       href={`/booking?buy_pkg=${pkg.id}`}
                       className="px-4 py-2.5 bg-gray-900 hover:bg-[#3A2E2B] text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer uppercase"
+                      aria-label={`Đặt mua gói ${pkg.name}`}
                     >
                       Đặt Mua <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
@@ -505,21 +506,21 @@ export default async function Home() {
             <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
               <Shield className="w-6 h-6 text-[#8D6E53]" />
             </div>
-            <h4 className="font-display font-bold text-base text-[#3A2E2B]">Yên Tâm Vệ Sinh</h4>
+            <h3 className="font-display font-bold text-base text-[#3A2E2B]">Yên Tâm Vệ Sinh</h3>
             <p className="text-xs text-gray-500">Mọi dụng cụ kềm kéo, chậu ngâm đều được khử trùng sấy tia cực tím chu đáo nhất.</p>
           </div>
           <div className="space-y-2">
             <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
               <Award className="w-6 h-6 text-[#8D6E53]" />
             </div>
-            <h4 className="font-display font-bold text-base text-[#3A2E2B]">Tay Nghề Thành Thạo</h4>
+            <h3 className="font-display font-bold text-base text-[#3A2E2B]">Tay Nghề Thành Thạo</h3>
             <p className="text-xs text-gray-500">Kỹ thuật viên gội đầu và thợ làm móng được chứng nhận tay nghề cao, tỉ mỉ tận tâm.</p>
           </div>
           <div className="space-y-2">
             <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
               <Heart className="w-6 h-6 text-[#8D6E53]" />
             </div>
-            <h4 className="font-display font-bold text-base text-[#3A2E2B]">Dược Liệu Thiên Nhiên</h4>
+            <h3 className="font-display font-bold text-base text-[#3A2E2B]">Dược Liệu Thiên Nhiên</h3>
             <p className="text-xs text-gray-500">Min sử dụng 100% dầu gội thảo dược thảo mộc đun nấu thủ công chất lượng cao nhất.</p>
           </div>
         </div>
@@ -604,7 +605,7 @@ export default async function Home() {
                   M
                 </div>
                 <div>
-                  <h4 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h4>
+                  <h3 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h3>
                   <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
                 </div>
               </div>
