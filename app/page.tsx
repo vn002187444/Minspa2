@@ -14,16 +14,10 @@ import {
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import HeaderNav from '@/components/HeaderNav';
-import AppointmentLookup from '@/components/AppointmentLookup';
 import BottomNavigation from '@/components/BottomNavigation';
 import ServiceBookButton from '@/components/ServiceBookButton';
-import ScrollReveal from '@/components/ScrollReveal';
-import StatsCounter from '@/components/StatsCounter';
-import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 import { getBannerSettings } from './admin/actions';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
-import HomeMascotBanner from '@/components/HomeMascotBanner';
-import FaqSection from '@/components/FaqSection';
 import ServiceSchema from '@/components/ServiceSchema';
 import ProductSchema from '@/components/ProductSchema';
 
@@ -35,6 +29,13 @@ const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
     </div>
   ),
 });
+
+const HomeMascotBanner = dynamic(() => import('@/components/HomeMascotBanner'));
+const TestimonialsCarousel = dynamic(() => import('@/components/TestimonialsCarousel'));
+const FaqSection = dynamic(() => import('@/components/FaqSection'));
+const AppointmentLookup = dynamic(() => import('@/components/AppointmentLookup'));
+const ScrollReveal = dynamic(() => import('@/components/ScrollReveal'));
+const StatsCounter = dynamic(() => import('@/components/StatsCounter'));
 
 // Helper to normalize strings into valid URL-safe IDs matching the Header ids
 function slugify(text: string) {
