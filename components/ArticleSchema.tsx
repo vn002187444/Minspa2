@@ -6,6 +6,9 @@ interface ArticleSchemaProps {
   dateModified?: string;
   author: string;
   baseUrl?: string;
+  keywords?: string[];
+  articleSection?: string;
+  wordCount?: number;
 }
 
 export default function ArticleSchema({
@@ -16,10 +19,13 @@ export default function ArticleSchema({
   dateModified,
   author,
   baseUrl,
+  keywords,
+  articleSection,
+  wordCount,
 }: ArticleSchemaProps) {
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": "BlogPosting",
     "@id": "#article",
     headline: title,
     description,
@@ -43,6 +49,16 @@ export default function ArticleSchema({
       "@id": baseUrl || '',
     },
   };
+
+  if (keywords && keywords.length > 0) {
+    schema.keywords = keywords.join(', ');
+  }
+  if (articleSection) {
+    schema.articleSection = articleSection;
+  }
+  if (wordCount && wordCount > 0) {
+    schema.wordCount = wordCount;
+  }
 
   return (
     <script

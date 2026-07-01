@@ -2,6 +2,7 @@ import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
+import { FALLBACK_IMAGES } from "@/lib/fallback-images";
 
 const SYSTEM_SUMMARIZE = `Bạn là chuyên gia SEO. Tóm tắt văn bản thành 1-2 câu (tối đa 160 ký tự), giữ từ khóa chính. Tiếng Việt có dấu. Trả về JSON: { "summary": "..." }.`;
 
@@ -25,17 +26,6 @@ const ARTICLE_WRITER_SCHEMA = {
   },
   required: ["title", "summary", "content"],
 };
-
-const FALLBACK_IMAGES = [
-  'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1560066984-58dadb2e71c4?w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1522337360788-6b1dfde2c4fb?w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1596464716127-f2b0b2f1b7a2?w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1522337661159-0a0b4a2a4b4f?w=800&auto=format&fit=crop',
-  'https://images.unsplash.com/photo-1560752059-53a9b7c0c6b8?w=800&auto=format&fit=crop',
-];
 
 const BRAND_INFO = {
   name: 'Min Nail & Hair',
@@ -191,7 +181,7 @@ export async function POST(req: NextRequest) {
               try {
                 const resp = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(term)}&per_page=1&orientation=landscape`, { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } });
                 const data = await resp.json();
-                if (data.results?.[0]) { images.push(data.results[0].urls.regular + '?w=800&auto=format&fit=crop'); continue; }
+                if (data.results?.[0]) { images.push(data.results[0].urls.regular); continue; }
               } catch { }
             }
             images.push(FALLBACK_IMAGES[Math.floor(Math.random() * FALLBACK_IMAGES.length)]);

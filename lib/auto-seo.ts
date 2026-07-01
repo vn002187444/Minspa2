@@ -360,7 +360,12 @@ Tập trung vào: nail art, gội đầu dưỡng sinh thảo dược, massage b
       return { success: false, message: 'Gemini returned empty' };
     }
 
-    const parsed = JSON.parse(result.text);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(result.text);
+    } catch {
+      return { success: false, message: 'Gemini returned invalid JSON in keyword research' };
+    }
     const topics: { topic: string; primary: string }[] = parsed.topics || [];
 
     if (topics.length === 0) {

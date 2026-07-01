@@ -247,7 +247,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
         topic: seoTopic,
         keywords: seoKeywords,
         article: seoArticleText,
-        imageUrl: seoImageUrl || ""
+        image_url: seoImageUrl || ""
       });
       if (res.success) {
         showToast("Lưu vào Kho Bài Viết thành công! Mời xem ở tab tiếp theo.");
@@ -272,9 +272,16 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       showToast("Không có nội dung bài viết để đăng!");
       return;
     }
+    const suggestedTitle = seoArticleText.match(/^#\s+(.+)/m)?.[1]?.trim()
+      || seoArticleText.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
+      || seoTopic
+      || 'Bài viết SEO';
+    const suggestedSlug = toSlug(suggestedTitle);
+    const customSlug = window.prompt('Nhập slug (đường dẫn) cho bài viết:', suggestedSlug);
+    if (!customSlug) return;
     setIsPublishingBlog(true);
     try {
-      const res = await publishSeoArticleToBlog(seoArticleText, seoImageUrl);
+      const res = await publishSeoArticleToBlog(seoArticleText, seoImageUrl, { slug: customSlug, title: suggestedTitle });
       if (res.success) {
         showToast("Đã đăng bài lên Blog thành công! 🎉");
         window.open('/blog/' + res.slug, '_blank');
@@ -289,10 +296,17 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
 
   const [publishingBlogId, setPublishingBlogId] = useState<string | null>(null);
 
-  const handlePublishSavedToBlog = async (art: { id: string; article: string; imageUrl?: string | null }) => {
+  const handlePublishSavedToBlog = async (art: { id: string; topic?: string; article: string; imageUrl?: string | null }) => {
+    const suggestedTitle = art.article.match(/^#\s+(.+)/m)?.[1]?.trim()
+      || art.article.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
+      || art.topic
+      || 'Bài viết SEO';
+    const suggestedSlug = toSlug(suggestedTitle);
+    const customSlug = window.prompt('Nhập slug (đường dẫn) cho bài viết:', suggestedSlug);
+    if (!customSlug) return;
     setPublishingBlogId(art.id);
     try {
-      const res = await publishSeoArticleToBlog(art.article, art.imageUrl ?? '');
+      const res = await publishSeoArticleToBlog(art.article, art.imageUrl ?? '', { slug: customSlug, title: suggestedTitle });
       if (res.success) {
         showToast("Đã đăng bài lên Blog thành công! 🎉");
         window.open('/blog/' + res.slug, '_blank');
@@ -353,8 +367,28 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
     showToast("Đã chép nội dung vào Clipboard!");
   };
 
-  const simulateSocialShare = (platform: string, topicText: string) => {
-    showToast(`🔄 [Giả Lập] Đã tiến hành đẩy bài viết "${topicText}" lên ${platform} cùng hashtag #MinNailHair...`);
+  const toSlug = (text: string) =>
+    text
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().trim().replace(/[đĐ]/g, 'd')
+      .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+
+  const handleShareToSocial = (platform: string, topicText: string) => {
+    const url = encodeURIComponent(window.location.origin + '/blog/' + (selectedArticle?.topic ? toSlug(selectedArticle.topic) : ''));
+    const text = encodeURIComponent(topicText + ' - Min Nail & Hair Thủ Đức');
+    let shareUrl = '';
+    switch (platform) {
+      case 'Facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${text}`;
+        break;
+      case 'Twitter':
+        shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}&hashtags=MinNailHair,ChamSocSacDep`;
+        break;
+      case 'Zalo':
+        shareUrl = `https://zalo.me/share?url=${url}`;
+        break;
+    }
+    if (shareUrl) window.open(shareUrl, '_blank', 'width=600,height=500');
   };
 
   return (
@@ -882,9 +916,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
                     </div>
 
                     <div className="flex justify-between border-t border-gray-100 pt-3 text-[11px] font-bold text-gray-500">
-                      <button onClick={() => simulateSocialShare("Facebook", seoTopic)} className="flex-1 hover:text-blue-600 flex justify-center items-center gap-1 cursor-pointer"><Facebook className="w-3.5 h-3.5" /> Facebook</button>
-                      <button onClick={() => simulateSocialShare("Twitter", seoTopic)} className="flex-1 hover:text-sky-500 flex justify-center items-center gap-1 cursor-pointer"><Twitter className="w-3.5 h-3.5" /> Twitter</button>
-                      <button onClick={() => simulateSocialShare("Zalo (Zns)", seoTopic)} className="flex-1 hover:text-indigo-600 flex justify-center items-center gap-1 cursor-pointer"><Send className="w-3.5 h-3.5" /> Zalo</button>
+                      <button onClick={() => handleShareToSocial("Facebook", seoTopic)} className="flex-1 hover:text-blue-600 flex justify-center items-center gap-1 cursor-pointer"><Facebook className="w-3.5 h-3.5" /> Facebook</button>
+                      <button onClick={() => handleShareToSocial("Twitter", seoTopic)} className="flex-1 hover:text-sky-500 flex justify-center items-center gap-1 cursor-pointer"><Twitter className="w-3.5 h-3.5" /> Twitter</button>
+                      <button onClick={() => handleShareToSocial("Zalo", seoTopic)} className="flex-1 hover:text-indigo-600 flex justify-center items-center gap-1 cursor-pointer"><Send className="w-3.5 h-3.5" /> Zalo</button>
                     </div>
                   </div>
                 </div>
@@ -1076,19 +1110,19 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Đẩy nhanh lên Mạng xã hội</p>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => simulateSocialShare("Facebook", selectedArticle.topic)}
+                            onClick={() => handleShareToSocial("Facebook", selectedArticle.topic)}
                             className="flex-1 bg-white hover:bg-blue-50 border border-gray-200 py-2.5 px-3 rounded-lg text-[10px] font-bold text-blue-700 flex justify-center items-center gap-1 cursor-pointer transition-colors"
                           >
                             <Facebook className="w-3.5 h-3.5" /> Share FB
                           </button>
                           <button
-                            onClick={() => simulateSocialShare("Twitter", selectedArticle.topic)}
+                            onClick={() => handleShareToSocial("Twitter", selectedArticle.topic)}
                             className="flex-1 bg-white hover:bg-sky-50 border border-gray-200 py-2.5 px-3 rounded-lg text-[10px] font-bold text-sky-700 flex justify-center items-center gap-1 cursor-pointer transition-colors"
                           >
                             <Twitter className="w-3.5 h-3.5" /> Share TW
                           </button>
                           <button
-                            onClick={() => simulateSocialShare("Zalo", selectedArticle.topic)}
+                            onClick={() => handleShareToSocial("Zalo", selectedArticle.topic)}
                             className="flex-1 bg-white hover:bg-indigo-50 border border-gray-200 py-2.5 px-3 rounded-lg text-[10px] font-bold text-indigo-700 flex justify-center items-center gap-1 cursor-pointer transition-colors"
                           >
                             <Send className="w-3.5 h-3.5" /> Share Zalo

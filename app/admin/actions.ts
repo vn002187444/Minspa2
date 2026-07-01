@@ -696,7 +696,7 @@ async function uploadBase64ToStorage(base64Url: string): Promise<string> {
 export async function saveSeoArticle(article: Record<string, unknown>) {
   await checkAdminOrManager();
   try {
-    const imageUrl = await uploadBase64ToStorage(String(article.image_url || ''));
+    const imageUrl = await uploadBase64ToStorage(String(article.image_url || article.imageUrl || ''));
     const supabase = await createClient();
     const { data: existing } = await supabase
       .from('seo_articles')
@@ -748,47 +748,64 @@ export async function deleteSeoArticle(id: string) {
   }
 }
 
-export async function publishSeoArticleToBlog(articleText: string, imageUrl: string) {
+export async function publishSeoArticleToBlog(
+  articleText: string,
+  imageUrl: string,
+  options?: { title?: string; slug?: string; keywords?: string }
+) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
     throw new Error('Unauthorized');
   }
 
-  const titleMatch = articleText.match(/^#\s+(.+)/m);
-  const title = titleMatch ? titleMatch[1].trim() : 'Bài viết SEO';
+  const title = options?.title
+    || (articleText.match(/^#\s+(.+)/m)?.[1]?.trim())
+    || articleText.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
+    || articleText.split('\n')[0].replace(/^#+\s*/, '').trim().substring(0, 100)
+    || 'Bài viết SEO';
 
   const firstParagraph = articleText.replace(/^#\s+.+\n*/m, '').match(/^(.+?)(?:\n\n|$)/m);
   const summary = firstParagraph ? firstParagraph[1].replace(/\*\*/g, '').trim().substring(0, 300) : title;
 
-  const slug = title
+  const slugify = (text: string) => text
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-    .substring(0, 200) || 'bai-viet-seo-' + Date.now();
+    .substring(0, 200) || 'bai-viet-seo';
+
+  let baseSlug = options?.slug || slugify(title);
 
   const finalImageUrl = await uploadBase64ToStorage(imageUrl || '');
   const supabase = await createClient();
 
-  const { data: existing } = await supabase
-    .from('blogs')
-    .select('id')
-    .eq('slug', slug)
-    .single();
-
-  if (existing) {
-    return { success: false, error: `Slug "${slug}" đã tồn tại. Vui lòng đổi tiêu đề hoặc đăng bằng trình soạn thảo Blog.` };
+  // Auto-increment slug if duplicate exists
+  let slug = baseSlug;
+  let counter = 0;
+  while (true) {
+    const { data: existing } = await supabase
+      .from('blogs')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (!existing) break;
+    counter++;
+    slug = `${baseSlug}-${counter}`;
   }
 
+  const now = new Date().toISOString();
   const { error } = await supabase.from('blogs').insert({
     title,
     slug,
     summary,
     content: articleText,
     image_url: finalImageUrl || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-    created_at: new Date().toISOString(),
+    keywords: options?.keywords || '',
+    published: true,
+    published_at: now,
+    created_at: now,
   });
 
   if (error) {
@@ -1362,8 +1379,12 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(10000),
     });
+    if (!res.ok) {
+      const text = await res.text();
+      return { success: false, error: `Server error (${res.status}): ${text.substring(0, 200)}` };
+    }
     const data = await res.json();
-    return { success: res.ok, ...data };
+    return { success: true, ...data };
   } catch (e: unknown) {
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
@@ -1436,28 +1457,34 @@ export async function getAdminSessionInfo() {
   return session.user;
 }
 
+import { cachedFetch } from '@/lib/cache';
+
 export async function getBannerSettings() {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.from('banner_settings').select('is_enabled, content').eq('id', 1).single();
-    if (error) throw error;
-    if (data) {
-      return {
-        is_enabled: data.is_enabled,
-        content: stripHtml(data.content || ''),
-      };
+  return cachedFetch('banner-settings', async () => {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.from('banner_settings').select('is_enabled, content').eq('id', 1).single();
+      if (error) throw error;
+      if (data) {
+        return {
+          is_enabled: data.is_enabled,
+          content: stripHtml(data.content || ''),
+        };
+      }
+    } catch (e: unknown) {
+      console.error(e);
     }
-  } catch (e: unknown) {
-    console.error(e);
-  }
-  // fallback: fetch hotline from seo_settings
-  let hotline = '0934 323 878';
-  try {
-    const supabase = await createClient();
-    const { data: seo } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
-    if (seo?.hotline) hotline = seo.hotline;
-  } catch {}
-  return { is_enabled: true, content: `✨ GIẢM NGAY 5% KHI ĐẶT LỊCH HẸN TRỰC TUYẾN ✨ HOTLINE: ${hotline}` };
+    // fallback: fetch hotline from seo_settings
+    let hotline = '0934 323 878';
+    try {
+      const supabase = await createClient();
+      const { data: seo } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
+      if (seo?.hotline) hotline = seo.hotline;
+      return { is_enabled: false, content: hotline };
+    } catch {
+      return { is_enabled: false, content: hotline };
+    }
+  });
 }
 
 export async function saveBannerSettings(payload: BannerInput) {
@@ -2577,6 +2604,7 @@ export async function createFaq(payload: {
     });
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
 }
 
 export async function updateFaq(id: string, updates: Partial<{
@@ -2596,6 +2624,7 @@ export async function updateFaq(id: string, updates: Partial<{
     .eq('id', id);
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
 }
 
 export async function deleteFaq(id: string) {
@@ -2622,6 +2651,7 @@ export async function reorderFaqs(sortedIds: string[]) {
     .upsert(updates, { onConflict: 'id' });
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
 }
 
 export async function getStaffSkills(staffId: string) {
@@ -2658,6 +2688,7 @@ export async function saveStaffSkill(skillData: {
     }, { onConflict: 'staff_id,service_id' });
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
   return { success: true };
 }
 

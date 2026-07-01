@@ -38,14 +38,23 @@ export default function GoogleTranslate() {
       )
     }
 
-    const script = document.createElement('script')
-    script.src =
-      '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
-    script.async = true
-    document.body.appendChild(script)
+    const load = () => {
+      const script = document.createElement('script')
+      script.src =
+        '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit'
+      script.async = true
+      document.body.appendChild(script)
+    }
+
+    // Defer Google Translate to avoid render-blocking CSS from gstatic.com
+    if (document.readyState === 'complete') {
+      setTimeout(load, 3000)
+    } else {
+      window.addEventListener('load', () => setTimeout(load, 3000), { once: true })
+    }
 
     return () => {
-      script.remove()
+      initialized.current = true
     }
   }, [])
 

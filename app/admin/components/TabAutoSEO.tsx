@@ -58,6 +58,10 @@ export default function TabAutoSEO() {
       const res = await fetch('/api/cron/seo-publish?research=1', {
         headers: { 'Content-Type': 'application/json' },
       });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server responded with ${res.status}: ${text.substring(0, 200)}`);
+      }
       const data = await res.json();
       setMsg({ type: data.success ? 'success' : 'error', text: data.message || 'OK' });
       loadData();

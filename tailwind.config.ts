@@ -13,7 +13,6 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-sans)'],
         display: ['var(--font-display)'],
-        mono: ['var(--font-mono)'],
       },
       animation: {
         blob: "blob 7s infinite",
@@ -27,7 +26,6 @@ const config: Config = {
       screens: {
         'xs': '480px',
         'xxl': '1600px',
-        '4k': '2500px',
       },
       keyframes: {
         blob: {

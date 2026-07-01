@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, startTransition } from 'react';
+import { useState, useEffect, useRef, startTransition, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,12 +13,14 @@ import {
 import { 
   BookOpen, Edit3, Trash2, ArrowLeft, 
   Sparkles, CheckCircle, AlertTriangle, Image as ImageIcon,
-  Bold, Italic, Link2,
+  Link2, Eye,
+  Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Code2,
   WandSparkles, FileText, BarChart3
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import BottomNavigation from '@/components/BottomNavigation';
+import BlogRichEditor from '@/components/BlogRichEditor';
 import { toast, Toaster } from 'sonner';
 
 export default function AdminBlogPage() {
@@ -41,10 +43,42 @@ export default function AdminBlogPage() {
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [keywords, setKeywords] = useState('');
+  const [isPublished, setIsPublished] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Ref to content textarea for rich format insertion
+  const [showPreview, setShowPreview] = useState(false);
+  const [editorMode, setEditorMode] = useState<'textarea' | 'tiptap'>('textarea');
+  const [contentKey, setContentKey] = useState(0);
   const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  const wrapWithMarkdown = useCallback((prefix: string, suffix: string = '') => {
+    const ta = contentRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const text = content;
+    const selected = text.substring(start, end);
+    const replacement = prefix + selected + suffix;
+    const newContent = text.substring(0, start) + replacement + text.substring(end);
+    setContent(newContent);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    });
+  }, [content]);
+
+  const handleEditorSwitch = useCallback(() => {
+    if (editorMode === 'textarea') {
+      // Chuyển sang TipTap: convert markdown → HTML nếu cần
+      if (!/<[a-z][\s\S]*>/i.test(content)) {
+        setContent(mdToHtml(content));
+      }
+      setContentKey(k => k + 1);
+      setEditorMode('tiptap');
+    } else {
+      setEditorMode('textarea');
+    }
+  }, [editorMode, content]);
 
   // SEO target keywords & checks
   const SEO_KEYWORDS = [
@@ -53,6 +87,25 @@ export default function AdminBlogPage() {
     { text: "sơn gel Trường Thọ", label: "Sơn gel Trường Thọ" },
     { text: "Min Nail & Hair", label: "Min Nail & Hair" }
   ];
+
+  // Convert markdown to HTML for backward compatibility with legacy posts
+  const mdToHtml = (md: string) => {
+    if (!md) return ''
+    if (/<[a-z][\s\S]*>/i.test(md)) return md // already HTML
+    return md
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/^[\*\-] (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+      .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^(?!<[a-z])/gm, '<p>')
+      .replace(/(.+)$/gm, (m) => m.startsWith('<') ? m : m)
+      .replace(/<p><\/p>/g, '')
+  }
 
   // Helper to generate slug from title input
   const slugify = (text: string) => {
@@ -80,7 +133,7 @@ export default function AdminBlogPage() {
     setLoading(true);
     setError('');
     try {
-      const { posts: data } = await getBlogPosts();
+      const { posts: data } = await getBlogPosts(1, 50, true);
       setPosts(data);
     } catch {
       setError('Lỗi khi tải danh sách bài viết từ database.');
@@ -138,7 +191,8 @@ export default function AdminBlogPage() {
       const data = await res.json();
       if (data.article) {
         setTitle(data.title || aiTopic);
-        setContent(data.article);
+        setContent(mdToHtml(data.article));
+        setContentKey(k => k + 1);
         setSummary(data.summary || '');
         if (!editingId) setSlug(slugify(data.title || aiTopic));
         toast.success('AI đã viết bài thành công!');
@@ -174,6 +228,8 @@ export default function AdminBlogPage() {
     const topic = title || aiTopic;
     if (!topic.trim()) { toast.error('Vui lòng nhập tiêu đề hoặc chủ đề!'); return; }
     setIsAiSuggestingImages(true);
+    suggestedImagesRef.current = [];
+    setImagesFailed(new Set());
     try {
       const res = await fetch('/api/ai-assist', {
         method: 'POST',
@@ -184,6 +240,7 @@ export default function AdminBlogPage() {
       if (data.images && data.images.length > 0) {
         setImageUrl(data.images[0]);
         setSuggestedImages(data.images);
+        suggestedImagesRef.current = data.images;
         toast.success('Đã gợi ý ảnh!');
       } else {
         toast.error('Không tìm thấy ảnh gợi ý');
@@ -193,16 +250,20 @@ export default function AdminBlogPage() {
   };
 
   const [suggestedImages, setSuggestedImages] = useState<string[]>([]);
+  const [imagesFailed, setImagesFailed] = useState<Set<number>>(new Set());
   const suggestedImagesRef = useRef<string[]>([]);
   const autoSuggestTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear images when title changes so auto-suggest re-fetches
+  useEffect(() => {
+    setImagesFailed(new Set());
+  }, [title, aiTopic]);
 
   // Auto-suggest images when title changes
   useEffect(() => {
     if (autoSuggestTimer.current) clearTimeout(autoSuggestTimer.current);
     const t = (title || aiTopic || '').trim();
     if (!t) return;
-    // Don't re-trigger if images already loaded for this session
-    if (suggestedImagesRef.current.length > 0) return;
     autoSuggestTimer.current = setTimeout(async () => {
       try {
         const res = await fetch('/api/ai-assist', {
@@ -214,12 +275,80 @@ export default function AdminBlogPage() {
         if (data.images?.length > 0) {
           suggestedImagesRef.current = data.images;
           setSuggestedImages(data.images);
-          startTransition(() => setImageUrl(data.images[0]));
+          if (!imageUrl && data.images[0]) startTransition(() => setImageUrl(data.images[0]));
         }
       } catch { /* silent */ }
     }, 1500);
     return () => { if (autoSuggestTimer.current) clearTimeout(autoSuggestTimer.current); };
-  }, [title, aiTopic]);
+  }, [title, aiTopic, imageUrl]);
+
+  const handleImageError = (idx: number) => {
+    setImagesFailed(prev => new Set(prev).add(idx));
+  };
+
+  const handleRefreshImages = async () => {
+    const t = (title || aiTopic || '').trim();
+    if (!t) { toast.error('Vui lòng nhập tiêu đề!'); return; }
+    suggestedImagesRef.current = [];
+    setSuggestedImages([]);
+    setImagesFailed(new Set());
+    try {
+      const res = await fetch('/api/ai-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'suggestImages', title: t }),
+      });
+      const data = await res.json();
+      if (data.images?.length > 0) {
+        suggestedImagesRef.current = data.images;
+        setSuggestedImages(data.images);
+        if (data.images[0]) startTransition(() => setImageUrl(data.images[0]));
+        toast.success('Đã làm mới ảnh gợi ý!');
+      } else {
+        toast.error('Không tìm thấy ảnh gợi ý');
+      }
+    } catch { toast.error('Lỗi kết nối'); }
+  };
+
+  // Auto-save draft to localStorage (debounced 3s)
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(() => {
+      const draft = { title, slug, summary, content, imageUrl, editingId };
+      try {
+        localStorage.setItem('blog_draft', JSON.stringify(draft));
+      } catch { /* storage full */ }
+    }, 3000);
+    return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
+  }, [title, slug, summary, content, imageUrl, editingId]);
+
+  // Restore draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('blog_draft');
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.title || draft.content) {
+          toast('Bạn có bản nháp chưa lưu', {
+            description: `"${draft.title || '(không tiêu đề)'}" — nhấn Khôi phục để tiếp tục.`,
+            duration: 8000,
+            action: {
+              label: 'Khôi phục',
+              onClick: () => {
+                setTitle(draft.title || '');
+                setSlug(draft.slug || '');
+                setSummary(draft.summary || '');
+                setContent(draft.content || '');
+                setImageUrl(draft.imageUrl || '');
+                setEditingId(draft.editingId || null);
+              }
+            }
+          });
+        }
+      }
+    } catch { /* invalid json */ }
+  }, []);
 
   const resetForm = () => {
     setEditingId(null);
@@ -228,8 +357,10 @@ export default function AdminBlogPage() {
     setSummary('');
     setContent('');
     setImageUrl('');
+    setKeywords('');
     setSuggestedImages([]);
     suggestedImagesRef.current = [];
+    setIsPublished(false);
     setError('');
   };
 
@@ -238,8 +369,11 @@ export default function AdminBlogPage() {
     setTitle(post.title || '');
     setSlug(post.slug || '');
     setSummary(post.summary || '');
-    setContent(post.content || '');
+    setContent(mdToHtml(post.content || ''));
+    setContentKey(k => k + 1);
     setImageUrl(post.image_url || '');
+    setKeywords(post.keywords || '');
+    setIsPublished(post.published !== false);
     setError('');
     setSuccess('');
     
@@ -248,80 +382,6 @@ export default function AdminBlogPage() {
     if (formEl) {
       formEl.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  const applyFormat = (type: 'bold' | 'italic' | 'underline' | 'strikethrough' | 'link' | 'h2' | 'h3' | 'ol' | 'ul' | 'blockquote' | 'code' | 'hr') => {
-    const textarea = contentRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const text = textarea.value;
-    const selectedText = text.substring(start, end);
-
-    let replacement = '';
-    let cursorOffset = 0;
-
-    switch (type) {
-      case 'bold':
-        replacement = `**${selectedText || 'chữ đậm'}**`;
-        cursorOffset = selectedText ? replacement.length : 2;
-        break;
-      case 'italic':
-        replacement = `*${selectedText || 'chữ nghiêng'}*`;
-        cursorOffset = selectedText ? replacement.length : 1;
-        break;
-      case 'underline':
-        replacement = `<u>${selectedText || 'chữ gạch chân'}</u>`;
-        cursorOffset = selectedText ? replacement.length : 3;
-        break;
-      case 'strikethrough':
-        replacement = `~~${selectedText || 'chữ gạch ngang'}~~`;
-        cursorOffset = selectedText ? replacement.length : 2;
-        break;
-      case 'link':
-        replacement = `[${selectedText || 'tên liên kết'}](url)`;
-        cursorOffset = selectedText ? replacement.length : 1;
-        break;
-      case 'h2':
-        replacement = `\n## ${selectedText || 'Tiêu đề lớn'}\n`;
-        cursorOffset = selectedText ? replacement.length : 4;
-        break;
-      case 'h3':
-        replacement = `\n### ${selectedText || 'Tiêu đề nhỏ'}\n`;
-        cursorOffset = selectedText ? replacement.length : 5;
-        break;
-      case 'ol':
-        replacement = `\n1. ${selectedText || 'Mục 1'}\n2. Mục 2\n3. Mục 3\n`;
-        cursorOffset = 3;
-        break;
-      case 'ul':
-        replacement = `\n- ${selectedText || 'Mục 1'}\n- Mục 2\n- Mục 3\n`;
-        cursorOffset = 3;
-        break;
-      case 'blockquote':
-        replacement = `\n> ${selectedText || 'Trích dẫn'}\n`;
-        cursorOffset = selectedText ? replacement.length : 2;
-        break;
-      case 'code':
-        replacement = selectedText
-          ? `\`\`\`\n${selectedText}\n\`\`\``
-          : '`code`';
-        cursorOffset = selectedText ? replacement.length : 1;
-        break;
-      case 'hr':
-        replacement = `\n---\n`;
-        cursorOffset = 4;
-        break;
-    }
-
-    const newValue = text.substring(0, start) + replacement + text.substring(end);
-    setContent(newValue);
-
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + cursorOffset, start + cursorOffset);
-    }, 0);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -344,7 +404,9 @@ export default function AdminBlogPage() {
         slug,
         summary,
         content,
-        image_url: imageUrl
+        image_url: imageUrl,
+        keywords,
+        published: isPublished
       });
 
       if (res.success) {
@@ -354,6 +416,7 @@ export default function AdminBlogPage() {
           description: editingId ? 'Bài viết đã được cập nhật thành công lên website.' : 'Bài viết mới đã được hiển thị công khai trên phần tin tức.',
           duration: 4000,
         });
+        localStorage.removeItem('blog_draft');
         resetForm();
         await loadPosts();
       }
@@ -409,7 +472,8 @@ export default function AdminBlogPage() {
   };
 
   const getWordCount = () => {
-    return content.trim() ? content.trim().split(/\s+/).length : 0;
+    const text = content.replace(/<[^>]*>/g, '').trim();
+    return text ? text.split(/\s+/).filter(Boolean).length : 0;
   };
 
   if (checkingAuth) {
@@ -557,6 +621,20 @@ export default function AdminBlogPage() {
                 />
               </div>
 
+              {/* Keywords */}
+              <div className="space-y-1.5">
+                <label htmlFor="blog-keywords" className="block font-black text-stone-700 tracking-wide uppercase">Từ khóa SEO (Keywords)</label>
+                <input
+                  id="blog-keywords"
+                  type="text"
+                  value={keywords}
+                  onChange={(e) => setKeywords(e.target.value)}
+                  placeholder="gội dưỡng sinh, làm móng, nail art Thủ Đức, ..."
+                  className="w-full bg-[#FAF6F0] border-2 border-[#EADDCD] rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]/50 text-stone-900 font-medium text-xs"
+                />
+                <p className="text-[10px] text-stone-400 font-medium">Các từ khóa cách nhau bằng dấu phẩy, sẽ được thêm vào Schema BlogPosting.</p>
+              </div>
+
               {/* Image URL */}
               <div className="space-y-1.5">
                 <label htmlFor="blog-imageUrl" className="block font-black text-stone-700 tracking-wide uppercase">Ảnh đại diện (Image URL)</label>
@@ -577,60 +655,70 @@ export default function AdminBlogPage() {
                   {Array.from({ length: 4 }).map((_, idx) => {
                     const img = suggestedImages[idx];
                     const isSelected = img && imageUrl === img;
+                    const hasFailed = imagesFailed.has(idx);
                     return (
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => { if (img) setImageUrl(img); }}
-                        disabled={!img}
+                        onClick={() => { if (img && !hasFailed) setImageUrl(img); }}
+                        disabled={!img || hasFailed}
                         className={`shrink-0 w-20 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer flex items-center justify-center ${
-                          isSelected
+                          isSelected && !hasFailed
                             ? 'border-purple-500 ring-2 ring-purple-300'
-                            : img
+                            : img && !hasFailed
                               ? 'border-[#EADDCD] hover:border-[#8D6E53]'
                               : 'border-dashed border-gray-300 bg-gray-50 cursor-default'
                         }`}
                       >
-                        {img ? (
-                          <Image src={img} alt={`gợi ý ${idx + 1}`} width={80} height={56} className="w-full h-full object-cover" unoptimized />
+                        {img && !hasFailed ? (
+                          <Image
+                            src={img}
+                            alt={`gợi ý ${idx + 1}`}
+                            width={80}
+                            height={56}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                            onError={() => handleImageError(idx)}
+                          />
                         ) : (
                           <span className="text-[18px] text-gray-300 font-light leading-none">+</span>
                         )}
                       </button>
                     );
                   })}
+                  {suggestedImages.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleRefreshImages}
+                      className="shrink-0 w-20 h-14 rounded-xl border-2 border-dashed border-[#EADDCD] hover:border-[#8D6E53] bg-[#FAF6F0] flex items-center justify-center transition-all cursor-pointer"
+                      title="Làm mới ảnh gợi ý"
+                    >
+                      <svg className="w-5 h-5 text-[#8D6E53]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Content Textarea */}
+              {/* Content Editor */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <label htmlFor="blog-content" className="block font-black text-stone-700 tracking-wide uppercase">Nội dung bài viết (Hỗ trợ tiêu đề ##, ### &amp; liên kết) <span className="text-rose-500">*</span></label>
-                  <span className="text-stone-400 font-mono text-[10px] font-bold">Trạng thái: Đang soạn thảo...</span>
-                </div>
-                <div className="bg-[#FAF0E6] p-2.5 rounded-2xl text-[10px] text-stone-600 space-y-1 font-semibold leading-relaxed border border-[#EADDCD]/50">
-                  <span className="text-[#8D6E53] font-bold">💡 Mẹo viết nhanh:</span>
-                  <p>Sử dụng dòng cách đôi <strong className="text-stone-800">&quot;\n\n&quot;</strong> để ngắt đoạn. Gõ <code className="bg-white/80 p-0.5 rounded">## Tên Tiêu Đề</code> hoặc <code className="bg-white/85 p-0.5 rounded">### Tiêu Đề Nhỏ hơn</code> để làm mục lục. Gõ liên kết dạng <code className="bg-white/80 p-0.5 rounded">[Booking](/booking)</code>.</p>
-                </div>
-
-                {/* Rich Formatting Toolbar */}
-                <div className="flex flex-wrap items-center gap-1 p-1.5 bg-[#FAF6F0]/95 backdrop-blur-md rounded-2xl border-2 border-[#EADDCD] text-[11px] font-bold text-stone-700 sticky top-[75px] md:top-[83px] z-30 shadow-sm">
-                  <button type="button" onClick={() => applyFormat('bold')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px]" title="In đậm" aria-label="In đậm"><Bold className="w-3.5 h-3.5 align-middle" /></button>
-                  <button type="button" onClick={() => applyFormat('italic')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px]" title="In nghiêng" aria-label="In nghiêng"><Italic className="w-3.5 h-3.5 align-middle" /></button>
-                  <button type="button" onClick={() => applyFormat('underline')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] underline text-sm" title="Gạch chân" aria-label="Gạch chân">U</button>
-                  <button type="button" onClick={() => applyFormat('strikethrough')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] line-through text-sm" title="Gạch ngang" aria-label="Gạch ngang">S</button>
-                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('h2')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] font-mono text-xs font-bold" title="Tiêu đề H2" aria-label="Tiêu đề H2">H2</button>
-                  <button type="button" onClick={() => applyFormat('h3')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] font-mono text-xs font-bold" title="Tiêu đề H3" aria-label="Tiêu đề H3">H3</button>
-                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('ul')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-sm" title="Danh sách" aria-label="Danh sách">☰</button>
-                  <button type="button" onClick={() => applyFormat('ol')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-xs font-bold" title="Danh sách số" aria-label="Danh sách số">#.</button>
-                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('blockquote')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-sm" title="Trích dẫn" aria-label="Trích dẫn">❝</button>
-                  <button type="button" onClick={() => applyFormat('code')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] font-mono text-xs font-bold" title="Code" aria-label="Code">&lt;/&gt;</button>
-                  <button type="button" onClick={() => applyFormat('hr')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px] text-sm" title="Đường kẻ" aria-label="Đường kẻ">—</button>
-                  <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle"></span>
-                  <button type="button" onClick={() => applyFormat('link')} className="px-2.5 py-2.5 bg-white hover:bg-[#8D6E53] hover:text-white border border-[#EADDCD]/60 rounded-xl cursor-pointer transition-all min-h-[44px] min-w-[44px]" title="Chèn link" aria-label="Chèn link"><Link2 className="w-3.5 h-3.5 align-middle" /></button>
+                  <label className="block font-black text-stone-700 tracking-wide uppercase">Nội dung bài viết <span className="text-rose-500">*</span></label>
+                  <div className="flex items-center gap-2">
+                    <span className="text-stone-400 font-mono text-[10px] font-bold">{editorMode === 'tiptap' ? 'HTML Editor' : 'Text Editor'}</span>
+                    <button
+                      type="button"
+                      onClick={handleEditorSwitch}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold border transition-all cursor-pointer min-h-[32px] ${
+                        editorMode === 'tiptap'
+                          ? 'bg-[#8D6E53] text-white border-[#8D6E53]'
+                          : 'bg-white text-stone-600 border-[#EADDCD] hover:border-[#8D6E53]'
+                      }`}
+                    >
+                      {editorMode === 'tiptap' ? '✕ Dùng Text Editor' : '⚡ Chuyển sang HTML Editor'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* AI Assist Toolbar */}
@@ -660,88 +748,112 @@ export default function AdminBlogPage() {
                   </button>
                 </div>
 
-                {/* Grid Side-by-Side Workspace */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
-                  {/* Left Workspace: Input Textarea */}
-                  <div className="lg:col-span-9 h-full min-h-[350px]">
+                {editorMode === 'tiptap' ? (
+                  <BlogRichEditor
+                    key={contentKey}
+                    content={content}
+                    onChange={setContent}
+                    placeholder="Nhập nội dung bài viết của bạn tại đây..."
+                  />
+                ) : (
+                  <div className="space-y-1">
+                    {/* Markdown Formatting Toolbar */}
+                    <div className="flex flex-wrap items-center gap-1 p-2 bg-[#FAF6F0] rounded-2xl border-2 border-[#EADDCD]">
+                      <button type="button" onClick={() => wrapWithMarkdown('**', '**')} title="In đậm" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><Bold className="w-3.5 h-3.5" /></button>
+                      <button type="button" onClick={() => wrapWithMarkdown('*', '*')} title="In nghiêng" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><Italic className="w-3.5 h-3.5" /></button>
+                      <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block" />
+                      <button type="button" onClick={() => wrapWithMarkdown('## ', '')} title="Tiêu đề H2" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><Heading2 className="w-3.5 h-3.5" /></button>
+                      <button type="button" onClick={() => wrapWithMarkdown('### ', '')} title="Tiêu đề H3" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><Heading3 className="w-3.5 h-3.5" /></button>
+                      <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block" />
+                      <button type="button" onClick={() => wrapWithMarkdown('- ')} title="Danh sách" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><List className="w-3.5 h-3.5" /></button>
+                      <button type="button" onClick={() => wrapWithMarkdown('1. ')} title="Danh sách số" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><ListOrdered className="w-3.5 h-3.5" /></button>
+                      <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block" />
+                      <button type="button" onClick={() => wrapWithMarkdown('> ')} title="Trích dẫn" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><Quote className="w-3.5 h-3.5" /></button>
+                      <button type="button" onClick={() => wrapWithMarkdown('`', '`')} title="Code" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><Code2 className="w-3.5 h-3.5" /></button>
+                      <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block" />
+                      <button type="button" onClick={() => {
+                        const url = window.prompt('Nhập URL:');
+                        if (url) wrapWithMarkdown('[', `](${url})`);
+                      }} title="Chèn link" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><Link2 className="w-3.5 h-3.5" /></button>
+                      <button type="button" onClick={() => {
+                        const url = window.prompt('Nhập URL ảnh:');
+                        if (url) wrapWithMarkdown(`![${title || 'image'}](${url})`);
+                      }} title="Chèn ảnh" className="px-2.5 py-2 min-h-[36px] min-w-[36px] rounded-xl border border-[#EADDCD]/60 bg-white text-stone-700 hover:bg-[#8D6E53] hover:text-white transition-all cursor-pointer flex items-center justify-center"><ImageIcon className="w-3.5 h-3.5" /></button>
+                    </div>
                     <textarea
                       id="blog-content"
                       ref={contentRef}
                       value={content}
                       onChange={(e) => setContent(e.target.value)}
-                      placeholder="Nhập nội dung đầy đủ của bài viết của bạn tại đây..."
-                      rows={14}
+                      placeholder={`Nhập nội dung bài viết tại đây...\n\nHỗ trợ Markdown:\n## Tiêu đề H2\n### Tiêu đề H3\n**In đậm** *In nghiêng*\n- Danh sách\n[Link text](url)\n> Trích dẫn`}
+                      rows={18}
                       required
-                      className="w-full h-full min-h-[350px] bg-[#FAF6F0] border-2 border-[#EADDCD] rounded-3xl p-5 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]/50 text-stone-900 font-medium leading-relaxed font-sans text-xs"
+                      className="w-full bg-[#FAF6F0] border-2 border-[#EADDCD] rounded-3xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]/50 text-stone-900 font-medium text-sm leading-relaxed font-mono"
                     />
                   </div>
+                )}
 
-                  {/* Right Workspace: Live Word Counter & Standard SEO Monitor */}
-                  <div className="lg:col-span-3 bg-[#FAF0E6]/60 border-2 border-[#EADDCD] rounded-3xl p-4 flex flex-col justify-between space-y-4">
-                    {/* Metrics Panel */}
-                    <div className="space-y-3.5">
-                      <p className="text-[10px] font-black uppercase text-stone-500 tracking-wider">Trình đếm từ trực tiếp</p>
-                      
-                      <div className="space-y-1">
-                        <div className="text-3xl font-mono font-black text-[#8D6E53] tracking-tight">
-                          {getWordCount()} <span className="text-xs font-sans text-stone-500 font-bold">từ</span>
-                        </div>
-                        <p className="text-[10px] text-stone-400 font-bold font-mono">Khoảng {content.length} ký tự</p>
-                      </div>
-
-                      {/* Quality Rating Check */}
-                      <div className="pt-1.5">
-                        {getWordCount() === 0 ? (
-                          <span className="text-[10px] font-black uppercase rounded-lg px-2.5 py-1 bg-stone-100 text-stone-500 border border-stone-200">
-                            Chưa nhập dữ liệu
-                          </span>
-                        ) : getWordCount() < 100 ? (
-                          <span className="text-[10px] font-black uppercase rounded-lg px-2.5 py-1 bg-rose-50 text-rose-600 border border-rose-200 inline-block">
-                            Quá ngắn (Cần &gt;100 từ)
-                          </span>
-                        ) : getWordCount() < 300 ? (
-                          <span className="text-[10px] font-black uppercase rounded-lg px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 inline-block">
-                            Khá tốt ✓
-                          </span>
-                        ) : (
-                          <span className="text-[10px] font-black uppercase rounded-lg px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-250 inline-block">
-                            Tối ưu xuất sắc ★
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* SEO checklist indicators */}
-                    <div className="border-t border-[#EADDCD]/85 pt-3.5 space-y-2.5 text-[11px] font-bold text-stone-600">
-                      <div className="flex justify-between items-center">
-                        <span>Thời lượng đọc:</span>
-                        <span className="font-mono text-stone-800">
-                          ~{Math.max(1, Math.ceil(getWordCount() / 200))} phút
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Tiêu đề phụ:</span>
-                        <span className={(content.includes('##') || content.includes('###')) ? 'text-emerald-600' : 'text-amber-600 font-medium'}>
-                          {(content.includes('##') || content.includes('###')) ? 'Đạt chuẩn (H2/H3) ✓' : 'Chưa có H2/H3 ✗'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>Đường liên kết:</span>
-                        <span className={content.includes('[') && content.includes(']') ? 'text-emerald-600' : 'text-amber-600 font-medium'}>
-                          {content.includes('[') && content.includes(']') ? 'Đã liên kết link ✓' : 'Chưa chèn link ✗'}
-                        </span>
-                      </div>
-                    </div>
+                {/* Word Count & SEO Metrics Bar */}
+                <div className="flex flex-wrap items-center gap-4 p-4 bg-[#FAF0E6]/60 border-2 border-[#EADDCD] rounded-3xl">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-mono font-black text-[#8D6E53]">{getWordCount()}</span>
+                    <span className="text-[10px] font-bold text-stone-500">từ</span>
+                    <span className="text-[10px] text-stone-400 font-mono">({content.length} ký tự)</span>
                   </div>
+                  <div className="w-px h-8 bg-[#EADDCD]" />
+                  <span className="text-[10px] font-bold text-stone-500">~{Math.max(1, Math.ceil(getWordCount() / 200))} phút đọc</span>
+                  <div className="w-px h-8 bg-[#EADDCD]" />
+                  {getWordCount() === 0 ? (
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-stone-100 text-stone-500 rounded-lg">Chưa nhập</span>
+                  ) : getWordCount() < 100 ? (
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-rose-50 text-rose-600 rounded-lg">Quá ngắn (Cần &gt;100 từ)</span>
+                  ) : getWordCount() < 300 ? (
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-amber-50 text-amber-700 rounded-lg">Khá tốt ✓</span>
+                  ) : (
+                    <span className="text-[10px] font-black uppercase px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg">Tối ưu ★</span>
+                  )}
+                  <div className="w-px h-8 bg-[#EADDCD]" />
+                  <span className="text-[10px] font-bold text-stone-500">H2/H3: <span className={content.includes('<h2') || content.includes('<h3') ? 'text-emerald-600' : 'text-amber-600'}>
+                    {content.includes('<h2') || content.includes('<h3') ? 'Có ✓' : 'Chưa có ✗'}
+                  </span></span>
+                  <div className="w-px h-8 bg-[#EADDCD]" />
+                  <span className="text-[10px] font-bold text-stone-500">Link: <span className={content.includes('<a ') ? 'text-emerald-600' : 'text-amber-600'}>
+                    {content.includes('<a ') ? 'Có ✓' : 'Chưa có ✗'}
+                  </span></span>
                 </div>
               </div>
 
+              {/* Published toggle */}
+              <div className="flex items-center justify-between p-4 bg-[#FAF6F0] rounded-2xl border-2 border-[#EADDCD]">
+                <div className="space-y-0.5">
+                  <span className="text-xs font-black text-stone-700 uppercase tracking-wide">Trạng thái bài viết</span>
+                  <p className="text-[10px] text-stone-500 font-medium">{isPublished ? 'Bài viết sẽ hiển thị công khai ngay sau khi lưu.' : 'Bài viết được lưu dưới dạng nháp, chỉ admin mới thấy.'}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPublished(!isPublished)}
+                  className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    isPublished ? 'bg-emerald-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <span className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isPublished ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+
               {/* Action Buttons */}
-              <div className="pt-2">
+              <div className="pt-2 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(true)}
+                  disabled={!content.trim()}
+                  className="flex-1 py-4.5 bg-white border-2 border-[#EADDCD] text-[#5C4033] rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-md active:scale-[98%] cursor-pointer flex items-center justify-center gap-2 min-h-[44px] hover:bg-[#FAF6F0] disabled:opacity-40"
+                >
+                  <Eye className="w-4 h-4" /> Xem trước
+                </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-4.5 bg-[#8D6E53] hover:bg-[#5C4033] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-md active:scale-[98%] cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
+                  className="flex-[2] py-4.5 bg-[#8D6E53] hover:bg-[#5C4033] text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-md active:scale-[98%] cursor-pointer flex items-center justify-center gap-2 min-h-[44px]"
                 >
                   {isSubmitting ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -899,7 +1011,15 @@ export default function AdminBlogPage() {
                           />
                         </div>
                         <div className="max-w-xs md:max-w-md min-w-0">
-                          <h4 className="font-bold text-stone-900 truncate" title={post.title}>{post.title}</h4>
+                          <h4 className="font-bold text-stone-900 truncate flex items-center gap-2" title={post.title}>
+                            {post.title}
+                            {post.published === false && (
+                              <span className="text-[9px] font-black uppercase bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded tracking-wider">Nháp</span>
+                            )}
+                            {post.published !== false && (
+                              <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded tracking-wider">Đã đăng</span>
+                            )}
+                          </h4>
                           <p className="text-[10px] text-stone-500 truncate" title={post.summary}>{post.summary}</p>
                         </div>
                       </td>
@@ -945,6 +1065,39 @@ export default function AdminBlogPage() {
 
       </main>
       <BottomNavigation />
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-start justify-center overflow-y-auto p-4" onClick={() => setShowPreview(false)}>
+          <div className="bg-white rounded-3xl max-w-3xl w-full my-8 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-[#EADDCD] px-6 py-4 flex items-center justify-between z-10">
+              <h2 className="text-sm font-black text-[#5C4033] uppercase tracking-wider">Xem trước bài viết</h2>
+              <button onClick={() => setShowPreview(false)} className="p-2 hover:bg-stone-100 rounded-xl cursor-pointer transition-colors">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 md:p-8 space-y-6">
+              {imageUrl && (
+                <div className="relative aspect-video rounded-2xl overflow-hidden bg-stone-100">
+                  <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
+                </div>
+              )}
+              <h1 className="text-2xl md:text-3xl font-bold text-[#3A2E2B] leading-tight">{title || '(Chưa có tiêu đề)'}</h1>
+              {summary && (
+                <p className="text-sm text-stone-500 leading-relaxed font-medium">{summary}</p>
+              )}
+              <div className="prose prose-stone max-w-none text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: content || '<p class="text-stone-400 italic">(Chưa có nội dung)</p>' }}
+              />
+            </div>
+            <div className="sticky bottom-0 bg-white border-t border-[#EADDCD] px-6 py-4 flex justify-end">
+              <button onClick={() => setShowPreview(false)} className="px-6 py-2.5 bg-[#5C4033] text-white rounded-xl text-xs font-bold cursor-pointer transition-colors hover:bg-[#3A2E2B]">
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

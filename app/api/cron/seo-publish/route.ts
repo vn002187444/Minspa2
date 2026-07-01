@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runAutoSeo, runKeywordResearch } from '@/lib/auto-seo';
 
-export async function GET(req: NextRequest) {
+async function handleRequest(req: NextRequest) {
   const authHeader = req.headers.get('authorization') || '';
   if (
     process.env.CRON_SECRET &&
@@ -11,8 +11,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { searchParams } = new URL(req.url);
-  const isResearch = searchParams.get('research') === '1';
+  const url = new URL(req.url);
+  const isResearch = url.searchParams.get('research') === '1';
 
   if (isResearch) {
     const result = await runKeywordResearch();
@@ -31,4 +31,12 @@ export async function GET(req: NextRequest) {
     slug: result.slug,
     title: result.title,
   });
+}
+
+export async function GET(req: NextRequest) {
+  return handleRequest(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleRequest(req);
 }

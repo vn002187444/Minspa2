@@ -1,6 +1,7 @@
 // Reconstructed layout.tsx for Min Nail & Hair application
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 import SkipLink from "@/components/SkipLink";
@@ -18,11 +19,9 @@ import { Analytics } from "@vercel/analytics/next";
 
 import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
-import BreadcrumbSchema from "@/components/BreadcrumbSchema";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const playfairDisplay = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 // Simple in-memory cache for metadata (TTL 5 minutes)
 let metadataCache: { data: Metadata | null; fetchedAt: number } = {
@@ -121,13 +120,13 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${inter.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${playfairDisplay.variable}`}
       suppressHydrationWarning
     >
       <head>
 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
+        <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="preload" href="/icons/icon-192.png" as="image" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -137,13 +136,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>
-            <script
+            <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-              async
+              strategy="afterInteractive"
             />
-            <script id="google-analytics">
+            <Script id="google-analytics" strategy="afterInteractive">
               {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');`}
-            </script>
+            </Script>
           </>
         )}
         <script
@@ -195,7 +194,6 @@ export default function RootLayout({
           }}
         />
         <WebSiteSchema baseUrl={baseUrl} />
-        <BreadcrumbSchema items={[{ name: "Trang chủ", url: baseUrl }]} />
         <AggregateRatingSchema />
         <Analytics />
         <SpeedInsights />
