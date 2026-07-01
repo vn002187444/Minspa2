@@ -16,6 +16,7 @@ import dynamic from 'next/dynamic';
 import HeaderNav from '@/components/HeaderNav';
 import BottomNavigation from '@/components/BottomNavigation';
 import ServiceBookButton from '@/components/ServiceBookButton';
+import AnnouncementBanner from '@/components/AnnouncementBanner';
 import { getBannerSettings } from './admin/actions';
 import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, getCachedBlogPosts } from '@/lib/cache';
 import ServiceSchema from '@/components/ServiceSchema';
@@ -281,7 +282,8 @@ export default async function Home() {
                         {pkg.name}
                       </h3>
                       <p className="text-xs text-gray-500 font-medium italic">
-                        Áp dụng: {pkg.services?.name || 'Dịch vụ nâng cao'}
+                         Áp dụng: {pkg.services?.[0]?.name || 'Dịch vụ nâng cao'}
+
                       </p>
                     </div>
 
