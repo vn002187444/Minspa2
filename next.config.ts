@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizeCss: true,
+    optimizePackageImports: ['lucide-react', 'date-fns', 'motion'],
   },
   output: 'standalone',
   poweredByHeader: false,

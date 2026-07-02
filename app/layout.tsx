@@ -4,14 +4,16 @@ import { Inter, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
+import dynamic from "next/dynamic";
 import SkipLink from "@/components/SkipLink";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeBanner from "@/components/ThemeBanner";
-import MascotProvider from "@/components/MascotProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import PwaSupport from "@/components/PwaSupport";
 import GoogleTranslate from "@/components/GoogleTranslate";
+
+const MascotProvider = dynamic(() => import("@/components/MascotProvider"));
 
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";

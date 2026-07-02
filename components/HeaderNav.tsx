@@ -91,14 +91,15 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
           {logoUrl ? (
             <Link href="/" className="flex items-center gap-2 md:gap-3">
-              <Image
-                src={logoUrl}
-                alt="Min Nail & Hair"
-                width={160}
-                height={48}
-                className="h-8 md:h-10 w-auto object-contain"
-                unoptimized
-              />
+                <Image
+                  src={logoUrl}
+                  alt="Min Nail & Hair"
+                  width={160}
+                  height={48}
+                  className="h-8 md:h-10 w-auto object-contain"
+                  unoptimized
+                  priority
+                />
             </Link>
           ) : (
             <>

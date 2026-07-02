@@ -10,10 +10,11 @@ import {
   Facebook, MessageSquare, ArrowUpRight
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import HeaderNav from '@/components/HeaderNav';
-import BottomNavigation from '@/components/BottomNavigation';
 import ServiceBookButton from '@/components/ServiceBookButton';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
+
+const HeaderNav = dynamic(() => import('@/components/HeaderNav'));
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
 import { getBannerSettings } from './admin/actions';
 import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, getCachedBlogPosts } from '@/lib/cache';
 import ServiceSchema from '@/components/ServiceSchema';

@@ -2,7 +2,14 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 Disallow: /staff/
-Disallow: /api/
 Disallow: /login/
+Disallow: /api/auth/
+Disallow: /api/cron/
+Disallow: /api/logout/
+Disallow: /api/subscribe/
+Disallow: /api/notifications/
+Disallow: /api/generate-description/
+Disallow: /api/generate-seo-article/
+Disallow: /api/generate-seo-image/
 
 Sitemap: https://minhair.vercel.app/sitemap.xml

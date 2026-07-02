@@ -1,21 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState, useCallback } from 'react'
 import { Globe, Check } from 'lucide-react'
-
-type GoogleTranslateWindow = {
-  googleTranslateElementInit: () => void
-  google: {
-    translate: {
-      TranslateElement: new (_config: {
-        pageLanguage: string
-        includedLanguages: string
-        layout: number
-        autoDisplay: boolean
-      }, _element: string) => void
-    }
-  }
-}
 
 const LANGUAGES: Record<string, string> = {
   vi: 'Tiếng Việt',
@@ -29,12 +15,43 @@ const LANGUAGES: Record<string, string> = {
   es: 'Español',
 }
 
+let engineLoaded = false
+
+function loadGoogleTranslateEngine() {
+  if (engineLoaded) return
+  engineLoaded = true
+
+  const w = window as unknown as Record<string, unknown>
+
+  w.googleTranslateElementInit = () => {
+    const gt = ((w as Record<string, unknown>).google as Record<string, unknown>)?.translate as Record<string, unknown> | undefined
+    if (!gt?.TranslateElement) return
+    type TEConstructor = new (
+      _c: { pageLanguage: string; includedLanguages: string; layout: number; autoDisplay: boolean },
+      _e: string
+    ) => void
+    new (gt.TranslateElement as TEConstructor)(
+      {
+        pageLanguage: 'vi',
+        includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
+        layout: 0,
+        autoDisplay: false,
+      },
+      'google_translate_element'
+    )
+  }
+
+  const script = document.createElement('script')
+  script.id = 'google_translate_script'
+  script.src = 'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
+  script.async = true
+  document.head.appendChild(script)
+}
+
 export default function GoogleTranslate() {
-  const initialized = useRef(false)
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  // Initialize language from cookie
   const [currentLang] = useState(() => {
     if (typeof document !== 'undefined') {
       const match = document.cookie.match(/googtrans=\/[^/]+\/([^;]+)/)
@@ -43,71 +60,29 @@ export default function GoogleTranslate() {
     return 'vi'
   })
 
-  // Init Google Translate engine (hidden widget)
-  useEffect(() => {
-    if (initialized.current) return
-    initialized.current = true
-
-    const w = window as unknown as GoogleTranslateWindow
-    w.googleTranslateElementInit = () => {
-      new w.google.translate.TranslateElement(
-        {
-          pageLanguage: 'vi',
-          includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
-          layout: 0,
-          autoDisplay: false,
-        },
-        'google_translate_element'
-      )
-    }
-
-    const load = () => {
-      if (document.getElementById('google_translate_script')) return
-      const script = document.createElement('script')
-      script.id = 'google_translate_script'
-      script.src = 'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
-      script.async = true
-      document.head.appendChild(script)
-    }
-
-    if (document.readyState === 'complete') {
-      setTimeout(load, 3000)
-    } else {
-      window.addEventListener('load', () => setTimeout(load, 3000), { once: true })
-    }
-
-    return () => {
-      initialized.current = true
-    }
-  }, [])
-
-  // Click outside to close dropdown
-  useEffect(() => {
-    if (!open) return
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
+  const handleToggle = useCallback(() => {
+    if (!open) loadGoogleTranslateEngine()
+    setOpen((v) => !v)
   }, [open])
 
   const switchLanguage = (lang: string) => {
-    if (lang === currentLang) {
-      setOpen(false)
-      return
-    }
-    // Set googtrans cookie so Google Translate reads it on reload
+    if (lang === currentLang) { setOpen(false); return }
     // eslint-disable-next-line react-hooks/immutability
     document.cookie = `googtrans=/vi/${lang}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`
     window.location.reload()
   }
 
+  // Click outside to close
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      setOpen(false)
+    }
+  }, [])
+
   return (
     <div className="fixed top-4 right-4 z-[60]" ref={dropdownRef}>
       <button
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all bg-white/90 hover:bg-white shadow-md border border-[#EADDCD] hover:shadow-lg text-[#5C4033] hover:text-[#3A2E2B] backdrop-blur-sm cursor-pointer"
         aria-label="Chọn ngôn ngữ"
       >
@@ -116,7 +91,10 @@ export default function GoogleTranslate() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-[#EADDCD] p-3 z-[70] min-w-[200px]">
+        <div
+          className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-[#EADDCD] p-3 z-[70] min-w-[200px]"
+          onMouseDown={handleMouseDown}
+        >
           <div className="space-y-1">
             {Object.entries(LANGUAGES).map(([code, label]) => (
               <button
@@ -139,14 +117,11 @@ export default function GoogleTranslate() {
         </div>
       )}
 
-      {/* Hidden widget container — always in DOM for Google Translate engine */}
       <div id="google_translate_element" className="hidden" />
 
       <style>{`
         .goog-te-banner-frame { display: none !important; }
         body { top: 0 !important; }
-        .goog-te-gadget-icon { display: none !important; }
-        .goog-te-gadget-simple { display: none !important; }
       `}</style>
     </div>
   )

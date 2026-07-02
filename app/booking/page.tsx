@@ -15,15 +15,17 @@ import { trackEvent, trackMascotEvent } from '@/lib/analytics';
 import { stripHtml } from '@/lib/sanitize';
 import { storage } from '@/lib/storage';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, AlertTriangle } from 'lucide-react';
-import BottomNavigation from '@/components/BottomNavigation';
+import dynamic from 'next/dynamic';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
-import BookingCalendar from '@/components/BookingCalendar';
-import BookingMascotGuide from '@/components/BookingMascotGuide';
-import GlobalSearch from '@/components/GlobalSearch';
 import { format, addDays } from 'date-fns';
 import { vi } from 'date-fns/locale';
+
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
+const BookingCalendar = dynamic(() => import('@/components/BookingCalendar'), { ssr: false });
+const BookingMascotGuide = dynamic(() => import('@/components/BookingMascotGuide'), { ssr: false });
+const GlobalSearch = dynamic(() => import('@/components/GlobalSearch'), { ssr: false });
 
 const CACHE_HISTORY_PREFIX = 'min_salon_cust_';
 const CACHE_PACKAGES_PREFIX = 'min_salon_pkg_';
