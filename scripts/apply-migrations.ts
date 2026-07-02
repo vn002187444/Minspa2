@@ -20,9 +20,9 @@ async function main() {
   const migrationsDir = path.join(process.cwd(), 'migrations');
   const archiveDir = path.join(process.cwd(), 'scripts', 'archive', 'migrations');
 
-  // Build pg connection string from Supabase URL
-  const projectRef = supabaseUrl!.replace('https://', '').replace('.supabase.co', '');
-  const pgConnectionString = `postgresql://postgres:${encodeURIComponent(supabaseKey!)}@db.${projectRef}.supabase.co:5432/postgres`;
+  // Build pg connection string from Supabase URL or Env
+  let pgConnectionString = process.env.POSTGRES_URL_NON_POOLING || `postgresql://postgres:${encodeURIComponent(supabaseKey!)}@db.${supabaseUrl!.replace('https://', '').replace('.supabase.co', '')}.supabase.co:5432/postgres`;
+  pgConnectionString = pgConnectionString.replace('?sslmode=require', '').replace('&sslmode=require', '');
 
   console.log('=== MIGRATION RUNNER ===\n');
 
