@@ -250,6 +250,7 @@ export async function runAutoSeo(): Promise<{
       summary: article.metaDescription || extractSummary(article.content, article.title),
       content: article.content,
       image_url: imageUrl,
+      image_alt: topic.substring(0, 100),
       created_at: now.toISOString(),
     });
 

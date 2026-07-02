@@ -6,8 +6,6 @@ import { FALLBACK_IMAGES } from "@/lib/fallback-images";
 
 const SYSTEM_SUMMARIZE = `Bạn là chuyên gia SEO. Tóm tắt văn bản thành 1-2 câu (tối đa 160 ký tự), giữ từ khóa chính. Tiếng Việt có dấu. Trả về JSON: { "summary": "..." }.`;
 
-const SYSTEM_IMAGES = `Bạn là chuyên gia hình ảnh spa. Đưa ra 4 từ khóa Unsplash tiếng Anh. Trả về JSON: { "keywords": ["...", "..."] }. Không giải thích. Không tư vấn y tế.`;
-
 const SYSTEM_WRITER = `Bạn là chuyên gia Copywriter SEO trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
 QUY TẮC:
@@ -23,6 +21,7 @@ const ARTICLE_WRITER_SCHEMA = {
     title: { type: "string", description: "Tiêu đề bài viết, chứa từ khóa chính" },
     summary: { type: "string", description: "Meta description, tối đa 160 ký tự" },
     content: { type: "string", description: "Nội dung Markdown đầy đủ, 500-800 từ" },
+    image_alt: { type: "string", description: "Mô tả alt text cho ảnh đại diện, 5-10 từ tiếng Việt có dấu, chứa từ khóa chính" },
   },
   required: ["title", "summary", "content"],
 };
@@ -166,30 +165,37 @@ export async function POST(req: NextRequest) {
       const topic = content || title;
       if (topic) {
         const geminiResult = await callGemini({
-          systemInstruction: SYSTEM_IMAGES,
-          prompt: `Gợi ý từ khóa ảnh cho:\n${topic.substring(0, 3000)}`,
-          jsonSchema: { type: "object", properties: { keywords: { type: "array", items: { type: "string" } } }, required: ["keywords"] },
+          systemInstruction: `Bạn là chuyên gia tìm kiếm hình ảnh SEO.`,
+          prompt: `Search the web for free stock photos about: ${topic.substring(0, 3000)}. Return exactly 4 results, one per line. Each line format: IMAGE_URL|ALT_TEXT_IN_VIETNAMESE
+
+Requirements:
+- Image URL from Unsplash (images.unsplash.com) in landscape orientation
+- ALT_TEXT: mô tả ngắn 5-10 từ bằng tiếng Việt, chứa từ khóa chính, phù hợp SEO
+
+Example:
+https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop|Dịch vụ gội đầu dưỡng sinh thảo dược thư giãn tại spa`,
+          config: { tools: [{ googleSearch: {} }] },
+          timeout: 25000,
           useCache: true,
         });
         if (geminiResult.text) {
-          const parsed = JSON.parse(geminiResult.text);
-          const terms = (parsed.keywords || []).slice(0, 4);
-          const UNSPLASH_ACCESS_KEY = process.env.UNSPLASH_ACCESS_KEY;
+          const lines = geminiResult.text.trim().split('\n').filter(Boolean);
           const images: string[] = [];
-          for (const term of terms) {
-            if (UNSPLASH_ACCESS_KEY) {
-              try {
-                const resp = await fetch(`https://api.unsplash.com/search/photos?query=${encodeURIComponent(term)}&per_page=1&orientation=landscape`, { headers: { Authorization: `Client-ID ${UNSPLASH_ACCESS_KEY}` } });
-                const data = await resp.json();
-                if (data.results?.[0]) { images.push(data.results[0].urls.regular); continue; }
-              } catch { }
+          const imageAlts: string[] = [];
+          for (const line of lines) {
+            const [url, ...altParts] = line.split('|');
+            const alt = altParts.join('|').trim();
+            if (url && /https:\/\/images\.unsplash\.com\/photo-[\w-]+/.test(url)) {
+              images.push(url.trim());
+              imageAlts.push(alt || topic.substring(0, 100));
             }
-            images.push(FALLBACK_IMAGES[Math.floor(Math.random() * FALLBACK_IMAGES.length)]);
           }
-          if (images.length > 0) return NextResponse.json({ images, fromCache: geminiResult.fromCache });
+          if (images.length > 0) {
+            return NextResponse.json({ images: images.slice(0, 4), imageAlts: imageAlts.slice(0, 4), fromCache: geminiResult.fromCache });
+          }
         }
       }
-      return NextResponse.json({ images: fallbackImages(title) });
+      return NextResponse.json({ images: fallbackImages(title), imageAlts: [] });
     }
 
     if (action === 'writeArticle') {
@@ -202,6 +208,7 @@ export async function POST(req: NextRequest) {
         systemInstruction: `Bạn là cố vấn SEO cho ${BRAND_INFO.name} tại ${BRAND_INFO.location}. Sử dụng Google Search để tra cứu.`,
         prompt: `Nghiên cứu chủ đề: "${title}". Từ khóa bổ sung: "${keywords || 'Không có'}"`,
         config: { tools: [{ googleSearch: {} }] },
+        timeout: 25000,
         useCache: true,
       });
       const researchText = researchResult.text || '';
@@ -235,6 +242,7 @@ ${backlinkRulesStr}
           article: parsed.content || geminiResult.text,
           title: parsed.title || title,
           summary: parsed.summary || '',
+          image_alt: parsed.image_alt || '',
           research: researchText,
           fromCache: geminiResult.fromCache,
         });

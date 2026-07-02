@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import NotificationBell from '@/components/NotificationBell';
@@ -31,7 +32,11 @@ const MOBILE_OBSERVE_IDS = [
   { id: 'faq', key: 'faq' },
 ];
 
-export default function HeaderNav() {
+interface HeaderNavProps {
+  logoUrl?: string;
+}
+
+export default function HeaderNav({ logoUrl }: HeaderNavProps) {
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
 
@@ -84,13 +89,28 @@ export default function HeaderNav() {
         
         {/* Brand / Logo */}
         <div className="flex items-center gap-2 md:gap-3 shrink-0">
-          <div className="w-9 h-9 md:w-10 md:h-10 bg-[#c08063] rounded-full flex items-center justify-center shadow-md border border-[#EADDCD]">
-            <span className="font-display text-lg md:text-xl font-bold text-[#F5EBE0] tracking-wider">M</span>
-          </div>
-          <div>
-            <span className="font-display font-black text-sm md:text-xl tracking-wider text-[#3A2E2B] uppercase block">MIN SALON</span>
-            <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-[#5C4033] uppercase font-bold block -mt-1">Nail &amp; Hair Spa</span>
-          </div>
+          {logoUrl ? (
+            <Link href="/" className="flex items-center gap-2 md:gap-3">
+              <Image
+                src={logoUrl}
+                alt="Min Nail & Hair"
+                width={160}
+                height={48}
+                className="h-8 md:h-10 w-auto object-contain"
+                unoptimized
+              />
+            </Link>
+          ) : (
+            <>
+              <div className="w-9 h-9 md:w-10 md:h-10 bg-[#c08063] rounded-full flex items-center justify-center shadow-md border border-[#EADDCD]">
+                <span className="font-display text-lg md:text-xl font-bold text-[#F5EBE0] tracking-wider">M</span>
+              </div>
+              <div>
+                <span className="font-display font-black text-sm md:text-xl tracking-wider text-[#3A2E2B] uppercase block">MIN SALON</span>
+                <span className="text-[8px] md:text-[10px] tracking-[0.2em] text-[#5C4033] uppercase font-bold block -mt-1">Nail &amp; Hair Spa</span>
+              </div>
+            </>
+          )}
         </div>
         
         {/* Desktop Links — Original Category Navigation */}

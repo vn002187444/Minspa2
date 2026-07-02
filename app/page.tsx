@@ -1,16 +1,13 @@
-import { createClient } from '@/utils/supabase/server';
-import { getSession } from '@/utils/auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
 
 // Enable Incremental Static Regeneration (ISR) - cache page and services data for 5 minutes
 export const revalidate = 3600;
 import { 
   ArrowRight, Sparkles, MapPin, Phone, Clock, 
-  Heart, Shield, Award, Calendar, ChevronRight,
-  Facebook, MessageSquare, Mail, ArrowUpRight
+  Calendar, ChevronRight,
+  Facebook, MessageSquare, ArrowUpRight
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import HeaderNav from '@/components/HeaderNav';
@@ -20,7 +17,6 @@ import AnnouncementBanner from '@/components/AnnouncementBanner';
 import { getBannerSettings } from './admin/actions';
 import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, getCachedBlogPosts } from '@/lib/cache';
 import ServiceSchema from '@/components/ServiceSchema';
-import ProductSchema from '@/components/ProductSchema';
 import ReviewSchema from '@/components/ReviewSchema';
 import { testimonials } from '@/lib/testimonials';
 
@@ -70,10 +66,12 @@ export default async function Home() {
   let facebookUrl = 'https://facebook.com/minnailhair';
   let zaloUrl = 'https://zalo.me/0934323878';
   
+  let logoUrl = '';
   if (seoRow) {
     if (seoRow.hotline) hotline = seoRow.hotline;
     if (seoRow.facebook_url) facebookUrl = seoRow.facebook_url;
     if (seoRow.zalo_url) zaloUrl = seoRow.zalo_url;
+    if (seoRow.logo_url) logoUrl = seoRow.logo_url;
   }
 
   // Ensure and override standard values if needed to map perfectly to the categories
@@ -124,7 +122,7 @@ export default async function Home() {
       <AnnouncementBanner settings={bannerSettings} />
 
       {/* Navigation */}
-      <HeaderNav />
+      <HeaderNav logoUrl={logoUrl} />
 
       {/* Elegant Hero Frame */}
       <header id="hero" className="relative py-12 md:py-20 4k:py-32 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[rgb(var(--color-bg))] via-[rgb(var(--color-bg-card))] to-[rgb(var(--color-bg))] scroll-mt-24">
@@ -560,13 +558,26 @@ export default async function Home() {
             {/* Column 1: Brand Info */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#8D6E53] to-[#5C4033] rounded-2xl flex items-center justify-center text-[#FAF6F0] font-display font-black text-2xl shadow-lg border border-[#EADDCD]/20 shrink-0">
-                  M
-                </div>
-                <div>
-                  <h3 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h3>
-                  <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
-                </div>
+                {logoUrl ? (
+                  <Image
+                    src={logoUrl}
+                    alt="Min Nail & Hair"
+                    width={200}
+                    height={60}
+                    className="h-12 md:h-14 w-auto object-contain brightness-0 invert"
+                    unoptimized
+                  />
+                ) : (
+                  <>
+                    <div className="w-14 h-14 bg-gradient-to-br from-[#8D6E53] to-[#5C4033] rounded-2xl flex items-center justify-center text-[#FAF6F0] font-display font-black text-2xl shadow-lg border border-[#EADDCD]/20 shrink-0">
+                      M
+                    </div>
+                    <div>
+                      <h3 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h3>
+                      <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
+                    </div>
+                  </>
+                )}
               </div>
               <p className="text-xs text-gray-300 font-medium leading-relaxed">
                 Nơi gìn giữ nét xuân và khơi dậy vẻ đẹp tự nhiên của bạn. Min Salon kiêu hãnh mang đến dịch vụ gội đầu dưỡng sinh thảo dược, làm móng chuyên sâu và trị liệu tóc cao cấp trong không gian thanh tịnh, đẳng cấp.
@@ -729,7 +740,7 @@ async function LatestBlogPosts() {
             <div className="relative h-44 md:h-52 overflow-hidden bg-stone-100">
               <Image
                 src={post.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop'}
-                alt={post.title}
+                alt={post.image_alt || post.title}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 33vw"

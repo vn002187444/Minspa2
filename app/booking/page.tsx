@@ -16,6 +16,7 @@ import { stripHtml } from '@/lib/sanitize';
 import { storage } from '@/lib/storage';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, AlertTriangle } from 'lucide-react';
 import BottomNavigation from '@/components/BottomNavigation';
+import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import BookingCalendar from '@/components/BookingCalendar';
@@ -95,7 +96,9 @@ export default function BookingPage() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    startTransition(() => {
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {
@@ -379,7 +382,14 @@ export default function BookingPage() {
     return s.category === activeCategory;
   });
 
+  const breadcrumbOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://minhair.vercel.app';
+
   return (
+    <>
+      <BreadcrumbSchema items={[
+        { name: "Trang chủ", url: breadcrumbOrigin },
+        { name: "Đặt lịch", url: `${breadcrumbOrigin}/booking` },
+      ]} />
     <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-2 sm:p-4 lg:py-12 font-sans text-[#3A2E2B]">
        <div className="max-w-xl lg:max-w-6xl xxl:max-w-7xl w-full bg-white rounded-3xl shadow-xl overflow-hidden min-h-[300px] md:min-h-[520px] flex flex-col border border-[#EADDCD] transition-all duration-300">
         
@@ -1086,5 +1096,6 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
       <BottomNavigation />
       <LoadingOverlay isVisible={isSubmitting} message="Đang gửi lịch hẹn..." />
     </div>
+    </>
   );
 }

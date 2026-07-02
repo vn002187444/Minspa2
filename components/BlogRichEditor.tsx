@@ -11,14 +11,29 @@ import { useCallback } from 'react'
 import {
   Bold, Italic, Underline as UnderlineIcon, Heading2, Heading3,
   List, ListOrdered, Quote, Code2, Link2, ImageIcon, AlignLeft,
-  AlignCenter, AlignRight, Pilcrow
+  AlignCenter, AlignRight
 } from 'lucide-react'
 
 interface BlogRichEditorProps {
   content: string
-  onChange: (html: string) => void
+  onChange: (_html: string) => void
   placeholder?: string
 }
+
+const ToolBtn = ({ onClick, active, title, children }: { onClick: () => void; active?: boolean; title: string; children: React.ReactNode }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    title={title}
+    className={`px-2.5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
+      active
+        ? 'bg-[#8D6E53] text-white border-[#8D6E53]'
+        : 'bg-white text-stone-700 border-[#EADDCD]/60 hover:bg-[#8D6E53] hover:text-white'
+    }`}
+  >
+    {children}
+  </button>
+)
 
 export default function BlogRichEditor({ content, onChange, placeholder }: BlogRichEditorProps) {
   const editor = useEditor({
@@ -58,27 +73,12 @@ export default function BlogRichEditor({ content, onChange, placeholder }: BlogR
   const addImage = useCallback(() => {
     if (!editor) return
     const url = window.prompt('Nhập URL ảnh:')
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run()
-    }
+    if (!url) return
+    const alt = window.prompt('Mô tả ảnh (Alt Text) — hỗ trợ SEO:', '')
+    editor.chain().focus().setImage({ src: url, alt: alt || '' }).run()
   }, [editor])
 
   if (!editor) return null
-
-  const ToolBtn = ({ onClick, active, title, children }: { onClick: () => void; active?: boolean; title: string; children: React.ReactNode }) => (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className={`px-2.5 py-2.5 min-h-[44px] min-w-[44px] rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
-        active
-          ? 'bg-[#8D6E53] text-white border-[#8D6E53]'
-          : 'bg-white text-stone-700 border-[#EADDCD]/60 hover:bg-[#8D6E53] hover:text-white'
-      }`}
-    >
-      {children}
-    </button>
-  )
 
   return (
     <div className="border-2 border-[#EADDCD] rounded-3xl overflow-hidden bg-[#FAF6F0]">

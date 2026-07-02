@@ -160,6 +160,10 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 - `summary` (TEXT)
 - `content` (TEXT - Markdown)
 - `image_url` (VARCHAR)
+- `image_alt` (VARCHAR, Nullable — SEO alt text, fallback to title)
+- `keywords` (TEXT, Nullable)
+- `published` (BOOLEAN, DEFAULT false)
+- `published_at` (TIMESTAMP, Nullable)
 - `created_at` (TIMESTAMP)
 - `updated_at` (TIMESTAMP)
 
@@ -222,8 +226,8 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 ### 19. Bảng cấu hình single-row
 | Table | Key columns |
 |-------|-------------|
-| `seo_settings` | id=1, page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline |
-| `seo_articles` | id(VARCHAR PK), topic, keywords, article, image_url |
+| `seo_settings` | id=1, page_title, meta_description, meta_keywords, og_image_url, logo_url, facebook_url, zalo_url, hotline, online_discount_enabled, online_discount_percent, default_commission_percent |
+| `seo_articles` | id(VARCHAR PK), topic, keywords, article, image_url, image_alt, status (draft/published), topic_source, blog_slug, published_at |
 | `banner_settings` | id=1, is_enabled, content |
 | `bank_settings` | id=1, bank_id, bank_name, account_number, account_owner |
 
@@ -259,8 +263,9 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | `/notifications` | `app/notifications/page.tsx` | Danh sách thông báo |
 | `/offline` | `app/offline/page.tsx` | Offline fallback page |
 | `/admin/blog-analytics` | `app/admin/blog-analytics/page.tsx` | Thống kê blog |
-| `/blog` | `app/blog/page.tsx` | Danh sách bài viết (phân trang 6/page) |
-| `/blog/[slug]` | `app/blog/[slug]/page.tsx` + `ShareButton.tsx` + `ViewTracker.tsx` | Chi tiết bài viết SEO |
+| `/blog` | `app/blog/page.tsx` | Danh sách bài viết (phân trang 6/page); BreadcrumbSchema |
+| `/blog/[slug]` | `app/blog/[slug]/page.tsx` + `ShareButton.tsx` + `ViewTracker.tsx` | Chi tiết bài viết SEO; BreadcrumbSchema + ArticleSchema |
+| `/admin/seo-articles` | `app/admin/seo-articles/page.tsx` | SEO articles CRUD (list, create, edit, delete, publish to blog) |
 
 ### API Routes
 | Endpoint | Method | Mô tả |
@@ -282,6 +287,7 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | `api/ai-assist` | POST | AI assistant chat |
 | `api/seo-search` | POST | Tìm kiếm từ khóa SEO |
 | `api/blog/view` | POST | Track blog view (ip_hash, user_agent) |
+| `sitemap.ts` | GET | Sitemap XML — blogs, services, seo_articles (with blog_slug) |
 
 ---
 
@@ -524,7 +530,7 @@ app/
 ├── api/              → API routes (cron, auth, notifications...)
 └── login/            → Trang đăng nhập
 
-components/           → Shared UI components (SEO schema: WebSiteSchema, BreadcrumbSchema, ArticleSchema, ServiceSchema, FaqSchema, AggregateRatingSchema, ProductSchema, ReviewCustomerModal)
+components/           → Shared UI components (SEO schema: WebSiteSchema, BreadcrumbSchema, BreadcrumbNav, ArticleSchema, GoogleTranslate, ServiceSchema, FaqSchema, AggregateRatingSchema, ProductSchema, ReviewCustomerModal)
 lib/                  → Business logic (booking-engine.ts)
 utils/                → Helpers (supabase, push, reminders)
 scripts/              → DB migration + seed
@@ -549,7 +555,13 @@ scripts/              → DB migration + seed
 □ Commit message rõ ràng
 ```
 
-### Step 5: Nếu cần help
+### Step 5: Đọc docs trước khi hỏi
+```
+docs/Log.md      → Lịch sử các phiên làm việc trước (biết đã làm gì)
+docs/workflow.md → Sơ đồ quy trình nghiệp vụ (booking, notification, auth, v.v.)
+```
+
+### Step 6: Nếu cần help
 - Thắc mắc về logic → Hỏi người dùng
 - Không chắc về architecture → Đọc lại AI_MAP.md
-- Muốn biết đã làm gì → Đọc UPGRADE_PLAN.md + AI_MAP.md
+- Muốn biết đã làm gì → Đọc UPGRADE_PLAN.md + AI_MAP.md + docs/Log.md

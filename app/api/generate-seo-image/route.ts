@@ -36,15 +36,15 @@ async function searchUnsplash(query: string): Promise<string | null> {
 async function tryGeminiImage(prompt: string, genAI: GoogleGenAI): Promise<string | null> {
   try {
     const result = await genAI.models.generateContent({
-      model: "gemini-2.0-flash-exp-image-generation",
+      model: "gemini-2.5-flash-image",
       contents: [{ role: "user", parts: [{ text: prompt }] }],
       config: {
-        responseModalities: ["image"] as never,
+        responseModalities: ["Image"] as never,
       },
     });
     if (result.candidates?.[0]?.content?.parts?.length) {
       const part = result.candidates[0].content.parts[0];
-      if ("inlineData" in part && part.inlineData?.data) {
+      if (part.inlineData?.data) {
         return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
       }
     }

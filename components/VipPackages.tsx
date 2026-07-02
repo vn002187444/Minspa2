@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Shield, Award } from 'lucide-react';
+
 
 interface VipPackagesProps {
   packages: any[];
@@ -21,7 +21,7 @@ export default function VipPackages({ packages }: VipPackagesProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto px-4">
-        {packages.map((pkg, i) => (
+        {packages.map((pkg) => (
           <div key={pkg.id} className="bg-[#FAF6F0] rounded-3xl p-6 border border-[#EADDCD] flex flex-col gap-4 hover:shadow-md transition-all">
             <div className="flex justify-between items-start">
               <h3 className="font-display font-bold text-lg text-[#3A2E2B]">{pkg.name}</h3>

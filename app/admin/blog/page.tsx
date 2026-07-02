@@ -43,6 +43,7 @@ export default function AdminBlogPage() {
   const [summary, setSummary] = useState('');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [imageAlt, setImageAlt] = useState('');
   const [keywords, setKeywords] = useState('');
   const [isPublished, setIsPublished] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,27 +67,6 @@ export default function AdminBlogPage() {
       ta.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
     });
   }, [content]);
-
-  const handleEditorSwitch = useCallback(() => {
-    if (editorMode === 'textarea') {
-      // Chuyển sang TipTap: convert markdown → HTML nếu cần
-      if (!/<[a-z][\s\S]*>/i.test(content)) {
-        setContent(mdToHtml(content));
-      }
-      setContentKey(k => k + 1);
-      setEditorMode('tiptap');
-    } else {
-      setEditorMode('textarea');
-    }
-  }, [editorMode, content]);
-
-  // SEO target keywords & checks
-  const SEO_KEYWORDS = [
-    { text: "gội dưỡng sinh Thủ Đức", label: "Gội dưỡng sinh Thủ Đức" },
-    { text: "làm móng Lavita Charm", label: "Làm móng Lavita Charm" },
-    { text: "sơn gel Trường Thọ", label: "Sơn gel Trường Thọ" },
-    { text: "Min Nail & Hair", label: "Min Nail & Hair" }
-  ];
 
   // Convert markdown to HTML for backward compatibility with legacy posts
   const mdToHtml = (md: string) => {
@@ -120,6 +100,27 @@ export default function AdminBlogPage() {
       .replace(/\s+/g, '-') // replaces spaces with hyphens
       .replace(/-+/g, '-'); // removes duplicate hyphens
   };
+
+  const handleEditorSwitch = useCallback(() => {
+    if (editorMode === 'textarea') {
+      // Chuyển sang TipTap: convert markdown → HTML nếu cần
+      if (!/<[a-z][\s\S]*>/i.test(content)) {
+        setContent(mdToHtml(content));
+      }
+      setContentKey(k => k + 1);
+      setEditorMode('tiptap');
+    } else {
+      setEditorMode('textarea');
+    }
+  }, [editorMode, content]);
+
+  // SEO target keywords & checks
+  const SEO_KEYWORDS = [
+    { text: "gội dưỡng sinh Thủ Đức", label: "Gội dưỡng sinh Thủ Đức" },
+    { text: "làm móng Lavita Charm", label: "Làm móng Lavita Charm" },
+    { text: "sơn gel Trường Thọ", label: "Sơn gel Trường Thọ" },
+    { text: "Min Nail & Hair", label: "Min Nail & Hair" }
+  ];
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -194,6 +195,7 @@ export default function AdminBlogPage() {
         setContent(mdToHtml(data.article));
         setContentKey(k => k + 1);
         setSummary(data.summary || '');
+        if (data.image_alt) setImageAlt(data.image_alt);
         if (!editingId) setSlug(slugify(data.title || aiTopic));
         toast.success('AI đã viết bài thành công!');
       } else {
@@ -241,6 +243,7 @@ export default function AdminBlogPage() {
         setImageUrl(data.images[0]);
         setSuggestedImages(data.images);
         suggestedImagesRef.current = data.images;
+        if (data.imageAlts?.[0]) setImageAlt(data.imageAlts[0]);
         toast.success('Đã gợi ý ảnh!');
       } else {
         toast.error('Không tìm thấy ảnh gợi ý');
@@ -276,10 +279,12 @@ export default function AdminBlogPage() {
           suggestedImagesRef.current = data.images;
           setSuggestedImages(data.images);
           if (!imageUrl && data.images[0]) startTransition(() => setImageUrl(data.images[0]));
+          if (!imageAlt && data.imageAlts?.[0]) startTransition(() => setImageAlt(data.imageAlts[0]));
         }
       } catch { /* silent */ }
     }, 1500);
     return () => { if (autoSuggestTimer.current) clearTimeout(autoSuggestTimer.current); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, aiTopic, imageUrl]);
 
   const handleImageError = (idx: number) => {
@@ -289,7 +294,6 @@ export default function AdminBlogPage() {
   const handleRefreshImages = async () => {
     const t = (title || aiTopic || '').trim();
     if (!t) { toast.error('Vui lòng nhập tiêu đề!'); return; }
-    suggestedImagesRef.current = [];
     setSuggestedImages([]);
     setImagesFailed(new Set());
     try {
@@ -300,9 +304,9 @@ export default function AdminBlogPage() {
       });
       const data = await res.json();
       if (data.images?.length > 0) {
-        suggestedImagesRef.current = data.images;
         setSuggestedImages(data.images);
         if (data.images[0]) startTransition(() => setImageUrl(data.images[0]));
+        if (data.imageAlts?.[0]) startTransition(() => setImageAlt(data.imageAlts[0]));
         toast.success('Đã làm mới ảnh gợi ý!');
       } else {
         toast.error('Không tìm thấy ảnh gợi ý');
@@ -315,13 +319,13 @@ export default function AdminBlogPage() {
   useEffect(() => {
     if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = setTimeout(() => {
-      const draft = { title, slug, summary, content, imageUrl, editingId };
+      const draft = { title, slug, summary, content, imageUrl, imageAlt, editingId };
       try {
         localStorage.setItem('blog_draft', JSON.stringify(draft));
       } catch { /* storage full */ }
     }, 3000);
     return () => { if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current); };
-  }, [title, slug, summary, content, imageUrl, editingId]);
+  }, [title, slug, summary, content, imageUrl, imageAlt, editingId]);
 
   // Restore draft from localStorage on mount
   useEffect(() => {
@@ -341,6 +345,7 @@ export default function AdminBlogPage() {
                 setSummary(draft.summary || '');
                 setContent(draft.content || '');
                 setImageUrl(draft.imageUrl || '');
+                setImageAlt(draft.imageAlt || '');
                 setEditingId(draft.editingId || null);
               }
             }
@@ -357,9 +362,9 @@ export default function AdminBlogPage() {
     setSummary('');
     setContent('');
     setImageUrl('');
+    setImageAlt('');
     setKeywords('');
     setSuggestedImages([]);
-    suggestedImagesRef.current = [];
     setIsPublished(false);
     setError('');
   };
@@ -372,6 +377,7 @@ export default function AdminBlogPage() {
     setContent(mdToHtml(post.content || ''));
     setContentKey(k => k + 1);
     setImageUrl(post.image_url || '');
+    setImageAlt(post.image_alt || '');
     setKeywords(post.keywords || '');
     setIsPublished(post.published !== false);
     setError('');
@@ -405,6 +411,7 @@ export default function AdminBlogPage() {
         summary,
         content,
         image_url: imageUrl,
+        image_alt: imageAlt,
         keywords,
         published: isPublished
       });
@@ -699,6 +706,21 @@ export default function AdminBlogPage() {
                     </button>
                   )}
                 </div>
+              </div>
+
+              {/* Image Alt Text */}
+              <div className="space-y-1.5">
+                <label htmlFor="blog-imageAlt" className="block font-black text-stone-700 tracking-wide uppercase">Mô tả ảnh (Alt Text) <span className="text-[10px] font-medium text-stone-400 normal-case">— hỗ trợ SEO</span></label>
+                <input
+                  id="blog-imageAlt"
+                  type="text"
+                  value={imageAlt}
+                  onChange={(e) => setImageAlt(e.target.value)}
+                  placeholder="Ví dụ: Dịch vụ gội đầu dưỡng sinh thảo dược thư giãn tại Min Nail & Hair"
+                  maxLength={500}
+                  className="w-full bg-[#FAF6F0] border-2 border-[#EADDCD] rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]/50 text-stone-900 font-medium"
+                />
+                <p className="text-[10px] text-stone-400 font-medium">Mô tả ngắn 5-10 từ, chứa từ khóa chính. Hiển thị khi ảnh không tải được và giúp Google hiểu nội dung ảnh.</p>
               </div>
 
               {/* Content Editor */}
@@ -1005,7 +1027,7 @@ export default function AdminBlogPage() {
                         <div className="w-12 h-12 relative rounded-lg bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
                           <Image
                             src={post.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop'}
-                            alt={post.title}
+                            alt={post.image_alt || post.title}
                             fill
                             className="object-cover"
                           />
@@ -1079,7 +1101,7 @@ export default function AdminBlogPage() {
             <div className="p-6 md:p-8 space-y-6">
               {imageUrl && (
                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-stone-100">
-                  <Image src={imageUrl} alt={title} fill className="object-cover" unoptimized />
+                  <Image src={imageUrl} alt={imageAlt || title} fill className="object-cover" unoptimized />
                 </div>
               )}
               <h1 className="text-2xl md:text-3xl font-bold text-[#3A2E2B] leading-tight">{title || '(Chưa có tiêu đề)'}</h1>

@@ -59,13 +59,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
       url: baseUrl,
-      images: [{ url: `${baseUrl}/icons/icon-512.png` }],
+      images: [{ url: `${baseUrl}/icons/icon-512.png`, width: 512, height: 512, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
-      images: [`${baseUrl}/icons/icon-512.png`],
+      images: [{ url: `${baseUrl}/icons/icon-512.png`, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
     },
     appleWebApp: { capable: true, statusBarStyle: "default", title: "Min Salon" },
     robots: { index: true, follow: true },
@@ -90,13 +90,13 @@ export async function generateMetadata(): Promise<Metadata> {
           ...defaultMeta.openGraph,
           title: data.page_title || defaultMeta.openGraph?.title || defaultMeta.title,
           description: data.meta_description || defaultMeta.openGraph?.description || defaultMeta.description,
-          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.svg` }],
+          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.png`, width: 512, height: 512, alt: data.page_title || "Min Nail & Hair" }],
         },
         twitter: {
           ...defaultMeta.twitter,
           title: data.page_title || defaultMeta.twitter?.title || defaultMeta.title,
           description: data.meta_description || defaultMeta.twitter?.description || defaultMeta.description,
-          images: [data.og_image_url || `${baseUrl}/icons/icon-512.svg`],
+          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.png`, alt: data.page_title || "Min Nail & Hair" }],
         },
       };
       metadataCache = { data: result, fetchedAt: now };

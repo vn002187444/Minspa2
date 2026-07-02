@@ -55,6 +55,7 @@ interface SeoInput {
   meta_description?: string;
   meta_keywords?: string;
   og_image_url?: string;
+  logo_url?: string;
   online_discount_enabled?: boolean;
   online_discount_percent?: number;
   default_commission_percent?: number;
@@ -588,7 +589,7 @@ export async function getSeoSettings() {
   await checkAdminOrManager();
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('seo_settings').select('page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline, facebook_url, zalo_url').eq('id', 1).single();
+    const { data, error } = await supabase.from('seo_settings').select('page_title, meta_description, meta_keywords, og_image_url, logo_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline, facebook_url, zalo_url').eq('id', 1).single();
     if (error) throw error;
     if (data) {
       return {
@@ -596,6 +597,7 @@ export async function getSeoSettings() {
         meta_description: data.meta_description,
         meta_keywords: data.meta_keywords,
         og_image_url: data.og_image_url,
+        logo_url: data.logo_url || '',
         online_discount_enabled: data.online_discount_enabled !== false,
         online_discount_percent: data.online_discount_percent ?? 5,
         default_commission_percent: data.default_commission_percent ?? 15,
@@ -607,7 +609,7 @@ export async function getSeoSettings() {
   } catch (e: unknown) {
     console.error(e);
   }
-  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878', facebook_url: 'https://facebook.com/minnailhair', zalo_url: 'https://zalo.me/0934323878' };
+  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', logo_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878', facebook_url: 'https://facebook.com/minnailhair', zalo_url: 'https://zalo.me/0934323878' };
 }
 
 export async function saveSeoSettings(payload: SeoInput) {
@@ -620,6 +622,7 @@ export async function saveSeoSettings(payload: SeoInput) {
       meta_description: payload.meta_description,
       meta_keywords: payload.meta_keywords,
       og_image_url: payload.og_image_url,
+      logo_url: payload.logo_url || '',
       online_discount_enabled: payload.online_discount_enabled !== false,
       online_discount_percent: payload.online_discount_percent ?? 5,
       default_commission_percent: payload.default_commission_percent ?? 15,
@@ -642,12 +645,14 @@ export async function getSeoArticles() {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('seo_articles')
-      .select('id, created_at, topic, keywords, article, image_url')
+      .select('id, created_at, topic, keywords, article, image_url, image_alt, status, topic_source, blog_slug, published_at')
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) throw error;
     return (data || []).map((a: {
-      id: number; created_at: string; topic: string; keywords: string; article: string; image_url: string | null;
+      id: string; created_at: string; topic: string; keywords: string; article: string;
+      image_url: string | null; image_alt: string | null; status: string;
+      topic_source: string; blog_slug: string | null; published_at: string | null;
     }) => ({
       id: a.id,
       createdAt: a.created_at,
@@ -655,11 +660,33 @@ export async function getSeoArticles() {
       keywords: a.keywords,
       article: a.article,
       imageUrl: a.image_url,
+      imageAlt: a.image_alt,
+      status: a.status,
+      topicSource: a.topic_source,
+      blogSlug: a.blog_slug,
+      publishedAt: a.published_at,
     }));
   } catch (e: unknown) {
     console.error(e);
   }
   return [];
+}
+
+export async function getSeoArticleById(id: string) {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('seo_articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (e: unknown) {
+    console.error(e);
+    return null;
+  }
 }
 
 async function uploadBase64ToStorage(base64Url: string): Promise<string> {
@@ -712,6 +739,8 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
           keywords: article.keywords,
           article: article.article,
           image_url: imageUrl,
+          image_alt: article.image_alt || article.imageAlt || null,
+          status: article.status || 'draft',
         })
         .eq('id', article.id);
       if (error) throw error;
@@ -724,6 +753,8 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
           keywords: article.keywords,
           article: article.article,
           image_url: imageUrl,
+          image_alt: article.image_alt || article.imageAlt || null,
+          status: article.status || 'draft',
           created_at: article.createdAt || new Date().toISOString(),
         });
       if (error) throw error;

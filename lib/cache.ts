@@ -19,7 +19,7 @@ export async function cachedFetch<T>(key: string, fn: () => Promise<T>, revalida
 export async function getCachedSeoSettings() {
   return cachedFetch('homepage-seo-settings', async () => {
     const supabase = await createClient();
-    const { data } = await supabase.from('seo_settings').select('hotline, facebook_url, zalo_url').eq('id', 1).single();
+    const { data } = await supabase.from('seo_settings').select('hotline, facebook_url, zalo_url, logo_url').eq('id', 1).single();
     return data;
   }, 3600);
 }
@@ -53,7 +53,7 @@ export async function getCachedBlogPosts() {
     const supabase = await createClient();
     const { data } = await supabase
       .from('blogs')
-      .select('id, title, slug, summary, image_url, created_at')
+      .select('id, title, slug, summary, image_url, image_alt, created_at')
       .eq('published', true)
       .order('created_at', { ascending: false })
       .limit(3);

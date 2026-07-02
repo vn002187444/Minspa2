@@ -54,13 +54,13 @@ export async function generateMetadata({ params }: Props) {
       title: `${post.title} - Min Nail & Hair`,
       description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
       url: `${baseUrl}/blog/${resolvedParams.slug}`,
-      images: [{ url: ogImage, width: 1200, height: 630 }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.image_alt || post.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${post.title} - Min Nail & Hair`,
       description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
-      images: [ogImage],
+      images: [{ url: ogImage, alt: post.image_alt || post.title }],
     },
   };
 }
@@ -155,7 +155,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
             <div className="relative h-48 sm:h-60 md:h-[400px] w-full max-w-full rounded-xl md:rounded-2xl overflow-hidden bg-stone-100 border border-[#EADDCD]/20 shadow-inner">
               <Image
                 src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
-                alt={post.title}
+                alt={post.image_alt || post.title}
                 fill
                 className="object-cover"
                 priority
@@ -354,7 +354,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
                       <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                         <Image
                           src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
-                          alt={post.title}
+                          alt={post.image_alt || post.title}
                           fill
                           className="object-cover transition-transform group-hover:scale-105"
                         />

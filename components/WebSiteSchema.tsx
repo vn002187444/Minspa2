@@ -10,6 +10,10 @@ export default function WebSiteSchema({ baseUrl }: WebSiteSchemaProps) {
     url: baseUrl,
     name: "Min Nail & Hair",
     publisher: { "@id": "#local-business" },
+    image: {
+      "@type": "ImageObject",
+      url: `${baseUrl}/icons/icon-512.png`,
+    },
     potentialAction: {
       "@type": "SearchAction",
       target: `${baseUrl}/search?q={search_term_string}`,

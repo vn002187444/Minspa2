@@ -12,7 +12,7 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
 
   let query = supabase
     .from('blogs')
-    .select('id, title, slug, summary, content, image_url, created_at, published, keywords', { count: 'exact' })
+    .select('id, title, slug, summary, content, image_url, image_alt, created_at, published, keywords', { count: 'exact' })
     .order('created_at', { ascending: false });
 
   if (!includeDrafts) {
@@ -24,7 +24,7 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
   if (count === null) {
     const { data, error } = await supabase
       .from('blogs')
-      .select('id, title, slug, summary, content, image_url, created_at, keywords')
+      .select('id, title, slug, summary, content, image_url, image_alt, created_at, keywords')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -49,7 +49,7 @@ export async function getBlogPostBySlug(slug: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('blogs')
-    .select('id, title, slug, summary, content, image_url, created_at, keywords')
+    .select('id, title, slug, summary, content, image_url, image_alt, created_at, keywords')
     .eq('slug', slug)
     .single();
 
@@ -67,6 +67,7 @@ export async function saveBlogPost(postData: {
   summary: string;
   content: string;
   image_url: string;
+  image_alt?: string;
   published?: boolean;
   keywords?: string;
 }) {
@@ -85,6 +86,7 @@ export async function saveBlogPost(postData: {
       summary: stripHtml(postData.summary || ''),
       content: sanitizeHtml(postData.content || ''),
       image_url: postData.image_url,
+      image_alt: postData.image_alt || '',
       keywords: postData.keywords || '',
       updated_at: now,
     };
@@ -136,6 +138,7 @@ export async function saveBlogPost(postData: {
         summary: stripHtml(postData.summary || ''),
         content: sanitizeHtml(postData.content || ''),
         image_url: postData.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
+        image_alt: postData.image_alt || '',
         keywords: postData.keywords || '',
         published: isPublished,
         published_at: isPublished ? now : null,

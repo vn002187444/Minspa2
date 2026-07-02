@@ -27,6 +27,8 @@ import {
   saveMascotSettings,
   getThemeSettings,
   saveThemeSettings,
+  getSeoSettings,
+  saveSeoSettings,
   backupDatabase,
 } from "../actions";
 import { THEME_LIST } from "@/lib/themes";
@@ -57,6 +59,12 @@ export default function TabSettings() {
   const [themeSaving, setThemeSaving] = useState(false);
   const [themeMsg, setThemeMsg] = useState<string | null>(null);
   const [_themePreview, setThemePreview] = useState<string>('default');
+
+  // Logo
+  const [logoSettings, setLogoSettings] = useState<any>(null);
+  const [logoLoading, setLogoLoading] = useState(false);
+  const [logoSaving, setLogoSaving] = useState(false);
+  const [logoMsg, setLogoMsg] = useState<string | null>(null);
 
   // Backup
   const [backupLoading, setBackupLoading] = useState(false);
@@ -129,6 +137,21 @@ export default function TabSettings() {
     const res = await saveBannerSettings(banner);
     setBannerMsg(res.success ? "Đã lưu banner thành công!" : "Lỗi: " + res.error);
     setBannerSaving(false);
+  };
+
+  const loadLogo = async () => {
+    setLogoLoading(true);
+    const seo = await getSeoSettings();
+    setLogoSettings({ logo_url: seo?.logo_url || '' });
+    setLogoLoading(false);
+  };
+
+  const handleSaveLogo = async () => {
+    setLogoSaving(true);
+    setLogoMsg(null);
+    const res = await saveSeoSettings({ logo_url: logoSettings?.logo_url || '' });
+    setLogoMsg(res.success ? 'Đã lưu logo thành công!' : 'Lỗi: ' + res.error);
+    setLogoSaving(false);
   };
 
   const handleBackup = async () => {
@@ -415,6 +438,63 @@ export default function TabSettings() {
               {themeMsg && (
                 <span className={`text-xs font-medium ${themeMsg.startsWith("Đã") ? "text-green-600" : "text-red-600"}`}>
                   {themeMsg}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Logo Settings */}
+      <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Palette className="w-5 h-5 text-gray-600" />
+            <h3 className="font-bold text-gray-900">Logo tuỳ chỉnh</h3>
+          </div>
+          <button
+            onClick={loadLogo}
+            className="px-3 py-1.5 min-h-[44px] flex items-center justify-center text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+          >
+            {logoLoading ? "Đang tải..." : "Tải"}
+          </button>
+        </div>
+
+        {logoSettings && (
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="settings-logoUrl" className="text-xs font-semibold text-gray-500 mb-2 block">URL ảnh Logo</label>
+              <input
+                id="settings-logoUrl"
+                type="url"
+                value={logoSettings.logo_url}
+                onChange={(e) => setLogoSettings({ ...logoSettings, logo_url: e.target.value })}
+                placeholder="https://example.com/logo.png"
+                className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent"
+              />
+            </div>
+            {logoSettings.logo_url && (
+              <div className="p-3 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={logoSettings.logo_url}
+                  alt="Logo preview"
+                  className="h-12 w-auto object-contain"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleSaveLogo}
+                disabled={logoSaving}
+                className="px-4 py-2 bg-[#8D6E53] text-white rounded-lg text-sm font-semibold hover:bg-[#7A5F47] transition-colors disabled:opacity-50"
+              >
+                {logoSaving ? "Đang lưu..." : "Lưu logo"}
+              </button>
+              {logoMsg && (
+                <span className={`text-xs font-medium ${logoMsg.startsWith("Đã") ? "text-green-600" : "text-red-600"}`}>
+                  {logoMsg}
                 </span>
               )}
             </div>
