@@ -1,17 +1,17 @@
 # 🚀 KẾ HOẠCH NÂNG CẤP (UPGRADE_PLAN)
-
-> **Tất cả 42 tasks đã hoàn thành.** Xem chi tiết tại `PLAN.md` → section **UPGRADE_PLAN — Code Quality Audit**
-
+ 
+> **Tất cả các task chính đã hoàn thành.** Xem chi tiết tại `PLAN.md` → section **UPGRADE_PLAN — Code Quality Audit**
+ 
 ---
-
+ 
 ## 📋 Các mục CHƯA LÀM (UNDONE)
-
+ 
 *Không còn mục nào — audit code quality 100% complete.*
-
+ 
 ---
-
+ 
 ---
-
+ 
 ## 📱 Phase 9 — Mobile UI/UX Audit & Fix
 
 *Audit 24 files (homepage → admin → staff → components) — xem chi tiết trong PLAN.md section 11.*
@@ -72,3 +72,24 @@
 - Audit session persistence: `proxy.ts` đã đúng tên (Next.js 16), fix `sameSite: 'lax'` + `maxAge` + home page redirect + dead code `layout.tsx` + audit_logs re-export
 - **Fix HTML Hydration Error**: Di chuyển `<Toaster />` từ `<head>` vào đầu thẻ `<body>` trong `app/layout.tsx` ✅
 - **Staff Mobile Navigation Upgrade**: Nâng cấp thanh Bottom Navigation trên di động của Staff Portal từ dạng danh sách dàn trải thiếu hụt (thiếu Đặt lịch hộ, Bán gói, Đổi mật khẩu) sang cấu trúc **4 nút hành vi chính + 1 nút Menu** tích hợp **collapsible Drawer Menu** (bằng Framer Motion) giúp Staff trên điện thoại sử dụng được 100% chức năng như trên Desktop ✅
+ 
+## 🛠️ Phase 10 — Final Polish & Performance
+ 
+### ✅ Đã hoàn thành
+- **Tối ưu hiệu năng (Performance)**:
+  - Cài đặt Dynamic Import cho các component nặng: `BottomNavigation`, `BookingCalendar`, `BookingMascotGuide`, `GlobalSearch`, `HeaderNav`.
+  - Tách bundle `motion/react` ra khỏi critical path bằng cách lazy-load `MascotProvider` trong layout.
+  - Defer (trì hoãn) load script Google Translate cho đến khi người dùng tương tác.
+  - Thêm `optimizePackageImports` cho `lucide-react`, `date-fns`, `motion` trong `next.config.ts`.
+  - Thêm thuộc tính `priority` cho logo trong Header để cải thiện LCP.
+- **Fix Google Translate**:
+  - Thay thế widget mặc định bằng Custom Dropdown UI.
+  - Sử dụng URL `translate.googleapis.com` để tránh lỗi redirect.
+  - Fix domain cho cookie `googtrans` để hoạt động ổn định trên Vercel Preview/Production.
+- **Fix Lỗi Font (Unicode Normalization)**:
+  - Triển khai chuẩn hóa NFC cho toàn bộ dữ liệu fetch từ Supabase thông qua `lib/cache.ts`, fix lỗi tách dấu tiếng Việt.
+- **Tự động hóa Auto SEO**:
+  - Chuyển trigger từ Vercel Cron $\rightarrow$ Supabase Cron (`pg_cron` + `pg_net`).
+  - Thêm tham số `?force=1` cho API route để trigger đăng bài thủ công.
+- **Sửa lỗi điều hướng**: Sửa link `/admin/seo_articles` $\rightarrow$ `/admin/seo-articles`.
+- **Kiểm tra chất lượng cuối**: 0 Lint warnings, 0 Type errors, Build successful.
