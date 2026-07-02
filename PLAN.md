@@ -180,9 +180,29 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 - [x] **P7.10** PostgreSQL VIEW cho commission report — `scripts/migrate_p7_10_view.sql`
 - [x] **P7.14** Connection pooling — Supabase JS client tự xử lý qua PostgREST
 
+### 🟢 Phase 10 — Final Polish & Performance ✅
+- [x] **Tối ưu hiệu năng (Performance)**:
+  - Cài đặt Dynamic Import cho các component nặng: `BottomNavigation`, `BookingCalendar`, `BookingMascotGuide`, `GlobalSearch`, `HeaderNav`.
+  - Tách bundle `motion/react` ra khỏi critical path bằng cách lazy-load `MascotProvider` trong layout.
+  - Defer (trì hoãn) load script Google Translate cho đến khi người dùng tương tác.
+  - Thêm `optimizePackageImports` cho `lucide-react`, `date-fns`, `motion` trong `next.config.ts`.
+  - Thêm thuộc tính `priority` cho logo trong Header để cải thiện LCP.
+- [x] **Fix Google Translate**:
+  - Thay thế widget mặc định bằng Custom Dropdown UI.
+  - Sử dụng URL `translate.googleapis.com` để tránh lỗi redirect.
+  - Fix domain cho cookie `googtrans` để hoạt động ổn định trên Vercel Preview/Production.
+- [x] **Fix Lỗi Font (Unicode Normalization)**:
+  - Triển khai chuẩn hóa NFC cho toàn bộ dữ liệu fetch từ Supabase thông qua `lib/cache.ts`, fix lỗi tách dấu tiếng Việt.
+- [x] **Tự động hóa Auto SEO**:
+  - Chuyển trigger từ Vercel Cron $\rightarrow$ Supabase Cron (`pg_cron` + `pg_net`).
+  - Thêm tham số `?force=1` cho API route để trigger đăng bài thủ công.
+- [x] **Sửa lỗi điều hướng**: Sửa link `/admin/seo_articles` $\rightarrow$ `/admin/seo-articles`.
+- [x] **Kiểm tra chất lượng cuối**: 0 Lint warnings, 0 Type errors, Build successful.
+ 
 ---
-
+ 
 ## 📜 QUY TẮC VẬN HÀNH & GIAO TIẾP (CYCLE PROTOCOL)
+
 
 > **Mục đích:** Đảm bảo mọi developer (con người hoặc AI) đều đọc–hiểu–thực hiện nhất quán.
 
@@ -383,9 +403,25 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 #### Phase 8 — `as any` Audit & Reduce ✅
 - [x] Giảm `as any` từ 47 xuống 29 occurrences (toàn bộ codebase)
 
----
+### 🟢 Phase 10 — Final Polish & Performance ✅
+- [x] **Tối ưu hiệu năng (Performance)**:
+  - Cài đặt Dynamic Import cho các component nặng: `BottomNavigation`, `BookingCalendar`, `BookingMascotGuide`, `GlobalSearch`, `HeaderNav`.
+  - Tách bundle `motion/react` ra khỏi critical path bằng cách lazy-load `MascotProvider` trong layout.
+  - Defer (trì hoãn) load script Google Translate cho đến khi người dùng tương tác.
+  - Thêm `optimizePackageImports` cho `lucide-react`, `date-fns`, `motion` trong `next.config.ts`.
+  - Thêm thuộc tính `priority` cho logo trong Header để cải thiện LCP.
+- [x] **Fix Google Translate**:
+  - Thay thế widget mặc định bằng Custom Dropdown UI.
+  - Sử dụng URL `translate.googleapis.com` để tránh lỗi redirect.
+  - Fix domain cho cookie `googtrans` để hoạt động ổn định trên Vercel Preview/Production.
+- [x] **Fix Lỗi Font (Unicode Normalization)**:
+  - Triển khai chuẩn hóa NFC cho toàn bộ dữ liệu fetch từ Supabase thông qua `lib/cache.ts`, fix lỗi tách dấu tiếng Việt.
+- [x] **Tự động hóa Auto SEO**:
+  - Chuyển trigger từ Vercel Cron $\rightarrow$ Supabase Cron (`pg_cron` + `pg_net`).
+  - Thêm tham số `?force=1` cho API route để trigger đăng bài thủ công.
+- [x] **Sửa lỗi điều hướng**: Sửa link `/admin/seo_articles` $\rightarrow$ `/admin/seo-articles`.
+- [x] **Kiểm tra chất lượng cuối**: 0 Lint warnings, 0 Type errors, Build successful.
 
-### 9. Bài học rút ra (Lessons Learned — cập nhật sau mỗi session)
 
 | # | Bài học | Nguyên nhân | Fix |
 |---|---------|------------|-----|
