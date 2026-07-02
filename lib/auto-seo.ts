@@ -177,7 +177,7 @@ function extractSummary(content: string, title: string): string {
     : title;
 }
 
-export async function runAutoSeo(): Promise<{
+export async function runAutoSeo(force = false): Promise<{
   success: boolean;
   message: string;
   slug?: string;
@@ -207,7 +207,10 @@ export async function runAutoSeo(): Promise<{
     // Compare in UTC — schedule_days/schedule_hour are stored in Vietnam time (UTC+7)
     const vnHour = (currentHour + 7) % 24;
     const scheduleDays: string[] = config.schedule_days || [config.schedule_day].filter(Boolean);
-    if (!scheduleDays.includes(currentDay) || config.schedule_hour !== vnHour) {
+    
+    const isScheduled = scheduleDays.includes(currentDay) && config.schedule_hour === vnHour;
+    
+    if (!force && !isScheduled) {
       return { success: false, message: `Schedule mismatch: current ${currentDay} ${vnHour}h, config [${scheduleDays.join(',')}] ${config.schedule_hour}h` };
     }
 

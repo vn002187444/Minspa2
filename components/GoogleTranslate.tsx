@@ -15,39 +15,6 @@ const LANGUAGES: Record<string, string> = {
   es: 'Español',
 }
 
-let engineLoaded = false
-
-function loadGoogleTranslateEngine() {
-  if (engineLoaded) return
-  engineLoaded = true
-
-  const w = window as unknown as Record<string, unknown>
-
-  w.googleTranslateElementInit = () => {
-    const gt = ((w as Record<string, unknown>).google as Record<string, unknown>)?.translate as Record<string, unknown> | undefined
-    if (!gt?.TranslateElement) return
-    type TEConstructor = new (
-      _c: { pageLanguage: string; includedLanguages: string; layout: number; autoDisplay: boolean },
-      _e: string
-    ) => void
-    new (gt.TranslateElement as TEConstructor)(
-      {
-        pageLanguage: 'vi',
-        includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
-        layout: 0,
-        autoDisplay: false,
-      },
-      'google_translate_element'
-    )
-  }
-
-  const script = document.createElement('script')
-  script.id = 'google_translate_script'
-  script.src = 'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
-  script.async = true
-  document.head.appendChild(script)
-}
-
 export default function GoogleTranslate() {
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -61,14 +28,18 @@ export default function GoogleTranslate() {
   })
 
   const handleToggle = useCallback(() => {
-    if (!open) loadGoogleTranslateEngine()
     setOpen((v) => !v)
-  }, [open])
+  }, [])
 
   const switchLanguage = (lang: string) => {
     if (lang === currentLang) { setOpen(false); return }
+    
+    const domain = window.location.hostname.includes('vercel.app') 
+      ? `.${window.location.hostname.split('.').slice(-2).join('.')}`
+      : window.location.hostname;
+
     // eslint-disable-next-line react-hooks/immutability
-    document.cookie = `googtrans=/vi/${lang}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`
+    document.cookie = `googtrans=/vi/${lang}; path=/; domain=${domain}; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`
     window.location.reload()
   }
 

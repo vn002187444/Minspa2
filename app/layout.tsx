@@ -18,6 +18,7 @@ const MascotProvider = dynamic(() => import("@/components/MascotProvider"));
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import Script from "next/script";
 
 import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
@@ -199,7 +200,26 @@ export default function RootLayout({
         <AggregateRatingSchema />
         <Analytics />
         <SpeedInsights />
+        
+        {/* Google Translate - Init function must be defined before script loads */}
+        <Script id="google-translate-init" strategy="afterInteractive">
+          {`
+            window.googleTranslateElementInit = function() {
+              new google.translate.TranslateElement({
+                pageLanguage: 'vi',
+                includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
+                layout: 0,
+                autoDisplay: false
+              }, 'google_translate_element');
+            };
+          `}
+        </Script>
+        <Script 
+          src="https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit" 
+          strategy="lazyOnload" 
+        />
       </head>
+
       <body className="antialiased font-sans text-gray-900 bg-gray-50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} suppressHydrationWarning>
         <ErrorBoundary>
           <Toaster position="top-right" richColors closeButton />

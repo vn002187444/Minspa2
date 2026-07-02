@@ -13,6 +13,7 @@ async function handleRequest(req: NextRequest) {
 
   const url = new URL(req.url);
   const isResearch = url.searchParams.get('research') === '1';
+  const isForce = url.searchParams.get('force') === '1';
 
   if (isResearch) {
     const result = await runKeywordResearch();
@@ -23,7 +24,7 @@ async function handleRequest(req: NextRequest) {
     });
   }
 
-  const result = await runAutoSeo();
+  const result = await runAutoSeo(isForce);
 
   return NextResponse.json({
     success: result.success,
