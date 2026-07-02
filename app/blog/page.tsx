@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import BottomNavigation from '@/components/BottomNavigation';
 import GlobalSearch from '@/components/GlobalSearch';
+import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 
 export const revalidate = 60; // Revalidate every minute
 
@@ -23,6 +24,13 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: 'Min Nail & Hair',
       locale: 'vi_VN',
       type: 'website',
+      images: [{ url: `${baseUrl}/icons/icon-512.png`, width: 512, height: 512, alt: 'Cẩm nang Làm đẹp - Min Nail & Hair' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
+      description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body.',
+      images: [{ url: `${baseUrl}/icons/icon-512.png`, alt: 'Cẩm nang Làm đẹp - Min Nail & Hair' }],
     },
   };
 }
@@ -32,7 +40,14 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
   const currentPage = parseInt(pageStr || '1', 10);
   const { posts, totalPages, page } = await getBlogPosts(currentPage, 6);
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+
   return (
+    <>
+      <BreadcrumbSchema items={[
+        { name: "Trang chủ", url: baseUrl },
+        { name: "Blog", url: `${baseUrl}/blog` },
+      ]} />
     <div className="min-h-screen bg-[#FAF6F0] text-[#3A2E2B] font-sans pb-16">
       {/* Blog Elegant Header */}
       <header className="sticky top-0 z-50 bg-[#FAF6F0]/90 backdrop-blur-md border-b border-[#EADDCD] px-4 py-4 md:px-8">
@@ -104,7 +119,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                   <Link href={`/blog/${post.slug}`} className="block relative h-52 overflow-hidden bg-stone-100">
                     <Image
                       src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
-                      alt={post.title}
+                      alt={post.image_alt || post.title}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -181,5 +196,6 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
       </main>
       <BottomNavigation />
     </div>
+    </>
   );
 }

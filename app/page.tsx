@@ -1,25 +1,24 @@
-import { createClient } from '@/utils/supabase/server';
-import { getSession } from '@/utils/auth';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense } from 'react';
-import { redirect } from 'next/navigation';
 
 // Enable Incremental Static Regeneration (ISR) - cache page and services data for 5 minutes
 export const revalidate = 3600;
 import { 
   ArrowRight, Sparkles, MapPin, Phone, Clock, 
-  Heart, Shield, Award, Calendar, ChevronRight,
-  Facebook, MessageSquare, Mail, ArrowUpRight
+  Calendar, ChevronRight,
+  Facebook, MessageSquare, ArrowUpRight
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import HeaderNav from '@/components/HeaderNav';
 import BottomNavigation from '@/components/BottomNavigation';
 import ServiceBookButton from '@/components/ServiceBookButton';
-import { getBannerSettings } from './admin/actions';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
+import { getBannerSettings } from './admin/actions';
+import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, getCachedBlogPosts } from '@/lib/cache';
 import ServiceSchema from '@/components/ServiceSchema';
-import ProductSchema from '@/components/ProductSchema';
+import ReviewSchema from '@/components/ReviewSchema';
+import { testimonials } from '@/lib/testimonials';
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => (
@@ -36,6 +35,8 @@ const FaqSection = dynamic(() => import('@/components/FaqSection'));
 const AppointmentLookup = dynamic(() => import('@/components/AppointmentLookup'));
 const ScrollReveal = dynamic(() => import('@/components/ScrollReveal'));
 const StatsCounter = dynamic(() => import('@/components/StatsCounter'));
+const VipPackages = dynamic(() => import('@/components/VipPackages'), { loading: () => <div className="animate-pulse h-64 bg-[#EADDCD] rounded-3xl" /> });
+const GuaranteeBanner = dynamic(() => import('@/components/GuaranteeBanner'), { loading: () => <div className="animate-pulse h-40 bg-[#FAF6F0] rounded-3xl" /> });
 
 // Helper to normalize strings into valid URL-safe IDs matching the Header ids
 function slugify(text: string) {
@@ -51,57 +52,26 @@ function slugify(text: string) {
 }
 
 export default async function Home() {
-  let supabase;
-  try {
-    supabase = await createClient();
-  } catch {
-    // Build/SSR without Supabase env vars — render gracefully
-  }
-  const bannerSettings = await getBannerSettings();
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
   
+  // Parallel fetch using caches to eliminate TTFB bottleneck
+  const [bannerSettings, seoRow, services, treatmentPackages] = await Promise.all([
+    getBannerSettings(),
+    getCachedSeoSettings(),
+    getCachedServices(),
+    getCachedTreatmentPackages(),
+  ]);
+
   let hotline = '0934 323 878';
   let facebookUrl = 'https://facebook.com/minnailhair';
   let zaloUrl = 'https://zalo.me/0934323878';
-  if (supabase) {
-    try {
-      const { data: seoRow } = await supabase.from('seo_settings').select('hotline, facebook_url, zalo_url').eq('id', 1).single();
-      if (seoRow) {
-        if (seoRow.hotline) hotline = seoRow.hotline;
-        if (seoRow.facebook_url) facebookUrl = seoRow.facebook_url;
-        if (seoRow.zalo_url) zaloUrl = seoRow.zalo_url;
-      }
-    } catch {
-      // ignore
-    }
-  }
   
-  let services: any[] = [];
-  let treatmentPackages: any[] = [];
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('id, name, category, price, duration, description, image_url, is_active')
-        .eq('is_active', true)
-        .order('price', { ascending: true });
-        
-      if (!error && data) {
-        services = data;
-      }
-    } catch (err) {
-      console.error("Lỗi lấy danh sách dịch vụ trang chủ:", err);
-    }
-
-    try {
-      const { data: tpData } = await supabase
-        .from('treatment_packages')
-        .select('id, name, buy_count, free_count, price, total_sessions, service_id, services(name, price)')
-        .eq('is_active', true)
-        .order('price', { ascending: true });
-      treatmentPackages = tpData || [];
-    } catch (err) {
-      console.error("Lỗi lấy gói liệu trình trang chủ:", err);
-    }
+  let logoUrl = '';
+  if (seoRow) {
+    if (seoRow.hotline) hotline = seoRow.hotline;
+    if (seoRow.facebook_url) facebookUrl = seoRow.facebook_url;
+    if (seoRow.zalo_url) zaloUrl = seoRow.zalo_url;
+    if (seoRow.logo_url) logoUrl = seoRow.logo_url;
   }
 
   // Ensure and override standard values if needed to map perfectly to the categories
@@ -146,14 +116,13 @@ export default async function Home() {
       {services.length > 0 && (
         <>
           <ServiceSchema services={services} />
-          <ProductSchema services={services} />
         </>
       )}
       {/* Premium Notification Topbar */}
       <AnnouncementBanner settings={bannerSettings} />
 
       {/* Navigation */}
-      <HeaderNav />
+      <HeaderNav logoUrl={logoUrl} />
 
       {/* Elegant Hero Frame */}
       <header id="hero" className="relative py-12 md:py-20 4k:py-32 px-4 sm:px-6 overflow-hidden bg-gradient-to-b from-[rgb(var(--color-bg))] via-[rgb(var(--color-bg-card))] to-[rgb(var(--color-bg))] scroll-mt-24">
@@ -311,7 +280,8 @@ export default async function Home() {
                         {pkg.name}
                       </h3>
                       <p className="text-xs text-gray-500 font-medium italic">
-                        Áp dụng: {pkg.services?.name || 'Dịch vụ nâng cao'}
+                         Áp dụng: {pkg.services?.[0]?.name || 'Dịch vụ nâng cao'}
+
                       </p>
                     </div>
 
@@ -498,34 +468,18 @@ export default async function Home() {
       </ScrollReveal>
 
       {/* Testimonials Carousel */}
+      <ReviewSchema reviews={testimonials} baseUrl={baseUrl} />
       <TestimonialsCarousel />
 
-      {/* Extra Service Guarantee Banner */}
-      <section className="py-12 bg-white border-t border-b border-[#EADDCD] my-8">
-        <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8 4k:gap-12 text-center">
-          <div className="space-y-2">
-            <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
-              <Shield className="w-6 h-6 text-[#8D6E53]" />
-            </div>
-            <h3 className="font-display font-bold text-base text-[#3A2E2B]">Yên Tâm Vệ Sinh</h3>
-            <p className="text-xs text-gray-500">Mọi dụng cụ kềm kéo, chậu ngâm đều được khử trùng sấy tia cực tím chu đáo nhất.</p>
-          </div>
-          <div className="space-y-2">
-            <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
-              <Award className="w-6 h-6 text-[#8D6E53]" />
-            </div>
-            <h3 className="font-display font-bold text-base text-[#3A2E2B]">Tay Nghề Thành Thạo</h3>
-            <p className="text-xs text-gray-500">Kỹ thuật viên gội đầu và thợ làm móng được chứng nhận tay nghề cao, tỉ mỉ tận tâm.</p>
-          </div>
-          <div className="space-y-2">
-            <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
-              <Heart className="w-6 h-6 text-[#8D6E53]" />
-            </div>
-            <h3 className="font-display font-bold text-base text-[#3A2E2B]">Dược Liệu Thiên Nhiên</h3>
-            <p className="text-xs text-gray-500">Min sử dụng 100% dầu gội thảo dược thảo mộc đun nấu thủ công chất lượng cao nhất.</p>
-          </div>
-        </div>
-      </section>
+            {/* Extra Service Guarantee Banner */}
+      <GuaranteeBanner />
+
+      {/* VIP Packages */}
+      {treatmentPackages.length > 0 && (
+        <Suspense fallback={<div className="animate-pulse h-64 bg-[#EADDCD] rounded-3xl" />}>
+          <VipPackages packages={treatmentPackages} />
+        </Suspense>
+      )}
 
       {/* Appointment Tracker Portal */}
       <Suspense fallback={<div className="h-32 bg-[#EADDCD]/30 rounded-3xl animate-pulse" />}>
@@ -585,7 +539,9 @@ export default async function Home() {
       </section>
 
       {/* Blog Posts Section */}
-      <LatestBlogPosts />
+      <Suspense fallback={<div className="py-10 md:py-16 max-w-7xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4"><div className="animate-pulse space-y-8"><div className="h-12 bg-gray-200 rounded-xl w-1/3 mx-auto" /><div className="grid grid-cols-1 md:grid-cols-3 gap-8"><div className="h-64 bg-gray-200 rounded-2xl" /><div className="h-64 bg-gray-200 rounded-2xl" /><div className="h-64 bg-gray-200 rounded-2xl" /></div></div></div>}>
+        <LatestBlogPosts />
+      </Suspense>
       {/* FAQ Section */}
       <Suspense fallback={null}>
         <FaqSection />
@@ -602,13 +558,26 @@ export default async function Home() {
             {/* Column 1: Brand Info */}
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#8D6E53] to-[#5C4033] rounded-2xl flex items-center justify-center text-[#FAF6F0] font-display font-black text-2xl shadow-lg border border-[#EADDCD]/20 shrink-0">
-                  M
-                </div>
-                <div>
-                  <h3 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h3>
-                  <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
-                </div>
+                {logoUrl ? (
+                  <Image
+                    src={logoUrl}
+                    alt="Min Nail & Hair"
+                    width={200}
+                    height={60}
+                    className="h-12 md:h-14 w-auto object-contain brightness-0 invert"
+                    unoptimized
+                  />
+                ) : (
+                  <>
+                    <div className="w-14 h-14 bg-gradient-to-br from-[#8D6E53] to-[#5C4033] rounded-2xl flex items-center justify-center text-[#FAF6F0] font-display font-black text-2xl shadow-lg border border-[#EADDCD]/20 shrink-0">
+                      M
+                    </div>
+                    <div>
+                      <h3 className="font-display font-black text-2xl md:text-3xl text-white tracking-wider leading-none">MIN SALON</h3>
+                      <p className="text-xs text-amber-300 font-extrabold uppercase tracking-widest mt-1.5">Nail &amp; Hair Spa</p>
+                    </div>
+                  </>
+                )}
               </div>
               <p className="text-xs text-gray-300 font-medium leading-relaxed">
                 Nơi gìn giữ nét xuân và khơi dậy vẻ đẹp tự nhiên của bạn. Min Salon kiêu hãnh mang đến dịch vụ gội đầu dưỡng sinh thảo dược, làm móng chuyên sâu và trị liệu tóc cao cấp trong không gian thanh tịnh, đẳng cấp.
@@ -742,13 +711,9 @@ export default async function Home() {
 }
 
 async function LatestBlogPosts() {
-  const supabase = await createClient();
-  const { data: posts } = await supabase
-    .from('blogs')
-    .select('id, title, slug, summary, image_url, created_at')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(3);
+  const posts = await getCachedBlogPosts();
+
+  if (!posts || posts.length === 0) return null;
 
   if (!posts || posts.length === 0) return null;
 
@@ -775,7 +740,7 @@ async function LatestBlogPosts() {
             <div className="relative h-44 md:h-52 overflow-hidden bg-stone-100">
               <Image
                 src={post.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop'}
-                alt={post.title}
+                alt={post.image_alt || post.title}
                 fill
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
                 sizes="(max-width: 768px) 100vw, 33vw"

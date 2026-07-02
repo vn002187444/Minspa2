@@ -17,6 +17,7 @@ export default async function AggregateRatingSchema() {
     "@id": "#aggregate-rating",
     "itemReviewed": {
       "@type": "LocalBusiness",
+      "@id": "#local-business",
       "name": "Min Nail & Hair",
     },
     "ratingValue": average.toFixed(1),

@@ -5,21 +5,26 @@ import { getSession } from "@/utils/auth";
 import { revalidatePath } from "next/cache";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize";
 
-export async function getBlogPosts(page: number = 1, pageSize: number = 6) {
+export async function getBlogPosts(page: number = 1, pageSize: number = 6, includeDrafts: boolean = false) {
   const supabase = await createClient();
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const { data: posts, count } = await supabase
+  let query = supabase
     .from('blogs')
-    .select('id, title, slug, summary, content, image_url, created_at', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to);
+    .select('id, title, slug, summary, content, image_url, image_alt, created_at, published, keywords', { count: 'exact' })
+    .order('created_at', { ascending: false });
+
+  if (!includeDrafts) {
+    query = query.eq('published', true);
+  }
+
+  const { data: posts, count } = await query.range(from, to);
 
   if (count === null) {
     const { data, error } = await supabase
       .from('blogs')
-      .select('id, title, slug, summary, content, image_url, created_at')
+      .select('id, title, slug, summary, content, image_url, image_alt, created_at, keywords')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -44,7 +49,7 @@ export async function getBlogPostBySlug(slug: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('blogs')
-    .select('id, title, slug, summary, content, image_url, created_at')
+    .select('id, title, slug, summary, content, image_url, image_alt, created_at, keywords')
     .eq('slug', slug)
     .single();
 
@@ -62,6 +67,9 @@ export async function saveBlogPost(postData: {
   summary: string;
   content: string;
   image_url: string;
+  image_alt?: string;
+  published?: boolean;
+  keywords?: string;
 }) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
@@ -69,36 +77,58 @@ export async function saveBlogPost(postData: {
   }
 
   const supabase = await createClient();
+  const now = new Date().toISOString();
 
   if (postData.id) {
-    // Edit existing post
+    const updates: Record<string, unknown> = {
+      title: postData.title,
+      slug: postData.slug,
+      summary: stripHtml(postData.summary || ''),
+      content: sanitizeHtml(postData.content || ''),
+      image_url: postData.image_url,
+      image_alt: postData.image_alt || '',
+      keywords: postData.keywords || '',
+      updated_at: now,
+    };
+
+    // Handle publish status
+    if (postData.published !== undefined) {
+      updates.published = postData.published;
+      if (postData.published) {
+        // Set published_at only if not already set
+        const { data: existing } = await supabase
+          .from('blogs')
+          .select('published_at')
+          .eq('id', postData.id)
+          .maybeSingle();
+
+        if (existing && !existing.published_at) {
+          updates.published_at = now;
+        }
+      }
+    }
+
     const { error } = await supabase
       .from('blogs')
-      .update({
-        title: postData.title,
-        slug: postData.slug,
-        summary: stripHtml(postData.summary || ''),
-        content: sanitizeHtml(postData.content || ''),
-        image_url: postData.image_url,
-        updated_at: new Date().toISOString()
-      })
+      .update(updates)
       .eq('id', postData.id);
 
     if (error) {
       throw new Error(error.message || 'Lỗi khi cập nhật bài viết.');
     }
   } else {
-    // Insert new post
     // Check if slug is taken
     const { data: existing } = await supabase
       .from('blogs')
       .select('id')
       .eq('slug', postData.slug)
-      .single();
+      .maybeSingle();
 
     if (existing) {
       throw new Error('Slug này đã tồn tại, vui lòng đổi tiêu đề bài viết khác hoặc chỉnh sửa link tay.');
     }
+
+    const isPublished = postData.published !== false;
 
     const { error } = await supabase
       .from('blogs')
@@ -108,7 +138,11 @@ export async function saveBlogPost(postData: {
         summary: stripHtml(postData.summary || ''),
         content: sanitizeHtml(postData.content || ''),
         image_url: postData.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-        created_at: new Date().toISOString()
+        image_alt: postData.image_alt || '',
+        keywords: postData.keywords || '',
+        published: isPublished,
+        published_at: isPublished ? now : null,
+        created_at: now,
       });
 
     if (error) {

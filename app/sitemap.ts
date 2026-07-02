@@ -4,7 +4,6 @@ import { createClient } from '@/utils/supabase/server';
 export const revalidate = 3600; // Cache sitemap for 1 hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  // Use development URL if variable is not available
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
 
   // 1. Static Routes
@@ -61,5 +60,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.error('Error fetching blogs for sitemap:', err);
   }
 
-  return [...routes, ...servicesRoutes, ...blogsRoutes];
+  // 4. Fetch all published SEO articles with blog_slug
+  let seoRoutes: any[] = [];
+  try {
+    const supabase = await createClient();
+    const { data: articles } = await supabase
+      .from('seo_articles')
+      .select('blog_slug, published_at')
+      .not('blog_slug', 'is', null)
+      .order('published_at', { ascending: false });
+
+    if (articles && articles.length > 0) {
+      seoRoutes = articles.map((a: any) => ({
+        url: `${baseUrl}/blog/${a.blog_slug}`,
+        lastModified: a.published_at ? new Date(a.published_at).toISOString() : new Date().toISOString(),
+        changeFrequency: 'weekly' as const,
+        priority: 0.6,
+      }));
+    }
+  } catch (err) {
+    console.error('Error fetching seo_articles for sitemap:', err);
+  }
+
+  return [...routes, ...servicesRoutes, ...blogsRoutes, ...seoRoutes];
 }

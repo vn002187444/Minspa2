@@ -221,3 +221,54 @@ Remaining 25 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audi
 - **UPGRADE_PLAN.md** — Execution plan chính (đã hoàn thành toàn bộ)
 - **PLAN.md** — Bản nháp tham khảo (giữ workflow + cycle protocol)
 - **AI_MAP.md** — AI context map for file relationships
+
+## 11. Recent Updates (Jul 2026)
+### SEO Image Alt Text
+- `image_alt` column added to `blogs`, `services`, `seo_articles` tables
+- AI assist returns `imageAlts` array alongside suggested images
+- Admin blog form, BlogRichEditor, rendering OG metadata use `image_alt`
+- Fallback to `post.title` if empty
+
+### OG Image Fix
+- Default OG image changed from SVG → PNG (`/icons/icon-512.png`)
+- `og_image_url` in `seo_settings` points to `/og-image.png`
+- `robots.txt` disallows `/admin/`, `/staff/`, `/api/`, `/login/`
+- Logo added to `WebSiteSchema`
+
+### Language Switcher
+- `GoogleTranslate.tsx` rewritten: globe button + dropdown UI (9 languages)
+- Widget container always in DOM (fixes translate not working)
+
+### Admin SEO Articles Page
+- New page `app/admin/seo-articles/page.tsx` — list, create, edit, delete, publish to blog
+- Added to admin sidebar under "CẤU HÌNH → Bài viết SEO"
+
+### Sitemap
+- `app/sitemap.ts` now includes `seo_articles` entries (with `blog_slug`)
+
+### Breadcrumb Schema
+- Added `BreadcrumbSchema` to `app/blog/page.tsx` and `app/booking/page.tsx`
+
+### 0 lint warnings, 0 typecheck errors, 41 static pages build ✅
+
+## 12. Key Files Reference (Updated)
+### Routes
+| Route | File | Description |
+|-------|------|-------------|
+| `/admin/seo-articles` | `app/admin/seo-articles/page.tsx` | SEO articles CRUD (list, create, edit, delete, publish to blog) |
+
+### Components
+| Component | File | Description |
+|-----------|------|-------------|
+| `GoogleTranslate` | `components/GoogleTranslate.tsx` | Language switcher (globe button + dropdown, 9 languages) |
+| `BreadcrumbSchema` | `components/BreadcrumbSchema.tsx` | BreadcrumbList JSON-LD |
+| `BreadcrumbNav` | `components/BreadcrumbNav.tsx` | UI breadcrumb navigation |
+| `ArticleSchema` | `components/ArticleSchema.tsx` | BlogPosting JSON-LD |
+
+### Schema
+| Table | New Columns |
+|-------|-------------|
+| `blogs` | +`image_alt`, +`keywords`, +`published`, +`published_at` |
+| `services` | +`image_alt`, +`image_url` |
+| `seo_articles` | +`image_alt`, +`status`, +`topic_source`, +`blog_slug`, +`published_at` |
+| `seo_settings` | +`og_image_url`, +`logo_url`, +`facebook_url`, +`zalo_url`, +`hotline` |

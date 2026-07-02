@@ -24,6 +24,7 @@ interface CallGeminiOptions {
   jsonSchema?: JsonSchema;
   useCache?: boolean;
   cacheKey?: string;
+  timeout?: number;
 }
 
 interface CallGeminiResult {
@@ -67,7 +68,7 @@ export async function callGemini(options: CallGeminiOptions): Promise<CallGemini
 
   const ai = new GoogleGenAI({
     apiKey: key,
-    httpOptions: { headers: { "User-Agent": "aistudio-build" }, timeout: TIMEOUT_MS },
+    httpOptions: { headers: { "User-Agent": "aistudio-build" }, timeout: options.timeout || TIMEOUT_MS },
   });
 
   const modelsToTry = [MODELS.primary, MODELS.fallback];

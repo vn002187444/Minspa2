@@ -3,6 +3,15 @@ import Image from 'next/image';
 import { getBlogPostBySlug, getBlogPosts } from '../actions';
 import ShareButton from './ShareButton';
 import { notFound } from 'next/navigation';
+import { sanitizeHtml } from '@/lib/sanitize';
+
+function isHtmlContent(text: string): boolean {
+  try {
+    return new RegExp('<[a-z][\\s\\S]*>', 'i').test(text);
+  } catch {
+    return false;
+  }
+}
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { ArrowLeft, Calendar, Sparkles, User, BookOpen, Clock } from 'lucide-react';
@@ -45,13 +54,13 @@ export async function generateMetadata({ params }: Props) {
       title: `${post.title} - Min Nail & Hair`,
       description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
       url: `${baseUrl}/blog/${resolvedParams.slug}`,
-      images: [{ url: ogImage, width: 1200, height: 630 }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.image_alt || post.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${post.title} - Min Nail & Hair`,
       description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
-      images: [ogImage],
+      images: [{ url: ogImage, alt: post.image_alt || post.title }],
     },
   };
 }
@@ -88,6 +97,9 @@ export default async function BlogPostDetailPage({ params }: Props) {
         dateModified={post.updated_at || post.created_at || ''}
         author="Min Nail & Hair"
         baseUrl={`${baseUrl}/blog/${resolvedParams.slug}`}
+        articleSection="Làm đẹp & Sức khỏe"
+        keywords={post.keywords ? post.keywords.split(',').map((k: string) => k.trim()).filter(Boolean) : undefined}
+        wordCount={wordCount}
       />
       <BreadcrumbSchema items={[
         { name: "Trang chủ", url: baseUrl },
@@ -143,7 +155,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
             <div className="relative h-48 sm:h-60 md:h-[400px] w-full max-w-full rounded-xl md:rounded-2xl overflow-hidden bg-stone-100 border border-[#EADDCD]/20 shadow-inner">
               <Image
                 src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
-                alt={post.title}
+                alt={post.image_alt || post.title}
                 fill
                 className="object-cover"
                 priority
@@ -186,9 +198,10 @@ export default async function BlogPostDetailPage({ params }: Props) {
 
             {/* Rich text output */}
             <div className="prose prose-stone max-w-full text-stone-800 text-sm md:text-base leading-relaxed space-y-4 pt-2">
-              {/* Parse double newlines into nicely formatted paragraphs */}
-              {post.content ? (
-                post.content.split('\n\n').map((paragraph: string, pIdx: number) => {
+              {(() => {
+                if (!post.content) return <p className="text-stone-400">Không có dữ liệu bài viết.</p>;
+                if (isHtmlContent(post.content)) return <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }} />;
+                return post.content.split('\n\n').map((paragraph: string, pIdx: number) => {
                   const trimmed = paragraph.trim();
                   if (!trimmed) return null;
 
@@ -272,9 +285,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
 
                   return <p key={pIdx} className="leading-relaxed">{trimmed}</p>;
                 })
-              ) : (
-                <p className="text-stone-400">Không có dữ liệu bài viết.</p>
-              )}
+              })()}
             </div>
 
             {/* Backlink & Internal Promotion block */}
@@ -343,7 +354,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
                       <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-stone-100 shrink-0">
                         <Image
                           src={post.image_url || "https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop"}
-                          alt={post.title}
+                          alt={post.image_alt || post.title}
                           fill
                           className="object-cover transition-transform group-hover:scale-105"
                         />

@@ -55,6 +55,7 @@ interface SeoInput {
   meta_description?: string;
   meta_keywords?: string;
   og_image_url?: string;
+  logo_url?: string;
   online_discount_enabled?: boolean;
   online_discount_percent?: number;
   default_commission_percent?: number;
@@ -588,7 +589,7 @@ export async function getSeoSettings() {
   await checkAdminOrManager();
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.from('seo_settings').select('page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline, facebook_url, zalo_url').eq('id', 1).single();
+    const { data, error } = await supabase.from('seo_settings').select('page_title, meta_description, meta_keywords, og_image_url, logo_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline, facebook_url, zalo_url').eq('id', 1).single();
     if (error) throw error;
     if (data) {
       return {
@@ -596,6 +597,7 @@ export async function getSeoSettings() {
         meta_description: data.meta_description,
         meta_keywords: data.meta_keywords,
         og_image_url: data.og_image_url,
+        logo_url: data.logo_url || '',
         online_discount_enabled: data.online_discount_enabled !== false,
         online_discount_percent: data.online_discount_percent ?? 5,
         default_commission_percent: data.default_commission_percent ?? 15,
@@ -607,7 +609,7 @@ export async function getSeoSettings() {
   } catch (e: unknown) {
     console.error(e);
   }
-  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878', facebook_url: 'https://facebook.com/minnailhair', zalo_url: 'https://zalo.me/0934323878' };
+  return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', logo_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878', facebook_url: 'https://facebook.com/minnailhair', zalo_url: 'https://zalo.me/0934323878' };
 }
 
 export async function saveSeoSettings(payload: SeoInput) {
@@ -620,6 +622,7 @@ export async function saveSeoSettings(payload: SeoInput) {
       meta_description: payload.meta_description,
       meta_keywords: payload.meta_keywords,
       og_image_url: payload.og_image_url,
+      logo_url: payload.logo_url || '',
       online_discount_enabled: payload.online_discount_enabled !== false,
       online_discount_percent: payload.online_discount_percent ?? 5,
       default_commission_percent: payload.default_commission_percent ?? 15,
@@ -642,12 +645,14 @@ export async function getSeoArticles() {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from('seo_articles')
-      .select('id, created_at, topic, keywords, article, image_url')
+      .select('id, created_at, topic, keywords, article, image_url, image_alt, status, topic_source, blog_slug, published_at')
       .order('created_at', { ascending: false })
       .limit(200);
     if (error) throw error;
     return (data || []).map((a: {
-      id: number; created_at: string; topic: string; keywords: string; article: string; image_url: string | null;
+      id: string; created_at: string; topic: string; keywords: string; article: string;
+      image_url: string | null; image_alt: string | null; status: string;
+      topic_source: string; blog_slug: string | null; published_at: string | null;
     }) => ({
       id: a.id,
       createdAt: a.created_at,
@@ -655,11 +660,33 @@ export async function getSeoArticles() {
       keywords: a.keywords,
       article: a.article,
       imageUrl: a.image_url,
+      imageAlt: a.image_alt,
+      status: a.status,
+      topicSource: a.topic_source,
+      blogSlug: a.blog_slug,
+      publishedAt: a.published_at,
     }));
   } catch (e: unknown) {
     console.error(e);
   }
   return [];
+}
+
+export async function getSeoArticleById(id: string) {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('seo_articles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  } catch (e: unknown) {
+    console.error(e);
+    return null;
+  }
 }
 
 async function uploadBase64ToStorage(base64Url: string): Promise<string> {
@@ -696,7 +723,7 @@ async function uploadBase64ToStorage(base64Url: string): Promise<string> {
 export async function saveSeoArticle(article: Record<string, unknown>) {
   await checkAdminOrManager();
   try {
-    const imageUrl = await uploadBase64ToStorage(String(article.image_url || ''));
+    const imageUrl = await uploadBase64ToStorage(String(article.image_url || article.imageUrl || ''));
     const supabase = await createClient();
     const { data: existing } = await supabase
       .from('seo_articles')
@@ -712,6 +739,8 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
           keywords: article.keywords,
           article: article.article,
           image_url: imageUrl,
+          image_alt: article.image_alt || article.imageAlt || null,
+          status: article.status || 'draft',
         })
         .eq('id', article.id);
       if (error) throw error;
@@ -724,6 +753,8 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
           keywords: article.keywords,
           article: article.article,
           image_url: imageUrl,
+          image_alt: article.image_alt || article.imageAlt || null,
+          status: article.status || 'draft',
           created_at: article.createdAt || new Date().toISOString(),
         });
       if (error) throw error;
@@ -748,47 +779,64 @@ export async function deleteSeoArticle(id: string) {
   }
 }
 
-export async function publishSeoArticleToBlog(articleText: string, imageUrl: string) {
+export async function publishSeoArticleToBlog(
+  articleText: string,
+  imageUrl: string,
+  options?: { title?: string; slug?: string; keywords?: string }
+) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
     throw new Error('Unauthorized');
   }
 
-  const titleMatch = articleText.match(/^#\s+(.+)/m);
-  const title = titleMatch ? titleMatch[1].trim() : 'Bài viết SEO';
+  const title = options?.title
+    || (articleText.match(/^#\s+(.+)/m)?.[1]?.trim())
+    || articleText.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
+    || articleText.split('\n')[0].replace(/^#+\s*/, '').trim().substring(0, 100)
+    || 'Bài viết SEO';
 
   const firstParagraph = articleText.replace(/^#\s+.+\n*/m, '').match(/^(.+?)(?:\n\n|$)/m);
   const summary = firstParagraph ? firstParagraph[1].replace(/\*\*/g, '').trim().substring(0, 300) : title;
 
-  const slug = title
+  const slugify = (text: string) => text
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-    .substring(0, 200) || 'bai-viet-seo-' + Date.now();
+    .substring(0, 200) || 'bai-viet-seo';
+
+  let baseSlug = options?.slug || slugify(title);
 
   const finalImageUrl = await uploadBase64ToStorage(imageUrl || '');
   const supabase = await createClient();
 
-  const { data: existing } = await supabase
-    .from('blogs')
-    .select('id')
-    .eq('slug', slug)
-    .single();
-
-  if (existing) {
-    return { success: false, error: `Slug "${slug}" đã tồn tại. Vui lòng đổi tiêu đề hoặc đăng bằng trình soạn thảo Blog.` };
+  // Auto-increment slug if duplicate exists
+  let slug = baseSlug;
+  let counter = 0;
+  while (true) {
+    const { data: existing } = await supabase
+      .from('blogs')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (!existing) break;
+    counter++;
+    slug = `${baseSlug}-${counter}`;
   }
 
+  const now = new Date().toISOString();
   const { error } = await supabase.from('blogs').insert({
     title,
     slug,
     summary,
     content: articleText,
     image_url: finalImageUrl || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-    created_at: new Date().toISOString(),
+    keywords: options?.keywords || '',
+    published: true,
+    published_at: now,
+    created_at: now,
   });
 
   if (error) {
@@ -1344,7 +1392,7 @@ export async function getSystemHealth() {
   }
 }
 
-export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_assign') {
+export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_assign' | 'seo_publish') {
   const session = await getSession();
   if (!session || session.user.role !== 'ADMIN') throw new Error('Unauthorized');
 
@@ -1353,6 +1401,7 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
     reminders: `${baseUrl}/api/cron/reminders`,
     marketing: `${baseUrl}/api/cron/marketing`,
     auto_assign: `${baseUrl}/api/cron/auto-assign`,
+    seo_publish: `${baseUrl}/api/cron/seo-publish`,
   };
 
   try {
@@ -1361,8 +1410,12 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(10000),
     });
+    if (!res.ok) {
+      const text = await res.text();
+      return { success: false, error: `Server error (${res.status}): ${text.substring(0, 200)}` };
+    }
     const data = await res.json();
-    return { success: res.ok, ...data };
+    return { success: true, ...data };
   } catch (e: unknown) {
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
@@ -1435,28 +1488,34 @@ export async function getAdminSessionInfo() {
   return session.user;
 }
 
+import { cachedFetch } from '@/lib/cache';
+
 export async function getBannerSettings() {
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase.from('banner_settings').select('is_enabled, content').eq('id', 1).single();
-    if (error) throw error;
-    if (data) {
-      return {
-        is_enabled: data.is_enabled,
-        content: stripHtml(data.content || ''),
-      };
+  return cachedFetch('banner-settings', async () => {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.from('banner_settings').select('is_enabled, content').eq('id', 1).single();
+      if (error) throw error;
+      if (data) {
+        return {
+          is_enabled: data.is_enabled,
+          content: stripHtml(data.content || ''),
+        };
+      }
+    } catch (e: unknown) {
+      console.error(e);
     }
-  } catch (e: unknown) {
-    console.error(e);
-  }
-  // fallback: fetch hotline from seo_settings
-  let hotline = '0934 323 878';
-  try {
-    const supabase = await createClient();
-    const { data: seo } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
-    if (seo?.hotline) hotline = seo.hotline;
-  } catch {}
-  return { is_enabled: true, content: `✨ GIẢM NGAY 5% KHI ĐẶT LỊCH HẸN TRỰC TUYẾN ✨ HOTLINE: ${hotline}` };
+    // fallback: fetch hotline from seo_settings
+    let hotline = '0934 323 878';
+    try {
+      const supabase = await createClient();
+      const { data: seo } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
+      if (seo?.hotline) hotline = seo.hotline;
+      return { is_enabled: false, content: hotline };
+    } catch {
+      return { is_enabled: false, content: hotline };
+    }
+  });
 }
 
 export async function saveBannerSettings(payload: BannerInput) {
@@ -2007,14 +2066,14 @@ export async function getAutoSeoConfig() {
   try {
     const supabase = await createClient();
     const { data } = await supabase.from('auto_seo_config').select('*').eq('id', 1).single();
-    return data || { enabled: false, schedule_day: 'THU', schedule_hour: 20, topic_pool: [] };
+    return data || { enabled: false, schedule_days: ['THU'], schedule_hour: 20, topic_pool: [] };
   } catch {
-    return { enabled: false, schedule_day: 'THU', schedule_hour: 20, topic_pool: [] };
+    return { enabled: false, schedule_days: ['THU'], schedule_hour: 20, topic_pool: [] };
   }
 }
 
 export async function saveAutoSeoConfig(payload: {
-  enabled: boolean; schedule_day: string; schedule_hour: number; topic_pool: string[];
+  enabled: boolean; schedule_days: string[]; schedule_hour: number; topic_pool: string[];
 }) {
   await checkAdminOrManager();
   try {
@@ -2576,6 +2635,7 @@ export async function createFaq(payload: {
     });
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
 }
 
 export async function updateFaq(id: string, updates: Partial<{
@@ -2595,6 +2655,7 @@ export async function updateFaq(id: string, updates: Partial<{
     .eq('id', id);
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
 }
 
 export async function deleteFaq(id: string) {
@@ -2621,6 +2682,7 @@ export async function reorderFaqs(sortedIds: string[]) {
     .upsert(updates, { onConflict: 'id' });
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
 }
 
 export async function getStaffSkills(staffId: string) {
@@ -2657,6 +2719,7 @@ export async function saveStaffSkill(skillData: {
     }, { onConflict: 'staff_id,service_id' });
   if (error) throw error;
   revalidatePath('/admin');
+  revalidatePath('/');
   return { success: true };
 }
 

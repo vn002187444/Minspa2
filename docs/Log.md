@@ -494,3 +494,80 @@ Session Audit Phase 2 (fix login cookie flush), xoá 9 orphan API routes, cập 
 | Bug H.2 — Orphaned locks | 🔴 Cao | COMPLETED không unlock lock cũ → slot fully_booked |
 | Session Phase 1 & 6 | ⚠️ | Build verification bị chặn UNC path |
 | Dead code `runAutoSeo()` | 🟢 Thấp | lib/auto-seo.ts — route đã xoá |
+
+---
+
+## Session 8 — 2026-07-02
+
+### 🎯 Mục tiêu
+Complete SEO Polish — alt text, OG images, metadata, language switcher, logo display, sitemap, breadcrumb schema, admin SEO articles, lint/typecheck cleanup.
+
+### ✅ Đã làm
+
+#### SEO Image Alt Text
+- `image_alt` column added to `blogs`, `services`, `seo_articles` tables in `database.sql`
+- `BlogPost` interface updated with `image_alt?: string`
+- Server actions `saveBlogPost`, `getBlogPosts`, `getBlogPostBySlug` handle `image_alt`
+- AI assist: `suggestImages` returns `{ images, imageAlts }`; `writeArticle` includes `image_alt`
+- Admin blog form: `imageAlt` state + input field; auto-fills from AI suggestion
+- `BlogRichEditor.tsx`: insert image now prompts URL + Alt Text
+- Blog rendering: cover, sidebar, homepage cards use `image_alt` (fallback to `title`)
+- OG meta: `og:image:alt` + `twitter:image:alt` in blog detail, blog list, booking layout
+
+#### OG Image Fix
+- Default OG changed SVG → PNG (`/icons/icon-512.png` → `/og-image.png`)
+- Root layout: OG/Twitter metadata with `width`, `height`, `alt`
+- `WebSiteSchema.tsx`: added logo `image` property with PNG URL
+- `robots.txt`: `Disallow: /admin/ /staff/ /api/ /login/`
+- Ran `UPDATE seo_settings SET og_image_url = '/og-image.png'` on production Supabase via REST API
+
+#### Language Switcher (Google Translate)
+- `GoogleTranslate.tsx` rewritten: globe button + dropdown UI (9 languages)
+- Widget container always renders in DOM (fixes init timing — no conditional mount)
+- `z-[60]` position top-right, site-wide via `layout.tsx`
+- **Bug**: User reports only Vietnamese shows — awaiting confirmation of fix
+
+#### Admin SEO Articles Page
+- `app/admin/seo-articles/page.tsx` — full CRUD: list, create/edit form, delete, publish to blog
+- Server actions: `getSeoArticles`, `getSeoArticleById`, `saveSeoArticle`, `deleteSeoArticle`, `publishSeoArticleToBlog`
+- Admin sidebar: added link under "CẤU HÌNH → Bài viết SEO"
+- `SeoArticle` type added to `types/database.ts`
+
+#### Sitemap & Breadcrumb
+- `app/sitemap.ts`: added `seo_articles` entries with `blog_slug`
+- `BreadcrumbSchema` added to `app/blog/page.tsx`, `app/booking/page.tsx`
+
+#### Build & Lint
+- `npm run lint` — 0 errors, 0 warnings 🎉
+- `npm run build` — webpack + TypeScript pass, 41/41 static pages ✅
+
+#### Blocked / Deferred
+- Google Search Console: needs user credentials
+- Google Translate fix: awaiting user test
+- Documentation overhaul: SKILL.md, AI_MAP.md, docs/Log.md updated; workflow diagrams pending
+
+### 📁 Files created
+- `components/BreadcrumbSchema.tsx`
+- `components/GoogleTranslate.tsx`
+- `app/admin/seo-articles/page.tsx`
+- `public/og-image.png`
+
+### 📁 Files modified (major)
+- `components/BreadcrumbNav.tsx`, `components/WebSiteSchema.tsx`, `components/BlogRichEditor.tsx`
+- `app/layout.tsx`, `app/page.tsx`, `app/sitemap.ts`, `app/robots.txt`
+- `app/blog/[slug]/page.tsx`, `app/blog/page.tsx`, `app/booking/page.tsx`, `app/booking/layout.tsx`
+- `app/admin/blog/page.tsx`, `app/admin/page.tsx`, `app/admin/actions.ts`
+- `lib/cache.ts`, `lib/auto-seo.ts`, `types/database.ts`
+- `app/api/ai-assist/route.ts`
+- `database.sql`
+- `.agents/skills/minspa/SKILL.md`
+- `AI_MAP.md`
+
+### 📁 Files deleted
+- None
+
+### 📋 Kế hoạch Session tiếp theo
+- Confirm Google Translate fix
+- Create docs/workflow.md (business process diagrams)
+- Proper i18n (next-intl) if Google Translate insufficient
+- Google Search Console setup

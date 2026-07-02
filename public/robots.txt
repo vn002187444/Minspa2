@@ -1,4 +1,8 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /api/
+Disallow: /login/
 
 Sitemap: https://minhair.vercel.app/sitemap.xml

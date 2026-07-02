@@ -5,16 +5,12 @@ import { useOnlineSync } from '@/hooks/useOnlineSync';
 import { CloudOff, RefreshCw } from 'lucide-react';
 
 export default function OfflineIndicator() {
-  const [mounted, setMounted] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(
+    typeof navigator !== 'undefined' ? !navigator.onLine : false
+  );
   const { pendingCount, isSyncing, sync } = useOnlineSync();
 
   useEffect(() => {
-    setMounted(true);
-    if (typeof navigator !== 'undefined') {
-      setIsOffline(!navigator.onLine);
-    }
-
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
     window.addEventListener('online', handleOnline);
@@ -26,7 +22,7 @@ export default function OfflineIndicator() {
     };
   }, []);
 
-  if (!mounted) return null;
+  
   if (!isOffline && pendingCount === 0) return null;
 
   return (

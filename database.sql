@@ -48,6 +48,7 @@ CREATE TABLE services (
   price DECIMAL(10, 2) NOT NULL,
   duration INT NOT NULL, -- minutes
   image_url VARCHAR(255),
+  image_alt VARCHAR(500) DEFAULT '',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   discount_percentage DECIMAL(5, 2) DEFAULT 0,
   commission_percentage DECIMAL(5,2) DEFAULT 0,
@@ -160,6 +161,7 @@ CREATE TABLE blogs (
   summary TEXT,
   content TEXT,
   image_url VARCHAR(255),
+  image_alt VARCHAR(500) DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(summary, '') || ' ' || coalesce(content, ''))) STORED
@@ -227,12 +229,13 @@ CREATE TABLE seo_settings (
   mascot_enabled BOOLEAN DEFAULT TRUE,
   mascot_character VARCHAR(50) DEFAULT 'min',
   mascot_sound BOOLEAN DEFAULT TRUE,
+  logo_url VARCHAR(500) DEFAULT '',
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   CHECK (id = 1)
 );
 
 INSERT INTO seo_settings (id, page_title, meta_description, meta_keywords, og_image_url)
-VALUES (1, 'Min Nail & Hair', 'Tiệm gội đầu dưỡng sinh thảo dược.', 'gội đầu, nail, hair', '/og-placeholder.jpg')
+VALUES (1, 'Min Nail & Hair', 'Tiệm gội đầu dưỡng sinh thảo dược.', 'gội đầu, nail, hair', '/og-image.png')
 ON CONFLICT (id) DO NOTHING;
 
 -- SEO Articles Table
@@ -243,6 +246,7 @@ CREATE TABLE seo_articles (
   keywords TEXT DEFAULT '',
   article TEXT DEFAULT '',
   image_url VARCHAR(500) DEFAULT '',
+  image_alt VARCHAR(500) DEFAULT '',
   status VARCHAR(20) DEFAULT 'draft',
   topic_source VARCHAR(50) DEFAULT 'manual',
   blog_slug VARCHAR(255),

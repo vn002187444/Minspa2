@@ -113,6 +113,7 @@ export interface BlogPost {
   summary: string;
   content: string;
   image_url?: string;
+  image_alt?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -155,4 +156,18 @@ export interface BankSettings {
   bank_name: string;
   account_number: string;
   account_name: string;
+}
+
+export interface SeoArticle {
+  id: string;
+  created_at: string;
+  topic: string;
+  keywords: string;
+  article: string;
+  image_url?: string;
+  image_alt?: string;
+  status: string;
+  topic_source: string;
+  blog_slug?: string;
+  published_at?: string;
 }

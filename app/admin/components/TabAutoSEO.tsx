@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, useEffect } from "react";
-import { Sparkles, Clock, CheckCircle2, XCircle, RefreshCw } from "lucide-react";
-import { getAutoSeoConfig, saveAutoSeoConfig, getAutoSeoHistory } from "../actions";
+import { Sparkles, Clock, CheckCircle2, XCircle, RefreshCw, Play, Search } from "lucide-react";
+import { getAutoSeoConfig, saveAutoSeoConfig, getAutoSeoHistory, triggerCronJob } from "../actions";
 
 export default function TabAutoSEO() {
   const [config, setConfig] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [triggering, setTriggering] = useState(false);
+  const [researching, setResearching] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
 
   useEffect(() => {
@@ -36,6 +38,39 @@ export default function TabAutoSEO() {
     setSaving(false);
   }
 
+  async function handleTrigger() {
+    setTriggering(true);
+    setMsg({ type: "", text: "" });
+    const res = await triggerCronJob('seo_publish');
+    if (res.success) {
+      setMsg({ type: "success", text: "Đã kích hoạt! Kết quả: " + (res.message || 'OK') });
+      loadData();
+    } else {
+      setMsg({ type: "error", text: "Lỗi: " + (res.error || res.message || 'Unknown') });
+    }
+    setTriggering(false);
+  }
+
+  async function handleResearch() {
+    setResearching(true);
+    setMsg({ type: "", text: "" });
+    try {
+      const res = await fetch('/api/cron/seo-publish?research=1', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`Server responded with ${res.status}: ${text.substring(0, 200)}`);
+      }
+      const data = await res.json();
+      setMsg({ type: data.success ? 'success' : 'error', text: data.message || 'OK' });
+      loadData();
+    } catch (e: unknown) {
+      setMsg({ type: 'error', text: e instanceof Error ? e.message : 'Network error' });
+    }
+    setResearching(false);
+  }
+
   const days = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
   if (loading) return <div className="p-12 text-center text-gray-400 text-sm">Đang tải...</div>;
@@ -48,7 +83,7 @@ export default function TabAutoSEO() {
           Cấu hình Auto SEO 🤖
         </h3>
         <p className="text-[11px] text-gray-500 font-semibold mb-6">
-          Tự động nghiên cứu, viết và đăng bài SEO hàng tuần bằng Gemini AI.
+          Tự động nghiên cứu, viết và đăng bài SEO hàng tuần bằng Gemini AI. Cron chạy mỗi giờ, hệ thống tự kiểm tra lịch đăng.
         </p>
 
         {msg.text && (
@@ -58,7 +93,6 @@ export default function TabAutoSEO() {
         )}
 
         <form onSubmit={handleSave} className="space-y-5">
-          {/* Toggle */}
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-150">
             <div className="space-y-0.5">
               <span className="block text-xs font-bold text-gray-800">Bật Auto SEO</span>
@@ -77,18 +111,34 @@ export default function TabAutoSEO() {
             </button>
           </div>
 
-          {/* Schedule */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label htmlFor="autoseo-scheduleDay" className="block text-xs font-bold text-gray-700 mb-1">Ngày trong tuần</label>
-              <select
-                id="autoseo-scheduleDay"
-                value={config.schedule_day}
-                onChange={(e) => setConfig({ ...config, schedule_day: e.target.value })}
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold outline-none focus:ring-2 focus:ring-pink-500"
-              >
-                {days.map(d => <option key={d} value={d}>{d}</option>)}
-              </select>
+              <label className="block text-xs font-bold text-gray-700 mb-2">Ngày trong tuần</label>
+              <div className="flex flex-wrap gap-1.5">
+                {days.map(d => {
+                  const selected = (config.schedule_days || []).includes(d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        const current = config.schedule_days || [];
+                        const next = selected
+                          ? current.filter((x: string) => x !== d)
+                          : [...current, d];
+                        setConfig({ ...config, schedule_days: next.length > 0 ? next : [d] });
+                      }}
+                      className={`px-3 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all ${
+                        selected
+                          ? 'bg-pink-500 text-white shadow-sm'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             <div>
               <label htmlFor="autoseo-scheduleHour" className="block text-xs font-bold text-gray-700 mb-1">Giờ (0-23)</label>
@@ -104,7 +154,6 @@ export default function TabAutoSEO() {
             </div>
           </div>
 
-          {/* Topic Pool */}
           <div>
             <label htmlFor="autoseo-topicPool" className="block text-xs font-bold text-gray-700 mb-1">Topic Pool (mỗi dòng một chủ đề)</label>
             <textarea
@@ -120,17 +169,38 @@ export default function TabAutoSEO() {
             </p>
           </div>
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full md:w-auto px-6 py-3 bg-[#5C4033] hover:bg-[#3A2E2B] text-[#FAF6F0] rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
-          >
-            {saving ? "Đang lưu..." : "Lưu Cấu Hình"}
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={saving}
+              className="px-6 py-3 bg-[#5C4033] hover:bg-[#3A2E2B] text-[#FAF6F0] rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {saving ? "Đang lưu..." : "Lưu Cấu Hình"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTrigger}
+              disabled={triggering}
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <Play className="w-3.5 h-3.5" />
+              {triggering ? "Đang chạy..." : "Chạy Ngay"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleResearch}
+              disabled={researching}
+              className="inline-flex items-center gap-1.5 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              <Search className="w-3.5 h-3.5" />
+              {researching ? "Đang research..." : "Research Từ Khoá"}
+            </button>
+          </div>
         </form>
       </div>
 
-      {/* History */}
       <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">

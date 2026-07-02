@@ -59,10 +59,10 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
   const [idleAnim, setIdleAnim] = useState<'idle' | 'wave' | 'bounce'>('idle')
   const [themeStyle, setThemeStyle] = useState(getMascotStyle('default'))
 
-  // Hydrate dismissed state from localStorage after mount
-  useEffect(() => {
+  // Initialize dismissed state from localStorage
+  useState(() => {
     setDismissed(storage.get(MASCOT_DISMISSED_KEY) === 'true')
-  }, [])
+  })
 
   // Theme-aware styling
   useEffect(() => {

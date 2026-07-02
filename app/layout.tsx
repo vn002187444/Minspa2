@@ -1,6 +1,7 @@
 // Reconstructed layout.tsx for Min Nail & Hair application
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 import SkipLink from "@/components/SkipLink";
@@ -18,11 +19,9 @@ import { Analytics } from "@vercel/analytics/next";
 
 import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
-import BreadcrumbSchema from "@/components/BreadcrumbSchema";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const playfairDisplay = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 // Simple in-memory cache for metadata (TTL 5 minutes)
 let metadataCache: { data: Metadata | null; fetchedAt: number } = {
@@ -60,13 +59,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
       url: baseUrl,
-      images: [{ url: `${baseUrl}/icons/icon-512.png` }],
+      images: [{ url: `${baseUrl}/icons/icon-512.png`, width: 512, height: 512, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
-      images: [`${baseUrl}/icons/icon-512.png`],
+      images: [{ url: `${baseUrl}/icons/icon-512.png`, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
     },
     appleWebApp: { capable: true, statusBarStyle: "default", title: "Min Salon" },
     robots: { index: true, follow: true },
@@ -91,13 +90,13 @@ export async function generateMetadata(): Promise<Metadata> {
           ...defaultMeta.openGraph,
           title: data.page_title || defaultMeta.openGraph?.title || defaultMeta.title,
           description: data.meta_description || defaultMeta.openGraph?.description || defaultMeta.description,
-          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.svg` }],
+          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.png`, width: 512, height: 512, alt: data.page_title || "Min Nail & Hair" }],
         },
         twitter: {
           ...defaultMeta.twitter,
           title: data.page_title || defaultMeta.twitter?.title || defaultMeta.title,
           description: data.meta_description || defaultMeta.twitter?.description || defaultMeta.description,
-          images: [data.og_image_url || `${baseUrl}/icons/icon-512.svg`],
+          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.png`, alt: data.page_title || "Min Nail & Hair" }],
         },
       };
       metadataCache = { data: result, fetchedAt: now };
@@ -121,13 +120,13 @@ export default function RootLayout({
   return (
     <html
       lang="vi"
-      className={`${inter.variable} ${playfairDisplay.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${playfairDisplay.variable}`}
       suppressHydrationWarning
     >
       <head>
 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://dpviknfsfgvkfyurhtpm.supabase.co" />
+        <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
         <link rel="preload" href="/icons/icon-192.png" as="image" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -137,13 +136,13 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>
-            <script
+            <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
-              async
+              strategy="afterInteractive"
             />
-            <script id="google-analytics">
+            <Script id="google-analytics" strategy="afterInteractive">
               {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}');`}
-            </script>
+            </Script>
           </>
         )}
         <script
@@ -154,7 +153,11 @@ export default function RootLayout({
               "@type": "LocalBusiness",
               "@id": "#local-business",
               "name": "Min Nail & Hair",
-              "image": `${baseUrl}/icons/icon-512.svg`,
+              "image": `${baseUrl}/icons/icon-512.png`,
+              "logo": {
+                "@type": "ImageObject",
+                "url": `${baseUrl}/icons/icon-512.png`,
+              },
               "url": baseUrl,
               "telephone": "+84934323878",
               "address": {
@@ -191,7 +194,6 @@ export default function RootLayout({
           }}
         />
         <WebSiteSchema baseUrl={baseUrl} />
-        <BreadcrumbSchema items={[{ name: "Trang chủ", url: baseUrl }]} />
         <AggregateRatingSchema />
         <Analytics />
         <SpeedInsights />
