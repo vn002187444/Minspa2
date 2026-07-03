@@ -9,13 +9,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // 1. Static Routes
   const routes = [
     '',
+    '/about',
+    '/faq',
     '/booking',
     '/blog',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date().toISOString(),
     changeFrequency: 'daily' as const,
-    priority: route === '' ? 1.0 : 0.8,
+    priority: route === '' ? 1.0 : route === '/about' || route === '/faq' ? 0.7 : 0.8,
   }));
 
   // 2. Fetch all services
