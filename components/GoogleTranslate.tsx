@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import { Globe, Check } from 'lucide-react'
 
 const LANGUAGES: Record<string, string> = {
@@ -19,13 +19,15 @@ export default function GoogleTranslate() {
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  const [currentLang] = useState(() => {
-    if (typeof document !== 'undefined') {
-      const match = document.cookie.match(/googtrans=\/[^/]+\/([^;]+)/)
-      if (match && LANGUAGES[match[1]]) return match[1]
+  const [currentLang, setCurrentLang] = useState('vi')
+
+  useEffect(() => {
+    const match = document.cookie.match(/googtrans=\/[^/]+\/([^;]+)/)
+    if (match && LANGUAGES[match[1]]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentLang(match[1])
     }
-    return 'vi'
-  })
+  }, [])
 
   const handleToggle = useCallback(() => {
     setOpen((v) => !v)
