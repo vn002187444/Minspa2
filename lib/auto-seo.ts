@@ -1,6 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { callGemini } from '@/lib/ai/gemini';
-import { getSuggestedImages } from '@/lib/image-suggestions';
+import { searchImages } from '@/lib/image-search';
 import { normalizeNFC } from '@/lib/utils';
 
 const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
@@ -40,23 +40,6 @@ const KEYWORD_SCHEMA = {
   },
   required: ['keywords', 'primary'],
 };
-
-async function searchUnsplash(query: string): Promise<string | null> {
-  const key = process.env.UNSPLASH_ACCESS_KEY;
-  if (!key) return null;
-  try {
-    const resp = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
-      { headers: { Authorization: `Client-ID ${key}` }, signal: AbortSignal.timeout(5000) }
-    );
-    const data: { results?: { urls: { regular: string } }[] } = await resp.json();
-    if (data.results?.length) {
-      const result = data.results[Math.floor(Math.random() * data.results.length)];
-      return result.urls.regular + '?w=800&auto=format&fit=crop';
-    }
-  } catch { /* silent */ }
-  return null;
-}
 
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -121,13 +104,8 @@ YÊU CẦU NỘI DUNG:
 }
 
 async function selectImage(topic: string): Promise<string> {
-  const searchQuery = topic.replace(/[^a-zA-Z0-9 ]/g, '').trim();
-
-  const unsplashUrl = await searchUnsplash(searchQuery);
-  if (unsplashUrl) return unsplashUrl;
-
-  const result = getSuggestedImages(topic, 1);
-  return result.images[0] || '';
+  const result = await searchImages(topic, 1)
+  return result.images[0] || ''
 }
 
 function slugify(text: string): string {

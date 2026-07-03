@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { FALLBACK_IMAGES } from "@/lib/fallback-images";
 import { getSuggestedImages } from "@/lib/image-suggestions";
+import { searchImages } from "@/lib/image-search";
 
 const SYSTEM_SUMMARIZE = `Bạn là chuyên gia SEO. Tóm tắt văn bản thành 1-2 câu (tối đa 160 ký tự), giữ từ khóa chính. Tiếng Việt có dấu. Trả về JSON: { "summary": "..." }.`;
 
@@ -177,35 +178,9 @@ export async function POST(req: NextRequest) {
     if (action === 'suggestImages') {
       const topic = content || title;
       if (topic) {
-        const geminiResult = await callGemini({
-          systemInstruction: `Bạn là chuyên gia tìm kiếm hình ảnh SEO.`,
-          prompt: `Search the web for free stock photos about: ${topic.substring(0, 3000)}. Return exactly 4 results, one per line. Each line format: IMAGE_URL|ALT_TEXT_IN_VIETNAMESE
-
-Requirements:
-- Image URL from Unsplash (images.unsplash.com) in landscape orientation
-- ALT_TEXT: mô tả ngắn 5-10 từ bằng tiếng Việt, chứa từ khóa chính, phù hợp SEO
-
-Example:
-https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop|Dịch vụ gội đầu dưỡng sinh thảo dược thư giãn tại spa`,
-          config: { tools: [{ googleSearch: {} }] },
-          timeout: 25000,
-          useCache: true,
-        });
-        if (geminiResult.text) {
-          const lines = geminiResult.text.trim().split('\n').filter(Boolean);
-          const images: string[] = [];
-          const imageAlts: string[] = [];
-          for (const line of lines) {
-            const [url, ...altParts] = line.split('|');
-            const alt = altParts.join('|').trim();
-            if (url && /https:\/\/images\.unsplash\.com\/photo-[\w-]+/.test(url)) {
-              images.push(url.trim());
-              imageAlts.push(alt || topic.substring(0, 100));
-            }
-          }
-          if (images.length > 0) {
-            return NextResponse.json({ images: images.slice(0, 4), imageAlts: imageAlts.slice(0, 4), fromCache: geminiResult.fromCache });
-          }
+        const result = await searchImages(topic);
+        if (result.images.length > 0) {
+          return NextResponse.json({ images: result.images, imageAlts: result.imageAlts, fromCache: false });
         }
       }
       return NextResponse.json({ images: fallbackImages(title), imageAlts: fallbackImageAlts(title) });

@@ -2,35 +2,10 @@ import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/utils/auth";
 import { FALLBACK_IMAGES as SHARED_FALLBACK_IMAGES } from "@/lib/fallback-images";
-
-function getSearchQuery(prompt: string): string {
-  const lower = prompt.toLowerCase();
-  if (lower.includes("nail") || lower.includes("móng")) return "nail salon beauty";
-  if (lower.includes("hair") || lower.includes("tóc") || lower.includes("gội")) return "hair salon haircut";
-  if (lower.includes("spa") || lower.includes("massage")) return "spa massage relaxation";
-  return "beauty salon spa";
-}
+import { searchImages } from "@/lib/image-search";
 
 function pickRandom(): string {
   return SHARED_FALLBACK_IMAGES[Math.floor(Math.random() * SHARED_FALLBACK_IMAGES.length)];
-}
-
-async function searchUnsplash(query: string): Promise<string | null> {
-  const key = process.env.UNSPLASH_ACCESS_KEY;
-  if (!key) return null;
-  try {
-    const resp = await fetch(
-      `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=5&orientation=landscape`,
-      { headers: { Authorization: `Client-ID ${key}` } }
-    );
-    const data: { results?: { urls: { regular: string } }[] } = await resp.json();
-    if (data.results?.length) {
-      const result = data.results[Math.floor(Math.random() * data.results.length)];
-      // Unsplash urls.regular already includes query params, do NOT append extra
-      return result.urls.regular;
-    }
-  } catch {}
-  return null;
 }
 
 async function tryGeminiImage(prompt: string, genAI: GoogleGenAI): Promise<string | null> {
@@ -80,11 +55,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fallback: search Unsplash API for a random relevant image
-    const searchQuery = getSearchQuery(prompt);
-    const unsplashImage = await searchUnsplash(searchQuery);
-    if (unsplashImage) {
-      return NextResponse.json({ image: unsplashImage, method: "UNSPLASH" });
+    // Fallback: search Unsplash/Pexels for a random relevant image
+    const searchResult = await searchImages(prompt, 1);
+    if (searchResult.images[0]) {
+      return NextResponse.json({ image: searchResult.images[0], method: "API" });
     }
 
     // Final fallback: pick a random image from the shared pool
