@@ -18,15 +18,41 @@ const LANGUAGES: Record<string, string> = {
 export default function GoogleTranslate() {
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
   const [currentLang, setCurrentLang] = useState('vi')
+  const widgetReady = useRef(false)
 
   useEffect(() => {
     const match = document.cookie.match(/googtrans=\/[^/]+\/([^;]+)/)
     if (match && LANGUAGES[match[1]]) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentLang(match[1])
     }
+  }, [])
+
+  useEffect(() => {
+    if (widgetReady.current) return
+    
+    window.googleTranslateElementInit = () => {
+      console.log('[GoogleTranslate] Initializing widget...');
+      try {
+        new google.translate.TranslateElement(
+          {
+            pageLanguage: 'vi',
+            includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
+            autoDisplay: false,
+          },
+          'google_translate_element'
+        )
+        console.log('[GoogleTranslate] Widget initialized successfully.');
+      } catch (e) {
+        console.error('[GoogleTranslate] Init error:', e);
+      }
+    }
+
+    const script = document.createElement('script')
+    script.src = 'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
+    script.async = true
+    document.body.appendChild(script)
+    widgetReady.current = true
   }, [])
 
   const handleToggle = useCallback(() => {
@@ -34,18 +60,39 @@ export default function GoogleTranslate() {
   }, [])
 
   const switchLanguage = (lang: string) => {
-    if (lang === currentLang) { setOpen(false); return }
-    
-    const domain = window.location.hostname.includes('vercel.app') 
-      ? `.${window.location.hostname.split('.').slice(-2).join('.')}`
-      : window.location.hostname;
+    console.log(`[GoogleTranslate] Switching to: ${lang}`);
+    if (lang === currentLang) {
+      setOpen(false)
+      return
+    }
+    setCurrentLang(lang)
+    setOpen(false)
 
-    // eslint-disable-next-line react-hooks/immutability
-    document.cookie = `googtrans=/vi/${lang}; path=/; domain=${domain}; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`
+    // Try to trigger Google Translate natively if the combo box exists
+    const selectEl = document.querySelector('.goog-te-combo') as HTMLSelectElement | null
+    if (selectEl) {
+      console.log('[GoogleTranslate] Triggering .goog-te-combo change event');
+      selectEl.value = lang
+      selectEl.dispatchEvent(new Event('change'))
+      return
+    }
+
+    // Fallback: Set cookie and reload
+    console.log('[GoogleTranslate] Falling back to cookie + reload');
+    const host = window.location.hostname;
+    // Simplify cookie: use path=/ and let the browser handle the domain. 
+    // This is often more reliable than trying to calculate the top-level domain.
+    document.cookie = `googtrans=/vi/${lang}; path=/; SameSite=Lax`;
+    
+    // To be extra safe, set it for the domain too if not localhost
+    if (host !== 'localhost') {
+      const domain = `.${host.split('.').slice(-2).join('.')}`;
+      document.cookie = `googtrans=/vi/${lang}; path=/; domain=${domain}; SameSite=Lax`;
+    }
+    
     window.location.reload()
   }
 
-  // Click outside to close
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
       setOpen(false)
@@ -90,11 +137,24 @@ export default function GoogleTranslate() {
         </div>
       )}
 
-      <div id="google_translate_element" className="hidden" />
+      <div id="google_translate_element" className="translate-widget-container" />
 
       <style>{`
         .goog-te-banner-frame { display: none !important; }
         body { top: 0 !important; }
+        .goog-tooltip { display: none !important; }
+        .goog-text-highlight { background: transparent !important; border: none !important; box-shadow: none !important; }
+        .translate-widget-container {
+          position: fixed;
+          top: -1000px;
+          left: -1000px;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          opacity: 0;
+          pointer-events: none;
+        }
+        .goog-te-gadget { display: none !important; }
       `}</style>
     </div>
   )
