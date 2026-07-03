@@ -116,7 +116,7 @@ export default async function Home() {
     <div className="min-h-screen theme-bg theme-text font-sans selection:bg-[#EADDCD] selection:text-[#5C4033]">
       {services.length > 0 && (
         <>
-          <ServiceSchema services={services} />
+          <ServiceSchema services={services} logoUrl={logoUrl} />
         </>
       )}
       {/* Premium Notification Topbar */}
