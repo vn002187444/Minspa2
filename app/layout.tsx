@@ -215,7 +215,7 @@ export default function RootLayout({
         </Script>
         <Script 
           src="https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit" 
-          strategy="lazyOnload" 
+          strategy="afterInteractive" 
         />
       </head>
 

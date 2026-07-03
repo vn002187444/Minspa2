@@ -1,5 +1,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { callGemini } from '@/lib/ai/gemini';
+import { getSuggestedImages } from '@/lib/image-suggestions';
+import { normalizeNFC } from '@/lib/utils';
 
 const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
@@ -39,38 +41,6 @@ const KEYWORD_SCHEMA = {
   required: ['keywords', 'primary'],
 };
 
-const FALLBACK_IMAGES: Record<string, string[]> = {
-  nails: [
-    'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1607779097040-26e80b779eef?w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-  ],
-  haircare: [
-    'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1522337661159-0a0b4a2a4b4f?w=800&auto=format&fit=crop',
-  ],
-  spa: [
-    'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=800&auto=format&fit=crop',
-  ],
-  general: [
-    'https://images.unsplash.com/photo-1560066984-58dadb2e71c4?w=800&auto=format&fit=crop',
-    'https://images.unsplash.com/photo-1522337360788-6b1dfde2c4fb?w=800&auto=format&fit=crop',
-  ],
-};
-
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
-}
-
-function getImageTheme(topic: string): string {
-  const lower = topic.toLowerCase();
-  if (/nail|móng|sơn|gel/.test(lower)) return 'nails';
-  if (/tóc|gội|dưỡng sinh|hair/.test(lower)) return 'haircare';
-  if (/massage|spa|thư giãn/.test(lower)) return 'spa';
-  return 'general';
-}
-
 async function searchUnsplash(query: string): Promise<string | null> {
   const key = process.env.UNSPLASH_ACCESS_KEY;
   if (!key) return null;
@@ -86,6 +56,10 @@ async function searchUnsplash(query: string): Promise<string | null> {
     }
   } catch { /* silent */ }
   return null;
+}
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
 }
 
 async function generateKeywords(topic: string): Promise<{ keywords: string; primary: string }> {
@@ -148,15 +122,12 @@ YÊU CẦU NỘI DUNG:
 
 async function selectImage(topic: string): Promise<string> {
   const searchQuery = topic.replace(/[^a-zA-Z0-9 ]/g, '').trim();
-  const theme = getImageTheme(topic);
 
-  // Try Unsplash first
   const unsplashUrl = await searchUnsplash(searchQuery);
   if (unsplashUrl) return unsplashUrl;
 
-  // Fallback to stock pool
-  const pool = FALLBACK_IMAGES[theme] || FALLBACK_IMAGES.general;
-  return pickRandom(pool);
+  const result = getSuggestedImages(topic, 1);
+  return result.images[0] || '';
 }
 
 function slugify(text: string): string {
@@ -248,12 +219,12 @@ export async function runAutoSeo(force = false): Promise<{
 
     // 8. Insert into blogs
     const { error: blogError } = await supabase.from('blogs').insert({
-      title: article.title,
+      title: normalizeNFC(article.title),
       slug: finalSlug,
-      summary: article.metaDescription || extractSummary(article.content, article.title),
-      content: article.content,
+      summary: normalizeNFC(article.metaDescription || extractSummary(article.content, article.title)),
+      content: normalizeNFC(article.content),
       image_url: imageUrl,
-      image_alt: topic.substring(0, 100),
+      image_alt: normalizeNFC(topic.substring(0, 100)),
       created_at: now.toISOString(),
     });
 
@@ -265,9 +236,9 @@ export async function runAutoSeo(force = false): Promise<{
     const articleId = 'auto-' + Date.now();
     await supabase.from('seo_articles').upsert({
       id: articleId,
-      topic,
-      keywords,
-      article: article.content,
+      topic: normalizeNFC(topic),
+      keywords: normalizeNFC(keywords),
+      article: normalizeNFC(article.content),
       image_url: imageUrl,
       status: 'published',
       topic_source: 'auto_seo',

@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { revalidatePath } from "next/cache";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize";
+import { normalizeNFC } from "@/lib/utils";
 
 export async function getBlogPosts(page: number = 1, pageSize: number = 6, includeDrafts: boolean = false) {
   const supabase = await createClient();
@@ -38,10 +39,11 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
 }
 
 function sanitizePost(post: any) {
+  const normalized = normalizeNFC(post || {});
   return {
-    ...post,
-    content: sanitizeHtml(post.content || ''),
-    summary: stripHtml(post.summary || ''),
+    ...normalized,
+    content: sanitizeHtml(normalized.content || ''),
+    summary: stripHtml(normalized.summary || ''),
   };
 }
 
@@ -78,28 +80,29 @@ export async function saveBlogPost(postData: {
 
   const supabase = await createClient();
   const now = new Date().toISOString();
+  const normalized = normalizeNFC(postData) as typeof postData;
 
   if (postData.id) {
     const updates: Record<string, unknown> = {
-      title: postData.title,
-      slug: postData.slug,
-      summary: stripHtml(postData.summary || ''),
-      content: sanitizeHtml(postData.content || ''),
-      image_url: postData.image_url,
-      image_alt: postData.image_alt || '',
-      keywords: postData.keywords || '',
+      title: normalized.title,
+      slug: normalized.slug,
+      summary: stripHtml(normalized.summary || ''),
+      content: sanitizeHtml(normalized.content || ''),
+      image_url: normalized.image_url,
+      image_alt: normalized.image_alt || '',
+      keywords: normalized.keywords || '',
       updated_at: now,
     };
 
     // Handle publish status
-    if (postData.published !== undefined) {
-      updates.published = postData.published;
-      if (postData.published) {
+    if (normalized.published !== undefined) {
+      updates.published = normalized.published;
+      if (normalized.published) {
         // Set published_at only if not already set
         const { data: existing } = await supabase
           .from('blogs')
           .select('published_at')
-          .eq('id', postData.id)
+          .eq('id', normalized.id)
           .maybeSingle();
 
         if (existing && !existing.published_at) {
@@ -111,7 +114,7 @@ export async function saveBlogPost(postData: {
     const { error } = await supabase
       .from('blogs')
       .update(updates)
-      .eq('id', postData.id);
+      .eq('id', normalized.id);
 
     if (error) {
       throw new Error(error.message || 'Lỗi khi cập nhật bài viết.');
@@ -121,25 +124,25 @@ export async function saveBlogPost(postData: {
     const { data: existing } = await supabase
       .from('blogs')
       .select('id')
-      .eq('slug', postData.slug)
+      .eq('slug', normalized.slug)
       .maybeSingle();
 
     if (existing) {
       throw new Error('Slug này đã tồn tại, vui lòng đổi tiêu đề bài viết khác hoặc chỉnh sửa link tay.');
     }
 
-    const isPublished = postData.published !== false;
+    const isPublished = normalized.published !== false;
 
     const { error } = await supabase
       .from('blogs')
       .insert({
-        title: postData.title,
-        slug: postData.slug,
-        summary: stripHtml(postData.summary || ''),
-        content: sanitizeHtml(postData.content || ''),
-        image_url: postData.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-        image_alt: postData.image_alt || '',
-        keywords: postData.keywords || '',
+        title: normalized.title,
+        slug: normalized.slug,
+        summary: stripHtml(normalized.summary || ''),
+        content: sanitizeHtml(normalized.content || ''),
+        image_url: normalized.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
+        image_alt: normalized.image_alt || '',
+        keywords: normalized.keywords || '',
         published: isPublished,
         published_at: isPublished ? now : null,
         created_at: now,
@@ -151,7 +154,7 @@ export async function saveBlogPost(postData: {
   }
 
   revalidatePath('/blog');
-  revalidatePath(`/blog/${postData.slug}`);
+  revalidatePath(`/blog/${normalized.slug}`);
   revalidatePath('/sitemap');
   revalidatePath('/admin/blog');
   return { success: true };

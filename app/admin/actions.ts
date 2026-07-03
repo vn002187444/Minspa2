@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { logAuditAction } from "@/utils/audit";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { stripHtml } from "@/lib/sanitize";
+import { normalizeNFC } from "@/lib/utils";
 
 interface StaffInput {
   username?: string;
@@ -653,19 +654,22 @@ export async function getSeoArticles() {
       id: string; created_at: string; topic: string; keywords: string; article: string;
       image_url: string | null; image_alt: string | null; status: string;
       topic_source: string; blog_slug: string | null; published_at: string | null;
-    }) => ({
-      id: a.id,
-      createdAt: a.created_at,
-      topic: a.topic,
-      keywords: a.keywords,
-      article: a.article,
-      imageUrl: a.image_url,
-      imageAlt: a.image_alt,
-      status: a.status,
-      topicSource: a.topic_source,
-      blogSlug: a.blog_slug,
-      publishedAt: a.published_at,
-    }));
+    }) => {
+      const n = normalizeNFC(a)
+      return {
+        id: n.id,
+        createdAt: n.created_at,
+        topic: n.topic,
+        keywords: n.keywords,
+        article: n.article,
+        imageUrl: n.image_url,
+        imageAlt: n.image_alt,
+        status: n.status,
+        topicSource: n.topic_source,
+        blogSlug: n.blog_slug,
+        publishedAt: n.published_at,
+      }
+    });
   } catch (e: unknown) {
     console.error(e);
   }
@@ -682,7 +686,7 @@ export async function getSeoArticleById(id: string) {
       .eq('id', id)
       .single();
     if (error) throw error;
-    return data;
+    return normalizeNFC(data);
   } catch (e: unknown) {
     console.error(e);
     return null;
@@ -735,11 +739,11 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
       const { error } = await supabase
         .from('seo_articles')
         .update({
-          topic: article.topic,
-          keywords: article.keywords,
-          article: article.article,
+          topic: normalizeNFC(article.topic),
+          keywords: normalizeNFC(article.keywords),
+          article: normalizeNFC(article.article),
           image_url: imageUrl,
-          image_alt: article.image_alt || article.imageAlt || null,
+          image_alt: normalizeNFC(article.image_alt || article.imageAlt || null),
           status: article.status || 'draft',
         })
         .eq('id', article.id);
@@ -749,11 +753,11 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
         .from('seo_articles')
         .insert({
           id: article.id || 'art_' + Math.random().toString(36).substring(2, 11),
-          topic: article.topic,
-          keywords: article.keywords,
-          article: article.article,
+          topic: normalizeNFC(article.topic),
+          keywords: normalizeNFC(article.keywords),
+          article: normalizeNFC(article.article),
           image_url: imageUrl,
-          image_alt: article.image_alt || article.imageAlt || null,
+          image_alt: normalizeNFC(article.image_alt || article.imageAlt || null),
           status: article.status || 'draft',
           created_at: article.createdAt || new Date().toISOString(),
         });
@@ -827,13 +831,17 @@ export async function publishSeoArticleToBlog(
   }
 
   const now = new Date().toISOString();
+  const ncTitle = normalizeNFC(title);
+  const ncSummary = normalizeNFC(summary);
+  const ncContent = normalizeNFC(articleText);
+  const ncKeywords = normalizeNFC(options?.keywords || '');
   const { error } = await supabase.from('blogs').insert({
-    title,
+    title: ncTitle,
     slug,
-    summary,
-    content: articleText,
+    summary: ncSummary,
+    content: ncContent,
     image_url: finalImageUrl || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-    keywords: options?.keywords || '',
+    keywords: ncKeywords,
     published: true,
     published_at: now,
     created_at: now,

@@ -52,7 +52,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://translate.google.com https://translate.googleapis.com; style-src 'self' 'unsafe-inline' https://translate.google.com https://www.gstatic.com; img-src 'self' data: https://images.unsplash.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com https://translate.google.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://translate.google.com; frame-ancestors 'none'; form-action 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://translate.google.com https://translate.googleapis.com; style-src 'self' 'unsafe-inline' https://translate.google.com https://www.gstatic.com; img-src 'self' data: https://images.unsplash.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com https://translate.google.com https://www.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://translate.google.com; frame-ancestors 'none'; form-action 'self';",
           },
         ],
       },

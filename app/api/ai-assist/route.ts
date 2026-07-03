@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { FALLBACK_IMAGES } from "@/lib/fallback-images";
+import { getSuggestedImages } from "@/lib/image-suggestions";
 
 const SYSTEM_SUMMARIZE = `Bạn là chuyên gia SEO. Tóm tắt văn bản thành 1-2 câu (tối đa 160 ký tự), giữ từ khóa chính. Tiếng Việt có dấu. Trả về JSON: { "summary": "..." }.`;
 
@@ -49,10 +50,22 @@ function fallbackSummary(content: string): string {
   return clean.substring(0, 160).replace(/[,.;:]+$/, '') || 'Bài viết về dịch vụ làm đẹp tại Min Nail & Hair.';
 }
 
-function fallbackImages(_title?: string): string[] {
+function fallbackImages(title?: string): string[] {
+  if (title?.trim()) {
+    const result = getSuggestedImages(title)
+    return result.images
+  }
   const count = Math.min(4, FALLBACK_IMAGES.length);
   const shuffled = [...FALLBACK_IMAGES].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
+}
+
+function fallbackImageAlts(title?: string): string[] {
+  if (title?.trim()) {
+    const result = getSuggestedImages(title)
+    return result.imageAlts
+  }
+  return []
 }
 
 function fallbackArticle(title: string, keywords?: string): { article: string; extractedTitle: string; extractedSummary: string } {
@@ -195,7 +208,7 @@ https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&f
           }
         }
       }
-      return NextResponse.json({ images: fallbackImages(title), imageAlts: [] });
+      return NextResponse.json({ images: fallbackImages(title), imageAlts: fallbackImageAlts(title) });
     }
 
     if (action === 'writeArticle') {
