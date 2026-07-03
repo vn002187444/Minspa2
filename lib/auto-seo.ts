@@ -1,7 +1,6 @@
 import { createClient } from '@/utils/supabase/server';
 import { callGemini } from '@/lib/ai/gemini';
-import { searchImages } from '@/lib/image-search';
-import { normalizeNFC } from '@/lib/utils';
+
 
 const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
@@ -41,9 +40,11 @@ const KEYWORD_SCHEMA = {
   required: ['keywords', 'primary'],
 };
 
+
 function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
 
 async function generateKeywords(topic: string): Promise<{ keywords: string; primary: string }> {
   const prompt = `Phân tích và đưa ra từ khóa SEO cho chủ đề: "${topic}"
@@ -104,9 +105,7 @@ YÊU CẦU NỘI DUNG:
 }
 
 async function selectImage(topic: string): Promise<string> {
-  const result = await searchImages(topic, 1)
-  return result.images[0] || ''
-}
+
 
 function slugify(text: string): string {
   return text
@@ -126,7 +125,7 @@ function extractSummary(content: string, title: string): string {
     : title;
 }
 
-export async function runAutoSeo(force = false): Promise<{
+
   success: boolean;
   message: string;
   slug?: string;
@@ -156,10 +155,7 @@ export async function runAutoSeo(force = false): Promise<{
     // Compare in UTC — schedule_days/schedule_hour are stored in Vietnam time (UTC+7)
     const vnHour = (currentHour + 7) % 24;
     const scheduleDays: string[] = config.schedule_days || [config.schedule_day].filter(Boolean);
-    
-    const isScheduled = scheduleDays.includes(currentDay) && config.schedule_hour === vnHour;
-    
-    if (!force && !isScheduled) {
+
       return { success: false, message: `Schedule mismatch: current ${currentDay} ${vnHour}h, config [${scheduleDays.join(',')}] ${config.schedule_hour}h` };
     }
 
@@ -197,14 +193,7 @@ export async function runAutoSeo(force = false): Promise<{
 
     // 8. Insert into blogs
     const { error: blogError } = await supabase.from('blogs').insert({
-      title: normalizeNFC(article.title).substring(0, 255),
-      slug: finalSlug.substring(0, 255),
-      summary: normalizeNFC(article.metaDescription || extractSummary(article.content, article.title)).substring(0, 500),
-      content: normalizeNFC(article.content),
-      image_url: (imageUrl || '').substring(0, 255),
-      image_alt: normalizeNFC(topic.substring(0, 100)),
-      published: true,
-      published_at: now.toISOString(),
+
       created_at: now.toISOString(),
     });
 
@@ -216,10 +205,7 @@ export async function runAutoSeo(force = false): Promise<{
     const articleId = 'auto-' + Date.now();
     await supabase.from('seo_articles').upsert({
       id: articleId,
-      topic: normalizeNFC(topic),
-      keywords: normalizeNFC(keywords),
-      article: normalizeNFC(article.content),
-      image_url: (imageUrl || '').substring(0, 255),
+
       status: 'published',
       topic_source: 'auto_seo',
       blog_slug: finalSlug,

@@ -22,8 +22,7 @@ import { Analytics } from "@vercel/analytics/next";
 import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
 
-const inter = Inter({ subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-sans" });
-const playfairDisplay = Playfair_Display({ subsets: ["latin", "latin-ext"], variable: "--font-display" });
+
 
 // Simple in-memory cache for metadata (TTL 5 minutes)
 let metadataCache: { data: Metadata | null; fetchedAt: number } = {

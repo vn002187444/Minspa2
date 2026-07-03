@@ -103,9 +103,6 @@ const menuGroups: { groupLabel: string; items: MenuItem[] }[] = [
     items: [
       { id: "FAQS", label: "FAQ", icon: HelpCircle },
       { id: "REVIEWS", label: "Đánh giá", icon: Star },
- { id: "SEO", label: "Cấu hình SEO", icon: Globe },
-       { id: "SEO-ARTICLES", label: "Bài viết SEO", icon: BookOpen, isLink: true },
-       { id: "BANK", label: "Tài khoản Bank", icon: CreditCard },
       { id: "AUDIT_LOGS", label: "Nhật ký hệ thống", icon: ShieldAlert, isLink: true },
       { id: "SETTINGS", label: "Cấu hình hệ thống", icon: Activity },
       { id: "PASSWORD", label: "Đổi mật khẩu", icon: Key },

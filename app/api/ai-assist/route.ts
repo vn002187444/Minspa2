@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { FALLBACK_IMAGES } from "@/lib/fallback-images";
-import { getSuggestedImages } from "@/lib/image-suggestions";
-import { searchImages } from "@/lib/image-search";
 
 const SYSTEM_SUMMARIZE = `Bạn là chuyên gia SEO. Tóm tắt văn bản thành 1-2 câu (tối đa 160 ký tự), giữ từ khóa chính. Tiếng Việt có dấu. Trả về JSON: { "summary": "..." }.`;
 
@@ -178,12 +176,6 @@ export async function POST(req: NextRequest) {
     if (action === 'suggestImages') {
       const topic = content || title;
       if (topic) {
-        const result = await searchImages(topic);
-        if (result.images.length > 0) {
-          return NextResponse.json({ images: result.images, imageAlts: result.imageAlts, fromCache: false });
-        }
-      }
-      return NextResponse.json({ images: fallbackImages(title), imageAlts: fallbackImageAlts(title) });
     }
 
     if (action === 'writeArticle') {

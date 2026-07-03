@@ -15,7 +15,7 @@ import { trackEvent, trackMascotEvent } from '@/lib/analytics';
 import { stripHtml } from '@/lib/sanitize';
 import { storage } from '@/lib/storage';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, AlertTriangle } from 'lucide-react';
-import dynamic from 'next/dynamic';
+
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';

@@ -13,8 +13,6 @@ import dynamic from 'next/dynamic';
 import ServiceBookButton from '@/components/ServiceBookButton';
 import AnnouncementBanner from '@/components/AnnouncementBanner';
 
-const HeaderNav = dynamic(() => import('@/components/HeaderNav'));
-const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
 import { getBannerSettings } from './admin/actions';
 import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, getCachedBlogPosts } from '@/lib/cache';
 import ServiceSchema from '@/components/ServiceSchema';

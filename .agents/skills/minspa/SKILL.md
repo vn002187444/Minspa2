@@ -310,12 +310,7 @@ Remaining 25 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audi
 - Logo added to `WebSiteSchema`
 
 ### Language Switcher
-- `GoogleTranslate.tsx`: globe button + dropdown UI (9 languages)
-- Google Translate script now loaded dynamically via `useEffect` (not `next/script` in layout) — ensures `#google_translate_element` div is in DOM before script runs
-- Cookie-based language switch: set `googtrans=/vi/{lang}` then `window.location.reload()`
-- CSP expanded: `frame-src` includes `translate.googleapis.com`, `www.gstatic.com`, `*.google.com`
-- Type declarations for `Window.googleTranslateElementInit` and `google.translate.TranslateElement` in `types/index.ts`
-- CSS hides banner: `.goog-te-banner-frame { display: none !important; }`
+main
 
 ### Admin SEO Articles Page
 - New page `app/admin/seo-articles/page.tsx` — list, create, edit, delete, publish to blog
@@ -327,28 +322,7 @@ Remaining 25 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audi
 ### Breadcrumb Schema
 - Added `BreadcrumbSchema` to `app/blog/page.tsx` and `app/booking/page.tsx`
 
-### 0 lint warnings, 0 typecheck errors, 41 static pages build ✅ (Jul 3, 2026)
-
-### Auto-SEO & Image Search Fixes
-- `lib/auto-seo.ts`: blog insert now includes `published: true`, `published_at`
-- `lib/image-search.ts`: uses Unsplash `urls.small` + Pexels `src.medium` (no more append `?w=800&auto=format&fit=crop`)
-- `app/admin/actions.ts`: `triggerCronJob` sends `CRON_SECRET` Bearer token; `publishSeoArticleToBlog` accepts `image_alt` + `keywords` options
-- `app/api/cron/seo-publish/route.ts`: accepts admin session as auth fallback
-- `app/admin/components/TabSEO.tsx`: saved articles editor has full SEO fields (keywords, image URL, image alt text)
-- `getSeoArticles()` in `app/admin/actions.ts` returns `imageAlt` from `image_alt` column
-
-### VARCHAR(255) Truncation Fix
-- 3 existing blog records had image URLs truncated to 251 chars (old code appended `?w=800&auto=format&fit=crop` to already-long Unsplash search URLs)
-- Fixed via SQL UPDATE: replaced truncated URLs with clean `https://images.unsplash.com/photo-{id}?w=400` (66 chars)
-- 5 auto-SEO draft records published (set `published=true`, `published_at=now`)
-
-### Type Fix: image-search.ts
-- Unsplash API response type expanded: `urls` now includes `raw`, `full`, `small`, `thumb` (was only `regular`)
-- This was causing build error: `Property 'small' does not exist on type`
-
-### Image Search Cascade (Updated)
-- `searchImages()` cascade: Unsplash API (`urls.small`) → Pexels API (`src.medium`) → `getSuggestedImages()` (static categorized pool)
-- Static pool URLs use `?w=800&auto=format&fit=crop` — these are short hardcoded URLs, safe from VARCHAR truncation
+main
 
 ## 12. Key Files Reference (Updated)
 ### Routes

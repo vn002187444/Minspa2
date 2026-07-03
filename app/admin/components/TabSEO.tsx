@@ -251,8 +251,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
         topic: seoTopic,
         keywords: seoKeywords,
         article: seoArticleText,
-        image_url: seoImageUrl || "",
-        image_alt: seoImageAlt
+main
       });
       if (res.success) {
         showToast("Lưu vào Kho Bài Viết thành công! Mời xem ở tab tiếp theo.");
@@ -286,7 +285,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
     if (!customSlug) return;
     setIsPublishingBlog(true);
     try {
-      const res = await publishSeoArticleToBlog(seoArticleText, seoImageUrl, { slug: customSlug, title: suggestedTitle, keywords: seoKeywords, image_alt: seoImageAlt });
+main
       if (res.success) {
         showToast("Đã đăng bài lên Blog thành công! 🎉");
         window.open('/blog/' + res.slug, '_blank');
@@ -301,7 +300,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
 
   const [publishingBlogId, setPublishingBlogId] = useState<string | null>(null);
 
-  const handlePublishSavedToBlog = async (art: { id: string; topic?: string; article: string; imageUrl?: string | null; imageAlt?: string; keywords?: string }) => {
+main
     const suggestedTitle = art.article.match(/^#\s+(.+)/m)?.[1]?.trim()
       || art.article.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
       || art.topic
@@ -311,7 +310,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
     if (!customSlug) return;
     setPublishingBlogId(art.id);
     try {
-      const res = await publishSeoArticleToBlog(art.article, art.imageUrl ?? '', { slug: customSlug, title: suggestedTitle, keywords: art.keywords, image_alt: art.imageAlt });
+ main
       if (res.success) {
         showToast("Đã đăng bài lên Blog thành công! 🎉");
         window.open('/blog/' + res.slug, '_blank');

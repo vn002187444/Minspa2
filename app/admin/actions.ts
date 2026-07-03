@@ -654,22 +654,7 @@ export async function getSeoArticles() {
       id: string; created_at: string; topic: string; keywords: string; article: string;
       image_url: string | null; image_alt: string | null; status: string;
       topic_source: string; blog_slug: string | null; published_at: string | null;
-    }) => {
-      const n = normalizeNFC(a)
-      return {
-        id: n.id,
-        createdAt: n.created_at,
-        topic: n.topic,
-        keywords: n.keywords,
-        article: n.article,
-        imageUrl: n.image_url,
-        imageAlt: n.image_alt,
-        status: n.status,
-        topicSource: n.topic_source,
-        blogSlug: n.blog_slug,
-        publishedAt: n.published_at,
-      }
-    });
+ main
   } catch (e: unknown) {
     console.error(e);
   }
@@ -686,7 +671,7 @@ export async function getSeoArticleById(id: string) {
       .eq('id', id)
       .single();
     if (error) throw error;
-    return normalizeNFC(data);
+ main
   } catch (e: unknown) {
     console.error(e);
     return null;
@@ -743,7 +728,7 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
           keywords: normalizeNFC(article.keywords),
           article: normalizeNFC(article.article),
           image_url: imageUrl,
-          image_alt: normalizeNFC(article.image_alt || article.imageAlt || null),
+
           status: article.status || 'draft',
         })
         .eq('id', article.id);
@@ -757,7 +742,7 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
           keywords: normalizeNFC(article.keywords),
           article: normalizeNFC(article.article),
           image_url: imageUrl,
-          image_alt: normalizeNFC(article.image_alt || article.imageAlt || null),
+
           status: article.status || 'draft',
           created_at: article.createdAt || new Date().toISOString(),
         });
@@ -786,7 +771,7 @@ export async function deleteSeoArticle(id: string) {
 export async function publishSeoArticleToBlog(
   articleText: string,
   imageUrl: string,
-  options?: { title?: string; slug?: string; keywords?: string; image_alt?: string }
+
 ) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
@@ -831,19 +816,14 @@ export async function publishSeoArticleToBlog(
   }
 
   const now = new Date().toISOString();
-  const ncTitle = normalizeNFC(title);
-  const ncSummary = normalizeNFC(summary);
-  const ncContent = normalizeNFC(articleText);
-  const ncKeywords = normalizeNFC(options?.keywords || '');
-  const ncImageAlt = normalizeNFC(options?.image_alt || ncTitle.substring(0, 100));
+ main
   const { error } = await supabase.from('blogs').insert({
     title: ncTitle,
     slug,
     summary: ncSummary,
     content: ncContent,
     image_url: finalImageUrl || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-    image_alt: ncImageAlt,
-    keywords: ncKeywords,
+ main
     published: true,
     published_at: now,
     created_at: now,

@@ -1,15 +1,11 @@
 import { unstable_cache } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
-import { normalizeNFC } from '@/lib/utils';
-
-/**
- * Wrapper to cache Supabase calls and normalize all text to NFC.
+<
  */
 export async function cachedFetch<T>(key: string, fn: () => Promise<T>, revalidate = 3600): Promise<T> {
   return unstable_cache(
     async () => {
-      const data = await fn();
-      return normalizeNFC(data);
+
     },
     [key],
     { revalidate }

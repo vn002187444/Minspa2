@@ -80,29 +80,17 @@ export async function saveBlogPost(postData: {
 
   const supabase = await createClient();
   const now = new Date().toISOString();
-  const normalized = normalizeNFC(postData) as typeof postData;
 
-  if (postData.id) {
-    const updates: Record<string, unknown> = {
-      title: normalized.title,
-      slug: normalized.slug,
-      summary: stripHtml(normalized.summary || ''),
-      content: sanitizeHtml(normalized.content || ''),
-      image_url: normalized.image_url,
-      image_alt: normalized.image_alt || '',
-      keywords: normalized.keywords || '',
       updated_at: now,
     };
 
     // Handle publish status
-    if (normalized.published !== undefined) {
-      updates.published = normalized.published;
-      if (normalized.published) {
+
         // Set published_at only if not already set
         const { data: existing } = await supabase
           .from('blogs')
           .select('published_at')
-          .eq('id', normalized.id)
+
           .maybeSingle();
 
         if (existing && !existing.published_at) {
@@ -114,7 +102,7 @@ export async function saveBlogPost(postData: {
     const { error } = await supabase
       .from('blogs')
       .update(updates)
-      .eq('id', normalized.id);
+
 
     if (error) {
       throw new Error(error.message || 'Lỗi khi cập nhật bài viết.');
@@ -124,25 +112,18 @@ export async function saveBlogPost(postData: {
     const { data: existing } = await supabase
       .from('blogs')
       .select('id')
-      .eq('slug', normalized.slug)
+
       .maybeSingle();
 
     if (existing) {
       throw new Error('Slug này đã tồn tại, vui lòng đổi tiêu đề bài viết khác hoặc chỉnh sửa link tay.');
     }
 
-    const isPublished = normalized.published !== false;
 
     const { error } = await supabase
       .from('blogs')
       .insert({
-        title: normalized.title,
-        slug: normalized.slug,
-        summary: stripHtml(normalized.summary || ''),
-        content: sanitizeHtml(normalized.content || ''),
-        image_url: normalized.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-        image_alt: normalized.image_alt || '',
-        keywords: normalized.keywords || '',
+
         published: isPublished,
         published_at: isPublished ? now : null,
         created_at: now,
