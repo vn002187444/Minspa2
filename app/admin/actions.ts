@@ -1412,10 +1412,15 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
     seo_publish: `${baseUrl}/api/cron/seo-publish`,
   };
 
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (process.env.CRON_SECRET) {
+    headers['authorization'] = `Bearer ${process.env.CRON_SECRET}`;
+  }
+
   try {
     const res = await fetch(endpoints[jobName], {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) {

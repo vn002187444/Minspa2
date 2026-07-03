@@ -456,12 +456,13 @@ CREATE TABLE IF NOT EXISTS tasks (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
--- Auto SEO config (V3.12)
+-- Auto SEO config (V3.12 → V3.13)
 CREATE TABLE IF NOT EXISTS auto_seo_config (
   id BIGINT PRIMARY KEY DEFAULT 1,
   enabled BOOLEAN NOT NULL DEFAULT false,
-  schedule_day VARCHAR(10) NOT NULL DEFAULT 'THU',
+  schedule_day VARCHAR(10) DEFAULT 'THU',
   schedule_hour INTEGER NOT NULL DEFAULT 20,
+  schedule_days JSONB NOT NULL DEFAULT '["THU"]'::jsonb,
   topic_pool JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
