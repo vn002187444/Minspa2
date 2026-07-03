@@ -5,6 +5,25 @@ import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 
+function normalizeNFC<T>(data: T): T {
+  if (typeof data === 'string') {
+    return data.normalize('NFC') as unknown as T
+  }
+  if (Array.isArray(data)) {
+    return data.map(normalizeNFC) as unknown as T
+  }
+  if (data !== null && typeof data === 'object') {
+    const normalized: Record<string, any> = {}
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        normalized[key] = normalizeNFC((data as any)[key])
+      }
+    }
+    return normalized as T
+  }
+  return data
+}
+
 dotenv.config({ path: path.join(process.cwd(), '.env.local'), override: true });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -59,7 +78,7 @@ async function migrate() {
   // 2. Migrate Services
   if (data.services?.length) {
     console.log(`Migrating ${data.services.length} services...`);
-    const servicesToInsert = data.services.map((s: any) => ({
+    const servicesToInsert = data.services.map((s: any) => normalizeNFC({
       ...s,
       id: toUUID(s.id)
     }));
@@ -122,7 +141,7 @@ async function migrate() {
   // 6. Migrate Blogs
   if (data.blogs?.length) {
     console.log(`Migrating ${data.blogs.length} blogs...`);
-    const postsToInsert = data.blogs.map((post: any) => ({
+    const postsToInsert = data.blogs.map((post: any) => normalizeNFC({
       ...post,
       id: toUUID(post.id)
     }));
@@ -134,7 +153,7 @@ async function migrate() {
   // 7. Migrate Treatment Packages
   if (data.treatment_packages?.length) {
     console.log(`Migrating ${data.treatment_packages.length} treatment packages...`);
-    const pkgsToInsert = data.treatment_packages.map((pkg: any) => ({
+    const pkgsToInsert = data.treatment_packages.map((pkg: any) => normalizeNFC({
       ...pkg,
       id: toUUID(pkg.id),
       service_id: toUUID(pkg.service_id)
@@ -180,7 +199,7 @@ async function migrate() {
   // 10. Migrate Reviews
   if (data.reviews?.length) {
     console.log(`Migrating ${data.reviews.length} reviews...`);
-    const reviewsToInsert = data.reviews.map((r: any) => ({
+    const reviewsToInsert = data.reviews.map((r: any) => normalizeNFC({
       ...r,
       id: toUUID(r.id),
       appointment_id: toUUID(r.appointment_id)

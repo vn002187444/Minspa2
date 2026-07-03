@@ -203,6 +203,8 @@ export async function runAutoSeo(force = false): Promise<{
       content: normalizeNFC(article.content),
       image_url: (imageUrl || '').substring(0, 255),
       image_alt: normalizeNFC(topic.substring(0, 100)),
+      published: true,
+      published_at: now.toISOString(),
       created_at: now.toISOString(),
     });
 

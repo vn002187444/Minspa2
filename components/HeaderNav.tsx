@@ -13,6 +13,8 @@ const NAV_ITEMS = [
   { id: 'Cha-Got-Chan', label: 'Chà Gót Chân', href: '#category-Cha-Got-Chan' },
   { id: 'Massage', label: 'Massage Body', href: '#category-Massage' },
   { id: 'Cham-Soc-Trang-Tri-Mong', label: 'Chăm Sóc & Trang Trí Móng', href: '#category-Cham-Soc-Trang-Tri-Mong' },
+  { id: 'about', label: 'Giới Thiệu', href: '/about' },
+  { id: 'faq', label: 'Hỏi Đáp', href: '/faq' },
 ];
 
 const MOBILE_NAV_ITEMS = [
@@ -23,7 +25,8 @@ const MOBILE_NAV_ITEMS = [
   { id: 'Cha-Got-Chan', label: '👣 Chà Gót', href: '#category-Cha-Got-Chan' },
   { id: 'goi-vip', label: '🎁 Combo VIP', href: '#services' },
   { id: 'reviews', label: '⭐ Đánh Giá', href: '#reviews' },
-  { id: 'faq', label: '❓ Hỏi Đáp', href: '#faq' },
+  { id: 'about', label: '📖 Giới Thiệu', href: '/about' },
+  { id: 'faq', label: '❓ Hỏi Đáp', href: '/faq' },
 ];
 
 const MOBILE_OBSERVE_IDS = [

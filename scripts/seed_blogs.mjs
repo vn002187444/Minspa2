@@ -282,8 +282,19 @@ Náº¿u khÃ´ng cÃ³ thá»i gian náº¥u, hÃ£y Ä‘áº¿n **Min Nail 
 
 
 
+function normalizeNFC(obj) {
+  if (typeof obj === 'string') return obj.normalize('NFC');
+  if (Array.isArray(obj)) return obj.map(normalizeNFC);
+  if (obj && typeof obj === 'object') {
+    const n = {};
+    for (const k in obj) { if (Object.prototype.hasOwnProperty.call(obj, k)) n[k] = normalizeNFC(obj[k]); }
+    return n;
+  }
+  return obj;
+}
+
 for (const post of posts) {
-  const { error } = await supabase.from('blogs').insert(post);
+  const { error } = await supabase.from('blogs').insert(normalizeNFC(post));
   if (error) {
     if (error.code === '23505') {
       console.log(`âš ï¸ ${post.slug} Ä‘Ã£ tá»“n táº¡i (skip)`);

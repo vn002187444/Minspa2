@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
-  Home, Sparkles, Calendar, BookOpen, User, 
+  Home, Sparkles, Calendar, BookOpen, User, HelpCircle,
   Clock, CalendarCheck, CheckCircle2, Package, BarChart,
   ClipboardCheck, Menu
 } from 'lucide-react';
@@ -22,7 +22,7 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
   // Determine if we are on Homepage, Staff dashboard, or Admin dashboard
   const isStaff = pathname?.startsWith('/staff');
   const isAdmin = pathname?.startsWith('/admin');
-  const isHome = !isStaff && !isAdmin && (pathname === '/' || pathname?.startsWith('/blog') || pathname === '/booking');
+  const isHome = !isStaff && !isAdmin && (pathname === '/' || pathname?.startsWith('/blog') || pathname === '/booking' || pathname === '/about' || pathname === '/faq');
 
   // Handle local tab transitions or external link navigation
   const handleAdminTabChange = (tabId: string) => {
@@ -114,6 +114,12 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
               'Tin Tức',
               '/blog',
               pathname?.startsWith('/blog') || false
+            )}
+            {renderLinkItem(
+              <HelpCircle className="w-5 h-5" />,
+              'FAQ',
+              '/faq',
+              pathname === '/faq'
             )}
             {renderLinkItem(
               <User className="w-5 h-5" />,

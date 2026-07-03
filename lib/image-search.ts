@@ -11,9 +11,9 @@ async function searchUnsplash(query: string): Promise<{ images: string[]; alts: 
       { headers: { Authorization: `Client-ID ${key}` }, signal: AbortSignal.timeout(TIMEOUT_MS) }
     )
     if (!resp.ok) return null
-    const data: { results?: { urls: { regular: string }; alt_description: string | null; description: string | null }[] } = await resp.json()
+    const data: { results?: { urls: { raw: string; full: string; regular: string; small: string; thumb: string }; alt_description: string | null; description: string | null }[] } = await resp.json()
     if (!data.results?.length) return null
-    const images = data.results.map(r => r.urls.regular)
+    const images = data.results.map(r => r.urls.small)
     const alts = data.results.map(r => r.alt_description || r.description || query.substring(0, 100))
     return { images, alts }
   } catch {
@@ -30,9 +30,9 @@ async function searchPexels(query: string): Promise<{ images: string[]; alts: st
       { headers: { Authorization: key }, signal: AbortSignal.timeout(TIMEOUT_MS) }
     )
     if (!resp.ok) return null
-    const data: { photos?: { src: { large: string }; alt: string | null }[] } = await resp.json()
+    const data: { photos?: { src: { medium: string }; alt: string | null }[] } = await resp.json()
     if (!data.photos?.length) return null
-    const images = data.photos.map(p => p.src.large)
+    const images = data.photos.map(p => p.src.medium)
     const alts = data.photos.map(p => p.alt || query.substring(0, 100))
     return { images, alts }
   } catch {

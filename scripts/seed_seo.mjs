@@ -237,8 +237,19 @@ Nếu không có thời gian nấu, hãy đến Min Nail & Hair – Lavita Charm
   },
 ];
 
+function normalizeNFC(obj) {
+  if (typeof obj === 'string') return obj.normalize('NFC');
+  if (Array.isArray(obj)) return obj.map(normalizeNFC);
+  if (obj && typeof obj === 'object') {
+    const n = {};
+    for (const k in obj) { if (Object.prototype.hasOwnProperty.call(obj, k)) n[k] = normalizeNFC(obj[k]); }
+    return n;
+  }
+  return obj;
+}
+
 for (const article of articles) {
-  const { error } = await supabase.from('seo_articles').upsert(article, { onConflict: 'id' });
+  const { error } = await supabase.from('seo_articles').upsert(normalizeNFC(article), { onConflict: 'id' });
   if (error) {
     console.error(`❌ ${article.id}: ${error.message}`);
   } else {

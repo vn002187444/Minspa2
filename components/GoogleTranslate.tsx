@@ -18,8 +18,8 @@ const LANGUAGES: Record<string, string> = {
 export default function GoogleTranslate() {
   const [open, setOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-
   const [currentLang, setCurrentLang] = useState('vi')
+  const widgetReady = useRef(false)
 
   useEffect(() => {
     const match = document.cookie.match(/googtrans=\/[^/]+\/([^;]+)/)
@@ -29,19 +29,67 @@ export default function GoogleTranslate() {
     }
   }, [])
 
+  // Load Google Translate widget after mount
+  useEffect(() => {
+    if (widgetReady.current) return
+    if (typeof window.googleTranslateElementInit !== 'undefined') return
+
+    window.googleTranslateElementInit = () => {
+      new google.translate.TranslateElement(
+        {
+          pageLanguage: 'vi',
+          includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
+          autoDisplay: false,
+        },
+        'google_translate_element'
+      )
+    }
+
+    const script = document.createElement('script')
+    script.src =
+      'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
+    script.async = true
+    document.body.appendChild(script)
+    widgetReady.current = true
+
+    return () => {
+      widgetReady.current = false
+    }
+  }, [])
+
   const handleToggle = useCallback(() => {
     setOpen((v) => !v)
   }, [])
 
   const switchLanguage = (lang: string) => {
-    if (lang === currentLang) { setOpen(false); return }
-    
-    const domain = window.location.hostname.includes('vercel.app') 
-      ? `.${window.location.hostname.split('.').slice(-2).join('.')}`
-      : window.location.hostname;
+    if (lang === currentLang) {
+      setOpen(false)
+      return
+    }
+
+    const host = window.location.hostname
+    const domain = host === 'localhost' ? host : `.${host.split('.').slice(-2).join('.')}`
+
+    // Setting domain = '' on localhost makes cookie work correctly
+    const cookieDomain = host === 'localhost' ? '' : `; domain=${domain}`
 
     // eslint-disable-next-line react-hooks/immutability
-    document.cookie = `googtrans=/vi/${lang}; path=/; domain=${domain}; max-age=${365 * 24 * 60 * 60}; SameSite=Lax`
+    document.cookie = `googtrans=/vi/${lang}; path=/${cookieDomain}; max-age=${365 * 24 * 60 * 60}s; SameSite=Lax`
+
+    // Directly trigger translation via Google Translate API if available
+    try {
+      if (typeof google !== 'undefined' && google.translate) {
+        const selectElem = document.querySelector('.goog-te-combo') as HTMLSelectElement | null
+        if (selectElem) {
+          selectElem.value = lang
+          selectElem.dispatchEvent(new Event('change'))
+          return
+        }
+      }
+    } catch {
+      // fall through to reload
+    }
+
     window.location.reload()
   }
 
@@ -90,11 +138,30 @@ export default function GoogleTranslate() {
         </div>
       )}
 
-      <div id="google_translate_element" className="hidden" />
+      <div id="google_translate_element" className="translate-widget-container" />
 
       <style>{`
         .goog-te-banner-frame { display: none !important; }
         body { top: 0 !important; }
+        .goog-tooltip { display: none !important; }
+        .goog-text-highlight { background: transparent !important; border: none !important; box-shadow: none !important; }
+        .translate-widget-container {
+          position: fixed;
+          top: -1000px;
+          left: -1000px;
+          width: 1px;
+          height: 1px;
+          opacity: 0;
+          pointer-events: none;
+          overflow: hidden;
+          z-index: -1;
+        }
+        .translate-widget-container iframe {
+          width: 1px !important;
+          height: 1px !important;
+          min-width: 1px !important;
+          min-height: 1px !important;
+        }
       `}</style>
     </div>
   )

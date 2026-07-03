@@ -6,12 +6,84 @@ description: >-
 
 # MinSpa Project Skill
 
+## 0. PowerShell Encoding — Critical for Debugging Vietnamese Text
+- **PowerShell 5.1 console cannot render Vietnamese Unicode.** All Vietnamese characters (ộ, ứ, ấ, ữ, v.v.) display as `?` or `�` in terminal output. This is a DISPLAY limitation, NOT data corruption.
+- **NEVER trust `?` characters seen in PowerShell output.** Always verify by checking raw UTF-8 bytes (hex) against expected encoding.
+- **Verification method:**
+  ```powershell
+  $wc = New-Object System.Net.WebClient
+  $bytes = $wc.DownloadData($url)
+  $html = [System.Text.Encoding]::UTF8.GetString($bytes)
+  # Then check hex:
+  $hex = ($bytes | ForEach-Object { $_.ToString("X2") }) -join " "
+  ```
+- Similarly, Supabase REST API results via `Invoke-RestMethod` display `?` for Vietnamese in PowerShell, but the actual DB data is correct. Verify by comparing hex of the webpage's `<title>` tag against expected UTF-8 encoding of the Vietnamese text.
+- **Key check:** NFC `ộ` = `E1 BB 99` (3 bytes). NFD would be `6F CC 82 CC A3` (4 bytes). If you see `E1 BB 99`, the data IS correctly encoded NFC.
+
+## 0b. Auto-SEO & Blog Publishing Lessons (Jul 2026)
+
+### Image URL VARCHAR(255) Truncation
+- **Unsplash search result URLs contain `ixid` + `ixlib` params that can exceed 255 chars.** Even `urls.small` from search results may be too long.
+- Using `urls.small` (400px) instead of `urls.regular` (1080px) helps but doesn't guarantee <255 chars for search results.
+- **Fixed by:** using `urls.raw + '&w=400'` (strips all Unsplash query params) or just removing the `?w=800&auto=format&fit=crop` append that old code added.
+- **Always truncate image URL before insert:** `(imageUrl || '').substring(0, 255)` — PostgreSQL silently truncates VARCHAR columns and existing records will have broken image URLs.
+- **To detect truncated URLs:** query `blogs` table and check `LENGTH(image_url) > 240` or image URLs ending with truncated params.
+- **Fix existing truncated records:** regenerate image URL using clean Unsplash base URL (e.g., `https://images.unsplash.com/photo-{id}?w=400`).
+
+### Auto-SEO Publish Must Set `published: true`
+- `runAutoSeo()` MUST set `published: true` + `published_at` in blog insert. Without this, cron-generated articles are invisible drafts.
+- All three blog write paths must be consistent:
+  1. `runAutoSeo()` → `lib/auto-seo.ts` (direct supabase insert)
+  2. `publishSeoArticleToBlog()` → `app/admin/actions.ts` (publish saved article)
+  3. `saveBlogPost()` → `app/blog/actions.ts` (admin blog editor)
+
+### Cron Auth — Accept Multiple Methods
+- Supabase cron (pg_cron), Vercel cron, and Admin UI trigger all hit `/api/cron/seo-publish`.
+- Must accept three auth methods:
+  1. `CRON_SECRET` Bearer token (Admin UI trigger via `triggerCronJob`)
+  2. `x-supabase-cron: true` header (Supabase pg_cron, though this may not arrive via `pg_net`)
+  3. Admin session cookie (when triggered from Admin UI)
+- Pattern: check `CRON_SECRET` first, then fall back to session check.
+
+### Vietnamese Encoding — NFC Normalization Coverage
+- `normalizeNFC()` must be applied on **all three write paths**, not just on read. NFC normalization on read is a safety net only.
+- Three write paths to verify:
+  1. `runAutoSeo()` — line 200-208 in `lib/auto-seo.ts` ✅
+  2. `publishSeoArticleToBlog()` — line 834-850 in `app/admin/actions.ts` ✅
+  3. `saveBlogPost()` — line 83 in `app/blog/actions.ts` ✅
+- The `callGemini()` function in `lib/ai/gemini.ts` returns `res.text` from `@google/genai` SDK — text is already properly decoded Unicode. NFC normalization is applied downstream.
+- **Existing DB data can still have `?` replacement characters (U+FFFD) if invalid UTF-8 bytes were stored before the fix.** Once replacement chars are in the DB, they cannot be recovered — only regenerated from Gemini.
+
+### Auto-SEO Config Schema
+- `auto_seo_config` table has: `schedule_days` (JSONB array of day abbreviations ['SUN','MON',...]), `schedule_hour` (int 0-23 Vietnam time), `topic_pool` (JSONB array of topic strings), `enabled` (boolean), `schedule_day` (legacy single day).
+- Schedule check compares current UTC time converted to Vietnam time (UTC+7).
+- Topic pool is maintained by `runKeywordResearch()` which appends new topics to existing pool.
+
+### Image Search Cascade
+- `searchImages(topic, count)` in `lib/image-search.ts`:
+  1. Try Unsplash API (most relevant)
+  2. Fall back to Pexels API
+  3. Fall back to `getSuggestedImages()` (static categorized pool in `lib/image-suggestions.ts`)
+- Returns `{ images: string[], imageAlts: string[] }`.
+- Admin "Publish to Blog" flow uploads image to Supabase Storage via `uploadBase64ToStorage()` (supports both base64 and URL sources).
+- **Unsplash API type must include ALL URL sizes** (`raw`, `full`, `regular`, `small`, `thumb`) — the code accesses `urls.small`. The inline type annotation in `searchUnsplash()` was missing `small` (only had `regular`), causing build error.
+
+### Google Translate Implementation
+- **DO NOT use `next/script` for Google Translate** — load the script dynamically from the `GoogleTranslate` component using `useEffect` + `document.createElement('script')`.
+- The `#google_translate_element` div must be in the React component (part of returned JSX) so it's rendered by the time the script loads.
+- Define `window.googleTranslateElementInit` BEFORE adding the script element to the DOM (so it's available when the async script executes).
+- Cookie format: `googtrans=/vi/{lang}` (e.g., `/vi/en` for English).
+- CSP must allow frames from: `translate.google.com`, `translate.googleapis.com`, `www.gstatic.com`, `*.google.com`.
+- Type declarations needed: `Window.googleTranslateElementInit` (function) + `google.translate.TranslateElement` (class) in `types/index.ts`.
+
 ## 1. Project Overview
 - **Name:** Min Nail & Hair Salon
 - **Stack:** Next.js 16 (React 19) + Supabase (PostgreSQL) + TypeScript
 - **Deploy:** Vercel (free tier)
 - **Auth:** Custom JWT (NOT Supabase Auth) — `app/login/` + middleware
-- **AI Tools:** Google Gemini (`gemini-2.5-flash-lite`) via `@google/genai`
+- **AI Tools:** Google Gemini — primary `gemini-3.1-flash-lite`, fallback `gemini-2.5-flash-lite` via `@google/genai` (SDK v2)
+- **Models note:** `gemini-2.0-flash-exp-image-generation` and `gemini-2.0-flash` are deprecated (404). Use `-3.1-flash-lite` for all new tasks.
+- **`googleSearch` tool unavailable with JSON mode:** `responseMimeType: "application/json"` + `googleSearch` cannot be combined. For structured JSON output, use the `jsonSchema` config parameter with `responseMimeType: "application/json"`, and omit `googleSearch`.
 - **Styling:** Tailwind CSS v4 + Framer Motion (`framer-motion`) for animations
 
 ## 2. Critical Rules
@@ -145,6 +217,8 @@ Key conventions:
 - `staff_id` references `users(id)`
 - `appointment_id` references `appointments(id)`
 - Single-row config tables (`seo_settings`, `banner_settings`, `bank_settings`, `auto_seo_config`) use `CHECK (id = 1)`
+- `blogs` has: `image_alt`, `keywords`, `published` (boolean), `published_at` (timestamp), `image_url` (VARCHAR(255) — **watch for truncation** with long Unsplash search URLs)
+- `auto_seo_config` has: `schedule_days` (JSONB), `schedule_hour` (int), `topic_pool` (JSONB), `enabled` (boolean)
 
 ## 5. Booking Engine
 Flow: Select date → Select staff → Select services → Select time slot → Customer info → Confirm
@@ -236,8 +310,12 @@ Remaining 25 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audi
 - Logo added to `WebSiteSchema`
 
 ### Language Switcher
-- `GoogleTranslate.tsx` rewritten: globe button + dropdown UI (9 languages)
-- Widget container always in DOM (fixes translate not working)
+- `GoogleTranslate.tsx`: globe button + dropdown UI (9 languages)
+- Google Translate script now loaded dynamically via `useEffect` (not `next/script` in layout) — ensures `#google_translate_element` div is in DOM before script runs
+- Cookie-based language switch: set `googtrans=/vi/{lang}` then `window.location.reload()`
+- CSP expanded: `frame-src` includes `translate.googleapis.com`, `www.gstatic.com`, `*.google.com`
+- Type declarations for `Window.googleTranslateElementInit` and `google.translate.TranslateElement` in `types/index.ts`
+- CSS hides banner: `.goog-te-banner-frame { display: none !important; }`
 
 ### Admin SEO Articles Page
 - New page `app/admin/seo-articles/page.tsx` — list, create, edit, delete, publish to blog
@@ -249,7 +327,28 @@ Remaining 25 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audi
 ### Breadcrumb Schema
 - Added `BreadcrumbSchema` to `app/blog/page.tsx` and `app/booking/page.tsx`
 
-### 0 lint warnings, 0 typecheck errors, 41 static pages build ✅
+### 0 lint warnings, 0 typecheck errors, 41 static pages build ✅ (Jul 3, 2026)
+
+### Auto-SEO & Image Search Fixes
+- `lib/auto-seo.ts`: blog insert now includes `published: true`, `published_at`
+- `lib/image-search.ts`: uses Unsplash `urls.small` + Pexels `src.medium` (no more append `?w=800&auto=format&fit=crop`)
+- `app/admin/actions.ts`: `triggerCronJob` sends `CRON_SECRET` Bearer token; `publishSeoArticleToBlog` accepts `image_alt` + `keywords` options
+- `app/api/cron/seo-publish/route.ts`: accepts admin session as auth fallback
+- `app/admin/components/TabSEO.tsx`: saved articles editor has full SEO fields (keywords, image URL, image alt text)
+- `getSeoArticles()` in `app/admin/actions.ts` returns `imageAlt` from `image_alt` column
+
+### VARCHAR(255) Truncation Fix
+- 3 existing blog records had image URLs truncated to 251 chars (old code appended `?w=800&auto=format&fit=crop` to already-long Unsplash search URLs)
+- Fixed via SQL UPDATE: replaced truncated URLs with clean `https://images.unsplash.com/photo-{id}?w=400` (66 chars)
+- 5 auto-SEO draft records published (set `published=true`, `published_at=now`)
+
+### Type Fix: image-search.ts
+- Unsplash API response type expanded: `urls` now includes `raw`, `full`, `small`, `thumb` (was only `regular`)
+- This was causing build error: `Property 'small' does not exist on type`
+
+### Image Search Cascade (Updated)
+- `searchImages()` cascade: Unsplash API (`urls.small`) → Pexels API (`src.medium`) → `getSuggestedImages()` (static categorized pool)
+- Static pool URLs use `?w=800&auto=format&fit=crop` — these are short hardcoded URLs, safe from VARCHAR truncation
 
 ## 12. Key Files Reference (Updated)
 ### Routes

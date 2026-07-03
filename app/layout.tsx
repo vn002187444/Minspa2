@@ -22,8 +22,8 @@ import { Analytics } from "@vercel/analytics/next";
 import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const playfairDisplay = Playfair_Display({ subsets: ["latin"], variable: "--font-display" });
+const inter = Inter({ subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-sans" });
+const playfairDisplay = Playfair_Display({ subsets: ["latin", "latin-ext"], variable: "--font-display" });
 
 // Simple in-memory cache for metadata (TTL 5 minutes)
 let metadataCache: { data: Metadata | null; fetchedAt: number } = {
@@ -200,23 +200,7 @@ export default function RootLayout({
         <Analytics />
         <SpeedInsights />
         
-        {/* Google Translate - Init function must be defined before script loads */}
-        <Script id="google-translate-init" strategy="afterInteractive">
-          {`
-            window.googleTranslateElementInit = function() {
-              new google.translate.TranslateElement({
-                pageLanguage: 'vi',
-                includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
-                layout: 0,
-                autoDisplay: false
-              }, 'google_translate_element');
-            };
-          `}
-        </Script>
-        <Script 
-          src="https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit" 
-          strategy="afterInteractive" 
-        />
+
       </head>
 
       <body className="antialiased font-sans text-gray-900 bg-gray-50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} suppressHydrationWarning>
