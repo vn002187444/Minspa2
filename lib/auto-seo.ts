@@ -197,11 +197,11 @@ export async function runAutoSeo(force = false): Promise<{
 
     // 8. Insert into blogs
     const { error: blogError } = await supabase.from('blogs').insert({
-      title: normalizeNFC(article.title),
-      slug: finalSlug,
-      summary: normalizeNFC(article.metaDescription || extractSummary(article.content, article.title)),
+      title: normalizeNFC(article.title).substring(0, 255),
+      slug: finalSlug.substring(0, 255),
+      summary: normalizeNFC(article.metaDescription || extractSummary(article.content, article.title)).substring(0, 500),
       content: normalizeNFC(article.content),
-      image_url: imageUrl,
+      image_url: (imageUrl || '').substring(0, 255),
       image_alt: normalizeNFC(topic.substring(0, 100)),
       created_at: now.toISOString(),
     });
@@ -217,7 +217,7 @@ export async function runAutoSeo(force = false): Promise<{
       topic: normalizeNFC(topic),
       keywords: normalizeNFC(keywords),
       article: normalizeNFC(article.content),
-      image_url: imageUrl,
+      image_url: (imageUrl || '').substring(0, 255),
       status: 'published',
       topic_source: 'auto_seo',
       blog_slug: finalSlug,

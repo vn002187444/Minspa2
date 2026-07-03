@@ -786,7 +786,7 @@ export async function deleteSeoArticle(id: string) {
 export async function publishSeoArticleToBlog(
   articleText: string,
   imageUrl: string,
-  options?: { title?: string; slug?: string; keywords?: string }
+  options?: { title?: string; slug?: string; keywords?: string; image_alt?: string }
 ) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
@@ -835,12 +835,14 @@ export async function publishSeoArticleToBlog(
   const ncSummary = normalizeNFC(summary);
   const ncContent = normalizeNFC(articleText);
   const ncKeywords = normalizeNFC(options?.keywords || '');
+  const ncImageAlt = normalizeNFC(options?.image_alt || ncTitle.substring(0, 100));
   const { error } = await supabase.from('blogs').insert({
     title: ncTitle,
     slug,
     summary: ncSummary,
     content: ncContent,
     image_url: finalImageUrl || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
+    image_alt: ncImageAlt,
     keywords: ncKeywords,
     published: true,
     published_at: now,

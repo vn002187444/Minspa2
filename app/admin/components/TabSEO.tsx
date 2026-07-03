@@ -123,6 +123,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [seoImageUrl, setSeoImageUrl] = useState("");
   const [seoImageMethod, setSeoImageMethod] = useState("");
+  const seoImageAlt = seoTopic ? seoTopic.substring(0, 100) : '';
   
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -137,6 +138,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
   const [isEditingSavedArticle, setIsEditingSavedArticle] = useState(false);
   const [editContent, setEditContent] = useState("");
   const [editTitle, setEditTitle] = useState("");
+  const [editKeywords, setEditKeywords] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editImageAlt, setEditImageAlt] = useState("");
 
   const showToast = (message: string) => {
     setToastMsg(message);
@@ -247,7 +251,8 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
         topic: seoTopic,
         keywords: seoKeywords,
         article: seoArticleText,
-        image_url: seoImageUrl || ""
+        image_url: seoImageUrl || "",
+        image_alt: seoImageAlt
       });
       if (res.success) {
         showToast("Lưu vào Kho Bài Viết thành công! Mời xem ở tab tiếp theo.");
@@ -281,7 +286,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
     if (!customSlug) return;
     setIsPublishingBlog(true);
     try {
-      const res = await publishSeoArticleToBlog(seoArticleText, seoImageUrl, { slug: customSlug, title: suggestedTitle });
+      const res = await publishSeoArticleToBlog(seoArticleText, seoImageUrl, { slug: customSlug, title: suggestedTitle, keywords: seoKeywords, image_alt: seoImageAlt });
       if (res.success) {
         showToast("Đã đăng bài lên Blog thành công! 🎉");
         window.open('/blog/' + res.slug, '_blank');
@@ -296,7 +301,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
 
   const [publishingBlogId, setPublishingBlogId] = useState<string | null>(null);
 
-  const handlePublishSavedToBlog = async (art: { id: string; topic?: string; article: string; imageUrl?: string | null }) => {
+  const handlePublishSavedToBlog = async (art: { id: string; topic?: string; article: string; imageUrl?: string | null; imageAlt?: string; keywords?: string }) => {
     const suggestedTitle = art.article.match(/^#\s+(.+)/m)?.[1]?.trim()
       || art.article.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
       || art.topic
@@ -306,7 +311,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
     if (!customSlug) return;
     setPublishingBlogId(art.id);
     try {
-      const res = await publishSeoArticleToBlog(art.article, art.imageUrl ?? '', { slug: customSlug, title: suggestedTitle });
+      const res = await publishSeoArticleToBlog(art.article, art.imageUrl ?? '', { slug: customSlug, title: suggestedTitle, keywords: art.keywords, image_alt: art.imageAlt });
       if (res.success) {
         showToast("Đã đăng bài lên Blog thành công! 🎉");
         window.open('/blog/' + res.slug, '_blank');
@@ -345,11 +350,14 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       const res = await saveSeoArticle({
         ...selectedArticle,
         topic: editTitle,
-        article: editContent
+        keywords: editKeywords,
+        article: editContent,
+        image_url: editImageUrl,
+        image_alt: editImageAlt,
       });
       if (res.success) {
         showToast("Cập nhật bài viết thành công!");
-        setSelectedArticle({ ...selectedArticle, topic: editTitle, article: editContent });
+        setSelectedArticle({ ...selectedArticle, topic: editTitle, keywords: editKeywords, article: editContent, imageUrl: editImageUrl, imageAlt: editImageAlt });
         setIsEditingSavedArticle(false);
         loadSavedArticles();
       } else {
@@ -851,37 +859,45 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
           </div>
 
           {/* Right Column: Preview and Output */}
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
-            <div className="flex justify-between items-center border-b pb-3 border-gray-100 font-semibold">
-              <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Bài viết hoạt động chuẩn SEO</h3>
-              {seoArticleText && (
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    onClick={() => copyToClipboard(seoArticleText, "copy")}
-                    className="text-[10px] font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 px-2.5 py-1.5 rounded-lg transition-all"
-                  >
-                    {copiedIndex === "copy" ? "✓ Đã copy" : "Copy Bài Viết"}
-                  </button>
-                  <button
-                    onClick={handleSaveToArticles}
-                    disabled={isSavingArticle}
-                    className="text-[10px] items-center gap-1 font-bold bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-2.5 py-1.5 rounded-lg transition-all flex disabled:opacity-50 cursor-pointer"
-                  >
-                    {isSavingArticle ? "Đang lưu..." : "Lưu Kho Bài"}
-                  </button>
-                  <button
-                    onClick={handlePublishToBlog}
-                    disabled={isPublishingBlog}
-                    className="text-[10px] items-center gap-1 font-bold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-all flex disabled:opacity-50 cursor-pointer"
-                  >
-                    {isPublishingBlog ? "Đang đăng..." : "Đăng lên Blog"}
-                  </button>
-                </div>
-              )}
-            </div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+                  <div className="flex justify-between items-center border-b pb-3 border-gray-100 font-semibold">
+                    <h3 className="text-xs font-bold uppercase text-gray-400 tracking-wider">Bài viết hoạt động chuẩn SEO</h3>
+                    {seoArticleText && (
+                      <div className="flex gap-2 shrink-0">
+                        <button
+                          onClick={() => copyToClipboard(seoArticleText, "copy")}
+                          className="text-[10px] font-bold bg-pink-50 hover:bg-pink-100 text-pink-600 px-2.5 py-1.5 rounded-lg transition-all"
+                        >
+                          {copiedIndex === "copy" ? "✓ Đã copy" : "Copy Bài Viết"}
+                        </button>
+                        <button
+                          onClick={handleSaveToArticles}
+                          disabled={isSavingArticle}
+                          className="text-[10px] items-center gap-1 font-bold bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-2.5 py-1.5 rounded-lg transition-all flex disabled:opacity-50 cursor-pointer"
+                        >
+                          {isSavingArticle ? "Đang lưu..." : "Lưu Kho Bài"}
+                        </button>
+                        <button
+                          onClick={handlePublishToBlog}
+                          disabled={isPublishingBlog}
+                          className="text-[10px] items-center gap-1 font-bold bg-green-600 hover:bg-green-700 text-white px-2.5 py-1.5 rounded-lg transition-all flex disabled:opacity-50 cursor-pointer"
+                        >
+                          {isPublishingBlog ? "Đang đăng..." : "Đăng lên Blog"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
-            {seoArticleText ? (
-              <div className="space-y-4 font-semibold">
+                  {seoArticleText ? (
+                    <div className="space-y-4 font-semibold">
+                      {/* SEO Image Alt display */}
+                      {seoImageUrl && (
+                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mô tả ảnh SEO (Alt text)</label>
+                          <p className="text-xs text-gray-700 font-medium">{seoImageAlt || 'Chưa có mô tả ảnh'}</p>
+                          <p className="text-[9px] text-gray-400 mt-1">Alt text tự động sinh từ chủ đề bài viết, giúp SEO hình ảnh.</p>
+                        </div>
+                      )}
                 <div className="p-5 bg-gray-50 border border-gray-150 rounded-xl max-h-96 overflow-y-auto font-sans leading-relaxed text-xs text-gray-700 whitespace-pre-wrap">
                   {seoArticleText}
                 </div>
@@ -960,6 +976,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
                         setSelectedArticle(art);
                         setEditTitle(art.topic);
                         setEditContent(art.article);
+                        setEditKeywords(art.keywords || '');
+                        setEditImageUrl(art.imageUrl || '');
+                        setEditImageAlt(art.imageAlt || art.image_alt || '');
                         setIsEditingSavedArticle(false);
                       }}
                       className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-2.5 ${
@@ -1051,6 +1070,9 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
                                 setIsEditingSavedArticle(false);
                                 setEditTitle(selectedArticle.topic);
                                 setEditContent(selectedArticle.article);
+                                setEditKeywords(selectedArticle.keywords || '');
+                                setEditImageUrl(selectedArticle.imageUrl || '');
+                                setEditImageAlt(selectedArticle.imageAlt || selectedArticle.image_alt || '');
                               }}
                               className="text-[10px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-600 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
                             >
@@ -1086,18 +1108,73 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
                     {/* Image visualizer */}
                     {selectedArticle.imageUrl && (
                       <div className="relative aspect-video max-h-48 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 w-full">
-                        <Image src={selectedArticle.imageUrl} alt="visual banner" fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
+                        <Image src={selectedArticle.imageUrl} alt={selectedArticle.imageAlt || selectedArticle.image_alt || 'visual banner'} fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" />
                       </div>
+                    )}
+                    {!isEditingSavedArticle && (selectedArticle.imageAlt || selectedArticle.image_alt) && (
+                      <p className="text-[10px] text-gray-400 font-medium italic">
+                        Alt: {selectedArticle.imageAlt || selectedArticle.image_alt}
+                      </p>
                     )}
 
                     {/* Body Content */}
                     {isEditingSavedArticle ? (
-                      <textarea
-                        rows={12}
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white text-xs font-semibold text-gray-850 resize-none leading-relaxed"
-                      />
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Tiêu đề</label>
+                          <input
+                            type="text"
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded-lg text-xs font-bold text-gray-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Từ khóa phụ</label>
+                          <input
+                            type="text"
+                            value={editKeywords}
+                            onChange={(e) => setEditKeywords(e.target.value)}
+                            placeholder="từ khóa 1, từ khóa 2, ..."
+                            className="w-full p-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">URL ảnh đại diện</label>
+                          <input
+                            type="text"
+                            value={editImageUrl}
+                            onChange={(e) => setEditImageUrl(e.target.value)}
+                            placeholder="https://..."
+                            className="w-full p-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800"
+                          />
+                          {editImageUrl && (
+                            <div className="relative aspect-video max-h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50 mt-2">
+                              <Image src={editImageUrl} alt="preview" fill className="object-cover" sizes="200px" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Mô tả ảnh (Alt text)</label>
+                          <input
+                            type="text"
+                            value={editImageAlt}
+                            onChange={(e) => setEditImageAlt(e.target.value)}
+                            placeholder="Mô tả ngắn về ảnh cho SEO"
+                            className="w-full p-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-800"
+                          />
+                          <p className="text-[9px] text-gray-400 mt-1">Alt text giúp SEO hình ảnh và accessibility.</p>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Nội dung (Markdown)</label>
+                          <textarea
+                            rows={12}
+                            value={editContent}
+                            onChange={(e) => setEditContent(e.target.value)}
+                            className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white text-xs font-semibold text-gray-850 resize-none leading-relaxed"
+                          />
+                        </div>
+                      </div>
                     ) : (
                       <div className="p-5 bg-gray-50 border border-gray-150 rounded-xl max-h-80 overflow-y-auto font-sans leading-relaxed text-xs text-gray-700 whitespace-pre-wrap">
                         {selectedArticle.article}

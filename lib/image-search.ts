@@ -13,7 +13,7 @@ async function searchUnsplash(query: string): Promise<{ images: string[]; alts: 
     if (!resp.ok) return null
     const data: { results?: { urls: { regular: string }; alt_description: string | null; description: string | null }[] } = await resp.json()
     if (!data.results?.length) return null
-    const images = data.results.map(r => r.urls.regular + '?w=800&auto=format&fit=crop')
+    const images = data.results.map(r => r.urls.regular)
     const alts = data.results.map(r => r.alt_description || r.description || query.substring(0, 100))
     return { images, alts }
   } catch {
