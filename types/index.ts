@@ -1,6 +1,5 @@
 export * from './database';
-/* eslint-disable no-unused-vars */
-export {};
+
 declare global {
   interface Window {
     googleTranslateElementInit?: () => void;
@@ -17,4 +16,3 @@ declare global {
     }
   }
 }
-/* eslint-enable no-unused-vars */

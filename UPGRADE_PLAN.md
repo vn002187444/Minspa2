@@ -1,48 +1,39 @@
 # 🚀 KẾ HOẠCH NÂNG CẤP (UPGRADE_PLAN)
- 
+
 > **Tất cả các task chính đã hoàn thành.** Xem chi tiết tại `PLAN.md` → section **CÁC GIAI ĐOẠN NÂNG CẤP HOÀN THÀNH**
- 
+
 ---
- 
+
 ## 📋 Trạng thái hiện tại
 
-*Phase 11 – Font & Encoding Fix hoàn tất. 0 lint / 0 type / build pass 43 static pages.*
+*Phase 11 - SEO & UX Polish hoàn tất. Hệ thống đạt chuẩn Rich Results của Google, hiển thị tiếng Việt chuẩn xác và dịch đa ngôn ngữ ổn định.*
 
 ---
 
-## 🔧 Phase 11 — Font Subset & Encoding Fix
-
-### Root cause "Bài viê´t mới nhâ´t"
-- **Font subsets thiếu** `latin-ext` và `vietnamese`:
-  - `Inter` chỉ dùng `["latin"]` → thiếu glyph cho ế, ấ, ộ, v.v. → trình duyệt fallback sai.
-  - `Playfair_Display` chỉ dùng `["latin"]` → tương tự.
-- **Fix**: `app/layout.tsx:25-26` → thêm `"latin-ext"` (cả 2 font) + `"vietnamese"` (Inter).
-
-### Google Translate không dịch
-- **Widget container** class `hidden` (`display: none`) → iframe Google Translate không init đúng → cookie `googtrans` không được đọc.
-- **Fix**: `components/GoogleTranslate.tsx` → đổi thành `translate-widget-container` với CSS `position: fixed; top: -1000px; left: -1000px; opacity: 0; pointer-events: none` → iframe vẫn render được.
-- **Plus**: thêm fallback `document.querySelector('.goog-te-combo')` change event để dịch trực tiếp không cần reload.
-- **Cookie domain**: thêm nhánh `cookieDomain = ''` trên localhost.
-
-### NFC normalization defense-in-depth
-- **Scripts** `scripts/migrate.ts`, `scripts/seed_blogs.mjs`, `scripts/seed_seo.mjs`:
-  - Thêm `normalizeNFC()` wrapper vào tất cả insertion/upsert points (blogs, services, reviews, treatment_packages, seo_articles).
-- **Phát hiện mojibake** trong `scripts/seed_blogs.mjs` (chuỗi Táº¥t Táº§n... do save sai encoding) — cần re-encode file về UTF-8.
-
-### Files changed
-| File | Change |
-|------|--------|
-| `app/layout.tsx` | Font subsets: `Inter` + `vietnamese`, `Playfair` + `latin-ext` |
-| `components/GoogleTranslate.tsx` | Widget container CSS, cookie domain, `goog-te-combo` fallback |
-| `scripts/migrate.ts` | `normalizeNFC` wrapper cho blogs, services, reviews, treatment_packages |
-| `scripts/seed_blogs.mjs` | `normalizeNFC` wrapper, helper function |
-| `scripts/seed_seo.mjs` | `normalizeNFC` wrapper, helper function |
+## 🛠️ Ghi chú Phase 10 (Final Polish)
+- **Performance**: Tối ưu Dynamic Import, Defer scripts, `optimizePackageImports`.
+- **Fixes**: Unicode NFC normalization, Google Translate custom UI, Admin route naming.
+- **Auto SEO**: Migrate to Supabase Cron (`pg_cron`).
+- **Quality**: 0 Lint warnings, 0 Type errors, Build success.
 
 ---
 
-## 📄 Pages mới
-- **`/about`**: Giới thiệu salon (story, stats, values, services, location, CTA).
-- **`/faq`**: Câu hỏi thường gặp (hero, DB‑driven FaqSection, contact card).
-- **HeaderNav**: Thêm link `Giới Thiệu` và `Hỏi Đáp` trên cả Desktop nav (`NAV_ITEMS`) và Mobile pill bar (`MOBILE_NAV_ITEMS`).
-- **BottomNavigation**: Thêm FAQ, cập nhật `isHome`.
-- **Sitemap**: Thêm `/about` (0.7), `/faq` (0.7).
+## 🔧 Phase 11 — SEO & UX Polish
+
+### 1. Trải nghiệm người dùng (UX)
+- **Trang mới**: Hoàn thiện `/about` (Giới thiệu) và `/faq` (Hỏi đáp).
+- **Điều hướng**: Tích hợp link About/FAQ vào HeaderNav, BottomNavigation và Sitemap.
+- **Font Subset**: Bổ sung `latin-ext` và `vietnamese` vào font Inter/Playfair $\rightarrow$ Fix triệt để lỗi dấu thanh bị tách rời (NFD display issue).
+- **Google Translate**: Tối ưu cơ chế trigger `.goog-te-combo` và fix cookie domain $\rightarrow$ Dịch ngôn ngữ hoạt động ổn định, không cần reload.
+
+### 2. Tối ưu hóa Google Search Console (Rich Results)
+- **Sửa lỗi `image`**: Bổ sung ảnh đại diện cho toàn bộ Service/Product Schema.
+- **Bổ sung Rating**: Kết nối `AggregateRatingSchema` với dữ liệu thực từ DB để hiển thị số sao.
+- **Chi tiết Offers**: Thêm `hasMerchantReturnPolicy` và `shippingDetails` cho các gói dịch vụ.
+- **Brand Identity**: Thêm thương hiệu `"Min Nail & Hair"` vào toàn bộ Schema.
+
+### 3. Kỹ thuật & Độ tin cậy
+- **Unicode NFC**: Triển khai `normalizeNFC` cho toàn bộ luồng ghi dữ liệu trong `migrate.ts`, `seed_blogs.mjs`, và `seed_seo.mjs`.
+- **Type Safety**: Khôi phục global type declarations cho Google Translate trong `types/index.ts`.
+- **Build Stability**: Fix triệt để các lỗi syntax trong `actions.ts` và `route.ts` $\rightarrow$ Build Vercel thành công 100%.
+

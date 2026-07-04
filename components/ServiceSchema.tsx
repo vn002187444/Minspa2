@@ -9,9 +9,10 @@ interface ServiceItem {
 
 interface ServiceSchemaProps {
   services: ServiceItem[];
+  logoUrl?: string;
 }
 
-export default function ServiceSchema({ services }: ServiceSchemaProps) {
+export default function ServiceSchema({ services, logoUrl = 'https://minhair.vercel.app/icons/icon-512.png' }: ServiceSchemaProps) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
@@ -24,12 +25,56 @@ export default function ServiceSchema({ services }: ServiceSchemaProps) {
         "@id": `#service-${svc.id}`,
         name: svc.name,
         description: svc.description,
+        image: logoUrl,
+        brand: {
+          "@type": "Brand",
+          "name": "Min Nail & Hair",
+        },
         offers: {
           "@type": "Offer",
           price: String(svc.price),
           priceCurrency: "VND",
+          availability: "https://schema.org/InStock",
+          hasMerchantReturnPolicy: {
+            "@type": "MerchantReturnPolicy",
+            "applicableTo": "Service",
+            "returnPolicy: laout": "No returns for services",
+            "merchantReturnDays": 0,
+            "returnMethod": "https://schema.org/ReturnByMail",
+            "returnFees": "https://schema.org/FreeReturn",
+          },
+          shippingDetails: {
+            "@type": "OfferShippingDetails",
+            "shippingRate": {
+              "@type": "MonetaryAmount",
+              "value": 0,
+              "currency": "VND",
+            },
+            "shippingDestination": {
+              "@type": "DefinedRegion",
+              "addressCountry": "VN",
+            },
+            "deliveryTime": {
+              "@type": "ShippingDeliveryTime",
+              "handlingTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 0,
+                "maxValue": 0,
+                "unitCode": "DAY",
+              },
+              "transitTime": {
+                "@type": "QuantitativeValue",
+                "minValue": 0,
+                "maxValue": 0,
+                "unitCode": "DAY",
+              },
+            },
+          },
         },
         category: svc.category,
+        aggregateRating: {
+          "@id": "#aggregate-rating",
+        },
       },
     })),
   };

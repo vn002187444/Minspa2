@@ -19,6 +19,7 @@ export default async function AggregateRatingSchema() {
       "@type": "LocalBusiness",
       "@id": "#local-business",
       "name": "Min Nail & Hair",
+      "image": "https://minhair.vercel.app/icons/icon-512.png",
     },
     "ratingValue": average.toFixed(1),
     "bestRating": "5",

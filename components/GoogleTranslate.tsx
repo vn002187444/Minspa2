@@ -24,37 +24,35 @@ export default function GoogleTranslate() {
   useEffect(() => {
     const match = document.cookie.match(/googtrans=\/[^/]+\/([^;]+)/)
     if (match && LANGUAGES[match[1]]) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setCurrentLang(match[1])
     }
   }, [])
 
-  // Load Google Translate widget after mount
   useEffect(() => {
     if (widgetReady.current) return
-    if (typeof window.googleTranslateElementInit !== 'undefined') return
-
+    
     window.googleTranslateElementInit = () => {
-      new google.translate.TranslateElement(
-        {
-          pageLanguage: 'vi',
-          includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
-          autoDisplay: false,
-        },
-        'google_translate_element'
-      )
+      console.log('[GoogleTranslate] Initializing widget...');
+      try {
+        new google.translate.TranslateElement(
+          {
+            pageLanguage: 'vi',
+            includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
+            autoDisplay: false,
+          },
+          'google_translate_element'
+        )
+        console.log('[GoogleTranslate] Widget initialized successfully.');
+      } catch (e) {
+        console.error('[GoogleTranslate] Init error:', e);
+      }
     }
 
     const script = document.createElement('script')
-    script.src =
-      'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
+    script.src = 'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
     script.async = true
     document.body.appendChild(script)
     widgetReady.current = true
-
-    return () => {
-      widgetReady.current = false
-    }
   }, [])
 
   const handleToggle = useCallback(() => {
@@ -62,38 +60,39 @@ export default function GoogleTranslate() {
   }, [])
 
   const switchLanguage = (lang: string) => {
+    console.log(`[GoogleTranslate] Switching to: ${lang}`);
     if (lang === currentLang) {
       setOpen(false)
       return
     }
+    setCurrentLang(lang)
+    setOpen(false)
 
-    const host = window.location.hostname
-    const domain = host === 'localhost' ? host : `.${host.split('.').slice(-2).join('.')}`
-
-    // Setting domain = '' on localhost makes cookie work correctly
-    const cookieDomain = host === 'localhost' ? '' : `; domain=${domain}`
-
-    // eslint-disable-next-line react-hooks/immutability
-    document.cookie = `googtrans=/vi/${lang}; path=/${cookieDomain}; max-age=${365 * 24 * 60 * 60}s; SameSite=Lax`
-
-    // Directly trigger translation via Google Translate API if available
-    try {
-      if (typeof google !== 'undefined' && google.translate) {
-        const selectElem = document.querySelector('.goog-te-combo') as HTMLSelectElement | null
-        if (selectElem) {
-          selectElem.value = lang
-          selectElem.dispatchEvent(new Event('change'))
-          return
-        }
-      }
-    } catch {
-      // fall through to reload
+    // Try to trigger Google Translate natively if the combo box exists
+    const selectEl = document.querySelector('.goog-te-combo') as HTMLSelectElement | null
+    if (selectEl) {
+      console.log('[GoogleTranslate] Triggering .goog-te-combo change event');
+      selectEl.value = lang
+      selectEl.dispatchEvent(new Event('change'))
+      return
     }
 
+    // Fallback: Set cookie and reload
+    console.log('[GoogleTranslate] Falling back to cookie + reload');
+    const host = window.location.hostname;
+    // Simplify cookie: use path=/ and let the browser handle the domain. 
+    // This is often more reliable than trying to calculate the top-level domain.
+    document.cookie = `googtrans=/vi/${lang}; path=/; SameSite=Lax`;
+    
+    // To be extra safe, set it for the domain too if not localhost
+    if (host !== 'localhost') {
+      const domain = `.${host.split('.').slice(-2).join('.')}`;
+      document.cookie = `googtrans=/vi/${lang}; path=/; domain=${domain}; SameSite=Lax`;
+    }
+    
     window.location.reload()
   }
 
-  // Click outside to close
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
       setOpen(false)
@@ -151,17 +150,11 @@ export default function GoogleTranslate() {
           left: -1000px;
           width: 1px;
           height: 1px;
+          overflow: hidden;
           opacity: 0;
           pointer-events: none;
-          overflow: hidden;
-          z-index: -1;
         }
-        .translate-widget-container iframe {
-          width: 1px !important;
-          height: 1px !important;
-          min-width: 1px !important;
-          min-height: 1px !important;
-        }
+        .goog-te-gadget { display: none !important; }
       `}</style>
     </div>
   )
