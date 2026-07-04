@@ -22,6 +22,7 @@ export default function GoogleTranslate() {
   const widgetReady = useRef(false)
 
   useEffect(() => {
+    // Check current language from cookie
     const match = document.cookie.match(/googtrans=\/[^/]+\/([^;]+)/)
     if (match && LANGUAGES[match[1]]) {
       setCurrentLang(match[1])
@@ -31,23 +32,25 @@ export default function GoogleTranslate() {
   useEffect(() => {
     if (widgetReady.current) return
     
+    console.log('[GT-Debug] Step 1: Defining init callback');
     window.googleTranslateElementInit = () => {
-      console.log('[GoogleTranslate] Initializing widget...');
+      console.log('[GT-Debug] Step 3: Callback executed. Initializing TranslateElement...');
       try {
         new google.translate.TranslateElement(
           {
             pageLanguage: 'vi',
             includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
-            autoDisplay: false,
+            autoDisplay: false, // We hide it with CSS, but we want the functionality
           },
           'google_translate_element'
         )
-        console.log('[GoogleTranslate] Widget initialized successfully.');
+        console.log('[GT-Debug] Step 4: TranslateElement initialized.');
       } catch (e) {
-        console.error('[GoogleTranslate] Init error:', e);
+        console.error('[GT-Debug] Step 4 Error:', e);
       }
     }
 
+    console.log('[GT-Debug] Step 2: Loading script...');
     const script = document.createElement('script')
     script.src = 'https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit'
     script.async = true
@@ -60,7 +63,7 @@ export default function GoogleTranslate() {
   }, [])
 
   const switchLanguage = (lang: string) => {
-    console.log(`[GoogleTranslate] Switching to: ${lang}`);
+    console.log(`[GT-Debug] Switching to: ${lang}`);
     if (lang === currentLang) {
       setOpen(false)
       return
@@ -68,28 +71,30 @@ export default function GoogleTranslate() {
     setCurrentLang(lang)
     setOpen(false)
 
-    // Try to trigger Google Translate natively if the combo box exists
+    // Try to trigger native Google Translate combo box
     const selectEl = document.querySelector('.goog-te-combo') as HTMLSelectElement | null
     if (selectEl) {
-      console.log('[GoogleTranslate] Triggering .goog-te-combo change event');
+      console.log('[GT-Debug] Native combo found. Triggering change...');
       selectEl.value = lang
       selectEl.dispatchEvent(new Event('change'))
       return
     }
 
     // Fallback: Set cookie and reload
-    console.log('[GoogleTranslate] Falling back to cookie + reload');
-    const host = window.location.hostname;
-    // Simplify cookie: use path=/ and let the browser handle the domain. 
-    // This is often more reliable than trying to calculate the top-level domain.
+    console.log('[GT-Debug] Native combo not found. Using cookie + reload.');
+    
+    // 1. Set cookie for the current host (most reliable)
     document.cookie = `googtrans=/vi/${lang}; path=/; SameSite=Lax`;
     
-    // To be extra safe, set it for the domain too if not localhost
+    // 2. Also set for the top-level domain for better compatibility
+    const host = window.location.hostname;
     if (host !== 'localhost') {
       const domain = `.${host.split('.').slice(-2).join('.')}`;
       document.cookie = `googtrans=/vi/${lang}; path=/; domain=${domain}; SameSite=Lax`;
+      console.log(`[GT-Debug] Cookie set for domain: ${domain}`);
     }
     
+    // Reload to apply the cookie
     window.location.reload()
   }
 
@@ -137,22 +142,23 @@ export default function GoogleTranslate() {
         </div>
       )}
 
-      <div id="google_translate_element" className="translate-widget-container" />
+      {/* The widget container must be present and non-display:none for the script to work best */}
+      <div id="google_translate_element" className="gt-widget-container" />
 
       <style>{`
         .goog-te-banner-frame { display: none !important; }
         body { top: 0 !important; }
         .goog-tooltip { display: none !important; }
         .goog-text-highlight { background: transparent !important; border: none !important; box-shadow: none !important; }
-        .translate-widget-container {
-          position: fixed;
-          top: -1000px;
-          left: -1000px;
-          width: 1px;
-          height: 1px;
-          overflow: hidden;
+        .gt-widget-container {
+          position: absolute;
+          left: -9999px;
+          top: 0;
+          width: 100px;
+          height: 100px;
           opacity: 0;
           pointer-events: none;
+          z-index: -1;
         }
         .goog-te-gadget { display: none !important; }
       `}</style>
