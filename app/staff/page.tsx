@@ -74,6 +74,8 @@ import StaffBookingTab from "@/components/staff/StaffBookingTab";
 
 export default function StaffDashboard() {
   const router = useRouter();
+  const [todayDateStr, setTodayDateStr] = useState('');
+  useEffect(() => { setTodayDateStr(format(new Date(), "EEEE, dd/MM/yyyy", { locale: vi })); }, []);
   const [activeTab, setActiveTab] = useState<
     "ATTENDANCE" | "SCHEDULE" | "MASTER" | "REPORTS" | "PASSWORD" | "MANAGEMENT" | "SELL_PACKAGE" | "BOOKING" | "TASKS"
   >("SCHEDULE");
@@ -746,8 +748,8 @@ export default function StaffDashboard() {
                     <h2 className="text-lg font-bold text-[#3A2E2B] line-clamp-1">
                       Trạng thái làm việc hôm nay
                     </h2>
-                    <p className="text-sm text-gray-500">
-                      {format(new Date(), "EEEE, dd/MM/yyyy", { locale: vi })}
+                    <p className="text-sm text-gray-500" suppressHydrationWarning>
+                      {todayDateStr || format(new Date(), "EEEE, dd/MM/yyyy", { locale: vi })}
                     </p>
                   </div>
                   <div className="w-full mt-2">
@@ -979,22 +981,24 @@ function AppointmentCard({
     .filter(Boolean);
   const dateObj = new Date(appt.start_time);
   const time = format(dateObj, "HH:mm");
-  
-  // Format appointment date for easy recognition (today, tomorrow, or specific date)
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = format(tomorrow, "yyyy-MM-dd");
   const apptDateStr = format(dateObj, "yyyy-MM-dd");
-
-  let dateText = "Hôm nay";
-  if (apptDateStr === todayStr) {
-    dateText = "Hôm nay";
-  } else if (apptDateStr === tomorrowStr) {
-    dateText = "Ngày mai";
-  } else {
-    dateText = format(dateObj, "dd/MM/yy");
-  }
+  
+  const [todayStr, setTodayStr] = useState('');
+  const [dateText, setDateText] = useState('');
+  useEffect(() => {
+    const ts = format(new Date(), "yyyy-MM-dd");
+    setTodayStr(ts);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = format(tomorrow, "yyyy-MM-dd");
+    if (apptDateStr === ts) {
+      setDateText("Hôm nay");
+    } else if (apptDateStr === tomorrowStr) {
+      setDateText("Ngày mai");
+    } else {
+      setDateText(format(dateObj, "dd/MM/yy"));
+    }
+  }, [apptDateStr, dateObj]);
 
   const isPackage = !!appt.is_package_session;
   const [actionLoading, setActionLoading] = useState(false);

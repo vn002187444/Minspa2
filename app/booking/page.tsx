@@ -84,7 +84,7 @@ export default function BookingPage() {
   const [availableStaff, setAvailableStaff] = useState<any[]>([]);
 
   // Step 2: Time & Staff
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedStaff, setSelectedStaff] = useState<string>('');
   const [slotAvailability, setSlotAvailability] = useState<SlotInfo[]>([]);
@@ -100,6 +100,7 @@ export default function BookingPage() {
   useEffect(() => {
     startTransition(() => {
       setMounted(true);
+      setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
     });
   }, []);
 
@@ -384,7 +385,8 @@ export default function BookingPage() {
     return s.category === activeCategory;
   });
 
-  const breadcrumbOrigin = typeof window !== 'undefined' ? window.location.origin : 'https://minhair.vercel.app';
+  const [breadcrumbOrigin, setBreadcrumbOrigin] = useState('');
+  useEffect(() => { setBreadcrumbOrigin(window.location.origin); }, []);
 
   return (
     <>

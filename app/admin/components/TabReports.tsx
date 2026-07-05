@@ -76,7 +76,8 @@ export default function TabReports() {
   const [revenueData, setRevenueData] = useState<any>(null)
   const [customerData, setCustomerData] = useState<any>(null)
   const [growthData, setGrowthData] = useState<any>(null)
-  const [taxYear, setTaxYear] = useState(new Date().getFullYear())
+  const [taxYear, setTaxYear] = useState(0)
+  useEffect(() => { setTaxYear(new Date().getFullYear()); }, []);
   const [taxData, setTaxData] = useState<any>(null)
   const [taxLoading, setTaxLoading] = useState(false)
   const [drillDown, setDrillDown] = useState<{ type: string; label: string; data: any[] } | null>(null)
@@ -767,7 +768,7 @@ function TaxTab({ taxData, taxYear, setTaxYear, taxLoading, fmt, fmtCurrency }: 
           className="px-3 py-1.5 border border-gray-200 rounded-xl text-sm font-semibold bg-white"
           suppressHydrationWarning
         >
-          {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+          {taxYear > 0 && Array.from({ length: 5 }, (_, i) => taxYear - i).map((y) => (
             <option key={y} value={y}>{y}</option>
           ))}
         </select>

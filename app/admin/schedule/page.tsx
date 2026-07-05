@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
@@ -13,7 +13,8 @@ const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
 
 export default function MasterSchedulePage() {
   const router = useRouter();
-  const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  useEffect(() => { setSelectedDate(format(new Date(), 'yyyy-MM-dd')); }, []);
 
   return (
     <div className="min-h-screen bg-[#FAF6F0] p-4 sm:p-6 text-[#3A2E2B]">

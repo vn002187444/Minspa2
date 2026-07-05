@@ -21,10 +21,12 @@ interface CashItem {
 const CATEGORIES = ['Tiền dịch vụ', 'Tiền gói liệu trình', 'Thu khác', 'Chi mua sắm', 'Chi mặt bằng', 'Chi lương', 'Chi quảng cáo', 'Chi khác']
 
 export default function TabCashRegister() {
-  const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'))
+  const [month, setMonth] = useState('')
   const [data, setData] = useState<{ items: CashItem[]; totalThu: number; totalChi: number; balance: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+
+  useEffect(() => { setMonth(format(new Date(), 'yyyy-MM')); }, []);
 
   const fetchData = useCallback(async () => {
     startTransition(() => { setLoading(true) })

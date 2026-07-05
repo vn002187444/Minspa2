@@ -12,10 +12,14 @@ import {
 import { getAttendanceLogs } from "../actions";
 
 export default function TabAttendance() {
-  const today = format(new Date(), "yyyy-MM-dd");
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(today);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [logs, setLogs] = useState<any[]>([]);
+  useEffect(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    setStartDate(today);
+    setEndDate(today);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<"ALL" | "PRESENT" | "ABSENT" | "LATE">("ALL");
 

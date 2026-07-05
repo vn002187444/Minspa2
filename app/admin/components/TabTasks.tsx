@@ -42,10 +42,12 @@ export default function TabTasks() {
     loadTasks()
   }, [loadTasks])
 
+  const [now, setNow] = useState<Date | null>(null)
+  useEffect(() => { setNow(new Date()) }, [])
   const isOverdue = (task: { status: string; deadline?: string | null }) => {
     if (task.status === 'COMPLETED' || task.status === 'CANCELLED') return false
     if (!task.deadline) return false
-    return new Date(task.deadline) < new Date()
+    return now ? new Date(task.deadline) < now : false
   }
 
   const statusColors: Record<string, string> = {
