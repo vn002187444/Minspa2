@@ -694,7 +694,7 @@ export default function BookingPage() {
                  {isAiLoading && (
                    <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 flex items-center justify-center gap-2">
                      <Sparkles className="w-4 h-4 text-amber-600 animate-spin" />
-                     <span className="text-xs text-[#8D6E53] font-semibold tracking-wider">Trợ lý AI đang cá nhân hóa trải nghiệm...</span>
+                     <span className="text-xs text-[#8D6E53] font-semibold tracking-wider">Min đang chuẩn bị lời chào cho chị...</span>
                    </div>
                  )}
 
@@ -702,7 +702,7 @@ export default function BookingPage() {
                     <div className="p-4 bg-[#FAF0E6] flex gap-3 origin-left animate-in fade-in zoom-in-95 duration-500 border border-[#EADDCD] rounded-2xl">
                        <div className="mt-0.5"><Sparkles className="w-4 h-4 text-[#8D6E53]" /></div>
                        <div>
-                         <p className="text-[10px] font-bold text-[#8D6E53] mb-1 uppercase tracking-widest flex items-center gap-1">✨ Gợi ý dành riêng cho bạn</p>
+                          <p className="text-[10px] font-bold text-[#8D6E53] mb-1 uppercase tracking-widest flex items-center gap-1">✨ Chào chị quay lại</p>
                          <p className="text-xs text-[#3A2E2B] leading-relaxed font-semibold italic">{aiSuggestion}</p>
                        </div>
                     </div>
@@ -714,7 +714,7 @@ export default function BookingPage() {
 
                   {/* Categorized Filter Tabs (UX Upgrade for selecting from grouped lists easily) */}
                   <div>
-                    <label className="block text-xs font-bold tracking-wider uppercase text-gray-400 mb-2">Xem theo chuyên mục</label>
+                    <span className="block text-xs font-bold tracking-wider uppercase text-gray-400 mb-2">Xem theo chuyên mục</span>
                    <div className="flex gap-1.5 overflow-x-auto pb-2 scrollbar-none snap-x mb-3">
                      {['Tất cả', 'Deal Chấn Động', 'Gội dưỡng sinh', 'Chà Gót Chân', 'Massage', 'Chăm Sóc & Trang Trí Móng'].map(cat => (
                        <button
@@ -732,7 +732,7 @@ className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semi
                      ))}
                    </div>
 
-                   <label className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-3">Lựa chọn dịch vụ làm đẹp</label>
+                   <span className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-3">Lựa chọn dịch vụ làm đẹp</span>
                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto pr-1">
                       {isLoadingServices ? (
                         Array.from({ length: 6 }).map((_, i) => (
@@ -793,8 +793,8 @@ className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semi
                   </button>
 
                  <div>
-                    <label htmlFor="date-picker" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn ngày hẹn đẹp nhất</label>
-                     <div id="date-picker" className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
+<span className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn ngày hẹn đẹp nhất</span>
+                      <div role="radiogroup" aria-label="Chọn ngày hẹn đẹp nhất" className="flex gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
                         {mounted ? (
                           Array.from({ length: 14 }, (_, i) => i).map(offset => {
                             const d = addDays(new Date(), offset);

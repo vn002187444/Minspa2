@@ -678,10 +678,11 @@ export default async function Home() {
               </p>
               <div className="relative flex items-center rounded-xl bg-white/5 border border-white/10 p-1 focus-within:ring-2 focus-within:ring-[#8D6E53] focus-within:border-transparent transition-all">
                 <input
+                  id="newsletter-email"
+                  name="email"
                   type="email"
                   placeholder="Địa chỉ Email của bạn..."
                   className="w-full pl-3 pr-2 py-2 bg-transparent border-none outline-none text-xs text-white placeholder-gray-500"
-                  aria-label="Địa chỉ Email đăng ký nhận tin"
                 />
                 <button
                   type="button"

@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import BottomNavigation from '@/components/BottomNavigation';
+import dynamic from 'next/dynamic';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import { Sparkles, Scissors, Leaf, Award, Heart, MapPin, Phone, Clock, ArrowRight, Star } from 'lucide-react';
+
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
 
 export const revalidate = 3600;
 

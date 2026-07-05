@@ -73,6 +73,8 @@ export default function GlobalSearch() {
       <div className="relative flex items-center">
         <Search className="absolute left-3 w-4 h-4 text-stone-400 group-focus-within:text-[#8D6E53] transition-colors" />
         <input
+          id="global-search"
+          name="query"
           type="text"
           value={query}
           onChange={(e) => {
