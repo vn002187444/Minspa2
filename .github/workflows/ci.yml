@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: |
           if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
-            npx vercel --prod --token=${{ secrets.VERCEL_TOKEN}} --yes --timeout=900000
+            npx vercel --prod --token=${{ secrets.VERCEL_TOKEN}} --yes
           else
             echo "VERCEL_TOKEN not set — skipping deploy"
           fi
