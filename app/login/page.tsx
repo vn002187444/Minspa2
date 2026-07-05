@@ -119,6 +119,7 @@ export default function LoginPage() {
                   id="login_username"
                   name="username"
                   type="text"
+                  autoComplete="username"
                   required
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none"
                   placeholder="Nhập tên đăng nhập"
@@ -143,6 +144,7 @@ export default function LoginPage() {
                   id="login_password"
                   name="password"
                   type="password"
+                  autoComplete="current-password"
                   required
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none"
                   placeholder="••••••••"
