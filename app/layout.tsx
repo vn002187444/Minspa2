@@ -133,6 +133,8 @@ export default function RootLayout({
         <link rel="preload" href="/icons/icon-192.png" as="image" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
+        <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+        <link rel="alternate icon" href="/icons/icon-192.png" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
@@ -200,23 +202,6 @@ export default function RootLayout({
         <Analytics />
         <SpeedInsights />
         
-        {/* Google Translate - Init function must be defined before script loads */}
-        <Script id="google-translate-init" strategy="afterInteractive">
-          {`
-            window.googleTranslateElementInit = function() {
-              new google.translate.TranslateElement({
-                pageLanguage: 'vi',
-                includedLanguages: 'vi,en,ko,zh-CN,ja,th,fr,de,es',
-                layout: 0,
-                autoDisplay: false
-              }, 'google_translate_element');
-            };
-          `}
-        </Script>
-        <Script 
-          src="https://translate.googleapis.com/translate_a/element.js?cb=googleTranslateElementInit" 
-          strategy="afterInteractive" 
-        />
       </head>
 
       <body className="antialiased font-sans text-gray-900 bg-gray-50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} suppressHydrationWarning>
