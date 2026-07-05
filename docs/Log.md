@@ -606,3 +606,50 @@ Hoàn thiện Phase 10 (Final Polish & Performance), tối ưu hóa bundle size,
 - `next.config.ts`, `app/layout.tsx`, `lib/utils.ts`, `lib/cache.ts`, `app/api/cron/seo-publish/route.ts`
 - `components/HeaderNav.tsx`, `components/GoogleTranslate.tsx`, `app/admin/seo-articles/page.tsx`
 - `PLAN.md`, `UPGRADE_PLAN.md`, `docs/Log.md`
+
+## Session — 2026-07-05
+
+### 🎯 Mục tiêu
+Fix CSP blocks, React hydration errors, duplicate Google Translate init, Vercel deploy timeout, và lỗi lưu ảnh AI (image_url VARCHAR(255)).
+
+### ✅ Đã làm
+
+#### CSP & Google Translate
+- Mở rộng CSP `next.config.ts`: thêm `fonts.gstatic.com` (img-src), `translate-pa.googleapis.com` (script-src)
+- Xoá duplicate Google Translate Script blocks trong `app/layout.tsx` (component `GoogleTranslate.tsx` đã load script qua useEffect)
+- Thêm favicon `<link rel="icon">` (SVG + PNG) để tránh 404
+
+#### Vercel Deploy
+- Sửa CI workflow: xoá `--timeout=900000` flag không hợp lệ, tăng `timeout-minutes` 15→30
+- Khám phá: `npx vercel --prod` có thể báo success nhưng không alias domain → fix bằng `npx vercel alias set`
+
+#### Service Image Fix
+- `services.image_url` VARCHAR(255) → TEXT (quá nhỏ cho base64 Gemini AI, 300-500KB)
+- `blogs.image_url` VARCHAR(255) → TEXT
+- `seo_articles.image_url` VARCHAR(500) → TEXT
+- Thêm INSERT/UPDATE/DELETE policies cho storage bucket `seo-images` (trước chỉ có SELECT)
+- Sửa `uploadBase64ToStorage`: giới hạn 500KB → 5MB, throw lỗi rõ khi upload fail
+- Bucket `file_size_limit` cập nhật 1MB → 5MB
+
+#### Form Accessibility
+- Thêm `autoComplete="username"` và `autoComplete="current-password"` cho login form inputs
+
+### 🐛 Bugs gặp
+1. Vercel deploy alias không được cập nhật dù CI báo thành công — `minhair.vercel.app` trỏ vào deployment cũ
+2. Storage bucket `seo-images` thiếu INSERT policy — upload từ anon key fail silently
+3. `image_url VARCHAR(255)` tràn khi chứa base64 data URL
+4. Bucket `file_size_limit` trong DB là 1MB nhưng `database.sql` ghi 5MB (không đồng bộ)
+
+### 💡 Bài học
+1. **Luôn kiểm tra Vercel alias sau deploy** — CI success ≠ domain updated
+2. **Storage bucket cần 4 policies** (SELECT/INSERT/UPDATE/DELETE), không chỉ SELECT
+3. **Column image_url phải là TEXT** — base64 Gemini AI rất lớn
+4. **Cross-check GitHub Deployments API** — Actions runs có thể sai lệch với production deploy thực tế
+5. **`npx vercel` CLI authenticated locally** — dùng được `list`, `inspect`, `alias set` không cần token
+
+### 📁 Files đã sửa
+- `next.config.ts`, `app/layout.tsx`, `app/login/page.tsx`
+- `.github/workflows/ci.yml`, `public/sw.js`
+- `app/booking/actions/suggestions.ts`, `components/DynamicBottomNavigation.tsx`
+- `database.sql`, `app/admin/actions.ts`
+- `.agents/skills/minspa/SKILL.md`, `docs/Log.md`, `opencode.json`

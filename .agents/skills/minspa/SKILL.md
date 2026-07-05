@@ -172,6 +172,31 @@ description: >-
     - Only if nothing found, treat as truly orphan
 
 30. **UPGRADE_PLAN.md consolidation:** After completing a major section (V3.x track, SEO Schema, Session Audit, Orphan Cleanup):
+
+31. **Verify production domain alias after every Vercel deploy:** CI `npx vercel --prod` may report "completed success" but NOT update the production domain alias. Steps:
+     - Check `npx vercel list --prod` — confirm latest deployment has status ● Ready
+     - Check `npx vercel inspect <deployment-url>` — verify `minhair.vercel.app` is in Aliases list
+     - If not aliased, run: `npx vercel alias set <deployment-url> minhair.vercel.app`
+     - Use `npx vercel whoami` to verify local auth first
+     - **Do NOT trust CI "completed success" alone** — always verify alias via GitHub Deployments API or Vercel CLI
+
+32. **Storage bucket RLS policies must include INSERT/UPDATE/DELETE:** Supabase Storage buckets only get SELECT policy by default. Missing INSERT policy causes silent upload failure when using anon key. Always add:
+     - `CREATE POLICY "Upload <bucket>" ON storage.objects FOR INSERT WITH CHECK (bucket_id = '<bucket>')`
+     - `CREATE POLICY "Update <bucket>" ON storage.objects FOR UPDATE USING (bucket_id = '<bucket>')`
+     - `CREATE POLICY "Delete <bucket>" ON storage.objects FOR DELETE USING (bucket_id = '<bucket>')`
+
+33. **`image_url` columns must be TEXT, not VARCHAR:** Gemini AI generates base64 images (`data:image/png;base64,...`) which can be 300KB-500KB. VARCHAR(255) is way too small. Use TEXT in all tables that store image URLs (`services`, `blogs`, `seo_articles`). When migration fails (upload error), base64 URL is stored as fallback — TEXT is essential.
+
+34. **Vercel CLI is available locally:** `npx vercel` is installed and authenticated as `vn002187444-8486`. Useful commands:
+     - `npx vercel list --prod` — list production deployments
+     - `npx vercel inspect <url>` — inspect deployment details (aliases, status, target)
+     - `npx vercel alias set <deployment-url> <domain>` — assign domain alias
+     - `npx vercel whoami` — check auth status
+     - Note: VERCEL_TOKEN is NOT in .env.local — CI uses GitHub secrets. Local CLI uses its own auth (saved in system credential manager).
+
+35. **Check GitHub Deployments API for deploy verification:** After CI reports success, check `GET /repos/{owner}/{repo}/deployments` for production deployment records. The GitHub Deployments API shows the actual production deployment, while GitHub Actions runs may report success without updating the production alias.
+
+36. **Chrome DevTools MCP is configured but NOT exposed as a tool:** `opencode.json` has `chrome-devtools-mcp` configured but its tools are not available in the current conversation context. If you need to inspect browser console/network, ask the user to open DevTools manually (F12 → Console tab → screenshot errors).
     - Add a summary section to PLAN.md with `✅` status
     - Remove ALL completed items from UPGRADE_PLAN.md (not just mark them done)
     - Keep UPGRADE_PLAN.md under 100 lines — it should read like a sprint backlog, not release notes
@@ -190,6 +215,8 @@ description: >-
 - **Vercel project name:** `vercel.json` needs `"name": "minhair"` or CLI fails with `---` in auto-generated name.
 - **Supabase Management API timeout:** v2.107+ calls `api.supabase.com/v1/projects/{ref}/...` on init. Block via custom `global.fetch` in `createClient` options.
 - **Always verify full CI pipeline:** lint → test → build → deploy. Don't stop at build success.
+- **Verify production domain alias separately:** `npx vercel --prod` may succeed but NOT alias the new deployment to the production domain. Always check `npx vercel list --prod` + `npx vercel inspect <url>` for alias confirmation. Fix with `npx vercel alias set <deployment-url> <domain>` if needed.
+- **GitHub Deployments API vs Actions runs:** CI Actions can report "completed success" while the actual Vercel production deployment is still on an older commit. Always cross-check with GitHub Deployments API (`/repos/{owner}/{repo}/deployments`).
 
 ## 3.5 V3.14 Payroll Notes (Jun 2026)
 - **Payroll calculation** sums commission from `appointments.commission_amount` + `customer_packages.commission_amount` + `appointments.tip_amount` + `users.base_salary`.
