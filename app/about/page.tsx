@@ -1,10 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import DynamicBottomNavigation from '@/components/DynamicBottomNavigation';
 import { Sparkles, Scissors, Leaf, Award, Heart, MapPin, Phone, Clock, ArrowRight, Star } from 'lucide-react';
-
-const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
 
 export const revalidate = 3600;
 
@@ -253,7 +251,7 @@ export default function AboutPage() {
           </Link>
         </section>
 
-        <BottomNavigation />
+        <DynamicBottomNavigation />
       </div>
     </>
   );
