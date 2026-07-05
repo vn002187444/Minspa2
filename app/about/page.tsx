@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import BottomNavigation from '@/components/BottomNavigation';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import DynamicBottomNavigation from '@/components/DynamicBottomNavigation';
 import { Sparkles, Scissors, Leaf, Award, Heart, MapPin, Phone, Clock, ArrowRight, Star } from 'lucide-react';
 
 export const revalidate = 3600;
@@ -251,7 +251,7 @@ export default function AboutPage() {
           </Link>
         </section>
 
-        <BottomNavigation />
+        <DynamicBottomNavigation />
       </div>
     </>
   );

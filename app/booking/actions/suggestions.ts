@@ -3,21 +3,21 @@
 import { createClient } from "@/utils/supabase/server";
 import { callGemini } from "@/lib/ai/gemini";
 
-const SYSTEM_PROMPT = `Bạn là trợ lý AI tư vấn chăm sóc khách hàng cho tiệm Min Nail & Hair.
+const SYSTEM_PROMPT = `Bạn là trợ lý AI của tiệm Min Nail & Hair. Nhiệm vụ: viết 1 câu chào ngắn (tối đa 15 từ) hiển thị cho khách hàng khi họ quay lại đặt lịch.
 
-QUY TẮC GỢI Ý:
-1. KHÁCH MỚI (chưa có lịch sử): Chào mừng + gợi ý combo DEAL CHẤN ĐỘNG (Combo Sơn Gel + Cắt da 99k)
-2. THÁNG SINH NHẬT: Chúc mừng + ưu đãi đặc biệt gói Gội Dưỡng Sinh Vip Hoàng Gia
-3. CÓ GÓI ĐANG ACTIVE (còn buổi): Nhắc nhở lịch hẹn còn chờ sẵn sàng
-4. GÓI VỪA HẾT (< 7 ngày): Đề xuất mua gói mới, ưu đãi Mua 5 Tặng 1
-5. KHÁCH VIP MASSAGE (>50% lịch là massage): Ưu đãi giảm 5% Massage Body
-6. KHÁCH COMBO/DEAL (>100% dịch vụ là combo/deal): Gợi ý Combo Mắt mèo + Cắt da 139k
-7. KHÁCH NAIL THƯỜNG XUYÊN (>3 lịch nail): Gợi ý mẫu sơn thạch mới
-8. KHÁCH GỘI > 2 TUẦN KHÔNG GHÉ: Nhắc nhở gói Gội dưỡng sinh CB2 Chuyên sâu
-9. KHÁCH QUAY LẠI SAU > 60 NGÀY: Chào mừng + khám phá combo mới
-10. KHÁCH CẢ NAIL LẪN HAIR: Hỏi hôm nay muốn làm móng hay gội đầu
+NGUYÊN TẮC:
+- Viết TRỰC TIẾP cho khách hàng, xưng "Min Nail & Hair" hoặc "bên em"
+- Chỉ 1 câu duy nhất, tối đa 15 từ
+- KHÔNG phân tích, KHÔNG liệt kê, KHÔNG đưa ra nhiều lựa chọn
+- Thân thiện, dùng "chị", "ạ"
+- KHÔNG dùng emoji, KHÔNG dùng dấu ngoặc kép
 
-PHONG CÁCH: Thân thiện, dùng "chị", "ạ", "nha". Ngắn gọn 1-2 câu. KHÔNG dùng emoji.`;
+TÌNH HUỐNG & VÍ DỤ:
+- Khách mới (chưa có lịch sử): "Chào mừng chị đến với Min Nail & Hair ạ!"
+- Tháng sinh nhật: "Chúc mừng sinh nhật chị, Min có ưu đãi đặc biệt tặng chị ạ!"
+- Có gói active: "Gói liệu trình của chị còn buổi đang chờ sẵn sàng ạ!"
+- Quay lại sau >60 ngày: "Lâu quá mới gặp lại chị, hôm nay chị muốn làm gì ạ?"
+- Còn lại (khách quay lại bình thường): "Chào mừng chị quay lại, hôm nay chị muốn làm gì ạ?"`;
 
 export async function getCustomerCareSuggestion(phone: string): Promise<string> {
   const supabase = await createClient();
@@ -58,6 +58,7 @@ export async function getCustomerCareSuggestion(phone: string): Promise<string> 
     prompt: context,
     useCache: true,
     cacheKey: `suggestion_${customer.id}_${new Date().toISOString().split('T')[0]}`,
+    config: { maxOutputTokens: 100 },
   });
 
   if (geminiResult.text) {
@@ -164,13 +165,13 @@ function getServiceStats(appointments: Record<string, unknown>[]) {
 function getFallbackSuggestion(customer: Record<string, unknown>, packages: Record<string, unknown>[], _appointments: Record<string, unknown>[]): string {
   const currentMonth = new Date().getMonth() + 1;
   if (checkBirthday(customer, currentMonth)) {
-    return "Chúc mừng tháng sinh nhật của chị! Min Nail & Hair gửi tặng chị ưu đãi đặc biệt khi trải nghiệm gói Gội D dưỡng sinh Vip Hoàng Gia ngày hôm nay!";
+    return "Chúc mừng sinh nhật chị, Min có ưu đãi đặc biệt tặng chị ạ!";
   }
 
   const activePkg = packages.find((p) => String(p.status) === 'ACTIVE' && Number(p.remaining_sessions) > 0);
   if (activePkg) {
-    return `Chào mừng chị quay lại! Gói liệu trình của chị vẫn còn ${Number(activePkg.remaining_sessions)} buổi đang chờ sẵn sàng phục vụ chị hôm nay ạ!`;
+    return `Gói liệu trình của chị còn ${Number(activePkg.remaining_sessions)} buổi đang chờ sẵn sàng ạ!`;
   }
 
-  return "Chào mừng chị quay lại với Min Nail & Hair! Chúc chị có một buổi làm đẹp thư giãn và ưng ý nhất hôm nay ạ!";
+  return "Chào mừng chị quay lại, hôm nay chị muốn làm gì ạ?";
 }

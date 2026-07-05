@@ -45,7 +45,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Pass-through for API, Supabase, WebSocket, Next.js static chunks
+  // Skip service worker for cross-origin, API, Supabase, WebSocket, Next.js static chunks
   if (
     url.origin !== self.location.origin ||
     url.pathname.startsWith('/api') ||
@@ -54,7 +54,6 @@ self.addEventListener('fetch', (e) => {
     url.pathname.includes('ws') ||
     e.request.headers.get('accept')?.includes('text/event-stream')
   ) {
-    e.respondWith(fetch(e.request));
     return;
   }
 
