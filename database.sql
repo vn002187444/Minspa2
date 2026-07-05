@@ -47,7 +47,7 @@ CREATE TABLE services (
   description TEXT,
   price DECIMAL(10, 2) NOT NULL,
   duration INT NOT NULL, -- minutes
-  image_url VARCHAR(255),
+  image_url TEXT,
   image_alt VARCHAR(500) DEFAULT '',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   discount_percentage DECIMAL(5, 2) DEFAULT 0,
@@ -160,7 +160,7 @@ CREATE TABLE blogs (
   slug VARCHAR(255) UNIQUE NOT NULL,
   summary TEXT,
   content TEXT,
-  image_url VARCHAR(255),
+  image_url TEXT,
   image_alt VARCHAR(500) DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
@@ -245,7 +245,7 @@ CREATE TABLE seo_articles (
   topic VARCHAR(100) DEFAULT '',
   keywords TEXT DEFAULT '',
   article TEXT DEFAULT '',
-  image_url VARCHAR(500) DEFAULT '',
+  image_url TEXT DEFAULT '',
   image_alt VARCHAR(500) DEFAULT '',
   status VARCHAR(20) DEFAULT 'draft',
   topic_source VARCHAR(50) DEFAULT 'manual',
@@ -343,6 +343,18 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public Access seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
     CREATE POLICY "Public Access seo-images" ON storage.objects
       FOR SELECT USING (bucket_id = 'seo-images');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Upload seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "Upload seo-images" ON storage.objects
+      FOR INSERT WITH CHECK (bucket_id = 'seo-images');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Update seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "Update seo-images" ON storage.objects
+      FOR UPDATE USING (bucket_id = 'seo-images') WITH CHECK (bucket_id = 'seo-images');
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Delete seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
+    CREATE POLICY "Delete seo-images" ON storage.objects
+      FOR DELETE USING (bucket_id = 'seo-images');
   END IF;
 END $$;
 

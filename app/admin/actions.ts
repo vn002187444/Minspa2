@@ -700,25 +700,26 @@ async function uploadBase64ToStorage(base64Url: string): Promise<string> {
   if (!matches) return base64Url;
   const base64Data = matches[2];
   const raw = Buffer.from(base64Data, 'base64');
-  
-  // Server-side size limit: 500KB (ảnh gốc trước khi optimize)
-  if (raw.length > 512000) {
-    console.warn('[STORAGE] Rejected upload >500KB:', raw.length, 'bytes');
-    throw new Error('Ảnh quá lớn! Vui lòng chọn ảnh dưới 500KB.');
+  if (raw.length > 5242880) {
+    console.warn('[STORAGE] Rejected upload >5MB:', raw.length, 'bytes');
+    throw new Error('Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
   }
-  
   let optimized: Buffer;
   try {
     optimized = await sharp(raw).resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
   } catch {
     try { optimized = await sharp(raw).webp({ quality: 80 }).toBuffer(); } catch { optimized = raw; }
   }
+  if (optimized.length > 5242880) {
+    console.warn('[STORAGE] Optimized image still >5MB:', optimized.length, 'bytes');
+    throw new Error('Ảnh quá lớn ngay cả sau khi tối ưu!');
+  }
   const fileName = `seo-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.webp`;
   const supabase = await createClient();
   const { error } = await supabase.storage.from('seo-images').upload(fileName, optimized, { contentType: 'image/webp', upsert: true });
   if (error) {
     console.error('[STORAGE UPLOAD ERROR]', error);
-    return base64Url;
+    throw new Error('Không thể tải ảnh lên máy chủ. Vui lòng thử lại.');
   }
   const { data: urlData } = supabase.storage.from('seo-images').getPublicUrl(fileName);
   return urlData.publicUrl;
