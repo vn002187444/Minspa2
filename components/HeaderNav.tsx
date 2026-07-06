@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import GoogleTranslate from '@/components/GoogleTranslate';
 import Image from 'next/image';
+
+const GoogleTranslate = dynamic(() => import('@/components/GoogleTranslate'), { ssr: false });
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import NotificationBell from '@/components/NotificationBell';

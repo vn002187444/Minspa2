@@ -23,6 +23,7 @@ export default function TabServices({ services, userRole, onReload }: { services
   const [editingService, setEditingService] = useState<any>(null);
 
   const handleDeleteService = async (id: string, name: string) => {
+    if (!confirm(`Xác nhận xóa dịch vụ "${name}"? Hành động này không thể hoàn tác.`)) return;
     try {
       const res = await deleteServiceSafely(id, name);
       if (res.success) {
@@ -82,7 +83,12 @@ export default function TabServices({ services, userRole, onReload }: { services
 
       {/* Mobile card view */}
       <div className="mt-4 space-y-3 md:hidden">
-        {services.map((s) => (
+        {services.length === 0 ? (
+          <div className="bg-white border border-dashed border-gray-200 rounded-xl p-8 text-center">
+            <p className="text-gray-400 text-sm font-medium">Chưa có dịch vụ nào.</p>
+            <p className="text-gray-300 text-xs mt-1">Thêm dịch vụ mới để bắt đầu.</p>
+          </div>
+        ) : services.map((s) => (
           <div key={s.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-between border-b border-gray-100 pb-2">
               <span className="font-bold text-gray-900">{s.name}</span>
@@ -136,7 +142,14 @@ export default function TabServices({ services, userRole, onReload }: { services
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {services.map((s) => (
+            {services.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-gray-400 text-sm">
+                  <p className="font-medium">Chưa có dịch vụ nào.</p>
+                  <p className="text-xs mt-1">Thêm dịch vụ mới để bắt đầu.</p>
+                </td>
+              </tr>
+            ) : services.map((s) => (
               <tr key={s.id} className="hover:bg-gray-50/50">
                 <td className="p-4 font-medium text-gray-900">{s.name}</td>
                 <td className="p-4 text-gray-500 hidden sm:table-cell">

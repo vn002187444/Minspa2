@@ -36,6 +36,7 @@ export default function TabPackages({ packages, services, userRole, onReload }: 
   const [editingPackage, setEditingPackage] = useState<any>(null);
 
   const handleDeletePackage = async (id: string, name: string) => {
+    if (!confirm(`Xác nhận xóa gói liệu trình "${name}"? Hành động này không thể hoàn tác.`)) return;
     try {
       const res = await deleteTreatmentPackageSafely(id, name);
       if (res.success) {

@@ -96,15 +96,17 @@ export default function TabStaff({
         dates = calculateDates(rangeType);
       }
 
+      const results = await Promise.allSettled(
+        staffs.map(s => getStaffDetail(s.id, dates.start, dates.end))
+      );
       const statsObj: Record<string, any> = {};
-      for (const s of staffs) {
-        try {
-          const detail = await getStaffDetail(s.id, dates.start, dates.end);
-          statsObj[s.id] = detail;
-        } catch (e) {
-          console.error(e);
+      staffs.forEach((s, i) => {
+        if (results[i].status === 'fulfilled') {
+          statsObj[s.id] = results[i].value;
+        } else {
+          console.error(results[i].reason);
         }
-      }
+      });
       setStaffStats(statsObj);
       setLoadingStats(false);
     };
@@ -321,8 +323,8 @@ export default function TabStaff({
                         key={staff.id}
                         className="hover:bg-gray-50/80 transition-colors group"
                       >
-                        <td className="p-4 pl-6 font-medium text-gray-900 group-hover:text-pink-600 transition-colors cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
-                          <div className="flex items-center gap-3">
+                        <td className="p-4 pl-6 font-medium text-gray-900 group-hover:text-pink-600 transition-colors">
+                          <button onClick={() => setDetailStaff(staff)} className="flex items-center gap-3 w-full text-left cursor-pointer bg-transparent border-none p-0 m-0" type="button">
                             <div className="w-9 h-9 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center font-bold">
                               {staff.full_name?.charAt(0) || "NV"}
                             </div>
@@ -331,7 +333,7 @@ export default function TabStaff({
                                 {staff.full_name}
                               </span>
                             </div>
-                          </div>
+                          </button>
                         </td>
                         <td className="p-4 text-center">
                           {staff.is_active !== false ? (
@@ -346,19 +348,19 @@ export default function TabStaff({
                             </span>
                           )}
                         </td>
-                          <td className="p-4 font-mono text-gray-500 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
+                          <td className="p-4 font-mono text-gray-500 hidden md:table-cell">
                           {staff.cccd || "N/A"}
                         </td>
-                        <td className="p-4 text-right font-bold text-gray-900 hidden sm:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
+                        <td className="p-4 text-right font-bold text-gray-900 hidden sm:table-cell">
                           {(stats.totalRevenue || 0).toLocaleString("vi")}đ
                         </td>
-                        <td className="p-4 text-right font-bold text-emerald-600 hidden lg:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
+                        <td className="p-4 text-right font-bold text-emerald-600 hidden lg:table-cell">
                           {(stats.totalCommission || 0).toLocaleString("vi")}đ
                         </td>
-                        <td className="p-4 text-right font-bold text-pink-500 hidden xl:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
+                        <td className="p-4 text-right font-bold text-pink-500 hidden xl:table-cell">
                           {(stats.totalTip || 0).toLocaleString("vi")}đ
                         </td>
-                        <td className="p-4 text-center font-bold text-gray-800 hidden md:table-cell cursor-pointer" onClick={() => setDetailStaff(staff)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setDetailStaff(staff)}>
+                        <td className="p-4 text-center font-bold text-gray-800 hidden md:table-cell">
                           {stats.totalCompleted || 0}
                         </td>
                         <td className="p-4 pr-6 text-right flex items-center justify-end gap-1.5">

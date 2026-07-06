@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { ToggleLeft, ToggleRight } from "lucide-react";
 import {
   getFaqs,
@@ -45,8 +46,11 @@ export default function TabFAQ() {
   };
 
   const handleDelete = async (id: string) => {
+    const faq = faqs.find(f => f.id === id);
+    if (!confirm(`Xác nhận xóa FAQ "${faq?.question || ''}"? Hành động này không thể hoàn tác.`)) return;
     await deleteFaq(id);
     setFaqs(faqs.filter(f => f.id !== id));
+    toast.success('Đã xóa FAQ');
   };
 
   const handleToggleActive = async (faq: Faq) => {

@@ -208,7 +208,33 @@ export default function TabPayroll() {
             className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
           />
         </div>
-        <div className="overflow-x-auto">
+        {/* Mobile card view */}
+        <div className="mt-4 space-y-3 md:hidden">
+          {filteredStaff.length === 0 ? (
+            <div className="bg-white border border-dashed border-gray-200 rounded-xl p-6 text-center">
+              <p className="text-gray-400 text-sm">Không có nhân viên</p>
+            </div>
+          ) : filteredStaff.map((s) => (
+            <div key={s.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                <span className="font-bold text-gray-900">{s.fullName}</span>
+                <span className="text-gray-400 text-xs">({s.role})</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-gray-400">Lương CB</span><span>{formatCurrency(s.baseSalary)}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Số TK</span><span className="text-gray-500">{s.bankAccount || '—'}</span></div>
+                <div className="flex justify-between"><span className="text-gray-400">Ngân hàng</span><span className="text-gray-500">{s.bankName || '—'}</span></div>
+              </div>
+              <div className="flex justify-end pt-1 border-t border-gray-100">
+                <button onClick={() => openEditModal(s)} className="p-2 text-gray-400 hover:text-[#8D6E53] transition-colors cursor-pointer" title="Sửa lương">
+                  <Edit2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Desktop table */}
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
@@ -357,54 +383,92 @@ export default function TabPayroll() {
         {savedPayments.length === 0 ? (
           <p className="text-gray-400 text-sm">Chưa có bảng lương nào được lưu.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">Nhân viên</th>
-                  <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Lương CB</th>
-                  <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Hoa hồng</th>
-                  <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Tip</th>
-                  <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">HH Gói</th>
-                  <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Thực lãnh</th>
-                  <th className="text-center px-3 py-2 text-xs font-bold text-gray-500 uppercase">Trạng thái</th>
-                  <th className="px-3 py-2 w-24" />
-                </tr>
-              </thead>
-              <tbody>
-                {savedPayments.map((p) => (
-                  <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-3 py-2 font-medium">{p.fullName}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(p.baseSalary)}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(p.totalCommission)}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(p.totalTips)}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(p.totalPackageCommission)}</td>
-                    <td className="px-3 py-2 text-right font-bold text-green-600">{formatCurrency(p.netPay)}</td>
-                    <td className="px-3 py-2 text-center">
-                      {p.status === 'PAID' ? (
-                        <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
-                        </span>
-                      ) : (
-                        <span className="text-yellow-600 text-xs font-medium">Chờ</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2">
-                      {p.status === 'PENDING' && (
-                        <button
-                          onClick={() => handlePay(p.id)}
-                          disabled={loading}
-                          className="flex items-center gap-1 px-3 py-2.5 min-h-[44px] bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
-                        </button>
-                      )}
-                    </td>
+          <>
+            {/* Mobile card view */}
+            <div className="mt-4 space-y-3 md:hidden">
+              {savedPayments.map((p) => (
+                <div key={p.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <span className="font-bold text-gray-900">{p.fullName}</span>
+                    {p.status === 'PAID' ? (
+                      <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
+                      </span>
+                    ) : (
+                      <span className="text-yellow-600 text-xs font-medium">Chờ</span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                    <div className="flex justify-between"><span className="text-gray-400">Lương CB</span><span>{formatCurrency(p.baseSalary)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Hoa hồng</span><span>{formatCurrency(p.totalCommission)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Tip</span><span>{formatCurrency(p.totalTips)}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">HH Gói</span><span>{formatCurrency(p.totalPackageCommission)}</span></div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-gray-100">
+                    <span className="font-bold text-green-600">{formatCurrency(p.netPay)}</span>
+                    {p.status === 'PENDING' && (
+                      <button
+                        onClick={() => handlePay(p.id)}
+                        disabled={loading}
+                        className="flex items-center gap-1 px-3 py-2.5 min-h-[44px] bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop table */}
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">Nhân viên</th>
+                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Lương CB</th>
+                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Hoa hồng</th>
+                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Tip</th>
+                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">HH Gói</th>
+                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Thực lãnh</th>
+                    <th className="text-center px-3 py-2 text-xs font-bold text-gray-500 uppercase">Trạng thái</th>
+                    <th className="px-3 py-2 w-24" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {savedPayments.map((p) => (
+                    <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="px-3 py-2 font-medium">{p.fullName}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(p.baseSalary)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(p.totalCommission)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(p.totalTips)}</td>
+                      <td className="px-3 py-2 text-right">{formatCurrency(p.totalPackageCommission)}</td>
+                      <td className="px-3 py-2 text-right font-bold text-green-600">{formatCurrency(p.netPay)}</td>
+                      <td className="px-3 py-2 text-center">
+                        {p.status === 'PAID' ? (
+                          <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
+                          </span>
+                        ) : (
+                          <span className="text-yellow-600 text-xs font-medium">Chờ</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2">
+                        {p.status === 'PENDING' && (
+                          <button
+                            onClick={() => handlePay(p.id)}
+                            disabled={loading}
+                            className="flex items-center gap-1 px-3 py-2.5 min-h-[44px] bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 

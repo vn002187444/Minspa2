@@ -11,7 +11,6 @@ import ThemeBanner from "@/components/ThemeBanner";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 import PwaSupport from "@/components/PwaSupport";
-import GoogleTranslate from "@/components/GoogleTranslate";
 
 const MascotProvider = dynamic(() => import("@/components/MascotProvider"));
 
