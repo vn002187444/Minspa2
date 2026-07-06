@@ -35,6 +35,20 @@ Các component đều là server component (không `'use client'`), dùng `useMe
 
 ---
 
+### 2026-07-06 — Browser Warnings Fix + Playwright MCP
+
+**Context:** Console warnings: (1) Multiple GoTrueClient instances detected, (2) Preload icon-192.png not used within 3 seconds. Need to integrate Playwright for browser automation.
+
+**Decisions:**
+- **Supabase client:** Always use singleton from `utils/supabase/client.ts`. Do NOT call `createClient()` from `@supabase/supabase-js` inside component effects — this bypasses the cached instance and creates duplicate GoTrueClients competing for localStorage. 3 files fixed.
+- **Preload:** Remove `<link rel="preload">` for PWA/apple-touch-icons. Browser fetches these from manifest.json automatically. Preloading causes "not used" warning since the resource isn't referenced as `<img>`/CSS within 3s.
+- **Playwright MCP:** Add `@playwright/mcp` as a local MCP server in `opencode.json` for programmatic browser control (navigate, screenshot, interact) — alternative to Antigravity Browser Control which requires IDE extension.
+- **Antigravity `open_browser_url`:** Tool is injected by IDE extension, NOT definable in `opencode.json`. The `tools` field only accepts booleans per schema at https://opencode.ai/config.json. Must install "Browser Control" extension to use.
+
+**Files:** `components/NotificationBell.tsx`, `app/admin/components/TabDashboard.tsx`, `app/staff/page.tsx`, `app/layout.tsx`, `opencode.json`, `.agents/skills/minspa/SKILL.md`
+
+---
+
 *(The rest of the document remains unchanged.)
 
 ---

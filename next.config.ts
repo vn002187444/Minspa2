@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', 'date-fns', 'motion'],
+    serverActions: {
+      bodySizeLimit: '10mb',
+    },
   },
   output: 'standalone',
   poweredByHeader: false,
@@ -18,6 +21,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 86400,
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'images.pexels.com' },
       { protocol: 'https', hostname: '**.supabase.co' },
     ],
   },
@@ -52,7 +56,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com; style-src 'self' 'unsafe-inline' https://translate.google.com https://www.gstatic.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com https://translate.google.com https://www.gstatic.com https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://translate.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://translate.google.com; frame-ancestors 'none'; form-action 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://translate.google.com https://translate.googleapis.com https://translate-pa.googleapis.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://translate.google.com https://www.gstatic.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com https://translate.google.com https://translate.googleapis.com https://*.google.com http://*.google.com https://www.gstatic.com https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com https://translate.googleapis.com https://translate-pa.googleapis.com https://www.google.com https://*.google.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self' https://translate.google.com https://translate.googleapis.com https://www.gstatic.com; frame-ancestors 'none'; form-action 'self';",
           },
         ],
       },

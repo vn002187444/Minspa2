@@ -30,10 +30,21 @@ export default function GoogleTranslate() {
   }, [])
 
   useEffect(() => {
+    // Check if script already exists in the document to prevent duplicate script tags
+    const existingScript = document.querySelector('script[src*="translate.googleapis.com"]');
+    if (existingScript) {
+      widgetReady.current = true;
+      return;
+    }
+
     if (widgetReady.current) return
     
     console.log('[GT-Debug] Step 1: Defining init callback');
     window.googleTranslateElementInit = () => {
+      // Prevent multiple initializations of TranslateElement
+      if (window.__googleTranslateInitialized) return;
+      window.__googleTranslateInitialized = true;
+
       console.log('[GT-Debug] Step 3: Callback executed. Initializing TranslateElement...');
       try {
         new google.translate.TranslateElement(
@@ -105,7 +116,10 @@ export default function GoogleTranslate() {
   }, [])
 
   return (
-    <div className="fixed top-4 right-4 z-[60]" ref={dropdownRef}>
+    <div 
+      className="relative inline-block" 
+      ref={dropdownRef}
+    >
       <button
         onClick={handleToggle}
         className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all bg-white/90 hover:bg-white shadow-md border border-[#EADDCD] hover:shadow-lg text-[#5C4033] hover:text-[#3A2E2B] backdrop-blur-sm cursor-pointer"
@@ -117,7 +131,7 @@ export default function GoogleTranslate() {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-[#EADDCD] p-3 z-[70] min-w-[200px]"
+          className="absolute left-0 bottom-full mb-2 md:left-auto md:right-0 md:top-full md:bottom-auto md:mt-2 md:mb-0 bg-white rounded-xl shadow-xl border border-[#EADDCD] p-3 z-[70] min-w-[200px]"
           onMouseDown={handleMouseDown}
         >
           <div className="space-y-1">
@@ -146,10 +160,6 @@ export default function GoogleTranslate() {
       <div id="google_translate_element" className="gt-widget-container" />
 
       <style>{`
-        .goog-te-banner-frame { display: none !important; }
-        body { top: 0 !important; }
-        .goog-tooltip { display: none !important; }
-        .goog-text-highlight { background: transparent !important; border: none !important; box-shadow: none !important; }
         .gt-widget-container {
           position: absolute;
           left: -9999px;
@@ -160,7 +170,6 @@ export default function GoogleTranslate() {
           pointer-events: none;
           z-index: -1;
         }
-        .goog-te-gadget { display: none !important; }
       `}</style>
     </div>
   )

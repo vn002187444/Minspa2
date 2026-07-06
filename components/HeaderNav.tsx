@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import GoogleTranslate from '@/components/GoogleTranslate';
 import Image from 'next/image';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -42,6 +43,28 @@ interface HeaderNavProps {
 export default function HeaderNav({ logoUrl }: HeaderNavProps) {
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const [showMobileCategories, setShowMobileCategories] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const prevScrollY = lastScrollY.current;
+
+      if (currentScrollY < 50) {
+        setShowMobileCategories(true);
+      } else if (currentScrollY > prevScrollY && currentScrollY - prevScrollY > 10) {
+        setShowMobileCategories(false);
+      } else if (currentScrollY < prevScrollY && prevScrollY - currentScrollY > 10) {
+        setShowMobileCategories(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     const observerOptions = {
@@ -160,6 +183,7 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
         {/* CTAs */}
         <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
           <NotificationBell />
+          <GoogleTranslate />
           <Link 
             href="/booking" 
             className="text-[10px] md:text-xs font-bold tracking-widest text-[#FFF] bg-[#8D6E53] hover:bg-[#3A2E2B] px-3 md:px-5 py-2 md:py-3 rounded-full transition-all flex items-center gap-1 md:gap-2 shadow-md hover:shadow-lg uppercase"
@@ -176,14 +200,20 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
       </div>
 
       {/* Mobile Category Navigation Bar — Wrapping Pill Row */}
-      <div className="md:hidden flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 px-3 py-2.5 bg-[#FAF6F0]/95 border-t border-[#EADDCD]/40">
+      <div 
+        className={`md:hidden flex flex-wrap items-center justify-center gap-x-3 gap-y-1.5 px-3 bg-[#FAF6F0]/95 transition-all duration-300 ease-in-out overflow-hidden ${
+          showMobileCategories 
+            ? 'max-h-40 py-2.5 opacity-100 border-t border-[#EADDCD]/40' 
+            : 'max-h-0 py-0 opacity-0 border-t-transparent pointer-events-none'
+        }`}
+      >
         {MOBILE_NAV_ITEMS.map((item) => {
           const isActive = activeCategory === item.id;
           return (
             <a
               key={item.id}
               href={item.href}
-              className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all min-h-[34px] flex items-center whitespace-nowrap border ${
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider transition-all min-h-[44px] flex items-center whitespace-nowrap border ${
                 isActive
                   ? "text-[#FFF] bg-[#8D6E53] border-[#8D6E53] shadow-sm"
                   : "text-[#5C4033] bg-white border-[#EADDCD] hover:border-[#8D6E53] hover:text-[#8D6E53]"

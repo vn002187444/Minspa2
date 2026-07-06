@@ -336,5 +336,23 @@ img {
   .theme-gold-light { color: rgb(var(--color-gold-light)); }
 }
 
-/* Keyframes moved to tailwind.config.ts — generated automatically */
+/* Google Translate Overrides */
+.goog-te-banner-frame,
+.goog-te-banner-frame.skiptranslate,
+iframe.goog-te-banner-frame,
+#goog-te-banner-frame,
+.goog-te-banner {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  opacity: 0 !important;
+}
+body {
+  top: 0px !important;
+  position: static !important;
+}
+.goog-tooltip { display: none !important; }
+.goog-text-highlight { background: transparent !important; border: none !important; box-shadow: none !important; }
+.goog-te-gadget { display: none !important; }
+
 

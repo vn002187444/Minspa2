@@ -2,7 +2,7 @@ import { getSuggestedImages } from './image-suggestions'
 
 const TIMEOUT_MS = 5000
 
-async function searchUnsplash(query: string): Promise<{ images: string[]; alts: string[] } | null> {
+export async function searchUnsplash(query: string): Promise<{ images: string[]; alts: string[] } | null> {
   const key = process.env.UNSPLASH_ACCESS_KEY
   if (!key) return null
   try {
@@ -21,7 +21,7 @@ async function searchUnsplash(query: string): Promise<{ images: string[]; alts: 
   }
 }
 
-async function searchPexels(query: string): Promise<{ images: string[]; alts: string[] } | null> {
+export async function searchPexels(query: string): Promise<{ images: string[]; alts: string[] } | null> {
   const key = process.env.PEXELS_API_KEY
   if (!key) return null
   try {

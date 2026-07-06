@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { RefreshCw, Sparkles, ImageIcon } from "lucide-react";
+import { RefreshCw, Sparkles, ImageIcon, Database } from "lucide-react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
-import { saveService } from "../actions";
+import { saveService, uploadImageAction } from "../actions";
+import S3ImageBrowser from '@/components/S3ImageBrowser';
 
 interface ServiceModalService {
   id?: string | null;
@@ -44,6 +45,8 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
   const [loading, setLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [showS3Browser, setShowS3Browser] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<'gemini' | 'unsplash' | 'pexels'>('gemini');
 
   const handleGenerateDescription = async () => {
     setErrorMsg("");
@@ -247,44 +250,74 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
                   >&times;</button>
                 </div>
               )}
-              <div className="flex gap-2">
-                <label htmlFor="svc-imageUrl" className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-sm font-medium text-gray-600">
-                  <ImageIcon className="w-4 h-4" />
-                  Tải ảnh lên
-                  <input id="svc-imageUrl" type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    if (file.size > 512000) {
-                      setErrorMsg('Ảnh quá lớn! Vui lòng chọn ảnh dưới 500KB.');
-                      return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = () => setForm({ ...form, image_url: reader.result as string });
-                    reader.readAsDataURL(file);
-                  }} />
-                </label>
-                <button type="button" onClick={async () => {
-                  if (!form.name) { setErrorMsg("Vui lòng nhập tên dịch vụ trước!"); return; }
-                  setIsGenerating(true);
-                  setErrorMsg("");
-                  try {
-                    const res = await fetch('/api/generate-seo-image', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ prompt: `Dịch vụ ${form.name} tại spa, ${form.category || 'spa'}, phong cách chuyên nghiệp, sang trọng, ảnh chụp quảng cáo` })
-                    });
-                    const data = await res.json();
-                    if (data.image) setForm({ ...form, image_url: data.image });
-                    else if (data.error) setErrorMsg(data.error);
-                  } catch { setErrorMsg("Lỗi kết nối khi tạo ảnh AI"); }
-                  finally { setIsGenerating(false); }
-                }} disabled={isGenerating}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-xl hover:bg-pink-100 transition-colors cursor-pointer text-sm font-medium text-pink-700 disabled:opacity-50"
-                >
-                  {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  AI tạo ảnh
-                </button>
-              </div>
+               <div className="flex gap-2">
+                  <label htmlFor="svc-imageUrl" className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-sm font-medium text-gray-600">
+                    <ImageIcon className="w-4 h-4" />
+                    Tải ảnh lên
+                    <input id="svc-imageUrl" type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                       if (file.size > 5242880) {
+                         setErrorMsg('Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
+                         return;
+                       }
+                      const reader = new FileReader();
+                      reader.onload = async () => {
+                        try {
+                          const base64 = reader.result as string;
+                          const url = await uploadImageAction(base64);
+                          setForm({ ...form, image_url: url });
+                        } catch (err: any) {
+                          setErrorMsg(err.message);
+                        }
+                      };
+                      reader.readAsDataURL(file);
+                    }} />
+                  </label>
+                 <button 
+                   type="button" 
+                   onClick={() => setShowS3Browser(true)}
+                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer text-sm font-medium text-blue-700"
+                 >
+                   <Database className="w-4 h-4" />
+                   Chọn từ S3
+                 </button>
+                 <div className="flex flex-col gap-1 w-full">
+                   <select 
+                     value={selectedProvider} 
+                     onChange={(e) => setSelectedProvider(e.target.value as any)}
+                     className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-[10px] font-medium text-gray-700 focus:outline-none focus:ring-1 focus:ring-pink-500"
+                   >
+                     <option value="gemini">AI Gemini</option>
+                     <option value="unsplash">Unsplash</option>
+                     <option value="pexels">Pexels</option>
+                   </select>
+                   <button type="button" onClick={async () => {
+                     if (!form.name) { setErrorMsg("Vui lòng nhập tên dịch vụ trước!"); return; }
+                     setIsGenerating(true);
+                     setErrorMsg("");
+                     try {
+                       const res = await fetch('/api/generate-seo-image', {
+                         method: 'POST',
+                         headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify({ 
+                            prompt: `Dịch vụ ${form.name} tại spa, ${form.category || 'spa'}, phong cách chuyên nghiệp, sang trọng, ảnh chụp quảng cáo`,
+                            provider: selectedProvider 
+                         })
+                       });
+                       const data = await res.json();
+                       if (data.image) setForm({ ...form, image_url: data.image });
+                       else if (data.error) setErrorMsg(data.error);
+                     } catch { setErrorMsg("Lỗi kết nối khi tạo ảnh"); }
+                     finally { setIsGenerating(false); }
+                   }} disabled={isGenerating}
+                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-xl hover:bg-pink-100 transition-colors cursor-pointer text-sm font-medium text-pink-700 disabled:opacity-50"
+                   >
+                     {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                     {selectedProvider === 'gemini' ? 'AI vẽ ảnh' : 'Tìm ảnh'}
+                   </button>
+                 </div>
+               </div>
             </div>
           </div>
 
@@ -327,6 +360,16 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
           </div>
         </form>
       </div>
+      {showS3Browser && (
+        <S3ImageBrowser 
+          initialUrl={form.image_url}
+          onSelect={(url) => {
+            setForm({ ...form, image_url: url });
+            setShowS3Browser(false);
+          }}
+          onClose={() => setShowS3Browser(false)}
+        />
+      )}
     </div>
   );
 }

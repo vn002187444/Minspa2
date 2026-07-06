@@ -105,6 +105,23 @@ async function checkAdminOrManager() {
   }
 }
 
+export async function listStorageImages(folder = '') {
+  await checkAdminOrManager();
+  const supabase = await createClient();
+  const { data, error } = await supabase.storage.from('service-images').list(folder, {
+    limit: 100,
+    sortBy: { column: 'created_at', order: 'desc' },
+  });
+  if (error) throw error;
+  
+  return (data || []).map(file => ({
+    name: file.name,
+    url: supabase.storage.from('service-images').getPublicUrl(file.name).data.publicUrl,
+    created_at: file.created_at,
+    metadata: file.metadata,
+  }));
+}
+
 export async function getDashboardData(startDateStr?: string, endDateStr?: string) {
   const session = await getSession();
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
@@ -693,36 +710,50 @@ export async function getSeoArticleById(id: string) {
   }
 }
 
-async function uploadBase64ToStorage(base64Url: string): Promise<string> {
+export async function uploadBase64ToStorage(base64Url: string): Promise<string> {
   if (!base64Url || !base64Url.startsWith('data:')) return base64Url;
-  const sharp = (await import('sharp')).default;
   const matches = base64Url.match(/^data:image\/(\w+);base64,(.+)$/);
   if (!matches) return base64Url;
   const base64Data = matches[2];
+  const ext = matches[1] === 'png' ? 'png' : 'jpeg';
   const raw = Buffer.from(base64Data, 'base64');
   if (raw.length > 5242880) {
     console.warn('[STORAGE] Rejected upload >5MB:', raw.length, 'bytes');
     throw new Error('Ảnh quá lớn! Vui lòng chọn ảnh dưới 5MB.');
   }
   let optimized: Buffer;
+  let contentType: string;
   try {
-    optimized = await sharp(raw).resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+    const sharp = (await import('sharp')).default;
+    try {
+      optimized = await sharp(raw).resize(1200, 1200, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+      contentType = 'image/webp';
+    } catch {
+      try { optimized = await sharp(raw).webp({ quality: 80 }).toBuffer(); contentType = 'image/webp'; } catch { throw new Error('Sharp failed'); }
+    }
   } catch {
-    try { optimized = await sharp(raw).webp({ quality: 80 }).toBuffer(); } catch { optimized = raw; }
+    console.warn('[STORAGE] Sharp not available, uploading raw image');
+    optimized = raw;
+    contentType = `image/${ext}`;
   }
   if (optimized.length > 5242880) {
     console.warn('[STORAGE] Optimized image still >5MB:', optimized.length, 'bytes');
     throw new Error('Ảnh quá lớn ngay cả sau khi tối ưu!');
   }
-  const fileName = `seo-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.webp`;
+  const fileName = `svc-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${contentType === 'image/webp' ? 'webp' : ext}`;
   const supabase = await createClient();
-  const { error } = await supabase.storage.from('seo-images').upload(fileName, optimized, { contentType: 'image/webp', upsert: true });
+  const { error } = await supabase.storage.from('service-images').upload(fileName, optimized, { contentType, upsert: true });
   if (error) {
     console.error('[STORAGE UPLOAD ERROR]', error);
     throw new Error('Không thể tải ảnh lên máy chủ. Vui lòng thử lại.');
   }
-  const { data: urlData } = supabase.storage.from('seo-images').getPublicUrl(fileName);
+  const { data: urlData } = supabase.storage.from('service-images').getPublicUrl(fileName);
   return urlData.publicUrl;
+}
+
+export async function uploadImageAction(base64Data: string): Promise<string> {
+  await checkAdminOrManager();
+  return await uploadBase64ToStorage(base64Data);
 }
 
 export async function saveSeoArticle(article: Record<string, unknown>) {

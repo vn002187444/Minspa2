@@ -19,9 +19,10 @@ const ARTICLE_SCHEMA = {
     title: { type: 'string', description: 'Tiêu đề bài viết, tối đa 70 ký tự, chứa từ khóa chính, gây tò mò' },
     metaDescription: { type: 'string', description: 'Thẻ mô tả ngắn gọn, tối đa 160 ký tự, chứa từ khóa phụ và CTA' },
     keywords: { type: 'string', description: 'Các từ khóa SEO chính và phụ, phân cách bằng dấu phẩy' },
+    imageAlt: { type: 'string', description: 'Mô tả ảnh (Alt text) chuẩn SEO cho hình ảnh bài viết, chứa từ khóa chính' },
     content: { type: 'string', description: 'Nội dung Markdown gồm: mở bài, 3-4 phần H2 có H3 bên trong, kết luận kèm CTA đặt lịch tại Min Nail & Hair. Tổng 700-1200 từ.' },
   },
-  required: ['title', 'metaDescription', 'keywords', 'content'],
+  required: ['title', 'metaDescription', 'keywords', 'imageAlt', 'content'],
 };
 
 const KEYWORD_SYSTEM = `Bạn là chuyên gia nghiên cứu từ khóa SEO trong lĩnh vực làm đẹp.
@@ -66,7 +67,7 @@ Lĩnh vực: làm đẹp, spa, nail, hair tại Việt Nam.
   return { keywords: topic, primary: topic };
 }
 
-async function generateArticle(topic: string, keywords: string, primary: string): Promise<{ title: string; metaDescription: string; content: string } | null> {
+async function generateArticle(topic: string, keywords: string, primary: string): Promise<{ title: string; metaDescription: string; imageAlt: string; content: string } | null> {
   const prompt = `Viết bài SEO chuẩn về chủ đề: "${topic}"
 Từ khóa chính: "${primary}"
 Từ khóa phụ: "${keywords}"
@@ -80,6 +81,7 @@ YÊU CẦU NỘI DUNG:
 - Thân bài: 3-4 phần H2, mỗi phần có 2-3 H3 giải thích chi tiết. Lồng ghép từ khóa chính và phụ tự nhiên.
 - Internal link: https://minhair.vercel.app/booking với anchor text "đặt lịch hẹn" hoặc "đặt lịch ngay".
 - Kết bài: Tổng kết + CTA mạnh mẽ kêu gọi hành động đặt lịch.
+- Alt text ảnh: Tạo một mô tả ảnh (Alt text) chuẩn SEO chứa từ khóa chính cho hình ảnh bài viết.
 - Độ dài: 700-1200 từ.
 - Tiếng Việt có dấu đầy đủ, văn phong tự nhiên, chuyên nghiệp.`;
 
@@ -96,6 +98,7 @@ YÊU CẦU NỘI DUNG:
       return {
         title: parsed.title || topic,
         metaDescription: parsed.metaDescription || '',
+        imageAlt: parsed.imageAlt || topic,
         content: parsed.content || '',
       };
     } catch { /* fall through */ }
@@ -202,7 +205,7 @@ export async function runAutoSeo(force = false): Promise<{
       summary: normalizeNFC(article.metaDescription || extractSummary(article.content, article.title)).substring(0, 500),
       content: normalizeNFC(article.content),
       image_url: (imageUrl || '').substring(0, 255),
-      image_alt: normalizeNFC(topic.substring(0, 100)),
+      image_alt: normalizeNFC(article.imageAlt || topic.substring(0, 100)).substring(0, 255),
       published: true,
       published_at: now.toISOString(),
       created_at: now.toISOString(),
@@ -220,6 +223,7 @@ export async function runAutoSeo(force = false): Promise<{
       keywords: normalizeNFC(keywords),
       article: normalizeNFC(article.content),
       image_url: (imageUrl || '').substring(0, 255),
+      image_alt: normalizeNFC(article.imageAlt || topic.substring(0, 100)).substring(0, 255),
       status: 'published',
       topic_source: 'auto_seo',
       blog_slug: finalSlug,

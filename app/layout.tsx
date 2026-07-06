@@ -1,6 +1,6 @@
 // Reconstructed layout.tsx for Min Nail & Hair application
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Noto_Sans, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
@@ -22,7 +22,7 @@ import { Analytics } from "@vercel/analytics/next";
 import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
 
-const inter = Inter({ subsets: ["latin", "latin-ext", "vietnamese"], variable: "--font-sans" });
+const inter = Noto_Sans({ subsets: ["vietnamese", "latin"], variable: "--font-sans" });
 const playfairDisplay = Playfair_Display({ subsets: ["latin", "latin-ext"], variable: "--font-display" });
 
 // Simple in-memory cache for metadata (TTL 5 minutes)
@@ -130,7 +130,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
-        <link rel="preload" href="/icons/icon-192.png" as="image" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
@@ -207,7 +206,7 @@ export default function RootLayout({
       <body className="antialiased font-sans text-gray-900 bg-gray-50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} suppressHydrationWarning>
         <ErrorBoundary>
           <Toaster position="top-right" richColors closeButton />
-          <GoogleTranslate />
+          {/* GoogleTranslate moved to HeaderNav */}
           <SkipLink />
           <div className="overflow-x-clip">
             <ThemeProvider>

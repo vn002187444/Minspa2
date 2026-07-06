@@ -56,6 +56,54 @@ Ghi nhận tất cả các phát hiện từ audit codebase. Mỗi mục audit =
 
 ---
 
+## [2026-07-07] Audit: Mobile UI + Google Translate + Image Bucket
+
+### Phạm vi
+- `components/GoogleTranslate.tsx` — duplicate script guard, RangeError fix
+- `components/StatsCounter.tsx` — notranslate class
+- `app/admin/actions.ts:111,119` — S3ImageBrowser bucket name
+- `app/globals.css:340-349` — Google Translate iframe hiding
+- `app/page.tsx` — 4k breakpoint usage (responsive)
+- `components/HeaderNav.tsx` — touch target WCAG
+- `tailwind.config.ts` — missing 4k breakpoint
+- Full mobile UI audit (homepage, admin, staff)
+
+### Phát hiện
+
+| # | Vấn đề | File | Mức độ | Chi tiết |
+|---|--------|------|--------|----------|
+| 1 | **Bucket mismatch**: list từ `seo-images`, upload vào `service-images` | `app/admin/actions.ts:111,119` | 🔴 | S3ImageBrowser luôn trống vì không cùng bucket |
+| 2 | **Google Translate crash**: React Strict Mode double-mount → 2 scripts → vòng lặp MutationObserver | `components/GoogleTranslate.tsx` | 🔴 | `Maximum call stack size exceeded` khi đổi ngôn ngữ |
+| 3 | **Google Translate banner không ẩn**: CSS selector quá hẹp (chỉ `.goog-te-banner-frame.skiptranslate`) | `app/globals.css:340` | 🟡 | Banner vẫn hiện dùng class `goog-te-banner-frame` không có `.skiptranslate` |
+| 4 | **Dynamic counter + Google Translate**: `StatsCounter` thay đổi text liên tục gây translation loop | `components/StatsCounter.tsx` | 🟡 | Thiếu `notranslate` class |
+| 5 | **4k breakpoint không định nghĩa**: dùng trong page.tsx nhưng không có trong tailwind.config | `tailwind.config.ts` | 🟢 | Classes `4k:` bị Tailwind ignore |
+| 6 | **Touch target < 44px**: HeaderNav pills dùng `min-h-[34px]` | `components/HeaderNav.tsx:216` | 🟢 | WCAG 2.5.5 violation, khó bấm trên mobile |
+
+### Đã fix
+
+| # | Fix | File |
+|---|-----|------|
+| 1 | Đổi bucket từ `seo-images` → `service-images` trong `listStorageImages()` | `app/admin/actions.ts:111,119` |
+| 2 | Thêm guard `document.querySelector('script[src*="translate.googleapis.com"]')` + `__googleTranslateInitialized` flag | `components/GoogleTranslate.tsx:33-35,36-38`, `types/index.ts` |
+| 3 | Mở rộng CSS selector: `.goog-te-banner-frame`, `iframe.goog-te-banner-frame`, `#goog-te-banner-frame`, thêm `position: static` cho body | `app/globals.css:340-349` |
+| 4 | Thêm `className="notranslate"` vào `Counter` span và `StatsCounter` root div | `components/StatsCounter.tsx:46,51` |
+| 5 | Thêm `'4k': '2560px'` vào `tailwind.config.ts` screens | `tailwind.config.ts:27` |
+| 6 | Đổi `min-h-[34px]` → `min-h-[44px]` | `components/HeaderNav.tsx:216` |
+
+### Kết quả kiểm tra
+- Playwright console check (check-lang.mjs): 0 errors, 0 warnings ✅ sau language switch
+- Playwright console check (check-console.mjs): 1 warning "loadData failed" (transient, không tái hiện)
+- Build: `npm run build` — TypeScript pass ✅
+- Lighthouse (2026-07-01 baseline): Performance 47, Accessibility 96, Best Practices 92, SEO 100
+
+### Kết luận
+- **6 bugs đã fix** (2 critical, 2 medium, 2 low)
+- **Phiên bản Google Translate ổn định** — guard chống duplicate script, CSS ẩn banner, notranslate cho dynamic elements
+- **Mobile UI** đã kiểm tra toàn diện — tất cả 3 giao diện (public, admin, staff) responsive tốt, mobile-first
+- **4k breakpoint** đã thêm vào Tailwind config, không còn class bị ignore
+
+---
+
 ## [2026-06-26] Audit: Orphan API Routes + Session Fix
 
 ### Phạm vi

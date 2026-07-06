@@ -26,6 +26,7 @@ const config: Config = {
       screens: {
         'xs': '480px',
         'xxl': '1600px',
+        '4k': '2560px',
       },
       keyframes: {
         blob: {

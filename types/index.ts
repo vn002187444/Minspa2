@@ -3,6 +3,7 @@ export * from './database';
 declare global {
   interface Window {
     googleTranslateElementInit?: () => void;
+    __googleTranslateInitialized?: boolean;
   }
   namespace google {
     namespace translate {

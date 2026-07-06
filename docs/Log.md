@@ -653,3 +653,126 @@ Fix CSP blocks, React hydration errors, duplicate Google Translate init, Vercel 
 - `app/booking/actions/suggestions.ts`, `components/DynamicBottomNavigation.tsx`
 - `database.sql`, `app/admin/actions.ts`
 - `.agents/skills/minspa/SKILL.md`, `docs/Log.md`, `opencode.json`
+
+## Session — 2026-07-06
+
+### 🎯 Mục tiêu
+Fix browser warnings, integrate Playwright MCP, update skill/tools/rules.
+
+### ✅ Đã làm
+
+#### GoTrueClient Multiple Instances Fix
+- **Root cause:** 3 components called `createClient()` directly from `@supabase/supabase-js` inside `useEffect`, bypassing singleton in `utils/supabase/client.ts`
+- **Fix:** Replaced dynamic import with `import('@/utils/supabase/client')` → `createClient()` singleton
+- **Files:** `components/NotificationBell.tsx`, `app/admin/components/TabDashboard.tsx`, `app/staff/page.tsx`
+
+#### Preload Warning Fix
+- Remove `<link rel="preload" href="/icons/icon-192.png" as="image" />` từ `app/layout.tsx`
+- Lý do: PWA/apple-touch-icon không cần preload, browser tự fetch từ manifest.json
+
+#### Playwright MCP Setup
+- Thêm `@playwright/mcp` vào `opencode.json` (local MCP server)
+- Cho phép browser automation (navigate, screenshot, interact) từ opencode
+
+#### Skill & Docs Update
+- Thêm 4 bài học mới vào `.agents/skills/minspa/SKILL.md` (section 10)
+- Cập nhật `docs/Discuss.md` với quyết định quan trọng
+- Ghi log session vào `docs/Log.md`
+
+### 🐛 Bugs gặp
+1. GoTrueClient multiple instances — 3 files dùng dynamic import bypass singleton
+2. Preload icon-192.png báo "not used within a few seconds" — PWA icon không cần preload
+3. `opencode.json` `tools` field chỉ chấp nhận boolean — custom tool phải qua MCP server
+
+### 💡 Bài học
+1. **Supabase client singleton** — Luôn dùng `utils/supabase/client.ts` thay vì `createClient()` từ `@supabase/supabase-js` trong component effects
+2. **Preload chỉ khi resource được dùng ngay** — apple-touch-icon, manifest icons không cần preload
+3. **Custom tools → MCP server** — Không thể định nghĩa function tools trong `opencode.json`
+4. **Playwright MCP** — Cấu hình qua `mcp` field + restart opencode
+
+### 📁 Files đã sửa
+- `components/NotificationBell.tsx`, `app/admin/components/TabDashboard.tsx`, `app/staff/page.tsx`
+- `app/layout.tsx`
+- `opencode.json`
+- `.agents/skills/minspa/SKILL.md`
+- `docs/Log.md`, `docs/Discuss.md`
+
+---
+
+## Session — 2026-07-07 (Final Polish)
+
+### 🎯 Mục tiêu
+Fix S3 image browser trống, Google Translate crash + banner, mobile UI audit, cập nhật docs.
+
+### ✅ Đã làm
+
+#### S3 Image Browser Bucket Mismatch
+- **Root cause:** `listStorageImages()` đọc từ `seo-images` bucket nhưng upload ghi vào `service-images` bucket → không thấy ảnh
+- **Fix:** Đổi bucket trong `listStorageImages()` từ `seo-images` → `service-images`
+
+#### Google Translate Crash (`Maximum call stack size exceeded`)
+- **Root cause:** React Strict Mode double-mount → 2 script Google Translate → vòng lặp MutationObserver
+- **Fix:** Guard `document.querySelector('script[src*="translate.googleapis.com"]')` + `window.__googleTranslateInitialized` flag
+- **Fix:** Thêm `notranslate` class vào `StatsCounter` (dynamic text gây translation loop)
+
+#### Google Translate Banner CSS
+- **Root cause:** Selector `.goog-te-banner-frame.skiptranslate` quá hẹp — một số phiên bản không có class `skiptranslate`
+- **Fix:** Selector mở rộng: `.goog-te-banner-frame`, `iframe.goog-te-banner-frame`, `#goog-te-banner-frame`, `.goog-te-banner`
+
+#### Mobile UI Audit
+- **Kiểm tra responsive:** Homepage ✅, Admin ✅, Staff ✅ — tất cả đều mobile-first với sm/md/lg/xxl breakpoints
+- **Tier navigation:** Pill row (public) + Drawer (admin/staff) + Bottom tab bar (all) ✅
+- **Touch targets:** HeaderNav pills `min-h-[34px]` → `44px` (WCAG 2.5.5)
+- **Safe areas:** `env(safe-area-inset-*)` trên body, bottom nav, drawer ✅
+- **Viewport zoom:** `userScalable` enabled (WCAG 1.4.4) ✅
+
+#### Tailwind Config Fix
+- **4k breakpoint:** Đang dùng trong page.tsx nhưng không định nghĩa trong tailwind.config → classes bị ignore
+- **Fix:** Thêm `'4k': '2560px'` vào screens
+
+#### Upgrade Plan & Docs
+- Cập nhật UPGRADE_PLAN.md với Phase 5 (Image Upload), Phase 6 (Google Translate), Mobile UI tasks
+- Tạo `.agents/skills/minspa/SKILL.md` với 8 bài học critical + conventions
+- Thêm `scripts/debug/lighthouse-audit.mjs` — Playwright-based Lighthouse automation
+- Cập nhật Audit.md với audit findings hôm nay
+- Ghi log session vào docs/Log.md
+
+### Lighthouse Baseline (2026-07-01, Mobile)
+| Category | Score |
+|----------|-------|
+| Performance | 47 (🔴) |
+| Accessibility | 96 (🟢) |
+| Best Practices | 92 (🟢) |
+| SEO | 100 (🟢) |
+
+### 📁 Files đã sửa
+- `app/admin/actions.ts` — bucket name fix
+- `components/GoogleTranslate.tsx` — duplicate script guard + __googleTranslateInitialized
+- `components/StatsCounter.tsx` — notranslate class
+- `components/HeaderNav.tsx` — touch target 34px → 44px
+- `app/globals.css` — expand Google Translate CSS selectors
+- `tailwind.config.ts` — thêm 4k breakpoint
+- `types/index.ts` — thêm `__googleTranslateInitialized`
+- `.agents/skills/minspa/SKILL.md` — new file with lessons
+- `scripts/debug/lighthouse-audit.mjs` — new Lighthouse audit script
+- `docs/UPGRADE_PLAN.md` — cập nhật Phase 5, 6
+- `docs/Audit.md` — thêm entry 2026-07-07
+- `docs/Log.md` — entry này
+
+### 🐛 Bugs gặp
+1. S3ImageBrowser luôn trống — bucket name mismatch (seo-images vs service-images)
+2. Google Translate crash — React Strict Mode double-mount
+3. Google Translate banner không ẩn — CSS selector quá hẹp
+4. StatsCounter gây translation loop — không có notranslate class
+5. 4k breakpoint bị ignore — không định nghĩa trong tailwind.config
+6. Touch target header pills 34px — dưới chuẩn WCAG 44px
+
+### 💡 Bài học
+1. **Bucket names**: Luôn kiểm tra consistency giữa list và upload operations
+2. **Third-party scripts + React Strict Mode**: Luôn guard chống double-mount (querySelector existing script + global flag)
+3. **CSS selector third-party elements**: Dùng multiple selector fallback (class + tag + id)
+4. **Dynamic elements + translation**: `notranslate` class cho bất kỳ element nào thay đổi text liên tục
+5. **Tailwind breakpoints**: Kiểm tra consistency giữa usage và config (công cụ grep)
+6. **Touch targets**: Luôn dùng `min-h-[44px]` cho interactive elements (WCAG 2.5.5)
+7. **Lighthouse automation**: Script `scripts/debug/lighthouse-audit.mjs` có thể chạy local hoặc CI
+8. **Safe area insets**: `env(safe-area-inset-*)` on body + bottom nav + drawer cho notch devices

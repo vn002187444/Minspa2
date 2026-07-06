@@ -43,12 +43,12 @@ function Counter({ end, suffix = '' }: { end: number; suffix?: string }) {
     return () => observer.disconnect();
   }, [end]);
 
-  return <span ref={ref}>{count.toLocaleString('vi-VN')}{suffix}</span>;
+  return <span ref={ref} className="notranslate">{count.toLocaleString('vi-VN')}{suffix}</span>;
 }
 
 export default function StatsCounter({ end, suffix = '', label, icon }: StatsCounterProps) {
   return (
-    <div className="text-center space-y-2">
+    <div className="text-center space-y-2 notranslate">
       <div className="text-3xl">{icon}</div>
       <div className="text-3xl md:text-4xl font-black text-[#5C4033] font-mono">
         <Counter end={end} suffix={suffix} />

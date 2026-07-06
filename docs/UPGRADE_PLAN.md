@@ -52,7 +52,25 @@
 | 4.5 | Thêm `onError` handler + placeholder cho 4 ô gợi ý ảnh | `admin/blog/page.tsx` |
 | 4.6 | Reactivate Gemini image generation hoặc thay bằng alternative (DALL·E, Stability AI) | `api/generate-seo-image/route.ts` |
 
-## Status (Updated 01/07/2026)
+## Phase 5: Image Upload & Storage Bucket Fix (07/07/2026)
+
+| # | Task | Priority | File(s) |
+|---|------|----------|---------|
+| 5.1 | **Fix bucket mismatch S3ImageBrowser**: `listStorageImages()` đọc từ `seo-images` nhưng upload ghi vào `service-images` | 🔴 Cao | `app/admin/actions.ts:111,119` |
+| 5.2 | Thêm migration `service-images` bucket vào `database.sql` (RLS policies) | 🟡 Trung | `database.sql` |
+| 5.3 | Xác nhận bucket `service-images` tồn tại trên Supabase | 🟢 Thấp | Supabase Dashboard |
+
+## Phase 6: Google Translate Stability (07/07/2026)
+
+| # | Task | Priority | File(s) |
+|---|------|----------|---------|
+| 6.1 | **Fix `Maximum call stack size exceeded`**: Guard duplicate script load + `__googleTranslateInitialized` | 🔴 Cao | `components/GoogleTranslate.tsx`, `types/index.ts` |
+| 6.2 | **Fix banner hiển thị**: CSS robust hơn cho Google Translate iframe | 🟡 Trung | `app/globals.css:340-349` |
+| 6.3 | **Prevent translate on dynamic elements**: Thêm `notranslate` class cho `StatsCounter` | 🟢 Thấp | `components/StatsCounter.tsx` |
+| 6.4 | **Touch target WCAG**: HeaderNav mobile pills `min-h-[34px]` → `44px` | 🟢 Thấp | `components/HeaderNav.tsx:216` |
+| 6.5 | **Fix 4k breakpoint**: Thêm `4k` screen breakpoint vào `tailwind.config.ts` | 🟢 Thấp | `tailwind.config.ts` |
+
+## Status (Updated 07/07/2026)
 
 - Phase 1: **Done** — ReviewSchema tạo, breadcrumb trùng xoá, ProductSchema cleanup
 - Phase 2: **Done** — GA4 → next/script afterInteractive, bỏ JetBrains Mono, xoá 4k breakpoint, Supabase preconnect, Cache-Control static assets
@@ -68,3 +86,32 @@
   - 404 pages: ✅ All have `robots: { index: false }`
   - Schema: ✅ All JSON-LD types implemented (LocalBusiness, WebSite, BreadcrumbList, BlogPosting, FAQPage, AggregateRating, Service, Review)
 - Phase 4: **Done** — AI Image & Unsplash fixes
+- Phase 5: **Done** — Đã fix bucket mismatch (service-images)
+- Phase 6: **In Progress** — Google Translate stability (6.1 done ✅, 6.2 done ✅, 6.3 done ✅, 6.4 done ✅, 6.5 done ✅)
+
+## Lighthouse Scores (Last Run: 2026-07-01, Production Mobile)
+
+| Category | Score | Notes |
+|----------|-------|-------|
+| Performance | **47** | 🟡 Thấp — cần tối ưu LCP, FCP, bundle size |
+| Accessibility | **96** | 🟢 Tốt — các lỗi nhỏ có thể cải thiện |
+| Best Practices | **92** | 🟢 Tốt |
+| SEO | **100** | 🟢 Xuất sắc |
+
+**Performance blockers chính cần xử lý:**
+1. **Render-blocking resources** — critical CSS chaining
+2. **Largest Contentful Paint (LCP)** ~ 4-6s — hero image không priority, Google Translate script chặn render
+3. **JavaScript execution time** — bundle quá lớn (motion, recharts, lucide icons full tree)
+4. **Font display** — Noto Sans + font-display: optional chưa tối ưu
+5. **No lazy-load cho below-the-fold images** — thiếu `loading="lazy"`
+
+## Tasks Ghi Nhận Từ Audit UI Mobile (07/07/2026)
+
+| # | Task | Priority | Status |
+|---|------|----------|--------|
+| M.1 | Tăng touch target `HeaderNav` pills từ 34px → 44px (WCAG 2.5.5) | 🟡 Trung | ✅ Done |
+| M.2 | Thêm `4k` breakpoint vào `tailwind.config.ts` (đang dùng trong page.tsx nhưng không định nghĩa) | 🟢 Thấp | ✅ Done |
+| M.3 | Kiểm tra console errors sau các fix Google Translate | 🟡 Trung | Pending |
+| M.4 | Bottom nav quá nhiều item (6) trên màn hình 320px có thể bị tràn | 🟢 Thấp | Cần theo dõi |
+| M.5 | Admin drawer trên mobile dùng `w-4/5 max-w-[300px]` — OK | 🟢 | ✅ OK |
+| M.6 | Safe area insets (`env(safe-area-inset-*)`) đã dùng trên body, bottom nav, drawer | 🟢 | ✅ OK |

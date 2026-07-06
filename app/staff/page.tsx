@@ -167,11 +167,8 @@ export default function StaffDashboard() {
 
     const staffId = data.staffId;
 
-    import('@supabase/supabase-js').then(async ({ createClient }) => {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+    import('@/utils/supabase/client').then(async ({ createClient }) => {
+      const supabase = createClient();
  
       const channel: any = supabase
         .channel('staff_appointments')
