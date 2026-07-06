@@ -1,11 +1,10 @@
 ﻿"use client";
 
 import { useState, useEffect, startTransition } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "motion/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import BottomNavigation from "@/components/BottomNavigation";
-import NotificationBell from "@/components/NotificationBell";
 import {
   BarChart,
   Users,
@@ -41,8 +40,9 @@ import {
   getTreatmentPackages,
   getAdminSessionInfo,
 } from "./actions";
-import dynamic from 'next/dynamic';
 
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
+const NotificationBell = dynamic(() => import('@/components/NotificationBell'), { ssr: false });
 const TabDashboard = dynamic(() => import('./components/TabDashboard'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabStaff = dynamic(() => import('./components/TabStaff'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });
 const TabServices = dynamic(() => import('./components/TabServices'), { loading: () => <div className="animate-pulse h-64 bg-gray-100 rounded-2xl" /> });

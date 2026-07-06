@@ -2,10 +2,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getBlogPosts } from './actions';
+import dynamic from 'next/dynamic';
 import { BookOpen, Calendar, ArrowLeft, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import BottomNavigation from '@/components/BottomNavigation';
 import GlobalSearch from '@/components/GlobalSearch';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 

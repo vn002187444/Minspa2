@@ -1,5 +1,6 @@
 'use client'
-import BottomNavigation from '@/components/BottomNavigation';
+import dynamic from 'next/dynamic';
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';

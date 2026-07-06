@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect, useRef, startTransition, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -19,9 +20,10 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import BottomNavigation from '@/components/BottomNavigation';
-import BlogRichEditor from '@/components/BlogRichEditor';
 import { toast, Toaster } from 'sonner';
+
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
+const BlogRichEditor = dynamic(() => import('@/components/BlogRichEditor'), { ssr: false });
 
 export default function AdminBlogPage() {
   const router = useRouter();

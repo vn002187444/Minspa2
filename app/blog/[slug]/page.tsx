@@ -14,8 +14,9 @@ function isHtmlContent(text: string): boolean {
 }
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import dynamic from 'next/dynamic';
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
 import { ArrowLeft, Calendar, Sparkles, User, BookOpen, Clock } from 'lucide-react';
-import BottomNavigation from '@/components/BottomNavigation';
 import ViewTracker from '@/components/ViewTracker';
 import ArticleSchema from '@/components/ArticleSchema';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';

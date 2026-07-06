@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { ArrowLeft, Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import BottomNavigation from '@/components/BottomNavigation';
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => <div className="animate-pulse space-y-4 p-4"><div className="h-64 bg-gray-200 rounded-xl" /></div>,

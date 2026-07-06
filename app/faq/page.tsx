@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
 import Link from 'next/link';
-import BottomNavigation from '@/components/BottomNavigation';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import FaqSection from '@/components/FaqSection';
 import { HelpCircle, ArrowRight, MessageCircle, Mail } from 'lucide-react';

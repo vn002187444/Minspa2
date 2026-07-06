@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, startTransition } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -63,11 +64,11 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import MasterSchedule from "@/components/MasterSchedule";
 import PushNotificationManager from "@/components/PushNotificationManager";
 import LoadingButton from "@/components/LoadingButton";
 import LoadingOverlay from "@/components/LoadingOverlay";
-import NotificationBell from "@/components/NotificationBell";
+const MasterSchedule = dynamic(() => import("@/components/MasterSchedule"), { ssr: false });
+const NotificationBell = dynamic(() => import("@/components/NotificationBell"), { ssr: false });
 import CheckoutModal from "@/components/staff/CheckoutModal";
 import SwapModal from "@/components/staff/SwapModal";
 import StaffBookingTab from "@/components/staff/StaffBookingTab";

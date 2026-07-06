@@ -3,10 +3,11 @@
 import { useState, useEffect, useCallback, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
 import { Bell, ArrowLeft, CheckCheck, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import BottomNavigation from '@/components/BottomNavigation';
 
 interface Notification {
   id: string;
