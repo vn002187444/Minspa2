@@ -145,6 +145,10 @@ export default function GoogleTranslate() {
           pointer-events: none;
           z-index: -1;
         }
+        #goog-gt-tt { display: none !important; }
+        .goog-te-busy { display: none !important; }
+        .goog-te-balloon-frame { display: none !important; }
+        .skiptranslate iframe { display: none !important; }
       `}</style>
     </div>
   )
