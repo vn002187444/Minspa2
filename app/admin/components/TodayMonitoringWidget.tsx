@@ -100,7 +100,7 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
                     <td className="p-3"><span className="bg-gray-100 px-2.5 py-1 rounded-lg text-gray-700 font-bold text-[11px] border border-gray-200/50">{appt.users?.full_name || 'Chưa phân thợ'}</span></td>
                     <td className="p-3 text-right font-mono font-black text-[#5C4033]">{(appt.total_amount || 0).toLocaleString('vi')} đ</td>
                     <td className="p-3 text-center">
-                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                         appt.status === 'PENDING_RANDOM' ? 'bg-amber-100 text-amber-800 border border-amber-200/50' :
                         appt.status === 'CONFIRMED' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
                         appt.status === 'IN_PROGRESS' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
@@ -147,7 +147,7 @@ export default function TodayMonitoringWidget({ appointments, onReload }: { appo
                     <h4 className="font-bold text-gray-900 text-base leading-tight">{appt.customers?.full_name || 'Khách lẻ'}</h4>
                     <p className="text-xs text-[#8D6E53] font-mono font-bold mt-0.5">Khung giờ: {formatTime(appt.start_time)}</p>
                   </div>
-                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${/* status colors */ ''}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${/* status colors */ ''}`}>
                     {appt.status === 'PENDING_RANDOM' ? 'CHỜ CHỈ ĐỊNH' : appt.status === 'CONFIRMED' ? 'XÁC NHẬN' : appt.status === 'IN_PROGRESS' ? 'ĐANG LÀM' : appt.status === 'COMPLETED' ? 'HOÀN THÀNH' : 'ĐÃ HỦY'}
                   </span>
                 </div>

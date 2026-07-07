@@ -106,7 +106,7 @@ export default function GoogleTranslate() {
 
       {open && (
         <div
-          className="absolute left-0 bottom-full mb-2 md:left-auto md:right-0 md:top-full md:bottom-auto md:mt-2 md:mb-0 bg-white rounded-xl shadow-xl border border-[#EADDCD] p-3 z-[70] min-w-[200px]"
+          className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-xl border border-[#EADDCD] p-3 z-[70] min-w-[200px]"
           onMouseDown={handleMouseDown}
         >
           <div className="space-y-1">

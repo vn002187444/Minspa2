@@ -274,7 +274,7 @@ export default function TabDashboard() {
   return (
     <div className="space-y-6">
       {/* Dynamic Toast Notifications Overlay */}
-      <div className="fixed top-20 right-4 z-55 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+      <div className="fixed top-20 right-4 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
         {toasts.map((t) => (
           <div
             key={t.id}
@@ -411,9 +411,9 @@ export default function TabDashboard() {
                className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold"
              >
                <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5">Tổng Doanh số</p>
-               <p className="text-lg md:text-xl font-black text-gray-900 font-mono">
-                 {data.totalRevenue.toLocaleString("vi")} đ
-               </p>
+                <p className="text-lg md:text-xl font-black text-gray-900 font-mono truncate">
+                  {data.totalRevenue.toLocaleString("vi")} đ
+                </p>
              </motion.div>
              <motion.div 
                key={`com-${data.totalCommission}`}
@@ -423,9 +423,9 @@ export default function TabDashboard() {
                className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold font-mono"
              >
                <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng Hoa hồng</p>
-               <p className="text-lg md:text-xl font-black text-emerald-600">
-                 {data.totalCommission.toLocaleString("vi")} đ
-               </p>
+                <p className="text-lg md:text-xl font-black text-emerald-600 truncate">
+                  {data.totalCommission.toLocaleString("vi")} đ
+                </p>
              </motion.div>
              <motion.div 
                key={`tip-${data.totalTip}`}
@@ -435,9 +435,9 @@ export default function TabDashboard() {
                className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm text-center font-semibold font-mono"
              >
                <p className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng Tiền Tip</p>
-               <p className="text-lg md:text-xl font-black text-pink-600">
-                 {data.totalTip.toLocaleString("vi")} đ
-               </p>
+                <p className="text-lg md:text-xl font-black text-pink-600 truncate">
+                  {data.totalTip.toLocaleString("vi")} đ
+                </p>
              </motion.div>
              <motion.div 
                key={`comp-${data.totalCompleted}`}
@@ -447,7 +447,7 @@ export default function TabDashboard() {
                className="bg-gradient-to-br from-gray-900 to-gray-800 p-5 rounded-2xl shadow-sm text-center text-white font-semibold flex flex-col justify-center font-mono"
              >
                <p className="text-gray-300 text-xs font-bold uppercase tracking-wider mb-1.5 font-sans">Tổng số ca làm</p>
-               <p className="text-lg md:text-xl font-black">{data.totalCompleted} ca</p>
+                <p className="text-lg md:text-xl font-black truncate">{data.totalCompleted} ca</p>
              </motion.div>
            </div>
 
@@ -545,11 +545,11 @@ export default function TabDashboard() {
 
                   <div className="grid grid-cols-2 gap-3 pt-1">
                     <div className="bg-stone-50/50 p-2.5 rounded-xl border border-stone-100">
-                      <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">Tìm kiếm tự nhiên</p>
+                      <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Tìm kiếm tự nhiên</p>
                       <p className="text-sm font-extrabold text-[#5C4033] font-mono mt-0.5">58.4%</p>
                     </div>
                     <div className="bg-stone-50/50 p-2.5 rounded-xl border border-stone-100">
-                      <p className="text-gray-400 text-[9px] font-bold uppercase tracking-widest">Mạng xã hội / Zalo</p>
+                      <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">Mạng xã hội / Zalo</p>
                       <p className="text-sm font-extrabold text-[#5C4033] font-mono mt-0.5">32.1%</p>
                     </div>
                   </div>

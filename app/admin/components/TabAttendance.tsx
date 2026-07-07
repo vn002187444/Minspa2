@@ -59,7 +59,7 @@ export default function TabAttendance() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-green-50 rounded-xl p-3 border border-green-100">
           <div className="flex items-center gap-2 text-green-700">
             <CheckCircle2 className="w-4 h-4" />

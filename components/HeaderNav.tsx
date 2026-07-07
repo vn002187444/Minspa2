@@ -125,7 +125,6 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
                   width={160}
                   height={48}
                   className="h-8 md:h-10 w-auto object-contain"
-                  unoptimized
                   priority
                 />
             </Link>
