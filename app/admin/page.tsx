@@ -241,7 +241,7 @@ export default function AdminDashboard() {
         </span>
         <div className="flex items-center gap-2">
           <NotificationBell />
-          <Link href="/" aria-label="Về trang chủ" className="text-gray-400 hover:text-white p-1.5 rounded-lg">
+          <Link href="/admin" aria-label="Về dashboard" className="text-gray-400 hover:text-white p-1.5 rounded-lg">
             <Home className="w-5 h-5" />
           </Link>
           <button onClick={() => setIsDrawerOpen(true)} aria-label="Mở menu" className="text-gray-300 hover:text-white p-1.5 focus:outline-none cursor-pointer">
@@ -310,7 +310,7 @@ export default function AdminDashboard() {
       <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 min-h-screen flex-col shrink-0 font-sans">
         <div className="h-16 flex items-center justify-between px-6 bg-black/20 text-white font-display font-bold text-lg">
           <span>ADMIN PORTAL</span>
-          <Link href="/" aria-label="Về trang chủ" className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-gray-800">
+          <Link href="/admin" aria-label="Về dashboard" className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-gray-800">
             <Home className="w-5 h-5" />
           </Link>
         </div>

@@ -480,8 +480,8 @@ export default function StaffDashboard() {
           <div className="flex items-center gap-2">
             <NotificationBell />
             <Link
-              href="/"
-              title="Quay lại Trang Chủ"
+              href="/staff"
+              title="Về dashboard"
               className="text-gray-500 hover:text-gray-950 transition-colors p-1.5 rounded-lg hover:bg-gray-100"
             >
               <Home className="w-5 h-5" />
@@ -614,12 +614,12 @@ export default function StaffDashboard() {
               </nav>
               <div className="border-t border-gray-800 pt-4 mt-4 shrink-0 space-y-2">
                 <Link
-                  href="/"
+                  href="/staff"
                   className="flex items-center gap-3.5 px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:text-white hover:bg-gray-900 transition-colors cursor-pointer"
                   onClick={() => setIsDrawerOpen(false)}
                 >
                   <Home className="w-5 h-5 shrink-0" />
-                  <span>Quay lại Trang Chủ</span>
+                  <span>Về Dashboard</span>
                 </Link>
                 <button
                   onClick={() => {
