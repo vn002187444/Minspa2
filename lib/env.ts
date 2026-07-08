@@ -26,7 +26,7 @@ const envSchema = z.object({
   UNSPLASH_ACCESS_KEY: z.string().optional(),
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
-  WEB_PUSH_EMAIL: z.string().email().optional(),
+  WEB_PUSH_EMAIL: z.string().optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 });
 
