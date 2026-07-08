@@ -27,6 +27,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   WEB_PUSH_EMAIL: z.string().email().optional(),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 });
 
 const _env = envSchema.safeParse(process.env);
@@ -41,3 +42,12 @@ if (!_env.success) {
 }
 
 export const env = _env.success ? _env.data : process.env;
+
+export function getBaseUrl(): string {
+  if (typeof env.NEXT_PUBLIC_APP_URL === 'string' && env.NEXT_PUBLIC_APP_URL.length > 0) {
+    return env.NEXT_PUBLIC_APP_URL;
+  }
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.NODE_ENV === 'production') return 'https://minhair.vercel.app';
+  return 'http://localhost:3000';
+}

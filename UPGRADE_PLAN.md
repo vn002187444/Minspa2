@@ -1,39 +1,18 @@
 # 🚀 KẾ HOẠCH NÂNG CẤP (UPGRADE_PLAN)
 
-> **Tất cả các task chính đã hoàn thành.** Xem chi tiết tại `PLAN.md` → section **CÁC GIAI ĐOẠN NÂNG CẤP HOÀN THÀNH**
+## 📋 Phase 12 — SEO Polish & Code Hygiene
 
----
+### 1. SEO nâng cao
+- [x] **P12.1** Thêm `metadataBase` vào `generateMetadata()` trong root `layout.tsx` để OG URLs luôn absolute.
+- [x] **P12.2** Tạo `public/og-default.svg` (1200×630) cho social sharing — fallback khi DB chưa có og_image_url.
+- [x] **P12.3** Gỡ subset `latin-ext` khỏi `Playfair_Display` (salon Việt Nam, font chỉ dùng heading).
 
-## 📋 Trạng thái hiện tại
+### 2. Code Hygiene
+- [x] **P12.4** Tạo `getBaseUrl()` helper trong `lib/env.ts` — migrate all 14 files (layout, pages, API routes, server actions).
+- [x] **P12.5** Thêm `NEXT_PUBLIC_APP_URL` vào env schema validation (`lib/env.ts`).
 
-*Phase 11 - SEO & UX Polish hoàn tất. Hệ thống đạt chuẩn Rich Results của Google, hiển thị tiếng Việt chuẩn xác và dịch đa ngôn ngữ ổn định.*
-
----
-
-## 🛠️ Ghi chú Phase 10 (Final Polish)
-- **Performance**: Tối ưu Dynamic Import, Defer scripts, `optimizePackageImports`.
-- **Fixes**: Unicode NFC normalization, Google Translate custom UI, Admin route naming.
-- **Auto SEO**: Migrate to Supabase Cron (`pg_cron`).
-- **Quality**: 0 Lint warnings, 0 Type errors, Build success.
-
----
-
-## 🔧 Phase 11 — SEO & UX Polish
-
-### 1. Trải nghiệm người dùng (UX)
-- **Trang mới**: Hoàn thiện `/about` (Giới thiệu) và `/faq` (Hỏi đáp).
-- **Điều hướng**: Tích hợp link About/FAQ vào HeaderNav, BottomNavigation và Sitemap.
-- **Font Subset**: Bổ sung `latin-ext` và `vietnamese` vào font Inter/Playfair $\rightarrow$ Fix triệt để lỗi dấu thanh bị tách rời (NFD display issue).
-- **Google Translate**: Tối ưu cơ chế trigger `.goog-te-combo` và fix cookie domain $\rightarrow$ Dịch ngôn ngữ hoạt động ổn định, không cần reload.
-
-### 2. Tối ưu hóa Google Search Console (Rich Results)
-- **Sửa lỗi `image`**: Bổ sung ảnh đại diện cho toàn bộ Service/Product Schema.
-- **Bổ sung Rating**: Kết nối `AggregateRatingSchema` với dữ liệu thực từ DB để hiển thị số sao.
-- **Chi tiết Offers**: Thêm `hasMerchantReturnPolicy` và `shippingDetails` cho các gói dịch vụ.
-- **Brand Identity**: Thêm thương hiệu `"Min Nail & Hair"` vào toàn bộ Schema.
-
-### 3. Kỹ thuật & Độ tin cậy
-- **Unicode NFC**: Triển khai `normalizeNFC` cho toàn bộ luồng ghi dữ liệu trong `migrate.ts`, `seed_blogs.mjs`, và `seed_seo.mjs`.
-- **Type Safety**: Khôi phục global type declarations cho Google Translate trong `types/index.ts`.
-- **Build Stability**: Fix triệt để các lỗi syntax trong `actions.ts` và `route.ts` $\rightarrow$ Build Vercel thành công 100%.
+### 3. Low Priority (nice-to-have)
+- [x] **P12.6** Chuyển inline `style={}` trong `IosErrorHandler.tsx` thành Tailwind classes (component dev-only).
+- [x] **P12.7** Thêm Web Vitals reporting component (`components/WebVitals.tsx` + gửi qua GA).
+- [ ] **P12.8** Preload font file thật (Noto Sans Vietnamese .woff2) — hiện mới chỉ có `preconnect` fonts.gstatic.com.
 

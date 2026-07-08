@@ -9,11 +9,12 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import GlobalSearch from '@/components/GlobalSearch';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import { getBaseUrl } from '@/lib/env';
 
 export const revalidate = 60; // Revalidate every minute
 
 export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
   return {
     title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
     description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body tại Min Nail & Hair. Bí quyết làm đẹp cho phái nữ.',
@@ -41,7 +42,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
   const currentPage = parseInt(pageStr || '1', 10);
   const { posts, totalPages, page } = await getBlogPosts(currentPage, 6);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
 
   return (
     <>

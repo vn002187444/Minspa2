@@ -3,11 +3,12 @@ import Link from 'next/link';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import DynamicBottomNavigation from '@/components/DynamicBottomNavigation';
 import { Sparkles, Scissors, Leaf, Award, Heart, MapPin, Phone, Clock, ArrowRight, Star } from 'lucide-react';
+import { getBaseUrl } from '@/lib/env';
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
   return {
     title: 'Giới thiệu - Min Nail & Hair | Salon làm đẹp tại Thủ Đức',
     description: 'Min Nail & Hair - Salon làm đẹp uy tín tại Lavita Charm, Thủ Đức. Dịch vụ gội đầu dưỡng sinh thảo dược, nail nghệ thuật, massage body chuyên nghiệp.',
@@ -45,7 +46,7 @@ const stats = [
 ];
 
 export default function AboutPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
 
   return (
     <>

@@ -181,26 +181,24 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 - [x] **P7.14** Connection pooling — Supabase JS client tự xử lý qua PostgREST
 
 ### 🟢 Phase 10 — Final Polish & Performance ✅
-- [x] **Tối ưu hiệu năng (Performance)**:
-  - Cài đặt Dynamic Import cho các component nặng: `BottomNavigation`, `BookingCalendar`, `BookingMascotGuide`, `GlobalSearch`, `HeaderNav`.
-  - Tách bundle `motion/react` ra khỏi critical path bằng cách lazy-load `MascotProvider` trong layout.
-  - Defer (trì hoãn) load script Google Translate cho đến khi người dùng tương tác.
-  - Thêm `optimizePackageImports` cho `lucide-react`, `date-fns`, `motion` trong `next.config.ts`.
-  - Thêm thuộc tính `priority` cho logo trong Header để cải thiện LCP.
-- [x] **Fix Google Translate**:
-  - Thay thế widget mặc định bằng Custom Dropdown UI.
-  - Sử dụng URL `translate.googleapis.com` để tránh lỗi redirect.
-  - Fix domain cho cookie `googtrans` để hoạt động ổn định trên Vercel Preview/Production.
-- [x] **Fix Lỗi Font (Unicode Normalization)**:
-  - Triển khai chuẩn hóa NFC cho toàn bộ dữ liệu fetch từ Supabase thông qua `lib/cache.ts`, fix lỗi tách dấu tiếng Việt.
-- [x] **Tự động hóa Auto SEO**:
-  - Chuyển trigger từ Vercel Cron $\rightarrow$ Supabase Cron (`pg_cron` + `pg_net`).
-  - Thêm tham số `?force=1` cho API route để trigger đăng bài thủ công.
-- [x] **Sửa lỗi điều hướng**: Sửa link `/admin/seo_articles` $\rightarrow$ `/admin/seo-articles`.
-- [x] **Kiểm tra chất lượng cuối**: 0 Lint warnings, 0 Type errors, Build successful.
- 
+- [x] **Performance**: Dynamic Import, Defer scripts, `optimizePackageImports`.
+- [x] **Google Translate**: Custom Dropdown UI, cookie domain fix.
+- [x] **Unicode NFC**: normalizeNFC trong `lib/cache.ts`.
+- [x] **Auto SEO**: Migrate Vercel Cron → Supabase Cron (`pg_cron` + `pg_net`).
+- [x] **Fix navigation**: `/admin/seo_articles` → `/admin/seo-articles`.
+- [x] **Quality**: 0 Lint warnings, 0 Type errors, Build success.
+
+### 🟢 Phase 11 — SEO & UX Polish ✅
+- [x] **UX pages**: Hoàn thiện `/about` và `/faq`; links vào HeaderNav, BottomNavigation, Sitemap.
+- [x] **Font Subset**: Thêm `latin-ext` + `vietnamese` (fix NFD display).
+- [x] **Google Translate**: Tối ưu trigger `.goog-te-combo`, fix cookie domain.
+- [x] **Rich Results**: `image` cho Service/Product Schema; AggregateRating real data; `hasMerchantReturnPolicy` + `shippingDetails`; brand `"Min Nail & Hair"` toàn bộ Schema.
+- [x] **Unicode NFC**: normalizeNFC trong migrate.ts, seed_blogs.mjs, seed_seo.mjs.
+- [x] **Type Safety**: Global type declarations cho Google Translate (`types/index.ts`).
+- [x] **Build Stability**: Fix syntax errors → Build Vercel 100%.
+
 ---
- 
+
 ## 📜 QUY TẮC VẬN HÀNH & GIAO TIẾP (CYCLE PROTOCOL)
 
 
@@ -402,26 +400,6 @@ Tối ưu hóa khả năng liên quan đến chăm sóc khách hàng và chấm 
 
 #### Phase 8 — `as any` Audit & Reduce ✅
 - [x] Giảm `as any` từ 47 xuống 29 occurrences (toàn bộ codebase)
-
-### 🟢 Phase 10 — Final Polish & Performance ✅
-- [x] **Tối ưu hiệu năng (Performance)**:
-  - Cài đặt Dynamic Import cho các component nặng: `BottomNavigation`, `BookingCalendar`, `BookingMascotGuide`, `GlobalSearch`, `HeaderNav`.
-  - Tách bundle `motion/react` ra khỏi critical path bằng cách lazy-load `MascotProvider` trong layout.
-  - Defer (trì hoãn) load script Google Translate cho đến khi người dùng tương tác.
-  - Thêm `optimizePackageImports` cho `lucide-react`, `date-fns`, `motion` trong `next.config.ts`.
-  - Thêm thuộc tính `priority` cho logo trong Header để cải thiện LCP.
-- [x] **Fix Google Translate**:
-  - Thay thế widget mặc định bằng Custom Dropdown UI.
-  - Sử dụng URL `translate.googleapis.com` để tránh lỗi redirect.
-  - Fix domain cho cookie `googtrans` để hoạt động ổn định trên Vercel Preview/Production.
-- [x] **Fix Lỗi Font (Unicode Normalization)**:
-  - Triển khai chuẩn hóa NFC cho toàn bộ dữ liệu fetch từ Supabase thông qua `lib/cache.ts`, fix lỗi tách dấu tiếng Việt.
-- [x] **Tự động hóa Auto SEO**:
-  - Chuyển trigger từ Vercel Cron $\rightarrow$ Supabase Cron (`pg_cron` + `pg_net`).
-  - Thêm tham số `?force=1` cho API route để trigger đăng bài thủ công.
-- [x] **Sửa lỗi điều hướng**: Sửa link `/admin/seo_articles` $\rightarrow$ `/admin/seo-articles`.
-- [x] **Kiểm tra chất lượng cuối**: 0 Lint warnings, 0 Type errors, Build successful.
-
 
 | # | Bài học | Nguyên nhân | Fix |
 |---|---------|------------|-----|

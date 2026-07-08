@@ -6,6 +6,7 @@ import { verifyPassword, hashPassword } from "@/lib/password";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { lockTimeSlots, unlockTimeSlots, cascadeShiftForward, incrementSlotLimit } from "@/lib/booking-engine";
+import { getBaseUrl } from '@/lib/env';
 
 export async function getStaffData() {
   const session = await getSession();
@@ -492,7 +493,7 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
 
   // Fire-and-forget: push notifications + reminders (non-blocking background tasks)
   if (dbAppt) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const appUrl = getBaseUrl();
     fetch(`${appUrl}/api/booking/background-tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

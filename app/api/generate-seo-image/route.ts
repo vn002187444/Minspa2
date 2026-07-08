@@ -52,9 +52,14 @@ export async function POST(req: NextRequest) {
           if (geminiImage) {
             return NextResponse.json({ image: geminiImage, method: "AI" });
           }
-        } catch { }
+        } catch (e) {
+          console.warn("[SEO Image] Gemini generation failed, falling through:", e);
+        }
+      } else {
+        console.warn("[SEO Image] GEMINI_API_KEY not set, skipping Gemini");
       }
-      return NextResponse.json({ error: "Gemini generation failed" }, { status: 500 });
+      // Fall through to stock instead of returning 500
+      return NextResponse.json({ image: pickRandom(), method: "STOCK", note: "Gemini unavailable" });
     }
 
     // 2. Try Unsplash

@@ -32,6 +32,8 @@ export default function LoginPage() {
         setErrorMsg(data.message || 'Sai tên đăng nhập hoặc mật khẩu.');
       }
     } catch (err: any) {
+      // NEXT_REDIRECT is thrown by redirect() on successful login — don't swallow it
+      if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err;
       console.error('Login error caught:', err);
       setErrorMsg(
         err?.message || 'Không thể kết nối đến máy chủ. Vui lòng mở trang web trong tab mới (Open in new tab) hoặc sử dụng các tài khoản khẩn cấp dưới đây.'

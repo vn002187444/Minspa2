@@ -21,6 +21,7 @@ import ViewTracker from '@/components/ViewTracker';
 import ArticleSchema from '@/components/ArticleSchema';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import BreadcrumbNav from '@/components/BreadcrumbNav';
+import { getBaseUrl } from '@/lib/env';
 
 export const revalidate = 60; // Revalidate every minute
 
@@ -32,7 +33,7 @@ export async function generateMetadata({ params }: Props) {
   const resolvedParams = await params;
   const post = await getBlogPostBySlug(resolvedParams.slug);
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
 
   if (!post) {
     return {
@@ -86,7 +87,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
   const wordCount = post.content ? post.content.trim().split(/\s+/).filter(Boolean).length : 0;
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
 
   return (
     <>

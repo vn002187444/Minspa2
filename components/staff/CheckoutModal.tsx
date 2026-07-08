@@ -12,14 +12,44 @@ import { getCustomerActivePackages } from "@/app/staff/actions"
 import ReviewCustomerModal from "./ReviewCustomerModal"
 import { getBankSettings } from "@/app/admin/actions"
 
+interface CheckoutAppointment {
+  id: string
+  customer_id?: string
+  customers?: { id: string; full_name: string; phone: string } | null
+  start_time: string
+  total_amount?: number
+  tip_amount?: number
+  discount_amount?: number
+  use_package_id?: string | null
+  buy_package_id?: string | null
+  is_package_session?: boolean
+  users?: { full_name?: string } | null
+  staff?: { full_name?: string } | null
+  appointment_services?: Array<{
+    id: string
+    price: number
+    discount_amount?: number
+    services: { id: string; name: string; price: number } | null
+  }>
+}
+
+interface CheckoutService {
+  id: string
+  name: string
+  price: number
+  category: string
+  duration?: number
+  isCovered?: boolean
+}
+
 type Props = {
-  appt: any
-  allServices: any[]
+  appt: CheckoutAppointment
+  allServices: CheckoutService[]
   onClose: () => void
   onComplete: (_extraServices: string[], _tip: number, _discountPercent: number, _paymentMethod: "CASH" | "BANK") => Promise<{ success: boolean; total?: number; error?: string }>
 }
 
-const TIP_AMOUNTS = [10000, 20000, 30000, 50000]
+import { TIP_AMOUNTS } from '@/lib/constants'
 const SUGGESTIONS = [
   "Thợ làm kỹ",
   "Rất nhiệt tình",

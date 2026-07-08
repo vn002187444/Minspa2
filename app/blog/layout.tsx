@@ -1,8 +1,9 @@
 import BreadcrumbSchema from "@/components/BreadcrumbSchema";
 import BreadcrumbNav from "@/components/BreadcrumbNav";
+import { getBaseUrl } from '@/lib/env';
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
   return (
     <>
       <BreadcrumbSchema items={[

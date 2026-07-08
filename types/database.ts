@@ -12,7 +12,7 @@ export interface User {
   full_name: string;
   cccd?: string;
   is_active: boolean;
-  notification_token?: any;
+  notification_token?: string;
   created_at: string;
 }
 
@@ -37,7 +37,7 @@ export interface Customer {
   id: string;
   full_name: string;
   phone: string;
-  notification_token?: any;
+  notification_token?: string;
   created_at: string;
 }
 

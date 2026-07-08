@@ -60,7 +60,7 @@ useEffect(() => {
     try {
       navigator.serviceWorker.register('/sw.js')
         .then((reg) => {
-          console.log('[PWA] Service Worker registered:', reg.scope);
+          console.info('[PWA] Service Worker registered:', reg.scope);
           // Listen for background sync trigger from SW
           navigator.serviceWorker.addEventListener('message', (event) => {
             if (event.data?.type === 'trigger-sync') {
@@ -90,7 +90,7 @@ useEffect(() => {
         // If no existing subscription and we are not forcing it (e.g. auto-sync on mount),
         // do not call subscribe() as it throws SecurityError on iOS without user interaction.
         if (!forceSubscribe) {
-          console.log('[PWA] No active subscription found, skipping auto-subscribe on mount to avoid SecurityError');
+          console.info('[PWA] No active subscription found, skipping auto-subscribe on mount to avoid SecurityError');
           return false;
         }
 
@@ -124,7 +124,7 @@ useEffect(() => {
         throw new Error(subData.error || 'Failed to save subscription');
       }
 
-      console.log('[PWA] Push subscription successfully synchronized!');
+      console.info('[PWA] Push subscription successfully synchronized!');
       return true;
     } catch (err: unknown) {
       console.error('[PWA] Error during subscription token sync:', err);

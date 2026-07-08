@@ -115,7 +115,7 @@ export default function TabDashboard() {
         }
       }
     } catch (e) {
-      console.log("Audio notification chime deferred.", e);
+          console.warn("Audio notification chime deferred.", e);
     }
     
     // Auto-remove after 8 seconds

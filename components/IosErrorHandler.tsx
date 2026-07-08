@@ -56,29 +56,18 @@ export default function IosErrorHandler() {
   return (
     <div
       id="ios-error-handler"
-      style={{
-        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 99999,
-        backgroundColor: 'rgba(220,38,38,0.95)', color: 'white',
-        padding: expanded ? '16px' : '8px 16px',
-        fontSize: '12px', fontFamily: 'monospace',
-        cursor: 'pointer', maxHeight: expanded ? '50vh' : 'auto',
-        overflowY: 'auto',
-        display: 'flex', flexDirection: 'column', gap: '4px',
-      }}
+      className={`fixed bottom-0 left-0 right-0 z-[99999] bg-red-600/95 text-white font-mono cursor-pointer overflow-y-auto flex flex-col gap-1 ${expanded ? 'p-4 max-h-[50vh]' : 'p-2 max-h-auto'}`}
       onClick={() => setExpanded(!expanded)}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="flex justify-between items-center text-xs">
         <strong>⚠ {errors.length} lỗi runtime</strong>
         <span>{expanded ? '▲ Thu gọn' : '▼ Mở rộng'}</span>
       </div>
       {expanded && errors.map((e, i) => (
-        <div key={i} style={{
-          borderTop: '1px solid rgba(255,255,255,0.2)',
-          paddingTop: '4px', paddingBottom: '4px',
-        }}>
-          <div>{e.message}</div>
-          {e.source && <div style={{ opacity: 0.7, fontSize: '10px' }}>{e.source}:{e.lineno}:{e.colno}</div>}
-          <div style={{ opacity: 0.5, fontSize: '10px' }}>{e.time}</div>
+        <div key={i} className="border-t border-white/20 py-1">
+          <div className="text-xs">{e.message}</div>
+          {e.source && <div className="opacity-70 text-[10px]">{e.source}:{e.lineno}:{e.colno}</div>}
+          <div className="opacity-50 text-[10px]">{e.time}</div>
         </div>
       ))}
       <button
@@ -86,12 +75,7 @@ export default function IosErrorHandler() {
           e.stopPropagation();
           setErrors([]);
         }}
-        style={{
-          marginTop: '8px', padding: '4px 12px',
-          backgroundColor: 'rgba(255,255,255,0.2)',
-          border: 'none', borderRadius: '4px', color: 'white',
-          cursor: 'pointer', fontSize: '11px',
-        }}
+        className="mt-2 px-3 py-1 bg-white/20 rounded text-white cursor-pointer text-[11px] border-none self-start"
       >
         Xoá
       </button>

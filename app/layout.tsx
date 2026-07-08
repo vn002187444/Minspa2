@@ -1,6 +1,5 @@
 // Reconstructed layout.tsx for Min Nail & Hair application
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans, Playfair_Display } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 
@@ -9,8 +8,11 @@ import SkipLink from "@/components/SkipLink";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeBanner from "@/components/ThemeBanner";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import WebVitals from "@/components/WebVitals";
 
 import PwaSupport from "@/components/PwaSupport";
+
+import { getBaseUrl } from "@/lib/env";
 
 const MascotProvider = dynamic(() => import("@/components/MascotProvider"));
 
@@ -20,9 +22,6 @@ import { Analytics } from "@vercel/analytics/next";
  
 import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
-
-const inter = Noto_Sans({ subsets: ["vietnamese", "latin"], variable: "--font-sans" });
-const playfairDisplay = Playfair_Display({ subsets: ["latin", "latin-ext"], variable: "--font-display" });
 
 // Simple in-memory cache for metadata (TTL 5 minutes)
 let metadataCache: { data: Metadata | null; fetchedAt: number } = {
@@ -46,8 +45,9 @@ export async function generateMetadata(): Promise<Metadata> {
     return metadataCache.data;
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://minhair.vercel.app";
+  const baseUrl = getBaseUrl();
   const defaultMeta: Metadata = {
+    metadataBase: new URL(baseUrl),
     title: "Min Nail & Hair - Salon Booking",
     description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
     manifest: "/manifest.json",
@@ -60,13 +60,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
       url: baseUrl,
-      images: [{ url: `${baseUrl}/icons/icon-512.png`, width: 512, height: 512, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
+      images: [{ url: `${baseUrl}/og-default.svg`, width: 1200, height: 630, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
     },
     twitter: {
       card: "summary_large_image",
       title: "Min Nail & Hair - Salon Booking",
       description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
-      images: [{ url: `${baseUrl}/icons/icon-512.png`, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
+      images: [{ url: `${baseUrl}/og-default.svg`, alt: "Min Nail & Hair - Salon làm đẹp tại Thủ Đức" }],
     },
     appleWebApp: { capable: true, statusBarStyle: "default", title: "Min Salon" },
     robots: { index: true, follow: true },
@@ -91,13 +91,13 @@ export async function generateMetadata(): Promise<Metadata> {
           ...defaultMeta.openGraph,
           title: data.page_title || defaultMeta.openGraph?.title || defaultMeta.title,
           description: data.meta_description || defaultMeta.openGraph?.description || defaultMeta.description,
-          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.png`, width: 512, height: 512, alt: data.page_title || "Min Nail & Hair" }],
+          images: [{ url: data.og_image_url || `${baseUrl}/og-default.svg`, width: 1200, height: 630, alt: data.page_title || "Min Nail & Hair" }],
         },
         twitter: {
           ...defaultMeta.twitter,
           title: data.page_title || defaultMeta.twitter?.title || defaultMeta.title,
           description: data.meta_description || defaultMeta.twitter?.description || defaultMeta.description,
-          images: [{ url: data.og_image_url || `${baseUrl}/icons/icon-512.png`, alt: data.page_title || "Min Nail & Hair" }],
+          images: [{ url: data.og_image_url || `${baseUrl}/og-default.svg`, alt: data.page_title || "Min Nail & Hair" }],
         },
       };
       metadataCache = { data: result, fetchedAt: now };
@@ -117,11 +117,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://minhair.vercel.app";
+  const baseUrl = getBaseUrl();
   return (
     <html
       lang="vi"
-      className={`${inter.variable} ${playfairDisplay.variable}`}
+      className="antialiased font-sans text-gray-900 bg-gray-50"
       suppressHydrationWarning
     >
       <head>
@@ -129,6 +129,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://dpviknfsfgvkfyurhtpm.supabase.co" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="preload" href="/fonts/NotoSans-Vietnamese.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/NotoSans-Latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/PlayfairDisplay-Latin.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
@@ -203,6 +206,7 @@ export default function RootLayout({
       </head>
 
       <body className="antialiased font-sans text-gray-900 bg-gray-50" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }} suppressHydrationWarning>
+        <WebVitals />
         <ErrorBoundary>
           <Toaster position="top-right" richColors closeButton />
           {/* GoogleTranslate moved to HeaderNav */}

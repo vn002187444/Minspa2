@@ -20,6 +20,7 @@ import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, ge
 import ServiceSchema from '@/components/ServiceSchema';
 import ReviewSchema from '@/components/ReviewSchema';
 import { testimonials } from '@/lib/testimonials';
+import { getBaseUrl } from '@/lib/env';
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => (
@@ -53,7 +54,7 @@ function slugify(text: string) {
 }
 
 export default async function Home() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
   
   // Parallel fetch using caches to eliminate TTFB bottleneck
   const [bannerSettings, seoRow, services, treatmentPackages] = await Promise.all([
@@ -714,8 +715,6 @@ export default async function Home() {
 
 async function LatestBlogPosts() {
   const posts = await getCachedBlogPosts();
-
-  if (!posts || posts.length === 0) return null;
 
   if (!posts || posts.length === 0) return null;
 

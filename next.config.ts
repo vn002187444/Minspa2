@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {
+const analyze = process.env.ANALYZE === "true";
+
+const baseConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
@@ -72,5 +74,15 @@ const nextConfig: NextConfig = {
     ];
   },
 };
+
+let nextConfig: NextConfig = baseConfig;
+
+if (analyze) {
+  const withBundleAnalyzer = require("@next/bundle-analyzer");
+  nextConfig = withBundleAnalyzer({
+    enabled: true,
+    openAnalyzer: true,
+  })(baseConfig);
+}
 
 export default nextConfig;

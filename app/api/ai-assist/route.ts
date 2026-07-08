@@ -5,6 +5,7 @@ import { getSession } from "@/utils/auth";
 import { FALLBACK_IMAGES } from "@/lib/fallback-images";
 import { getSuggestedImages } from "@/lib/image-suggestions";
 import { searchImages } from "@/lib/image-search";
+import { getBaseUrl } from '@/lib/env';
 
 const SYSTEM_SUMMARIZE = `Bạn là chuyên gia SEO. Tóm tắt văn bản thành 1-2 câu (tối đa 160 ký tự), giữ từ khóa chính. Tiếng Việt có dấu. Trả về JSON: { "summary": "..." }.`;
 
@@ -80,7 +81,7 @@ ${summary}
 
 ## ${t} là gì?
 
-${t} là một trong những dịch vụ chăm sóc sắc đẹp được yêu thích nhất hiện nay${kw}. Tại [Min Nail & Hair](${process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app'}), chúng tôi tự hào mang đến cho khách hàng những trải nghiệm làm đẹp đẳng cấp với đội ngũ chuyên viên giàu kinh nghiệm.
+${t} là một trong những dịch vụ chăm sóc sắc đẹp được yêu thích nhất hiện nay${kw}. Tại [Min Nail & Hair](${getBaseUrl()}), chúng tôi tự hào mang đến cho khách hàng những trải nghiệm làm đẹp đẳng cấp với đội ngũ chuyên viên giàu kinh nghiệm.
 
 ### Lợi ích khi sử dụng dịch vụ
 

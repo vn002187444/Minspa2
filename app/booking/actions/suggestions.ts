@@ -3,6 +3,14 @@
 import { createClient } from "@/utils/supabase/server";
 import { callGemini } from "@/lib/ai/gemini";
 
+const GREETING_SCHEMA = {
+  type: "object",
+  properties: {
+    greeting: { type: "string", description: "1 câu chào ngắn tối đa 15 từ, thân thiện, dùng 'chị'/'ạ'" },
+  },
+  required: ["greeting"],
+};
+
 const SYSTEM_PROMPT = `Bạn là trợ lý AI của tiệm Min Nail & Hair. Nhiệm vụ: viết 1 câu chào ngắn (tối đa 15 từ) hiển thị cho khách hàng khi họ quay lại đặt lịch.
 
 NGUYÊN TẮC:
@@ -11,13 +19,14 @@ NGUYÊN TẮC:
 - KHÔNG phân tích, KHÔNG liệt kê, KHÔNG đưa ra nhiều lựa chọn
 - Thân thiện, dùng "chị", "ạ"
 - KHÔNG dùng emoji, KHÔNG dùng dấu ngoặc kép
+- Trả về JSON object: {"greeting": "..."}
 
 TÌNH HUỐNG & VÍ DỤ:
-- Khách mới (chưa có lịch sử): "Chào mừng chị đến với Min Nail & Hair ạ!"
-- Tháng sinh nhật: "Chúc mừng sinh nhật chị, Min có ưu đãi đặc biệt tặng chị ạ!"
-- Có gói active: "Gói liệu trình của chị còn buổi đang chờ sẵn sàng ạ!"
-- Quay lại sau >60 ngày: "Lâu quá mới gặp lại chị, hôm nay chị muốn làm gì ạ?"
-- Còn lại (khách quay lại bình thường): "Chào mừng chị quay lại, hôm nay chị muốn làm gì ạ?"`;
+- Khách mới (chưa có lịch sử): {"greeting": "Chào mừng chị đến với Min Nail & Hair ạ!"}
+- Tháng sinh nhật: {"greeting": "Chúc mừng sinh nhật chị, Min có ưu đãi đặc biệt tặng chị ạ!"}
+- Có gói active: {"greeting": "Gói liệu trình của chị còn buổi đang chờ sẵn sàng ạ!"}
+- Quay lại sau >60 ngày: {"greeting": "Lâu quá mới gặp lại chị, hôm nay chị muốn làm gì ạ?"}
+- Còn lại (khách quay lại bình thường): {"greeting": "Chào mừng chị quay lại, hôm nay chị muốn làm gì ạ?"}`;
 
 export async function getCustomerCareSuggestion(phone: string): Promise<string> {
   const supabase = await createClient();
@@ -56,13 +65,22 @@ export async function getCustomerCareSuggestion(phone: string): Promise<string> 
   const geminiResult = await callGemini({
     systemInstruction: SYSTEM_PROMPT,
     prompt: context,
+    jsonSchema: GREETING_SCHEMA,
     useCache: true,
     cacheKey: `suggestion_${customer.id}_${new Date().toISOString().split('T')[0]}`,
     config: { maxOutputTokens: 100 },
   });
 
   if (geminiResult.text) {
-    return geminiResult.text;
+    const trimmed = geminiResult.text.trim();
+    try {
+      const parsed = JSON.parse(trimmed);
+      const greeting = parsed.greeting?.trim();
+      if (greeting && greeting.split(/\s+/).length <= 15) return greeting;
+    } catch {
+      const words = trimmed.split(/\s+/);
+      if (words.length <= 15) return trimmed;
+    }
   }
 
   return getFallbackSuggestion(customer, customerPackages, appointments);

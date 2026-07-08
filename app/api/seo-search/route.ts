@@ -1,6 +1,7 @@
 import { callGemini } from "@/lib/ai/gemini";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/utils/auth";
+import { getBaseUrl } from '@/lib/env';
 
 const SYSTEM_INSTRUCTION = `Bạn là cố vấn SEO cho chuỗi dịch vụ "Min Nail & Hair" tại TP.HCM.
 Sử dụng Google Search để tra cứu xu hướng thực tế. Trả về JSON đúng schema. Tiếng Việt có dấu.`;
@@ -83,7 +84,7 @@ Từ khóa bổ sung: "${keywords || "Không có"}"`;
       outline: fbOutline,
       headlineTips: fbHeadlineTips,
       sources: [
-        { title: "Báo cáo xu hướng Hair & Spa 2026", uri: `${process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app'}/reports/beauty-trends` },
+        { title: "Báo cáo xu hướng Hair & Spa 2026", uri: `${getBaseUrl()}/reports/beauty-trends` },
       ],
       isFallback: true,
     });

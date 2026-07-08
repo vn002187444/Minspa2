@@ -1,10 +1,11 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@/utils/supabase/server';
+import { getBaseUrl } from '@/lib/env';
 
 export const revalidate = 3600; // Cache sitemap for 1 hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
 
   // 1. Static Routes
   const routes = [

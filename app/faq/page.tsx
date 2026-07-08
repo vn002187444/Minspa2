@@ -5,11 +5,12 @@ import Link from 'next/link';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import FaqSection from '@/components/FaqSection';
 import { HelpCircle, ArrowRight, MessageCircle, Mail } from 'lucide-react';
+import { getBaseUrl } from '@/lib/env';
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
   return {
     title: 'Câu hỏi thường gặp - Min Nail & Hair',
     description: 'Giải đáp các thắc mắc về dịch vụ gội đầu dưỡng sinh, nail, massage tại Min Nail & Hair. Hướng dẫn đặt lịch, giá cả và chính sách ưu đãi.',
@@ -33,7 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function FaqPage() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = getBaseUrl();
 
   return (
     <>

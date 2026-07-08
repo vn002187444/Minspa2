@@ -44,10 +44,13 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Skip service worker for cross-origin, API, Supabase, WebSocket, Next.js static chunks
+  // Skip service worker for cross-origin, API, auth-required pages, Supabase, WebSocket, Next.js static chunks
   if (
     url.origin !== self.location.origin ||
     url.pathname.startsWith('/api') ||
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/staff') ||
+    url.pathname.startsWith('/login') ||
     url.pathname.includes('/_next/') ||
     url.pathname.includes('supabase') ||
     url.pathname.includes('ws') ||

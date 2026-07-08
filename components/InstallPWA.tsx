@@ -15,8 +15,9 @@ function isCooldownPassed(): boolean {
   return Date.now() - dismissed > COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
 }
 
+let deferredPromptSingleton: any = null;
+
 export default function InstallPWA() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isIos, setIsIos] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -36,12 +37,14 @@ export default function InstallPWA() {
 
     const handleBeforeInstallEvent = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      deferredPromptSingleton = e;
       timerRef.current = setTimeout(() => {
         startTransition(() => { setIsVisible(true); });
       }, 3000);
     };
 
+    // Avoid duplicate listeners on SPA navigation
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallEvent);
     window.addEventListener('beforeinstallprompt', handleBeforeInstallEvent);
 
     if (isApple) {
@@ -58,6 +61,8 @@ export default function InstallPWA() {
     };
   }, []);
 
+  const deferredPrompt = deferredPromptSingleton;
+
   const dismiss = () => {
     setIsVisible(false);
     try { localStorage.setItem(LS_KEY, String(Date.now())); } catch {}
@@ -70,7 +75,7 @@ export default function InstallPWA() {
     if (outcome === 'accepted') {
       try { localStorage.removeItem(LS_KEY); } catch {}
     }
-    setDeferredPrompt(null);
+    deferredPromptSingleton = null;
     setIsVisible(false);
   };
 

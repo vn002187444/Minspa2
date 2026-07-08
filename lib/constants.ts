@@ -1,0 +1,5 @@
+export const TIP_AMOUNTS = [10000, 20000, 30000, 50000]
+export const TOAST_DURATION = 3000
+export const POLL_INTERVAL = 300000
+export const AUTO_CLEAR_DELAY = 15000
+export const PRICE_THRESHOLD = 150000
