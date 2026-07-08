@@ -186,7 +186,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
             {/* Title & Summary */}
             <div className="space-y-4 max-w-full">
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-stone-100 pb-2 max-w-full">
-                <h1 className="text-2xl md:text-4xl font-serif font-black text-[#5C4033] leading-tight max-w-full">
+                <h1 className="text-2xl md:text-4xl font-display font-black text-[#5C4033] leading-tight max-w-full">
                   {post.title}
                 </h1>
                 <div className="shrink-0">

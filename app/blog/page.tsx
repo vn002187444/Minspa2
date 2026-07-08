@@ -85,7 +85,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FAF6F0]/10 border border-[#FAF6F0]/20 text-xs font-bold uppercase tracking-widest text-[#EADDCD]">
             <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin-slow" /> Cẩm nang làm đẹp độc quyền
           </div>
-          <h1 className="text-3xl md:text-5xl font-display font-bold font-serif tracking-tight text-white leading-tight">
+          <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight text-white leading-tight">
             Min Nail &amp; Hair Blogs
           </h1>
           <p className="text-sm md:text-base text-[#FAF0E6] max-w-xl mx-auto leading-relaxed">
