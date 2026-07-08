@@ -1,10 +1,12 @@
 "use client"
 import { useEffect, useState, startTransition } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Sparkles, User, Lock, AlertCircle, ArrowRight, LogIn, ArrowLeft } from 'lucide-react';
 import { loginUser } from './actions';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [authError, setAuthError] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, setIsPending] = useState(false);
@@ -19,6 +21,18 @@ export default function LoginPage() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data?.authenticated && data?.user?.role) {
+          const role = data.user.role.toUpperCase();
+          router.push(role === 'ADMIN' || role === 'MANAGER' ? '/admin' : '/staff');
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

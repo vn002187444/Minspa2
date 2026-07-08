@@ -479,13 +479,13 @@ export default function StaffDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
-            <Link
-              href="/staff"
-              title="Về dashboard"
+            <a
+              href="/"
+              title="Xem trang chủ"
               className="text-gray-500 hover:text-gray-950 transition-colors p-1.5 rounded-lg hover:bg-gray-100"
             >
               <Home className="w-5 h-5" />
-            </Link>
+            </a>
             <button
               onClick={() => setActiveTab("PASSWORD")}
               title="Đổi mật khẩu"
@@ -613,14 +613,13 @@ export default function StaffDashboard() {
                 })}
               </nav>
               <div className="border-t border-gray-800 pt-4 mt-4 shrink-0 space-y-2">
-                <Link
-                  href="/staff"
+                <a
+                  href="/"
                   className="flex items-center gap-3.5 px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:text-white hover:bg-gray-900 transition-colors cursor-pointer"
-                  onClick={() => setIsDrawerOpen(false)}
                 >
                   <Home className="w-5 h-5 shrink-0" />
-                  <span>Về Dashboard</span>
-                </Link>
+                  <span>Xem trang chủ</span>
+                </a>
                 <button
                   onClick={() => {
                     setIsDrawerOpen(false);

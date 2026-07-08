@@ -236,14 +236,14 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Mobile Top Header */}
       <header className="md:hidden h-16 bg-gray-900 text-white flex items-center justify-between px-6 shadow-md border-b border-gray-800 shrink-0" style={{ paddingTop: 'env(safe-area-inset-top, 0px)', minHeight: 'calc(4rem + env(safe-area-inset-top, 0px))' }}>
-        <span className="font-display font-extrabold text-sm tracking-wider bg-[#8D6E53] text-white px-2 py-0.5 rounded-lg">
+        <Link href="/admin" className="font-display font-extrabold text-sm tracking-wider bg-[#8D6E53] text-white px-2 py-0.5 rounded-lg hover:bg-[#6B4F3A] transition-colors">
           MIN
-        </span>
+        </Link>
         <div className="flex items-center gap-2">
           <NotificationBell />
-          <Link href="/admin" aria-label="Về dashboard" className="text-gray-400 hover:text-white p-1.5 rounded-lg">
+          <a href="/" aria-label="Xem trang chủ" className="text-gray-400 hover:text-white p-1.5 rounded-lg">
             <Home className="w-5 h-5" />
-          </Link>
+          </a>
           <button onClick={() => setIsDrawerOpen(true)} aria-label="Mở menu" className="text-gray-300 hover:text-white p-1.5 focus:outline-none cursor-pointer">
             <MenuIcon className="w-6 h-6" />
           </button>
@@ -310,9 +310,9 @@ export default function AdminDashboard() {
       <aside className="hidden md:flex w-64 bg-gray-900 text-gray-300 min-h-screen flex-col shrink-0 font-sans">
         <div className="h-16 flex items-center justify-between px-6 bg-black/20 text-white font-display font-bold text-lg">
           <span>ADMIN PORTAL</span>
-          <Link href="/admin" aria-label="Về dashboard" className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-gray-800">
+          <a href="/" aria-label="Xem trang chủ" className="text-gray-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-gray-800">
             <Home className="w-5 h-5" />
-          </Link>
+          </a>
         </div>
         <nav className="flex-1 p-4 flex flex-col gap-1 overflow-y-auto">
           {userRole === 'MANAGER' && (
