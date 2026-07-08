@@ -479,6 +479,7 @@ export default function StaffDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
             <a
               href="/"
               title="Xem trang chủ"
@@ -613,6 +614,7 @@ export default function StaffDashboard() {
                 })}
               </nav>
               <div className="border-t border-gray-800 pt-4 mt-4 shrink-0 space-y-2">
+                {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
                 <a
                   href="/"
                   className="flex items-center gap-3.5 px-4 py-3 rounded-xl font-bold text-sm text-gray-400 hover:text-white hover:bg-gray-900 transition-colors cursor-pointer"
