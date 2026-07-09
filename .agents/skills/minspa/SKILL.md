@@ -59,11 +59,23 @@ Min Nail & Hair là salon spa tại Thủ Đức. Stack: Next.js 16.2.9, Supabas
 - `opencode.json` `tools` field only accepts booleans; custom tools require MCP server
 - Playwright MCP (`@playwright/mcp`) is the recommended approach for browser automation
 
-### 8. Image Upload Pipeline
-- Sharp native module may fail on Windows (`ERR_DLOPEN_FAILED`) → fallback to raw upload
-- Max file size: 5MB (both before and after optimization)
-- Upload immediately on file pick (before form submit) to avoid 1MB Server Action body limit
-- Use `serverActions.bodySizeLimit: '10mb'` in `next.config.ts`
+### 8. Blog Title Font — `font-serif` vs `font-display`
+- **Bug**: Blog detail page `<h1>` used `font-serif` which resolved to Times New Roman (system serif), not Playfair Display. Tailwind only defines `sans` and `display` in config — no `font-serif` var, so it fell through to default serif stack.
+- **Fix**: Change `font-serif` → `font-display` on blog title elements.
+- **Rule**: Never use `font-serif` in this project unless a `--font-serif` CSS variable is explicitly defined. Always use `font-display` for Playfair Display.
+- **Note**: `font-serif` + `font-display` together in className → `font-serif` wins (later in CSS cascade). Use only `font-display`.
+
+### 9. Self-Hosted Font Subsets — Vietnamese Support
+- Vietnamese characters need their own `@font-face` with `unicode-range: U+0102-0103, U+0110-0111, ..., U+1EA0-1EF9, U+20AB`
+- Both Latin and Vietnamese subset `.woff2` files must be present in `public/fonts/`
+- Preload all 4 font files (NotoSans-Latin, NotoSans-Vietnamese, PlayfairDisplay-Latin, PlayfairDisplay-Vietnamese) in `layout.tsx`
+- Both subsets share the same `font-family` name — CSS `unicode-range` selects the correct file per character
+- Test with actual Vietnamese text like `Gội đầu dưỡng sinh thảo dược` to verify rendering
+
+### 10. Commit Hygiene — Auto-Generated Files
+- **Don't commit**: `next-env.d.ts` (changes path between dev/prod), `tsconfig.tsbuildinfo` (build artifact)
+- **Always commit only**: intentional source changes in `app/`, `components/`, `lib/`, etc.
+- Use `git diff --cached --name-only` to verify staged files before committing
 
 ## Tailwind Conventions
 - Breakpoints: `xs` (480px), `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `xxl` (1600px), `4k` (2560px)
