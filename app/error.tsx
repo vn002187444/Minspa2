@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
-import { useNoindex } from '@/lib/seo';
+import { useNoindex } from '@/lib/use-noindex';
 
 export default function RootError({ error, reset }: { error: Error; reset: () => void }) {
   useNoindex();
