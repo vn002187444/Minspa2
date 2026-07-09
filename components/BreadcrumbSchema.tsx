@@ -13,7 +13,7 @@ export default function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
     "@type": "BreadcrumbList",
     itemListElement: items.map((item, index) => ({
       "@type": "ListItem",
-      "@id": `#breadcrumb-${index + 1}`,
+      "@id": `${item.url}#breadcrumb-${index + 1}`,
       position: index + 1,
       name: item.name,
       item: item.url,

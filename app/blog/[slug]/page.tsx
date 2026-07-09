@@ -116,11 +116,15 @@ export async function generateMetadata({ params }: Props) {
   }
 
   const ogImage = post.image_url || `${baseUrl}/icons/icon-512.png`;
+  const keywordsArr = post.keywords
+    ? post.keywords.split(',').map((k: string) => k.trim()).filter(Boolean)
+    : [];
 
   return {
     title: `${post.title} - Min Nail & Hair`,
     description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
     alternates: { canonical: `${baseUrl}/blog/${resolvedParams.slug}` },
+    keywords: keywordsArr.length > 0 ? keywordsArr.join(', ') : undefined,
     openGraph: {
       type: "article",
       locale: "vi_VN",
@@ -129,6 +133,10 @@ export async function generateMetadata({ params }: Props) {
       description: post.summary || 'Cẩm nang thông tin chăm sóc cơ thể tại Min Nail & Hair',
       url: `${baseUrl}/blog/${resolvedParams.slug}`,
       images: [{ url: ogImage, width: 1200, height: 630, alt: post.image_alt || post.title }],
+      publishedTime: post.created_at || undefined,
+      modifiedTime: post.updated_at || post.created_at || undefined,
+      authors: [`${baseUrl}/about`],
+      tags: keywordsArr.length > 0 ? keywordsArr : undefined,
     },
     twitter: {
       card: "summary_large_image",

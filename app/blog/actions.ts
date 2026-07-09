@@ -13,7 +13,7 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
 
   let query = supabase
     .from('blogs')
-    .select('id, title, slug, summary, content, image_url, image_alt, created_at, published, keywords', { count: 'exact' })
+    .select('id, title, slug, summary, content, image_url, image_alt, created_at, updated_at, published, keywords', { count: 'exact' })
     .order('created_at', { ascending: false });
 
   if (!includeDrafts) {
@@ -25,7 +25,7 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
   if (count === null) {
     const { data, error } = await supabase
       .from('blogs')
-      .select('id, title, slug, summary, content, image_url, image_alt, created_at, keywords')
+      .select('id, title, slug, summary, content, image_url, image_alt, created_at, updated_at, keywords')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -51,7 +51,7 @@ export async function getBlogPostBySlug(slug: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('blogs')
-    .select('id, title, slug, summary, content, image_url, image_alt, created_at, keywords')
+    .select('id, title, slug, summary, content, image_url, image_alt, created_at, updated_at, keywords')
     .eq('slug', slug)
     .single();
 

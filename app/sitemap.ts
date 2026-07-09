@@ -14,8 +14,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/faq',
     '/booking',
     '/blog',
-    '/about',
-    '/faq',
   ].map((route) => ({
     url: `${baseUrl}${route}`,
     lastModified: new Date().toISOString(),
@@ -50,13 +48,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const supabase = await createClient();
     const { data: blogs } = await supabase
       .from('blogs')
-      .select('slug, created_at')
+      .select('slug, created_at, updated_at')
+      .eq('published', true)
       .order('created_at', { ascending: false });
 
     if (blogs && blogs.length > 0) {
       blogsRoutes = blogs.map((post: any) => ({
         url: `${baseUrl}/blog/${post.slug}`,
-        lastModified: post.created_at ? new Date(post.created_at).toISOString() : new Date().toISOString(),
+        lastModified: (post.updated_at || post.created_at) ? new Date(post.updated_at || post.created_at).toISOString() : new Date().toISOString(),
         changeFrequency: 'weekly' as const,
         priority: 0.7,
       }));

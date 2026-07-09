@@ -26,7 +26,7 @@ export default function ArticleSchema({
   const schema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
-    "@id": "#article",
+    "@id": `${baseUrl || ''}#article`,
     headline: title,
     description,
     image,

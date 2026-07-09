@@ -18,7 +18,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
     description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body tại Min Nail & Hair. Bí quyết làm đẹp cho phái nữ.',
+    keywords: 'gội đầu, nail, hair, massage, spa, làm đẹp, bí quyết làm đẹp, chăm sóc tóc, chăm sóc móng, thư giãn',
     alternates: { canonical: `${baseUrl}/blog` },
+    robots: { index: true, follow: true },
     openGraph: {
       title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
       description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body.',
@@ -136,11 +138,11 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                         <Calendar className="w-3.5 h-3.5 text-[#8D6E53]" />
                         <span>{formattedDate}</span>
                       </div>
-                      <h3 className="font-display font-bold text-lg text-stone-900 group-hover:text-[#8D6E53] line-clamp-2 transition-colors leading-snug">
+                      <h2 className="font-display font-bold text-lg text-stone-900 group-hover:text-[#8D6E53] line-clamp-2 transition-colors leading-snug">
                         <Link href={`/blog/${post.slug}`}>
                           {post.title}
                         </Link>
-                      </h3>
+                      </h2>
                       <p className="text-xs text-stone-600 leading-relaxed line-clamp-3">
                         {post.summary}
                       </p>
