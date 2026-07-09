@@ -94,6 +94,7 @@ import ArticleSchema from '@/components/ArticleSchema';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import BreadcrumbNav from '@/components/BreadcrumbNav';
 import { getBaseUrl } from '@/lib/env';
+import { detectArticleSection } from '@/lib/seo';
 
 export const revalidate = 60; // Revalidate every minute
 
@@ -179,7 +180,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
         dateModified={post.updated_at || post.created_at || ''}
         author="Min Nail & Hair"
         baseUrl={`${baseUrl}/blog/${resolvedParams.slug}`}
-        articleSection="Làm đẹp & Sức khỏe"
+        articleSection={post.keywords ? detectArticleSection(post.keywords, post.content) : "Làm đẹp & Sức khỏe"}
         keywords={post.keywords ? post.keywords.split(',').map((k: string) => k.trim()).filter(Boolean) : undefined}
         wordCount={wordCount}
       />

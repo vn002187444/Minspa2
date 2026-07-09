@@ -18,6 +18,8 @@ import {
   Bold, Italic, Heading2, Heading3, List, ListOrdered, Quote, Code2,
   WandSparkles, FileText, BarChart3
 } from 'lucide-react';
+import LinkSuggester from './LinkSuggester';
+import AltTextGenerator from './AltTextGenerator';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast, Toaster } from 'sonner';
@@ -725,6 +727,9 @@ export default function AdminBlogPage() {
                 <p className="text-[10px] text-stone-400 font-medium">Mô tả ngắn 5-10 từ, chứa từ khóa chính. Hiển thị khi ảnh không tải được và giúp Google hiểu nội dung ảnh.</p>
               </div>
 
+              {/* AI Alt Text Generator */}
+              <AltTextGenerator imageUrl={imageUrl} currentAlt={imageAlt} onSetAlt={setImageAlt} title={title || aiTopic} />
+
               {/* Content Editor */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
@@ -964,6 +969,11 @@ export default function AdminBlogPage() {
                   </p>
                 </div>
               )}
+            </div>
+
+            {/* Internal Link Suggester */}
+            <div className="border-t pt-4">
+              <LinkSuggester currentId={editingId} keywords={keywords} />
             </div>
 
             {/* General Advice and recommendation */}
