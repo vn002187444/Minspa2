@@ -77,6 +77,11 @@ Min Nail & Hair là salon spa tại Thủ Đức. Stack: Next.js 16.2.9, Supabas
 - **Always commit only**: intentional source changes in `app/`, `components/`, `lib/`, etc.
 - Use `git diff --cached --name-only` to verify staged files before committing
 
+### 11. Blog Content Rendering — `prose` + HTML Converter
+- **Bug**: Blog content rendered inline JSX per-paragraph, no typography plugin → flat unstyled text. Prose classes were dead without `@tailwindcss/typography`.
+- **Fix**: Install `@tailwindcss/typography`, add it to `tailwind.config.ts` plugins. Convert plain-text markdown (###, **bold**, [link](url), * list, > quote, ---, 1. list) to HTML via `markdownToHtml()`, then render with `prose prose-stone` + `dangerouslySetInnerHTML`.
+- **Rule**: Always install `@tailwindcss/typography` when using `prose` classes. Keep a `markdownToHtml` converter for blog content that isn't stored as HTML. Use `sanitizeHtml` on the output for XSS safety.
+
 ## Tailwind Conventions
 - Breakpoints: `xs` (480px), `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `xxl` (1600px), `4k` (2560px)
 - Mobile-first: `grid-cols-1` base → `md:grid-cols-2` → `lg:grid-cols-3`

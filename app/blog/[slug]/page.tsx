@@ -12,6 +12,78 @@ function isHtmlContent(text: string): boolean {
     return false;
   }
 }
+
+function inlineMarkdown(text: string): string {
+  let t = text;
+  // Images: ![alt](url)
+  t = t.replace(
+    /!\[([^\]]*)\]\(([^)]+)\)/g,
+    '<img src="$2" alt="$1" class="rounded-xl mx-auto my-6 w-full md:w-auto" loading="lazy"/>',
+  );
+  // Bold: **text**
+  t = t.replace(
+    /\*\*([^*]+)\*\*/g,
+    '<strong class="font-bold text-[#5C4033]">$1</strong>',
+  );
+  // Links: [text](url)
+  t = t.replace(
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" class="text-[#8D6E53] hover:text-[#5C4033] font-semibold underline hover:no-underline transition-colors">$1</a>',
+  );
+  return t;
+}
+
+function markdownToHtml(text: string): string {
+  let html = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // Escape HTML special chars (must be before markdown processing)
+  html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  // Insert blank lines before block elements that lack them:
+  //   inline headers (### or ## mid-paragraph), blockquotes, HRs
+  html = html
+    .replace(/([^\n])### /g, '$1\n\n### ')
+    .replace(/([^\n])## /g, '$1\n\n## ')
+    .replace(/([^\n])---+/g, '$1\n\n---')
+    .replace(/([^\n])> /g, '$1\n\n> ');
+  const blocks = html.split(/\n{2,}/);
+  return blocks
+    .map((block) => {
+      const t = block.trim();
+      if (!t) return '';
+      // Horizontal rule
+      if (/^---+\s*$/.test(t)) return '<hr/>';
+      // Blockquote
+      if (t.startsWith('> ')) {
+        const lines = t
+          .split('\n')
+          .map((l) => l.replace(/^>\s?/, ''))
+          .join('<br/>');
+        return `<blockquote><p>${lines}</p></blockquote>`;
+      }
+      // Unordered list
+      if (/^[\*\-]\s/.test(t)) {
+        const items = t
+          .split('\n')
+          .map((l) => `<li>${inlineMarkdown(l.replace(/^[\*\-]\s+/, ''))}</li>`)
+          .join('');
+        return `<ul>${items}</ul>`;
+      }
+      // Ordered list
+      if (/^\d+\.\s/.test(t)) {
+        const items = t
+          .split('\n')
+          .map((l) => `<li>${inlineMarkdown(l.replace(/^\d+\.\s+/, ''))}</li>`)
+          .join('');
+        return `<ol>${items}</ol>`;
+      }
+      // Headings
+      if (t.startsWith('## ')) return `<h2>${inlineMarkdown(t.replace(/^##\s+/, ''))}</h2>`;
+      if (t.startsWith('### ')) return `<h3>${inlineMarkdown(t.replace(/^###\s+/, ''))}</h3>`;
+      // Regular paragraph
+      return `<p>${inlineMarkdown(t)}</p>`;
+    })
+    .filter(Boolean)
+    .join('\n');
+}
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import dynamic from 'next/dynamic';
@@ -177,7 +249,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
                 </div>
                 <div className="inline-flex items-center gap-1 bg-[#8D6E53]/10 text-[#8D6E53] px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wider" id="reading-time-badge">
                   <Clock className="w-3.5 h-3.5" />
-                  <span>{readingTime} min read</span>
+                  <span>{readingTime} phút đọc</span>
                 </div>
               </div>
               <ShareButton title={post.title} />
@@ -199,95 +271,14 @@ export default async function BlogPostDetailPage({ params }: Props) {
             </div>
 
             {/* Rich text output */}
-            <div className="prose prose-stone max-w-full text-stone-800 text-sm md:text-base leading-relaxed space-y-4 pt-2">
-              {(() => {
-                if (!post.content) return <p className="text-stone-400">Không có dữ liệu bài viết.</p>;
-                if (isHtmlContent(post.content)) return <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }} />;
-                return post.content.split('\n\n').map((paragraph: string, pIdx: number) => {
-                  const trimmed = paragraph.trim();
-                  if (!trimmed) return null;
-
-                  // Simple parsing for list items
-                  if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
-                    const items = trimmed.split('\n').map((line, lIdx) => (
-                      <li key={lIdx} className="ml-4 list-disc pl-1 mt-1 text-stone-700 font-medium">
-                        {line.replace(/^[\*\-]\s+/, '')}
-                      </li>
-                    ));
-                    return <ul key={pIdx} className="space-y-1 my-3">{items}</ul>;
-                  }
-
-                  // Standard headers check
-                  if (trimmed.startsWith('### ')) {
-                    return (
-                      <h3 key={pIdx} className="text-lg md:text-xl font-bold text-[#5C4033] mt-6 mb-2 tracking-tight">
-                        {trimmed.replace(/^###\s+/, '')}
-                      </h3>
-                    );
-                  }
-                  if (trimmed.startsWith('## ')) {
-                    return (
-                      <h2 key={pIdx} className="text-xl md:text-2xl font-bold text-[#5C4033] mt-8 mb-3 tracking-tight border-b border-stone-100 pb-1">
-                        {trimmed.replace(/^##\s+/, '')}
-                      </h2>
-                    );
-                  }
-
-                  // Rich links/internals matching markdown regex e.g. [text](/url)
-                  const linkRegex = /\[([^\[]+)\]\(([^\)]+)\)/g;
-                  if (linkRegex.test(trimmed)) {
-                    // Render simple text with standard highlighted tags
-                    // Re-test to process split
-                    const parts = [];
-                    let lastIndex = 0;
-                    let match;
-                    linkRegex.lastIndex = 0; // reset
-                    
-                    while ((match = linkRegex.exec(trimmed)) !== null) {
-                      if (match.index > lastIndex) {
-                        parts.push(trimmed.substring(lastIndex, match.index));
-                      }
-                      parts.push(
-                        <Link 
-                          key={match.index} 
-                          href={match[2]} 
-                          className="text-[#8D6E53] hover:text-[#5C4033] font-extrabold underline hover:no-underline transition-all"
-                        >
-                          {match[1]}
-                        </Link>
-                      );
-                      lastIndex = linkRegex.lastIndex;
-                    }
-                    if (lastIndex < trimmed.length) {
-                      parts.push(trimmed.substring(lastIndex));
-                    }
-                    return <p key={pIdx} className="leading-relaxed">{parts}</p>;
-                  }
-
-                  // Support custom bolding wrapper
-                  // Look for **bold** format
-                  const boldRegex = /\*\*([^*]+)\*\*/g;
-                  if (boldRegex.test(trimmed)) {
-                    const parts = [];
-                    let lastIndex = 0;
-                    let match;
-                    boldRegex.lastIndex = 0; // reset
-                    while ((match = boldRegex.exec(trimmed)) !== null) {
-                      if (match.index > lastIndex) {
-                        parts.push(trimmed.substring(lastIndex, match.index));
-                      }
-                      parts.push(<strong key={match.index} className="font-extrabold text-[#5C4033]">{match[1]}</strong>);
-                      lastIndex = boldRegex.lastIndex;
-                    }
-                    if (lastIndex < trimmed.length) {
-                      parts.push(trimmed.substring(lastIndex));
-                    }
-                    return <p key={pIdx} className="leading-relaxed">{parts}</p>;
-                  }
-
-                  return <p key={pIdx} className="leading-relaxed">{trimmed}</p>;
-                })
-              })()}
+            <div className="prose prose-stone max-w-full prose-headings:font-display prose-headings:text-[#5C4033] prose-h2:text-xl prose-h2:md:text-2xl prose-h2:border-b prose-h2:border-stone-100 prose-h2:pb-1 prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:md:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-p:text-stone-700 prose-p:leading-relaxed prose-p:text-sm prose-p:md:text-base prose-a:text-[#8D6E53] prose-a:font-semibold prose-a:underline hover:prose-a:no-underline prose-strong:text-[#5C4033] prose-strong:font-bold prose-img:rounded-xl prose-img:mx-auto prose-img:my-6 prose-blockquote:border-l-[#8D6E53] prose-blockquote:bg-[#FAF6F0] prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-2xl prose-blockquote:italic prose-blockquote:text-stone-600 prose-li:text-stone-700 prose-li:marker:text-[#8D6E53] pt-2">
+              {!post.content ? (
+                <p className="text-stone-400">Không có dữ liệu bài viết.</p>
+              ) : isHtmlContent(post.content) ? (
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }} />
+              ) : (
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(markdownToHtml(post.content)) }} />
+              )}
             </div>
 
             {/* Backlink & Internal Promotion block */}

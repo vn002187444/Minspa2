@@ -1,5 +1,6 @@
 import { type Config } from 'tailwindcss';
 import animate from 'tailwindcss-animate';
+import typography from '@tailwindcss/typography';
 
 const config: Config = {
   content: [
@@ -66,7 +67,7 @@ const config: Config = {
     'bg-blue-50', 'border-blue-200', 'text-blue-600',
     'bg-gray-50', 'border-gray-200', 'text-gray-500',
   ],
-  plugins: [animate],
+  plugins: [animate, typography],
 };
 
 export default config;
