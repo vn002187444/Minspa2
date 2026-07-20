@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, FileText } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { getCommissionReport } from '../actions';
+import { Button } from '@/components/ui/Button';
 
 export default function TabCommission() {
   const [rangeType, setRangeType] = useState<'week' | 'month' | 'last_month' | 'custom'>('month');
@@ -95,9 +96,9 @@ export default function TabCommission() {
             <h2 className="text-xl font-bold text-gray-900">Báo cáo Hoa hồng Nhân viên</h2>
             <p className="text-xs text-gray-500 mt-1">Tổng hợp doanh số, hoa hồng dịch vụ và tiền tip của nhân viên theo khoảng thời gian.</p>
           </div>
-          <button onClick={handleExportCSV} disabled={!reportData || filteredStaffReports.length === 0} className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer">
-            <FileText className="w-4 h-4" /> Xuất File Đối Soát (.csv)
-          </button>
+          <Button onClick={handleExportCSV} disabled={!reportData || filteredStaffReports.length === 0} className="bg-emerald-600 hover:bg-emerald-700">
+            Xuất File Đối Soát (.csv)
+          </Button>
         </div>
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-gray-100">
           <div className="flex flex-wrap bg-gray-100 p-1 rounded-xl border border-gray-200/50 max-w-max">
@@ -115,7 +116,7 @@ export default function TabCommission() {
                 <span className="text-xs font-medium text-gray-500">Đến</span>
                 <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-pink-500 bg-gray-50" />
               </div>
-              <button onClick={handleCustomSearch} className="bg-gray-900 text-white hover:bg-black px-4 py-2 min-h-[44px] rounded-lg text-xs font-bold transition-all">Áp dụng</button>
+              <Button onClick={handleCustomSearch} variant="primary" size="sm">Áp dụng</Button>
             </div>
           )}
           <div className="relative">

@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { logger } from "@/lib/logger";
 
 type RecipientType = 'user' | 'customer';
 
@@ -8,7 +9,7 @@ export async function insertNotification(
   title: string,
   content: string,
   link?: string
-) {
+): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient();
   const { error } = await supabase.from('notifications').insert({
     recipient_type: recipientType,
@@ -19,6 +20,8 @@ export async function insertNotification(
     is_read: false,
   });
   if (error) {
-    console.error('[NOTIFICATION] Insert error:', error);
+    logger.error('[Notifications] Failed to insert notification', error instanceof Error ? error : undefined, { recipientType, recipientId, title });
+    return { success: false, error: error.message };
   }
+  return { success: true };
 }

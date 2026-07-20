@@ -1,0 +1,45 @@
+{
+  "nav.deal": "Angebote",
+  "nav.hairWash": "Haar- & Kopfhautpflege",
+  "nav.footScrub": "Fußpeeling",
+  "nav.massage": "Massage",
+  "nav.nail": "Nagelpflege & Nagelkunst",
+  "nav.about": "Über uns",
+  "nav.faq": "FAQ",
+  "nav.staff": "Mitarbeiter",
+  "nav.booking": "Buchung",
+
+  "nav.mobile.deal": "🔥 Angebote",
+  "nav.mobile.hairWash": "💆 Haarpflege",
+  "nav.mobile.massage": "💪 Massage",
+  "nav.mobile.nail": "💅 Nägel",
+  "nav.mobile.footScrub": "👣 Fußpflege",
+  "nav.mobile.vipCombo": "🎁 VIP-Kombo",
+  "nav.mobile.reviews": "⭐ Bewertungen",
+  "nav.mobile.about": "📖 Über uns",
+  "nav.mobile.faq": "❓ FAQ",
+
+  "booking.title": "Termin buchen",
+  "booking.phone": "Telefonnummer",
+  "booking.name": "Name",
+  "booking.service": "Dienstleistung",
+  "booking.staff": "Mitarbeiter",
+  "booking.date": "Datum",
+  "booking.time": "Uhrzeit",
+  "booking.note": "Notiz",
+
+  "login.title": "Anmelden",
+  "login.username": "Benutzername",
+  "login.password": "Passwort",
+
+  "common.bookNow": "Jetzt buchen",
+  "common.readMore": "Weiterlesen",
+  "common.viewAll": "Alle anzeigen",
+  "common.close": "Schließen",
+  "common.save": "Speichern",
+  "common.cancel": "Abbrechen",
+  "common.loading": "Laden...",
+
+  "lang.switchLanguage": "Sprache auswählen",
+  "lang.poweredBy": "Sprache"
+}

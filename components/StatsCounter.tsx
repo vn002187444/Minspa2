@@ -43,7 +43,7 @@ function Counter({ end, suffix = '' }: { end: number; suffix?: string }) {
     return () => observer.disconnect();
   }, [end]);
 
-  return <span ref={ref} className="notranslate">{count.toLocaleString('vi-VN')}{suffix}</span>;
+  return <span ref={ref} aria-live="polite" className="notranslate">{count.toLocaleString('vi-VN')}{suffix}</span>;
 }
 
 export default function StatsCounter({ end, suffix = '', label, icon }: StatsCounterProps) {

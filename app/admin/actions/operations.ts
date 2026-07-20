@@ -1,9 +1,10 @@
 'use server'
 
 import {
-  createClient, getSession, revalidatePath, logAuditAction,
-  checkAdminOrManager, checkAdmin, redirect, getBaseUrl,
+  createClient, getSession, logAuditAction, checkAdmin,
+  checkAdminOrManager, getBaseUrl,
 } from "./_shared";
+import { logger } from "@/lib/logger";
 
 export async function getFilteredAppointments(filters: {
   status?: string;
@@ -98,7 +99,7 @@ export async function getFilteredAppointments(filters: {
 
   const { data, error } = await query.order('start_time', { ascending: false }).limit(1000);
   if (error) {
-    console.error('getFilteredAppointments Error:', error);
+    logger.error('getFilteredAppointments Error:', error instanceof Error ? error : undefined);
     return [];
   }
   return data || [];
@@ -120,7 +121,7 @@ export async function deleteAppointment(appointmentId: string) {
     await logAuditAction(session!.user.id, "DELETE_APPOINTMENT", `Xóa vĩnh viễn lịch hẹn ID: ${appointmentId}`);
     return { success: true };
   } catch (error: unknown) {
-    console.error('deleteAppointment Error:', error);
+    logger.error('deleteAppointment Error:', error instanceof Error ? error : undefined);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -153,7 +154,7 @@ export async function adminUpdateTip(appointmentId: string, newTipAmount: number
 
   logAuditAction(session.user.id, 'EDIT_TIP',
     `Admin sửa tip đơn '${appointmentId}': ${oldTip}đ → ${newTipAmount}đ`
-  ).catch(() => {});
+  ).catch(e => logger.error('[Audit] Failed to log tip edit', e));
 
   return { success: true, oldTip, newTip: newTipAmount };
 }
@@ -163,7 +164,11 @@ export async function getCustomerByPhone(phone: string) {
   if (!session) throw new Error('Unauthorized');
   const supabase = await createClient();
   const { data, error } = await supabase.from('customers').select('id, full_name, phone').eq('phone', phone);
-  if (error || !data || data.length === 0) return null;
+  if (error) {
+    logger.error('[Database] Failed to fetch customer by phone', error instanceof Error ? error : undefined, { phone });
+    return null;
+  }
+  if (!data || data.length === 0) return null;
   return data[0];
 }
 
@@ -184,7 +189,7 @@ export async function getAttendanceLogs(startDate: string, endDate: string) {
     .limit(1000);
 
   if (error) {
-    console.error('getAttendanceLogs error:', error);
+    logger.error('getAttendanceLogs error:', error instanceof Error ? error : undefined);
     return [];
   }
 
@@ -215,16 +220,16 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
     seo_publish: `${baseUrl}/api/cron/seo-publish`,
   };
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {};
   if (process.env.CRON_SECRET) {
     headers['authorization'] = `Bearer ${process.env.CRON_SECRET}`;
   }
 
   try {
     const res = await fetch(endpoints[jobName], {
-      method: 'POST',
+      method: 'GET',
       headers,
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(30000),
     });
     if (!res.ok) {
       const text = await res.text();

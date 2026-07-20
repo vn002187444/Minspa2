@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, startTransition } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { getPublicServices, getPublicSeoSettings } from './actions/public';
@@ -12,11 +12,12 @@ import type { SlotInfo } from './actions/slots';
 import { submitBooking } from './actions/booking';
 import { enqueue } from '@/lib/offline-queue';
 import { trackEvent, trackMascotEvent } from '@/lib/analytics';
-import { stripHtml } from '@/lib/sanitize';
+import { stripHtml } from '@/lib/sanitize.client';
 import { storage } from '@/lib/storage';
 import { Sparkles, Calendar, Clock, User, Phone, CheckCircle2, ArrowRight, ArrowLeft, Bell, AlertTriangle } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
+import { Button } from '@/components/ui/Button';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
 import { format, addDays } from 'date-fns';
@@ -198,7 +199,7 @@ export default function BookingPage() {
     }
   }, [allPackages]);
 
-  const handlePhoneBlur = async () => {
+  const handlePhoneBlur = useCallback(async () => {
     if (phone.length < 10) return;
     setIsCheckingPhone(true);
     
@@ -219,7 +220,6 @@ export default function BookingPage() {
         setActivePackages(foundPackages || []);
         setGroupedPackages(foundGrouped || {});
 
-        // Fetch customer notifications
         const notifs = await getCustomerNotifications(id);
         setCustomerNotifs(notifs);
         const unreadNotifs = notifs.filter((n: any) => !n.is_read);
@@ -244,7 +244,7 @@ export default function BookingPage() {
     }
     
     setIsCheckingPhone(false);
-  };
+  }, [phone]);
 
   useEffect(() => {
     if (phone.length < 10) {
@@ -257,9 +257,14 @@ export default function BookingPage() {
     }
   }, [phone]);
 
-  // Derived data (hoisted before effects that depend on them)
-  const selectedItemsData = services.filter(s => selectedServices.includes(s.id));
-  const rawDuration = selectedItemsData.reduce((sum, item) => sum + (item.duration || 30), 0);
+  const selectedItemsData = useMemo(
+    () => services.filter(s => selectedServices.includes(s.id)),
+    [services, selectedServices]
+  );
+  const rawDuration = useMemo(
+    () => selectedItemsData.reduce((sum, item) => sum + (item.duration || 30), 0),
+    [selectedItemsData]
+  );
 
   useEffect(() => {
     async function fetchSlotAvail() {
@@ -284,7 +289,7 @@ export default function BookingPage() {
     fetchStaff();
   }, [selectedDate, selectedTime, rawDuration]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     setErrorMsg('');
     if (step === 1) {
       if (!name || !phone || selectedServices.length === 0) {
@@ -292,7 +297,7 @@ export default function BookingPage() {
       }
       setStep(2);
     }
-  };
+  }, [step, name, phone, selectedServices]);
 
   const handleSubmit = async () => {
     setErrorMsg('');
@@ -343,17 +348,18 @@ export default function BookingPage() {
          setErrorMsg('Lỗi đồng bộ: ' + res.error + '. Vui lòng thử lại sau.');
          toast.error('Lỗi đồng bộ đặt lịch: ' + res.error);
        }
-     } catch (err: any) {
-       setIsSubmitting(false);
-       if (typeof navigator !== 'undefined' && !navigator.onLine) {
-         await enqueue('booking', payload);
-         toast.success('Đã lưu lịch hẹn vào hàng chờ. Hệ thống sẽ tự động đồng bộ khi có mạng.');
-         setStep(3);
-         return;
-       }
-       setErrorMsg('Lỗi hệ thống: ' + err.message);
-       toast.error('Lỗi hệ thống khi đặt lịch');
-     }
+      } catch (err: unknown) {
+        setIsSubmitting(false);
+        const message = err instanceof Error ? err.message : 'Lỗi không xác định';
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          await enqueue('booking', payload);
+          toast.success('Đã lưu lịch hẹn vào hàng chờ. Hệ thống sẽ tự động đồng bộ khi có mạng.');
+          setStep(3);
+          return;
+        }
+        setErrorMsg('Lỗi hệ thống: ' + message);
+        toast.error('Lỗi hệ thống khi đặt lịch');
+      }
    };
 
    const handleRetry = () => {
@@ -368,25 +374,26 @@ export default function BookingPage() {
   const selectedPkg = activePackages.find(p => p.id === selectedPackageId);
   const coveredServiceId = selectedPkg?.treatment_packages?.service_id;
 
-  let rawTotal = 0;
-  selectedItemsData.forEach(item => {
-    if (selectedPkg && String(item.id) === String(coveredServiceId)) {
-      // Free for package session
-    } else {
-      rawTotal += item.price;
-    }
-  });
+  const rawTotal = useMemo(() => {
+    let sum = 0;
+    selectedItemsData.forEach(item => {
+      if (selectedPkg && String(item.id) === String(coveredServiceId)) return;
+      sum += item.price;
+    });
+    return sum;
+  }, [selectedItemsData, selectedPkg, coveredServiceId]);
   const discountPercent = discountSettings.enabled ? discountSettings.percent / 100 : 0;
   const discountAmount = Math.round(rawTotal * discountPercent);
   const finalTotal = rawTotal - discountAmount;
 
-  const filteredServices = services.filter(s => {
-    if (activeCategory === 'Tất cả') return true;
-    return s.category === activeCategory;
-  });
+  const filteredServices = useMemo(
+    () => services.filter(s => activeCategory === 'Tất cả' || s.category === activeCategory),
+    [services, activeCategory]
+  );
 
   const [breadcrumbOrigin, setBreadcrumbOrigin] = useState('');
-  useEffect(() => { setBreadcrumbOrigin(window.location.origin); }, []);
+  useEffect(() => { setBreadcrumbOrigin(window.location.origin); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
 
   return (
     <>
@@ -465,7 +472,7 @@ export default function BookingPage() {
                      <div className="mb-4 p-4 bg-[#FAF0E6] border border-[#EADDCD] rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
                        <div className="flex items-start gap-3">
                          <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                           <Bell className="w-4 h-4 text-amber-700" />
+                           <Bell className="w-4 h-4 text-amber-700" aria-hidden="true" />
                          </div>
                          <div className="flex-1 min-w-0">
                            <p className="text-xs font-bold text-[#5C4033] uppercase tracking-wider mb-1.5">
@@ -491,16 +498,18 @@ export default function BookingPage() {
                                </button>
                              ))}
                            </div>
-                           <button
-                             onClick={async () => {
-                               await markAllCustomerNotificationsRead(customerId!);
-                               setCustomerNotifs((prev) => prev.map((x) => ({ ...x, is_read: true })));
-                               setShowNotifBanner(false);
-                             }}
-                             className="mt-2 text-[11px] font-semibold text-[#8D6E53] hover:text-[#5C4033] transition-colors"
-                           >
-                             Đánh dấu tất cả đã đọc
-                           </button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                await markAllCustomerNotificationsRead(customerId!);
+                                setCustomerNotifs((prev) => prev.map((x) => ({ ...x, is_read: true })));
+                                setShowNotifBanner(false);
+                              }}
+                              className="mt-2 text-[11px] p-0 h-auto"
+                            >
+                              Đánh dấu tất cả đã đọc
+                            </Button>
                          </div>
                           <button
                             onClick={() => setShowNotifBanner(false)}
@@ -515,7 +524,7 @@ export default function BookingPage() {
                     {activePackages && activePackages.length > 0 && (
                       <div className="p-5 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-4 mb-6 animate-in fade-in zoom-in-95 duration-300">
                         <div className="flex gap-2">
-                          <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                          <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
                           <div>
                             <p className="text-xs font-bold text-amber-800 uppercase tracking-wider font-sans">Thẻ liệu trình khả dụng ({activePackages.length} gói)</p>
                             <p className="text-xs text-amber-950 mt-1 leading-relaxed font-sans">
@@ -637,7 +646,7 @@ export default function BookingPage() {
                    {buyPackageId && (
                      <div className="p-4 bg-pink-50/70 border border-pink-200 rounded-2xl flex gap-3 animate-fadeIn mb-5 text-left">
                        <div className="mt-1">
-                         <Sparkles className="w-4 h-4 text-pink-600 animate-pulse" />
+                         <Sparkles className="w-4 h-4 text-pink-600 animate-pulse" aria-hidden="true" />
                        </div>
                        <div className="space-y-1">
                          <p className="text-[10px] uppercase tracking-wider font-extrabold text-pink-700">Chị Đang Đăng Ký Mua Gói VIP</p>
@@ -647,23 +656,25 @@ export default function BookingPage() {
                          <p className="text-[10px] text-gray-500 font-medium leading-relaxed">
                            Hệ thống đã tự chuẩn bị dịch vụ của gói. Buổi hôm nay sẽ được trừ vào tài khoản gói ngay sau khi đơn mua gói được nhân viên kích hoạt thành công tại quầy!
                          </p>
-                         <button
-                           type="button"
-                           onClick={() => {
-                             setBuyPackageId(null);
-                             setSelectedServices([]);
-                           }}
-                           className="text-[11px] font-bold text-[#8D6E53] underline hover:text-pink-700 block mt-1 cursor-pointer"
-                         >
-                           Hủy đăng ký mua gói, đổi sang dịch vụ lẻ
-                         </button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            onClick={() => {
+                              setBuyPackageId(null);
+                              setSelectedServices([]);
+                            }}
+                            className="p-0 h-auto text-[11px] underline block mt-1"
+                          >
+                            Hủy đăng ký mua gói, đổi sang dịch vụ lẻ
+                          </Button>
                        </div>
                      </div>
                    )}
 
                     <label htmlFor="phone-input" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">Số điện thoại khách hàng</label>
                     <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" />
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" aria-hidden="true" />
                       <input 
                         id="phone-input"
                         type="tel"
@@ -681,7 +692,7 @@ export default function BookingPage() {
                      Họ & Tên quý khách {isCheckingPhone && <span className="text-amber-600 text-xs animate-pulse font-normal"> (Đang tra cứu lịch sử...)</span>}
                    </label>
                    <div className="relative">
-                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" />
+                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" aria-hidden="true" />
                       <input 
                         id="name-input"
                         type="text"
@@ -695,14 +706,14 @@ export default function BookingPage() {
 
                  {isAiLoading && (
                    <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 flex items-center justify-center gap-2">
-                     <Sparkles className="w-4 h-4 text-amber-600 animate-spin" />
+                     <Sparkles className="w-4 h-4 text-amber-600 animate-spin" aria-hidden="true" />
                      <span className="text-xs text-[#8D6E53] font-semibold tracking-wider">Min đang chuẩn bị lời chào cho chị...</span>
                    </div>
                  )}
 
                   {aiSuggestion && !isAiLoading && (
                     <div className="p-4 bg-[#FAF0E6] flex gap-3 origin-left animate-in fade-in zoom-in-95 duration-500 border border-[#EADDCD] rounded-2xl">
-                       <div className="mt-0.5"><Sparkles className="w-4 h-4 text-[#8D6E53]" /></div>
+                       <div className="mt-0.5"><Sparkles className="w-4 h-4 text-[#8D6E53]" aria-hidden="true" /></div>
                        <div>
                           <p className="text-[10px] font-bold text-[#8D6E53] mb-1 uppercase tracking-widest flex items-center gap-1">✨ Chào chị quay lại</p>
                          <p className="text-xs text-[#3A2E2B] leading-relaxed font-semibold italic">{aiSuggestion}</p>
@@ -765,7 +776,7 @@ className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semi
                           <span className="text-[10px] text-gray-400 font-medium">{s.duration || 30} phút</span>
                           <span className="text-xs text-[#8D6E53] font-bold mt-1">{(s.price).toLocaleString('vi')}đ</span>
                           {selectedServices.includes(s.id) && (
-                            <div className="absolute top-2 right-2 text-[#8D6E53]"><CheckCircle2 className="w-4 h-4" /></div>
+                            <div className="absolute top-2 right-2 text-[#8D6E53]"><CheckCircle2 className="w-4 h-4" aria-hidden="true" /></div>
                           )}
                         </button>
                       ))}
@@ -782,7 +793,7 @@ className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semi
                       onClick={handleNext}
                       className="w-full bg-[#5C4033] hover:bg-[#3A2E2B] text-white font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 group tracking-widest uppercase text-xs shadow-md min-h-[44px]"
                     >
-                      Tiếp tục lựa chọn <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      Tiếp tục lựa chọn <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                     </LoadingButton>
                   </div>
               </div>
@@ -790,9 +801,9 @@ className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semi
 
             {step === 2 && (
               <div className="space-y-6 flex-1 animate-in fade-in slide-in-from-right-4 duration-500">
-                  <button onClick={() => setStep(1)} className="text-xs text-[#8D6E53] hover:text-[#5C4033] flex items-center gap-1 -mt-2 font-semibold">
-                    <ArrowLeft className="w-4 h-4" /> Quay lại bước trước
-                  </button>
+                  <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="p-0 h-auto flex items-center gap-1 -mt-2">
+                    <ArrowLeft className="w-4 h-4" aria-hidden="true" /> Quay lại bước trước
+                  </Button>
 
                  <div>
 <span className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-2">Chọn ngày hẹn đẹp nhất</span>
@@ -888,40 +899,31 @@ className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semi
                  {errorMsg ? (
                    <>
                      <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mb-6 border border-red-100">
-                       <AlertTriangle className="w-8 h-8" />
+                       <AlertTriangle className="w-8 h-8" aria-hidden="true" />
                      </div>
                      <h2 className="text-xl font-display font-bold text-red-700 mb-2">Đặt lịch thất bại!</h2>
                      <p className="text-sm text-red-500 mb-4 max-w-xs leading-relaxed font-medium">{errorMsg}</p>
-                     <div className="flex gap-3">
-                       <button 
-                         onClick={handleRetry}
-className="bg-[#8D6E53] hover:bg-[#5C4033] text-white font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
-                        >
-                          Thử lại
-                       </button>
-                       <button 
-                         onClick={() => router.push('/')}
-className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
-                        >
-                          Về trang chủ
-                       </button>
-                     </div>
+                      <div className="flex gap-3">
+                        <Button variant="primary" size="md" onClick={handleRetry}>
+                           Thử lại
+                        </Button>
+                        <Button variant="secondary" size="md" onClick={() => router.push('/')}>
+                           Về trang chủ
+                        </Button>
+                      </div>
                     </>
                    ) : (
                     <>
                     <div className="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 border border-emerald-100">
-                      <CheckCircle2 className="w-8 h-8" />
+                      <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
                     </div>
                    <h2 className="text-xl font-display font-bold text-[#3A2E2B] mb-2">Gửi Lịch Hẹn Thành Công!</h2>
                    <p className="text-sm text-gray-500 mb-8 max-w-xs leading-relaxed font-medium">
                      Cảm ơn quý khách <strong id="customer-name-lbl" className="text-[#3A2E2B] font-semibold">{name}</strong>. Lịch hẹn lúc <strong className="text-[#3A2E2B]">{selectedTime}</strong> ngày <strong className="text-[#3A2E2B]">{format(new Date(selectedDate), 'dd/MM/yyyy')}</strong> đã được hệ thống Min ghi nhận.
                    </p>
-                   <button 
-                     onClick={() => router.push('/')}
-className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD] font-bold text-xs tracking-wider uppercase py-3.5 px-6 rounded-xl transition-colors min-h-[44px] flex items-center justify-center"
-                    >
-                      Xem Bảng Giá Khác
-                   </button>
+                    <Button variant="secondary" size="md" onClick={() => router.push('/')}>
+                       Xem Bảng Giá Khác
+                    </Button>
                     </>
                    )}
                 </div>
@@ -931,7 +933,7 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
           {/* Right Column: Premium Dynamic Booking Summary & Estimator (PC Design Extra Value) */}
           <div className="hidden lg:flex lg:w-2/5 flex-col bg-[#FAF8F5] border-t lg:border-t-0 lg:border-l border-[#EADDCD] p-6 lg:p-8 shrink-0">
              <div className="flex items-center gap-2 pb-4 border-b border-[#EADDCD] mb-6">
-               <span className="p-1.5 bg-[#5C4033] text-white rounded-lg"><CheckCircle2 className="w-4 h-4" /></span>
+               <span className="p-1.5 bg-[#5C4033] text-white rounded-lg"><CheckCircle2 className="w-4 h-4" aria-hidden="true" /></span>
                <h3 className="font-display font-extrabold text-sm tracking-wider text-[#5C4033] uppercase">Hóa Đơn / Lịch Trình Tạm Tính</h3>
              </div>
 
@@ -939,7 +941,7 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
              {selectedItemsData.length === 0 ? (
                <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3 py-12">
                  <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center border border-[#EADDCD]/50">
-                    <Sparkles className="w-5 h-5 text-[#8D6E53]" />
+                    <Sparkles className="w-5 h-5 text-[#8D6E53]" aria-hidden="true" />
                  </div>
                  <p className="text-xs font-bold text-[#8D6E53] uppercase tracking-wider">Chưa chọn dịch vụ</p>
                  <p className="text-[11px] text-gray-400 max-w-[200px] leading-relaxed">
@@ -969,12 +971,12 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
                  {(selectedTime || selectedStaffName || name) && (
                    <div className="p-4 bg-white rounded-2xl border border-[#EADDCD]/60 space-y-3">
                      <p className="text-[10px] font-bold text-[#8D6E53] uppercase tracking-widest border-b border-[#FAF6F0] pb-1.5 flex items-center gap-1.5">
-                       <Calendar className="w-3.5 h-3.5" /> Thông tin giữ chỗ
+                       <Calendar className="w-3.5 h-3.5" aria-hidden="true" /> Thông tin giữ chỗ
                      </p>
                      
                      {name && (
                        <div className="flex items-center gap-2 text-xs font-semibold">
-                         <User className="w-3.5 h-3.5 text-gray-400" />
+                         <User className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
                          <span className="text-gray-500">Khách hàng:</span>
                          <span className="text-[#3A2E2B] line-clamp-1 font-bold">{name}</span>
                        </div>
@@ -982,7 +984,7 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
 
                      {selectedDate && (
                        <div className="flex items-center gap-2 text-xs font-semibold">
-                         <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                         <Calendar className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
                          <span className="text-gray-500">Ngày hẹn:</span>
                          <span className="text-[#3A2E2B] font-bold">{format(new Date(selectedDate), 'dd/MM/yyyy')}</span>
                        </div>
@@ -990,7 +992,7 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
 
                      {selectedTime && (
                        <div className="flex items-center gap-2 text-xs font-semibold">
-                         <Clock className="w-3.5 h-3.5 text-gray-400" />
+                         <Clock className="w-3.5 h-3.5 text-gray-400" aria-hidden="true" />
                          <span className="text-gray-500">Giờ làm:</span>
                          <span className="bg-amber-100/80 text-amber-800 px-1.5 py-0.5 rounded-md font-extrabold text-[10px] tracking-wide">{selectedTime}</span>
                        </div>
@@ -998,7 +1000,7 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
 
                      {selectedStaffName && (
                        <div className="flex items-center gap-2 text-xs font-semibold">
-                         <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                         <Sparkles className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
                          <span className="text-gray-500">Thợ yêu thích:</span>
                          <span className="text-[#3A2E2B] font-bold">{selectedStaffName}</span>
                        </div>
@@ -1032,7 +1034,7 @@ className="bg-[#FAF0E6] hover:bg-[#FAF6F0] text-[#8D6E53] border border-[#EADDCD
 
                    <div className="pt-2">
                      <div className="p-3 bg-white rounded-xl border border-[#EADDCD]/50 text-[10px] font-semibold text-gray-500 flex gap-1.5 leading-relaxed">
-                       <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                       <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" aria-hidden="true" />
                        Nhà Min miễn phí giữ chỗ 100%. Quý khách có thể hủy hoặc dời lịch bất cứ lúc nào qua điện thoại.
                      </div>
                    </div>

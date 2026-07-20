@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Key } from "lucide-react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { updateStaff, resetStaffPassword, deleteStaffSafely } from "../actions";
+import { Button } from "@/components/ui/Button";
 
 interface EditStaffModalStaff {
   id: string;
@@ -173,20 +174,12 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: E
               <div></div>
             )}
             <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors cursor-pointer"
-              >
+              <Button type="button" variant="ghost" onClick={onClose}>
                 Hủy
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-gray-900 text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-black transition-transform active:scale-95 disabled:opacity-50 cursor-pointer shadow-md"
-              >
+              </Button>
+              <Button type="submit" disabled={loading}>
                 Cập nhật
-              </button>
+              </Button>
             </div>
           </div>
         </form>

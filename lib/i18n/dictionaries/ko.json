@@ -1,0 +1,45 @@
+{
+  "nav.deal": "특가 상품",
+  "nav.hairWash": "헤어 & 두피 케어",
+  "nav.footScrub": "각질 제거",
+  "nav.massage": "마사지",
+  "nav.nail": "네일 케어 & 아트",
+  "nav.about": "소개",
+  "nav.faq": "FAQ",
+  "nav.staff": "스태프",
+  "nav.booking": "예약",
+
+  "nav.mobile.deal": "🔥 특가",
+  "nav.mobile.hairWash": "💆 헤어 케어",
+  "nav.mobile.massage": "💪 마사지",
+  "nav.mobile.nail": "💅 네일",
+  "nav.mobile.footScrub": "👣 각질 제거",
+  "nav.mobile.vipCombo": "🎁 VIP 콤보",
+  "nav.mobile.reviews": "⭐ 리뷰",
+  "nav.mobile.about": "📖 소개",
+  "nav.mobile.faq": "❓ FAQ",
+
+  "booking.title": "예약하기",
+  "booking.phone": "전화번호",
+  "booking.name": "성함",
+  "booking.service": "서비스",
+  "booking.staff": "스태프",
+  "booking.date": "날짜",
+  "booking.time": "시간",
+  "booking.note": "메모",
+
+  "login.title": "로그인",
+  "login.username": "사용자 이름",
+  "login.password": "비밀번호",
+
+  "common.bookNow": "예약하기",
+  "common.readMore": "더 보기",
+  "common.viewAll": "전체 보기",
+  "common.close": "닫기",
+  "common.save": "저장",
+  "common.cancel": "취소",
+  "common.loading": "로딩 중...",
+
+  "lang.switchLanguage": "언어 선택",
+  "lang.poweredBy": "언어"
+}

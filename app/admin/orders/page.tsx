@@ -3,16 +3,14 @@ import dynamic from 'next/dynamic';
 const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
 const AdminEditTipModal = dynamic(() => import('./AdminEditTipModal'), { ssr: false });
 
-import { TIP_AMOUNTS } from '@/lib/constants';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 import { 
   ArrowLeft, Filter, ClipboardCheck, Trash2, 
   CheckCircle2, Clock, X, AlertTriangle, ShieldAlert, Star, DollarSign
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getFilteredAppointments, deleteAppointment, getAdminSessionInfo, adminUpdateTip } from '../actions';
+import { getFilteredAppointments, deleteAppointment, getAdminSessionInfo } from '../actions';
 import LoadingButton from '@/components/LoadingButton';
 import LoadingOverlay from '@/components/LoadingOverlay';
 
@@ -46,7 +44,7 @@ export default function AdminOrdersPage() {
         endDate: endDateStr || undefined
       });
       setAppointments(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setErrorMessage("Không thể tải danh sách đơn hàng. Vui lòng thử lại.");
     } finally {
@@ -99,7 +97,7 @@ export default function AdminOrdersPage() {
       } else {
         setErrorMessage("Lỗi: " + res.error);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setErrorMessage("Không thể cập nhật trạng thái đơn.");
     } finally {
@@ -120,7 +118,7 @@ export default function AdminOrdersPage() {
       } else {
         setErrorMessage("Lỗi: " + res.error);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
       setErrorMessage("Gặp lỗi trong quá trình xóa đơn hàng.");
     } finally {

@@ -25,7 +25,7 @@ export default function GuaranteeBanner() {
         {guarantees.map((item, idx) => (
           <div key={idx} className="space-y-2">
             <div className="w-12 h-12 bg-[#FAF0E6] rounded-full flex items-center justify-center mx-auto">
-              <item.icon className="w-6 h-6 text-[#8D6E53]" />
+              <item.icon className="w-6 h-6 text-[#8D6E53]" aria-hidden="true" />
             </div>
             <h3 className="font-display font-bold text-base text-[#3A2E2B]">{item.title}</h3>
             <p className="text-xs text-gray-500">{item.desc}</p>

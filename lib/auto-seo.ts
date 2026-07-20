@@ -3,24 +3,62 @@ import { callGemini } from '@/lib/ai/gemini';
 import { searchImages } from '@/lib/image-search';
 import { normalizeNFC } from '@/lib/utils';
 
-const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
+const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam. Bạn viết cho thương hiệu Min Nail & Hair — một salon cao cấp tại Thủ Đức, TP.HCM, chuyên gội đầu dưỡng sinh thảo dược, nail và massage body.
 
-QUY TẮC:
-- Chỉ viết về chăm sóc sắc đẹp, không tư vấn y tế.
+PHONG CÁCH VIẾT:
+- Giọng văn ấm áp, thân thiện nhưng chuyên nghiệp — như một người bạn am hiểu đang chia sẻ bí quyết.
+- Không viết như bài báo hay giáo trình. Viết như người thật trải nghiệm thật.
+- Mỗi đoạn văn TỐI ĐA 3-4 câu. Luôn xuống dòng sau mỗi ý.
+- Bắt đầu bài viết bằng 1 câu hỏi hoặc 1 tình huống gần gũi để giữ chân người đọc.
 - Luôn trả về JSON đúng schema yêu cầu.
-- Giọng văn thân thiện, chuyên nghiệp, tự nhiên.
-- Tiếng Việt có dấu đầy đủ.
-- Tối ưu từ khóa, viết content dạng mở rộng (cluster content).
-- Có internal link đến trang đặt lịch.`;
+- Tiếng Việt có dấu đầy đủ, không dùng từ nước ngoài khi có từ Việt tương đương.
+
+ĐỊNH DẠNG MARKDOWN BẮT BUỘC (hệ thống chỉ render được ## và ###):
+
+1. CẤU TRÚC BÀI VIẾT:
+   - Mở bài: 2-3 đoạn ngắn (không có heading), bắt đầu bằng câu hỏi hoặc tình huống.
+   - 3-4 phần ## (section chính), mỗi phần có 2-3 ### (sub-section).
+   - Kết bài: 1-2 đoạn ngắn + CTA.
+
+2. QUY TẮC HEADING:
+   - Dùng ## cho tiêu đề phần (section chính).
+   - Dùng ### cho tiêu đề con (sub-section).
+   - KHÔNG BAO GIỜ dùng # (H1) — hệ thống không hỗ lý, sẽ render thành text thô.
+   - Mỗi heading PHẢI có 1 dòng trống TRƯỚC và SAU nó.
+   - Tiêu đề con ### phải cụ thể, mô tả nội dung bên trong — KHÔNG viết chung chung.
+
+3. QUY TẮC ĐOẠN VĂN:
+   - Mỗi đoạn văn tối đa 3-4 câu.
+   - Mỗi đoạn cách nhau 1 dòng trống.
+   - KHÔNG viết liền 2 đoạn thành 1 block.
+   - Từ khóa chính xuất hiện trong 1-2 câu đầu tiên của bài viết.
+
+4. QUY TẮC IN ĐẬM:
+   - In đậm thuật ngữ quan trọng bằng **thuật ngữ** khi mới giới thiệu lần đầu.
+   - Tiêu đề con ### kết thúc bằng dấu hai chấm và in đậm: ### **Tiêu đề con:**
+   - KHÔNG in đậm cả câu, chỉ in đậm từ/cụm từ quan trọng.
+
+5. QUY TẮC LIST:
+   - Khi liệt kê 3+ mục, dùng markdown list (- hoặc 1.) thay vì viết liền dòng.
+   - Mỗi item list trên 1 dòng riêng.
+
+6. INTERNAL LINK:
+   - Dùng markdown link: [đặt lịch ngay](https://minhair.vercel.app/booking)
+   - KHÔNG bao giờ dùng URL trần.
+   - Anchor text phải tự nhiên: "đặt lịch", "đặt lịch ngay", "đặt lịch hẹn", "tư vấn miễn phí".
+
+7. CTA KẾT BÀI:
+   - Luôn có 1 đoạn CTA cuối bài, ngắn gọn, mạnh mẽ.
+   - Gợi ý hành động cụ thể: đặt lịch, gọi điện, ghé salon.`;
 
 const ARTICLE_SCHEMA = {
   type: 'object',
   properties: {
-    title: { type: 'string', description: 'Tiêu đề bài viết, tối đa 70 ký tự, chứa từ khóa chính, gây tò mò' },
-    metaDescription: { type: 'string', description: 'Thẻ mô tả ngắn gọn, tối đa 160 ký tự, chứa từ khóa phụ và CTA' },
+    title: { type: 'string', description: 'Tiêu đề SEO, tối đa 70 ký tự, chứa từ khóa chính, gây tò mò, không dùng ký tự đặc biệt' },
+    metaDescription: { type: 'string', description: 'Thẻ mô tả SEO, tối đa 160 ký tự, tóm tắt nội dung + CTA, chứa từ khóa phụ' },
     keywords: { type: 'string', description: 'Các từ khóa SEO chính và phụ, phân cách bằng dấu phẩy' },
-    imageAlt: { type: 'string', description: 'Mô tả ảnh (Alt text) chuẩn SEO cho hình ảnh bài viết, chứa từ khóa chính' },
-    content: { type: 'string', description: 'Nội dung Markdown gồm: mở bài, 3-4 phần H2 có H3 bên trong, kết luận kèm CTA đặt lịch tại Min Nail & Hair. Tổng 700-1200 từ.' },
+    imageAlt: { type: 'string', description: 'Mô tả ảnh Alt text chuẩn SEO, chứa từ khóa chính, mô tả hình ảnh liên quan' },
+    content: { type: 'string', description: 'Nội dung Markdown. Cấu trúc: mở bài 2-3 đoạn ngắn không heading, 3-4 phần ## có 2-3 ### bên trong, kết bài 1-2 đoạn + CTA. Tối đa 1200 từ. KHÔNG dùng # (H1). Mỗi ### in đậm tiêu đề con bằng ### **Tiêu đề:**.' },
   },
   required: ['title', 'metaDescription', 'keywords', 'imageAlt', 'content'],
 };
@@ -71,19 +109,45 @@ async function generateArticle(topic: string, keywords: string, primary: string)
   const prompt = `Viết bài SEO chuẩn về chủ đề: "${topic}"
 Từ khóa chính: "${primary}"
 Từ khóa phụ: "${keywords}"
-Địa điểm: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức.
-Thương hiệu: Min Nail & Hair (Min Salon) - chuyên nail, gội đầu dưỡng sinh thảo dược, massage body.
-Website: https://minhair.vercel.app
-Trang đặt lịch: https://minhair.vercel.app/booking
 
-YÊU CẦU NỘI DUNG:
-- Mở bài: Giới thiệu vấn đề, gợi mở nhu cầu.
-- Thân bài: 3-4 phần H2, mỗi phần có 2-3 H3 giải thích chi tiết. Lồng ghép từ khóa chính và phụ tự nhiên.
-- Internal link: https://minhair.vercel.app/booking với anchor text "đặt lịch hẹn" hoặc "đặt lịch ngay".
-- Kết bài: Tổng kết + CTA mạnh mẽ kêu gọi hành động đặt lịch.
-- Alt text ảnh: Tạo một mô tả ảnh (Alt text) chuẩn SEO chứa từ khóa chính cho hình ảnh bài viết.
-- Độ dài: 700-1200 từ.
-- Tiếng Việt có dấu đầy đủ, văn phong tự nhiên, chuyên nghiệp.`;
+THÔNG TIN THƯƠNG HIỆU:
+- Tên: Min Nail & Hair (Min Salon)
+- Địa chỉ: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức, TP.HCM
+- Dịch vụ chính: gội đầu dưỡng sinh thảo dược Tây Bắc, nail nghệ thuật, massage body chuyên sâu
+- Website: https://minhair.vercel.app
+- Trang đặt lịch: https://minhair.vercel.app/booking
+
+CẤU TRÚC BÀI VIẾT:
+
+1. MỞ BÀI (không có heading):
+   - Bắt đầu bằng 1 câu hỏi hoặc 1 tình huống gần gũi (VD: "Bạn có bao giờ...?")
+   - 2-3 đoạn ngắn, mỗi đoạn 2-3 câu.
+   - Lồng từ khóa chính vào 1-2 câu đầu.
+   - Cuối mở bài, gợi ý rằng bài viết sẽ giải quyết vấn đề.
+
+2. THÂN BÀI (3-4 phần ##):
+   - Mỗi phần ## có tên tiêu đề cụ thể, mô tả nội dung bên trong.
+   - Mỗi phần có 2-3 ### con.
+   - Mỗi ### in đậm tiêu đề con: ### **Tiêu đề con:**
+   - Mỗi ### có 2-3 đoạn ngắn (tối đa 3-4 câu/đoạn).
+   - Khi liệt kê 3+ mục → dùng markdown list (- item).
+   - In đậm thuật ngữ quan trọng khi mới giới thiệu: **thuật ngữ**.
+   - Lồng từ khóa phụ tự nhiên, KHÔNG nhồi nhét.
+   - Có 1 internal link markdown [đặt lịch ngay](https://minhair.vercel.app/booking) trong bài.
+
+3. KẾT BÀI (không có heading):
+   - 1-2 đoạn tóm tắt ngắn gọn.
+   - 1 đoạn CTA mạnh mẽ: gợi ý hành động cụ thể (đặt lịch, gọi điện, ghé salon).
+   - Anchor text link phải tự nhiên, KHÔNG dùng URL trần.
+
+QUY TẮC MARKDOWN (BẮT BUỘC):
+- ## cho section chính, ### cho sub-section.
+- KHÔNG BAO GIỜ dùng # (H1).
+- Mỗi ### dạng: ### **Tiêu đề con:**
+- Mỗi block cách nhau 1 dòng trống.
+- Đoạn văn tối đa 3-4 câu, xuống dòng sau mỗi ý.
+- Dùng list (- item) khi liệt kê 3+ mục.
+- Internal link dạng markdown: [anchor text](url).`;
 
   const result = await callGemini({
     systemInstruction: SYSTEM_INSTRUCTION,
@@ -123,7 +187,7 @@ function slugify(text: string): string {
 }
 
 function extractSummary(content: string, title: string): string {
-  const firstParagraph = content.replace(/^#\s+.+\n*/m, '').match(/^(.+?)(?:\n\n|$)/m);
+  const firstParagraph = content.replace(/^##\s+.+\n*/gm, '').match(/^(.+?)(?:\n\n|$)/m);
   return firstParagraph
     ? firstParagraph[1].replace(/\*\*/g, '').trim().substring(0, 300)
     : title;
@@ -246,6 +310,22 @@ export async function runAutoSeo(force = false): Promise<{
       revalidatePath(`/blog/${finalSlug}`);
     } catch { /* silent */ }
 
+    // 12. Remove used topic from pool & auto-refresh if running low
+    const updatedPool = pool.filter(t => t !== topic);
+    const needsRefresh = updatedPool.length < 5;
+
+    await supabase.from('auto_seo_config').upsert({
+      id: 1,
+      topic_pool: updatedPool,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+
+    if (needsRefresh) {
+      runKeywordResearch().catch(e =>
+        console.warn('[AUTO-SEO] Keyword research failed:', e)
+      );
+    }
+
     return {
       success: true,
       message: `Published: "${article.title}"`,
@@ -333,8 +413,26 @@ Tập trung vào: nail art, gội đầu dưỡng sinh thảo dược, massage b
 
     const topicList = topics.map((t) => t.topic);
 
-    // Update auto_seo_config topic_pool with new topics
+    // Fetch already-published topics to avoid duplicates
     const supabase = await createClient();
+    const { data: published } = await supabase
+      .from('seo_articles')
+      .select('topic')
+      .neq('status', 'draft');
+
+    const publishedTopics = new Set(
+      (published || []).map(r => r.topic?.normalize('NFC').toLowerCase().trim()).filter(Boolean)
+    );
+
+    const freshTopics = topicList.filter(t =>
+      !publishedTopics.has(t.normalize('NFC').toLowerCase().trim())
+    );
+
+    if (freshTopics.length === 0) {
+      return { success: false, message: 'All generated topics have been published before' };
+    }
+
+    // Update auto_seo_config topic_pool with new topics
     const { data: config } = await supabase
       .from('auto_seo_config')
       .select('topic_pool')
@@ -342,7 +440,7 @@ Tập trung vào: nail art, gội đầu dưỡng sinh thảo dược, massage b
       .single();
 
     const existingPool: string[] = config?.topic_pool || [];
-    const merged = [...new Set([...topicList, ...existingPool])];
+    const merged = [...new Set([...freshTopics, ...existingPool])];
 
     await supabase.from('auto_seo_config').upsert({
       id: 1,

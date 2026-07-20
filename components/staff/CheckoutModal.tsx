@@ -10,6 +10,7 @@ import Image from "next/image"
 import LoadingButton from "@/components/LoadingButton"
 import { getCustomerActivePackages } from "@/app/staff/actions"
 import ReviewCustomerModal from "./ReviewCustomerModal"
+import { Button } from "@/components/ui/Button"
 import { getBankSettings } from "@/app/admin/actions"
 
 interface CheckoutAppointment {
@@ -842,50 +843,49 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
         <div className="p-4 border-t border-gray-100 bg-white shrink-0 flex gap-3">
           {step === 1 && (
             <>
-              <button onClick={onClose} className="flex-1 py-3.5 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer">
+              <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
                 Hủy
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setStep(2)}
                 disabled={!canProceedFromStep1()}
-                className="flex-1 py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform cursor-pointer disabled:opacity-50"
+                className="flex-1"
               >
                 Tiếp theo
-              </button>
+              </Button>
             </>
           )}
           {step === 2 && (
             <>
-              <button onClick={() => setStep(1)} className="flex-1 py-3.5 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer">
+              <Button type="button" variant="ghost" onClick={() => setStep(1)} className="flex-1">
                 Quay lại
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setStep(3)}
                 disabled={!canProceedFromStep2()}
-                className="flex-1 py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform cursor-pointer disabled:opacity-50"
               >
                 Tiếp theo
-              </button>
+              </Button>
             </>
           )}
           {step === 3 && (
             <>
-              <button onClick={() => setStep(2)} className="flex-1 py-3.5 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer">
+              <Button type="button" variant="ghost" onClick={() => setStep(2)} className="flex-1">
                 Quay lại
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => setStep(4)}
-                className="flex-1 py-3.5 bg-gray-900 hover:bg-black text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform cursor-pointer"
+                className="flex-1"
               >
                 Thanh toán
-              </button>
+              </Button>
             </>
           )}
           {step === 4 && (
             <>
-              <button onClick={() => setStep(3)} className="flex-1 py-3.5 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer">
+              <Button type="button" variant="ghost" onClick={() => setStep(3)} className="flex-1">
                 Quay lại
-              </button>
+              </Button>
               <LoadingButton
                 onClick={handleConfirmPayment}
                 isLoading={loading}

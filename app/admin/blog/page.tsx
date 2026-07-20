@@ -431,8 +431,8 @@ export default function AdminBlogPage() {
         resetForm();
         await loadPosts();
       }
-    } catch (err: any) {
-      const errMsg = err?.message || 'Có lỗi xảy ra khi lưu bài viết.';
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err) || 'Có lỗi xảy ra khi lưu bài viết.';
       setError(errMsg);
       toast.error(errMsg);
     } finally {
@@ -463,8 +463,8 @@ export default function AdminBlogPage() {
         });
         await loadPosts();
       }
-    } catch (err: any) {
-      const errMsg = err?.message || 'Lỗi khi xóa bài viết.';
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err) || 'Lỗi khi xóa bài viết.';
       setError(errMsg);
       toast.error(errMsg);
     } finally {

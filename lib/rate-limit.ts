@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { logger } from "@/lib/logger";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -22,7 +23,7 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
     .maybeSingle();
 
   if (error) {
-    console.error('[RATE_LIMIT] Error fetching rate limit:', error);
+    logger.error('[RATE_LIMIT] Error fetching rate limit:', error instanceof Error ? error : undefined);
     return { allowed: true, remaining: limit }; // Fail open to avoid blocking users
   }
 
@@ -31,7 +32,7 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
       .from('rate_limits')
       .insert({ key, request_count: 1, last_request: now.toISOString() });
     if (insertErr) {
-      console.error('[RATE_LIMIT] Error inserting rate limit:', insertErr);
+      logger.error('[RATE_LIMIT] Error inserting rate limit:', insertErr instanceof Error ? insertErr : undefined);
       return { allowed: true, remaining: limit };
     }
     return { allowed: true, remaining: limit - 1 };
@@ -46,7 +47,7 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
       .update({ request_count: 1, last_request: now.toISOString() })
       .eq('key', key);
     if (updateErr) {
-      console.error('[RATE_LIMIT] Error resetting rate limit:', updateErr);
+      logger.error('[RATE_LIMIT] Error resetting rate limit:', updateErr instanceof Error ? updateErr : undefined);
       return { allowed: true, remaining: limit };
     }
     return { allowed: true, remaining: limit - 1 };
@@ -61,7 +62,7 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
     .update({ request_count: data.request_count + 1, last_request: now.toISOString() })
     .eq('key', key);
   if (incErr) {
-    console.error('[RATE_LIMIT] Error incrementing rate limit:', incErr);
+    logger.error('[RATE_LIMIT] Error incrementing rate limit:', incErr instanceof Error ? incErr : undefined);
     return { allowed: true, remaining: limit };
   }
 

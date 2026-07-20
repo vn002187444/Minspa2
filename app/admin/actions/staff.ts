@@ -3,8 +3,9 @@
 import {
   createClient, getSession, revalidatePath, logAuditAction,
   hashPassword, format, startOfMonth, endOfMonth,
-  checkAdminOrManager, checkAdmin, StaffInput,
+  checkAdminOrManager, StaffInput,
 } from "./_shared";
+import { logger } from "@/lib/logger";
 
 export async function getStaffs() {
   await checkAdminOrManager();
@@ -27,12 +28,12 @@ export async function getStaffs() {
         .order('created_at', { ascending: false })
         .limit(100);
       if (err2) {
-        console.error('Error fetching staff list (fallback):', err2);
+        logger.error('Error fetching staff list (fallback):', err2 instanceof Error ? err2 : undefined);
         return [];
       }
       return (data || []).map(s => ({ ...s, is_active: true }));
     }
-    console.error('Error fetching staff list:', error);
+    logger.error('Error fetching staff list:', error instanceof Error ? error : undefined);
     return [];
   }
 }
@@ -164,7 +165,8 @@ export async function getStaffDetail(staffId: string, startDateStr?: string, end
     const topServices = Object.entries(serviceCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => ({ name: e[0], count: e[1] }));
 
     return { totalRevenue, totalCommission, totalTip, daysPresent, daysAbsent, topCustomers, topServices, totalCompleted: appointments?.length || 0 };
-  } catch {
+  } catch (e) {
+    logger.error('[Database] Failed to fetch customer history', e instanceof Error ? e : undefined);
     return { totalRevenue: 0, totalCommission: 0, totalTip: 0, daysPresent: 0, daysAbsent: 0, topCustomers: [], topServices: [], totalCompleted: 0 };
   }
 }

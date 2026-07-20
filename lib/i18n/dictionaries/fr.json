@@ -1,0 +1,45 @@
+{
+  "nav.deal": "Bonnes affaires",
+  "nav.hairWash": "Soin des cheveux et du cuir chevelu",
+  "nav.footScrub": "Gommage des pieds",
+  "nav.massage": "Massage corporel",
+  "nav.nail": "Soin des ongles et nail art",
+  "nav.about": "À propos",
+  "nav.faq": "FAQ",
+  "nav.staff": "Personnel",
+  "nav.booking": "Réservation",
+
+  "nav.mobile.deal": "🔥 Promos",
+  "nav.mobile.hairWash": "💆 Soin cheveux",
+  "nav.mobile.massage": "💪 Massage",
+  "nav.mobile.nail": "💅 Ongles",
+  "nav.mobile.footScrub": "👣 Gommage",
+  "nav.mobile.vipCombo": "🎁 Combo VIP",
+  "nav.mobile.reviews": "⭐ Avis",
+  "nav.mobile.about": "📖 À propos",
+  "nav.mobile.faq": "❓ FAQ",
+
+  "booking.title": "Prendre rendez-vous",
+  "booking.phone": "Numéro de téléphone",
+  "booking.name": "Nom complet",
+  "booking.service": "Service",
+  "booking.staff": "Personnel",
+  "booking.date": "Date",
+  "booking.time": "Heure",
+  "booking.note": "Note",
+
+  "login.title": "Connexion",
+  "login.username": "Nom d'utilisateur",
+  "login.password": "Mot de passe",
+
+  "common.bookNow": "Réserver",
+  "common.readMore": "Lire la suite",
+  "common.viewAll": "Voir tout",
+  "common.close": "Fermer",
+  "common.save": "Enregistrer",
+  "common.cancel": "Annuler",
+  "common.loading": "Chargement...",
+
+  "lang.switchLanguage": "Choisir la langue",
+  "lang.poweredBy": "Langue"
+}

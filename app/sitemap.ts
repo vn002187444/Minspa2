@@ -1,14 +1,14 @@
 import { MetadataRoute } from 'next';
 import { createClient } from '@/utils/supabase/server';
 import { getBaseUrl } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
-export const revalidate = 3600; // Cache sitemap for 1 hour
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getBaseUrl();
 
-  // 1. Static Routes
-  const routes = [
+  const routes: MetadataRoute.Sitemap = [
     '',
     '/about',
     '/faq',
@@ -21,29 +21,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '' ? 1.0 : route === '/about' || route === '/faq' ? 0.7 : 0.8,
   }));
 
-  // 2. Fetch all services
-  let servicesRoutes: any[] = [];
-  try {
-    const supabase = await createClient();
-    const { data: services } = await supabase
-      .from('services')
-      .select('id, category')
-      .eq('is_active', true);
+  const blogMap = new Map<string, MetadataRoute.Sitemap[number]>();
 
-    if (services && services.length > 0) {
-      servicesRoutes = services.map((svc: any) => ({
-        url: `${baseUrl}/booking?service=${svc.id}`,
-        lastModified: new Date().toISOString(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-      }));
-    }
-  } catch (err) {
-    console.error('Error fetching services for sitemap:', err);
-  }
-
-  // 3. Fetch all blog posts
-  let blogsRoutes: any[] = [];
   try {
     const supabase = await createClient();
     const { data: blogs } = await supabase
@@ -52,20 +31,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq('published', true)
       .order('created_at', { ascending: false });
 
-    if (blogs && blogs.length > 0) {
-      blogsRoutes = blogs.map((post: any) => ({
-        url: `${baseUrl}/blog/${post.slug}`,
-        lastModified: (post.updated_at || post.created_at) ? new Date(post.updated_at || post.created_at).toISOString() : new Date().toISOString(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
-      }));
+    if (blogs) {
+      for (const post of blogs) {
+        blogMap.set(post.slug, {
+          url: `${baseUrl}/blog/${post.slug}`,
+          lastModified: (post.updated_at || post.created_at)
+            ? new Date(post.updated_at || post.created_at).toISOString()
+            : new Date().toISOString(),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
+      }
     }
   } catch (err) {
-    console.error('Error fetching blogs for sitemap:', err);
+    logger.error('Error fetching blogs for sitemap', err as Error);
   }
 
-  // 4. Fetch all published SEO articles with blog_slug
-  let seoRoutes: any[] = [];
   try {
     const supabase = await createClient();
     const { data: articles } = await supabase
@@ -74,17 +55,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .not('blog_slug', 'is', null)
       .order('published_at', { ascending: false });
 
-    if (articles && articles.length > 0) {
-      seoRoutes = articles.map((a: any) => ({
-        url: `${baseUrl}/blog/${a.blog_slug}`,
-        lastModified: a.published_at ? new Date(a.published_at).toISOString() : new Date().toISOString(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.6,
-      }));
+    if (articles) {
+      for (const a of articles) {
+        if (!blogMap.has(a.blog_slug)) {
+          blogMap.set(a.blog_slug, {
+            url: `${baseUrl}/blog/${a.blog_slug}`,
+            lastModified: a.published_at
+              ? new Date(a.published_at).toISOString()
+              : new Date().toISOString(),
+            changeFrequency: 'weekly',
+            priority: 0.6,
+          });
+        }
+      }
     }
   } catch (err) {
-    console.error('Error fetching seo_articles for sitemap:', err);
+    logger.error('Error fetching seo_articles for sitemap', err as Error);
   }
 
-  return [...routes, ...servicesRoutes, ...blogsRoutes, ...seoRoutes];
+  return [...routes, ...blogMap.values()];
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { getPendingItems, markDone, markFailed, getQueueCount, clearDone } from '@/lib/offline-queue';
+import { logger } from '@/lib/logger';
 
 interface SyncState {
   isSyncing: boolean;
@@ -37,13 +38,13 @@ export function useOnlineSync() {
           } else {
             await markFailed(item.id!, 'Unknown queue type: ' + item.type);
           }
-        } catch (err: any) {
-          await markFailed(item.id!, err.message);
+        } catch (err: unknown) {
+          await markFailed(item.id!, err instanceof Error ? err.message : String(err));
         }
       }
       setState(prev => ({ ...prev, lastSync: new Date() }));
       await refreshCount();
-      clearDone().catch(() => {});
+      clearDone().catch(e => logger.error('[Sync] Failed to clear completed offline queue items', e));
     } finally {
       setState(prev => ({ ...prev, isSyncing: false }));
     }

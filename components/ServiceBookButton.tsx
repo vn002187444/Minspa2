@@ -22,7 +22,7 @@ export default function ServiceBookButton({ href, serviceName, serviceCategory }
       }
       className="px-4 py-2 bg-[#FAF0E6] hover:bg-[#5C4033] hover:text-white text-[#8D6E53] border border-[#EADDCD] text-xs font-bold rounded-full transition-all flex items-center gap-1 uppercase tracking-wider"
     >
-      Book <ChevronRight className="w-3 h-3" />
+      Book <ChevronRight className="w-3 h-3" aria-hidden="true" />
     </Link>
   );
 }

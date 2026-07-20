@@ -33,10 +33,7 @@ export default function ProductSchema({ services, logoUrl = 'https://minhair.ver
         "hasMerchantReturnPolicy": {
           "@type": "MerchantReturnPolicy",
           "applicableTo": "Product",
-          "returnPolicy: laout": "No returns for services",
-          "merchantReturnDays": 0,
-          "returnMethod": "https://schema.org/ReturnByMail",
-          "returnFees": "https://schema.org/FreeReturn",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
         },
         "shippingDetails": {
           "@type": "OfferShippingDetails",
@@ -51,9 +48,6 @@ export default function ProductSchema({ services, logoUrl = 'https://minhair.ver
             "addressCountry": "VN",
           },
         },
-      },
-      "aggregateRating": {
-        "@id": "#aggregate-rating",
       },
     })),
   };

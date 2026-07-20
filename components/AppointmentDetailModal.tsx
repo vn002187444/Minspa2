@@ -91,7 +91,7 @@ export default function AppointmentDetailModal({
         {/* Header banner */}
         <div className="p-5 border-b border-[#FAF6F0] bg-[#FAF6F0] flex items-center justify-between">
           <h4 className="font-semibold text-[#5C4033] flex items-center gap-1.5 text-xs uppercase tracking-wider font-sans">
-            <Info className="w-4 h-4 text-[#8D6E53]" />
+            <Info className="w-4 h-4 text-[#8D6E53]" aria-hidden="true" />
             {isEditingSelected ? 'Sửa thông tin đặt lịch' : 'Chi Tiết Lịch Hẹn'}
           </h4>
           <button onClick={() => setSelectedAppt(null)} aria-label="Đóng modal" className="p-1.5 text-gray-400 hover:text-gray-900 bg-white shadow-xs rounded-full transition-all cursor-pointer">
@@ -222,7 +222,7 @@ export default function AppointmentDetailModal({
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-[#FAF0E6] rounded-xl flex items-center justify-center shrink-0 border border-[#EADDCD]">
-                  <User className="w-5 h-5 text-[#8D6E53]" />
+                  <User className="w-5 h-5 text-[#8D6E53]" aria-hidden="true" />
                 </div>
                 <div>
                   <h5 className="font-bold text-gray-900 text-base">{selectedAppt.customers?.full_name}</h5>
@@ -254,14 +254,14 @@ export default function AppointmentDetailModal({
               <div className="p-3.5 bg-[#FAF6F0]/50 border border-[#EADDCD]/20 rounded-2xl">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Thời Gian</div>
                 <p className="text-xs font-black text-gray-700 mt-1 flex items-center gap-1.5 font-mono">
-                  <Clock className="w-3.5 h-3.5 text-[#8D6E53]" />
+                  <Clock className="w-3.5 h-3.5 text-[#8D6E53]" aria-hidden="true" />
                   {getVNTimeStr(selectedAppt.start_time)} - {getVNTimeStr(selectedAppt.end_time)}
                 </p>
               </div>
               <div className="p-3.5 bg-[#FAF6F0]/50 border border-[#EADDCD]/20 rounded-2xl">
                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Trạng Thái</div>
                 <p className="text-xs font-extrabold text-[#8D6E53] mt-1 flex items-center gap-1.5 uppercase">
-                  <CheckCircle className="w-3.5 h-3.5 text-[#8D6E53]" />
+                  <CheckCircle className="w-3.5 h-3.5 text-[#8D6E53]" aria-hidden="true" />
                   {selectedAppt.status}
                 </p>
               </div>
@@ -317,7 +317,7 @@ export default function AppointmentDetailModal({
                     onClick={handleSwap}
                     className="bg-[#5C4033] hover:bg-[#3A2E2B] disabled:opacity-50 text-white font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-1 transition-all cursor-pointer shadow-sm min-h-[44px]"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isSwapping ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isSwapping ? 'animate-spin' : ''}`} aria-hidden="true" />
                     Cập nhật
                   </button>
                 </div>

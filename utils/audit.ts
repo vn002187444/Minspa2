@@ -1,4 +1,5 @@
 import { createClient } from "./supabase/server";
+import { logger } from "@/lib/logger";
 
 export async function logAuditAction(userId: string, actionCategory: string, details: string) {
   try {
@@ -10,6 +11,6 @@ export async function logAuditAction(userId: string, actionCategory: string, det
       created_at: new Date().toISOString()
     });
   } catch (error) {
-    console.error("Failed to insert audit log", error);
+    logger.error("Failed to insert audit log", error instanceof Error ? error : undefined);
   }
 }

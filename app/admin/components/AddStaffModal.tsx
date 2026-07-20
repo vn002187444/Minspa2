@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { createStaff } from "../actions";
+import { Button } from "@/components/ui/Button";
 
 interface AddStaffModalProps {
   onClose: () => void;
@@ -116,20 +117,12 @@ export default function AddStaffModal({ onClose, onReload }: AddStaffModalProps)
             </select>
           </div>
           <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200"
-            >
+            <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
               Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" disabled={loading} className="flex-1">
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </div>

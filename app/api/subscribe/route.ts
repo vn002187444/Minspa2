@@ -2,8 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/utils/auth';
 import { createClient } from '@/utils/supabase/server';
 
+const ALLOWED_ORIGINS = [
+  'https://minhair.vercel.app',
+  'https://www.minhair.vercel.app',
+  'http://localhost:3000',
+];
+
 export async function POST(req: NextRequest) {
   try {
+    const origin = req.headers.get('origin');
+    const referer = req.headers.get('referer');
+    const isValidOrigin = origin
+      ? ALLOWED_ORIGINS.some(o => origin.startsWith(o))
+      : referer
+        ? ALLOWED_ORIGINS.some(o => referer.startsWith(o))
+        : false;
+
+    if (!isValidOrigin) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const { subscription, userId, customerId } = await req.json();
 
     if (!subscription) {

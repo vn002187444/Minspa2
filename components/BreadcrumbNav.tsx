@@ -14,13 +14,13 @@ export default function BreadcrumbNav({ items }: { items: BreadcrumbItem[] }) {
       <ol className="flex items-center gap-1 text-xs text-stone-500 font-medium flex-wrap">
         <li>
           <Link href="/" className="flex items-center gap-1 hover:text-[#8D6E53] transition-colors">
-            <Home className="w-3.5 h-3.5" />
+            <Home className="w-3.5 h-3.5" aria-hidden="true" />
             <span className="sr-only sm:not-sr-only">Trang chủ</span>
           </Link>
         </li>
         {items.map((item, index) => (
           <li key={item.url} className="flex items-center gap-1">
-            <ChevronRight className="w-3 h-3 text-stone-300" />
+            <ChevronRight className="w-3 h-3 text-stone-300" aria-hidden="true" />
             {index === items.length - 1 ? (
               <span className="text-[#8D6E53] font-bold truncate max-w-[200px]" title={item.name}>
                 {item.name}

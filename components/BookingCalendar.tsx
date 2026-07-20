@@ -54,7 +54,7 @@ export default memo(function BookingCalendar({
     return (
       <div className="bg-white rounded-2xl border border-[#EADDCD] p-6 text-center">
         <div className="flex flex-col items-center gap-2 text-gray-400">
-          <Clock className="w-8 h-8" />
+          <Clock className="w-8 h-8" aria-hidden="true" />
           <p className="text-sm font-medium">Chọn ngày để xem khung giờ trống</p>
         </div>
       </div>
@@ -65,14 +65,14 @@ export default memo(function BookingCalendar({
     <div className="space-y-4">
       {stats.available === 0 && visibleSlots.length > 0 && (
         <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+          <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
           Hôm nay đã hết khung giờ trống. Vui lòng chọn ngày khác.
         </div>
       )}
 
       {stats.recommended > 0 && (
         <div className="flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-xs font-semibold">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />
           <span>
             Còn <strong>{stats.recommended}</strong> khung giờ được đề xuất (nhiều nhân viên rảnh)
           </span>
@@ -82,7 +82,7 @@ export default memo(function BookingCalendar({
       <div className="bg-white rounded-2xl border border-[#EADDCD] overflow-hidden">
         <div className="p-3 bg-[#FAF6F0] border-b border-[#EADDCD] flex items-center justify-between">
           <span className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1.5" suppressHydrationWarning>
-            <Clock className="w-3.5 h-3.5" />
+            <Clock className="w-3.5 h-3.5" aria-hidden="true" />
             {selectedDate === todayStr ? 'Hôm nay' : format(new Date(selectedDate), 'EEEE, dd/MM', { locale: vi })}
             {totalDuration > 0 && (
               <span className="ml-2 text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold">
@@ -121,6 +121,8 @@ export default memo(function BookingCalendar({
                 key={slot.time}
                 type="button"
                 disabled={isFull}
+                aria-disabled={isFull}
+                aria-label={`${slot.time}${isFull ? ' - hết chỗ' : slot.availableStaffNames.length > 0 ? ` - còn ${slot.availableStaff} nhân viên: ${slot.availableStaffNames.join(', ')}` : ` - còn ${slot.availableStaff} nhân viên trống`}`}
                 onClick={() => !isFull && onSelectTime(slot.time)}
                 className={`relative py-2.5 px-2 text-xs font-bold rounded-xl border transition-all duration-150 min-h-[44px] ${cellStyle} ${
                   !isFull ? 'hover:shadow-sm active:scale-95 cursor-pointer' : 'cursor-not-allowed'
@@ -175,7 +177,7 @@ export default memo(function BookingCalendar({
 
       {selectedTime && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 font-semibold flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 shrink-0 text-amber-600" />
+          <CheckCircle2 className="w-4 h-4 shrink-0 text-amber-600" aria-hidden="true" />
           Đã chọn: <strong>{selectedTime}</strong>
           {totalDuration > 0 && (
             <> · Kết thúc dự kiến: <strong>{

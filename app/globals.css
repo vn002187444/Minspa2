@@ -376,32 +376,41 @@ img {
   .theme-gold-light { color: rgb(var(--color-gold-light)); }
 }
 
-/* Google Translate Overrides */
-.goog-te-banner-frame,
-.goog-te-banner-frame.skiptranslate,
-iframe.goog-te-banner-frame,
-#goog-te-banner-frame,
-.goog-te-banner {
-  display: none !important;
-  visibility: hidden !important;
-  height: 0 !important;
-  opacity: 0 !important;
+/* Global focus-visible ring for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid rgb(var(--color-accent-soft));
+  outline-offset: 2px;
+  border-radius: var(--radius, 0.375rem);
 }
-body {
-  top: 0px !important;
-  position: static !important;
+
+/* Scroll-reveal with CSS animation-timeline (progressive enhancement) */
+@supports (animation-timeline: view()) {
+  .scroll-reveal-css {
+    animation: scrollReveal linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 100%;
+  }
+
+  @keyframes scrollReveal {
+    from {
+      opacity: 0;
+      transform: translateY(2rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
-.goog-tooltip { display: none !important; }
-.goog-text-highlight { background: transparent !important; border: none !important; box-shadow: none !important; }
-.goog-te-gadget { display: none !important; }
-.goog-te-gadget-simple { display: none !important; }
-.goog-te-spinner { display: none !important; }
-.goog-te-balloon-frame { display: none !important; }
-#goog-gt-tt { display: none !important; }
-.skiptranslate iframe { display: none !important; }
-.skiptranslate.goog-te-gadget { display: none !important; }
-.goog-te-menu-frame { display: none !important; }
-#goog-gt-vt { display: none !important; }
-.goog-te-busy { display: none !important; }
+
+/* Theme banner reserved height to prevent layout shift */
+.theme-banner-placeholder {
+  height: 0;
+  transition: height 0.3s ease;
+}
+
+.theme-banner-placeholder[data-visible="true"] {
+  height: 52px;
+}
 
 

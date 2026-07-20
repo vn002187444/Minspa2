@@ -24,6 +24,16 @@ function loadConfig(): ThemeConfig {
   return { override: null, particlesEnabled: true };
 }
 
+let themeSettingsPromise: Promise<ThemeConfig | null> | null = null;
+function fetchThemeSettingsOnce(): Promise<ThemeConfig | null> {
+  if (!themeSettingsPromise) {
+    themeSettingsPromise = fetch('/api/theme-settings')
+      .then(res => res.ok ? res.json() : null)
+      .catch(() => null);
+  }
+  return themeSettingsPromise;
+}
+
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [particleType, setParticleType] = useState<ParticleType>('none');
   const [particlesEnabled, setParticlesEnabled] = useState(true);
@@ -41,20 +51,17 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
       activeTheme = seasonal.name;
     }
 
-    // Fetch server-side config once
+    // Fetch server-side config once (deduplicated)
     try {
-      const res = await fetch('/api/theme-settings');
-      if (res.ok) {
-        const serverConfig = await res.json();
-        if (serverConfig.override) {
-          activeTheme = serverConfig.override;
-          const newConfig = loadConfig();
-          newConfig.override = serverConfig.override;
-          storage.set(CONFIG_KEY, JSON.stringify(newConfig));
-        }
-        if (serverConfig.particlesEnabled !== undefined) {
-          setParticlesEnabled(serverConfig.particlesEnabled);
-        }
+      const serverConfig = await fetchThemeSettingsOnce();
+      if (serverConfig?.override) {
+        activeTheme = serverConfig.override;
+        const newConfig = loadConfig();
+        newConfig.override = serverConfig.override;
+        storage.set(CONFIG_KEY, JSON.stringify(newConfig));
+      }
+      if (serverConfig?.particlesEnabled !== undefined) {
+        setParticlesEnabled(serverConfig.particlesEnabled);
       }
     } catch {}
 

@@ -206,8 +206,9 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       const res = await getScheduleData(selectedDate);
       setData(res);
       setDateCache(prev => new Map(prev).set(selectedDate, res));
-    } catch {
-      console.error('loadData failed');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      console.warn('loadData failed:', err instanceof Error ? err.message : 'unknown error');
     }
     setIsLoading(false);
   }
@@ -443,7 +444,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div>
             <h3 className="text-base font-bold text-[#3A2E2B] flex items-center gap-1.5 uppercase tracking-wider">
-              <Clock className="w-5 h-5 text-[#8D6E53]" />
+              <Clock className="w-5 h-5 text-[#8D6E53]" aria-hidden="true" />
               Lịch Làm Việc Tiệm Min
             </h3>
             <p className="text-xs text-gray-500">Xem dòng thời gian bận / rảnh của các kỹ thuật viên</p>
@@ -457,7 +458,7 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {mode === 'ADMIN' && !dateOverride && (
               <div className="flex items-center gap-2 bg-[#FAF6F0] border border-[#EADDCD] px-3.5 py-2.5 rounded-xl shrink-0">
-                <CalendarIcon className="w-4 h-4 text-[#8D6E53]" />
+                <CalendarIcon className="w-4 h-4 text-[#8D6E53]" aria-hidden="true" />
                 <input
                   type="date"
                   value={selectedDate}

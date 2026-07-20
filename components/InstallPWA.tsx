@@ -87,7 +87,7 @@ export default function InstallPWA() {
       className="fixed bottom-24 left-4 right-4 md:left-4 md:right-auto md:max-w-sm bg-gradient-to-r from-[#FFFDF9] to-[#FAF5EE] text-[#3A2E2B] border-2 border-[#EADAC5] p-4 rounded-2xl shadow-2xl z-50 flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-5 duration-300 pointer-events-auto"
     >
       <div className="w-9 h-9 rounded-full bg-[#E6A055] flex items-center justify-center shrink-0 shadow-inner">
-        <Smartphone className="w-4.5 h-4.5 text-white" />
+        <Smartphone className="w-4.5 h-4.5 text-white" aria-hidden="true" />
       </div>
 
       <div className="flex-1 space-y-1">
@@ -101,7 +101,7 @@ export default function InstallPWA() {
         {isIos ? (
           <div className="mt-2 p-2 bg-[#F5EBE1] rounded-xl text-[10px] text-gray-700 leading-normal border border-[#E7D6C1]/40">
             <p className="font-bold text-[#8D6E53] flex items-center gap-1">
-              <Share className="w-3 h-3 text-pink-600 inline" /> Hướng dẫn cài đặt trên iPhone:
+              <Share className="w-3 h-3 text-pink-600 inline" aria-hidden="true" /> Hướng dẫn cài đặt trên iPhone:
             </p>
             Nhấp chọn <strong className="text-pink-600">Chia sẻ</strong> dưới trình duyệt Safari, sau đó cuộn xuống chọn <strong className="text-pink-600">&quot;Thêm vào MH chính&quot;</strong>.
           </div>
@@ -111,7 +111,7 @@ export default function InstallPWA() {
               onClick={handleInstallClick}
               className="px-2.5 py-2.5 bg-[#8D6E53] hover:bg-[#765B43] text-white rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer hover:shadow-md min-h-[44px]"
             >
-              <Download className="w-3 h-3" /> Cài đặt ngay
+              <Download className="w-3 h-3" aria-hidden="true" /> Cài đặt ngay
             </button>
             <button
               onClick={dismiss}

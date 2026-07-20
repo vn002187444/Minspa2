@@ -1,0 +1,45 @@
+{
+  "nav.deal": "Hot Deals",
+  "nav.hairWash": "Hair & Scalp Therapy",
+  "nav.footScrub": "Foot Scrub",
+  "nav.massage": "Massage Body",
+  "nav.nail": "Nail Care & Art",
+  "nav.about": "About Us",
+  "nav.faq": "FAQ",
+  "nav.staff": "Staff",
+  "nav.booking": "Booking",
+
+  "nav.mobile.deal": "🔥 Hot Deals",
+  "nav.mobile.hairWash": "💆 Hair Therapy",
+  "nav.mobile.massage": "💪 Massage",
+  "nav.mobile.nail": "💅 Nails",
+  "nav.mobile.footScrub": "👣 Foot Scrub",
+  "nav.mobile.vipCombo": "🎁 VIP Combo",
+  "nav.mobile.reviews": "⭐ Reviews",
+  "nav.mobile.about": "📖 About Us",
+  "nav.mobile.faq": "❓ FAQ",
+
+  "booking.title": "Book Appointment",
+  "booking.phone": "Phone Number",
+  "booking.name": "Full Name",
+  "booking.service": "Service",
+  "booking.staff": "Staff",
+  "booking.date": "Date",
+  "booking.time": "Time",
+  "booking.note": "Note",
+
+  "login.title": "Login",
+  "login.username": "Username",
+  "login.password": "Password",
+
+  "common.bookNow": "Book Now",
+  "common.readMore": "Read More",
+  "common.viewAll": "View All",
+  "common.close": "Close",
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.loading": "Loading...",
+
+  "lang.switchLanguage": "Select language",
+  "lang.poweredBy": "Language"
+}

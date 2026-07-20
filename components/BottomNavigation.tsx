@@ -46,6 +46,7 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
     <button
       onClick={onClick}
       aria-current={isActive ? 'page' : undefined}
+      aria-label={label}
       className={`flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1.5 transition-all duration-300 relative ${
         isActive 
           ? 'text-[#5C4033] font-bold scale-105' 
@@ -92,37 +93,37 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
         {isHome && (
           <>
             {renderLinkItem(
-              <Home className="w-5 h-5" />,
+              <Home className="w-5 h-5" aria-hidden="true" />,
               'Trang Chủ',
               '/',
               pathname === '/'
             )}
             {renderLinkItem(
-              <Sparkles className="w-5 h-5" />,
+              <Sparkles className="w-5 h-5" aria-hidden="true" />,
               'Dịch Vụ',
               '/#services',
               false
             )}
             {renderLinkItem(
-              <Calendar className="w-5 h-5" />,
+              <Calendar className="w-5 h-5" aria-hidden="true" />,
               'Đặt Lịch',
               '/booking',
               pathname === '/booking'
             )}
             {renderLinkItem(
-              <BookOpen className="w-5 h-5" />,
+              <BookOpen className="w-5 h-5" aria-hidden="true" />,
               'Tin Tức',
               '/blog',
               pathname?.startsWith('/blog') || false
             )}
             {renderLinkItem(
-              <HelpCircle className="w-5 h-5" />,
+              <HelpCircle className="w-5 h-5" aria-hidden="true" />,
               'FAQ',
               '/faq',
               pathname === '/faq'
             )}
             {renderLinkItem(
-              <User className="w-5 h-5" />,
+              <User className="w-5 h-5" aria-hidden="true" />,
               'Đăng Nhập',
               '/login',
               pathname === '/login'
@@ -134,31 +135,31 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
         {isStaff && (
           <>
             {renderItem(
-              <Clock className="w-5 h-5" />,
+              <Clock className="w-5 h-5" aria-hidden="true" />,
               'Lịch Hẹn',
               () => handleStaffTabChange('SCHEDULE'),
               activeTab === 'SCHEDULE'
             )}
             {renderItem(
-              <CalendarCheck className="w-5 h-5" />,
+              <CalendarCheck className="w-5 h-5" aria-hidden="true" />,
               'Lịch Tổng',
               () => handleStaffTabChange('MASTER'),
               activeTab === 'MASTER'
             )}
             {renderItem(
-              <CheckCircle2 className="w-5 h-5" />,
+              <CheckCircle2 className="w-5 h-5" aria-hidden="true" />,
               'Điểm Danh',
               () => handleStaffTabChange('ATTENDANCE'),
               activeTab === 'ATTENDANCE'
             )}
             {renderItem(
-              <Package className="w-5 h-5" />,
+              <Package className="w-5 h-5" aria-hidden="true" />,
               'Bán Gói',
               () => handleStaffTabChange('SELL_PACKAGE'),
               activeTab === 'SELL_PACKAGE'
             )}
             {renderItem(
-              <BarChart className="w-5 h-5" />,
+              <BarChart className="w-5 h-5" aria-hidden="true" />,
               'Báo Cáo',
               () => handleStaffTabChange('REPORTS'),
               activeTab === 'REPORTS'
@@ -170,25 +171,25 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
         {isAdmin && (
           <>
             {renderItem(
-              <Home className="w-5 h-5" />,
+              <Home className="w-5 h-5" aria-hidden="true" />,
               'Tổng Quan',
               () => handleAdminTabChange('DASHBOARD'),
               pathname === '/admin' && activeTab === 'DASHBOARD'
             )}
             {renderLinkItem(
-              <ClipboardCheck className="w-5 h-5" />,
+              <ClipboardCheck className="w-5 h-5" aria-hidden="true" />,
               'Đơn Hàng',
               '/admin/orders',
               pathname === '/admin/orders'
             )}
             {renderLinkItem(
-              <CalendarCheck className="w-5 h-5" />,
+              <CalendarCheck className="w-5 h-5" aria-hidden="true" />,
               'Lịch Tổng',
               '/admin/schedule',
               pathname === '/admin/schedule'
             )}
             {renderItem(
-              <Menu className="w-5 h-5" />,
+              <Menu className="w-5 h-5" aria-hidden="true" />,
               'Menu',
               () => onMenuClick?.(),
               false

@@ -60,7 +60,7 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
   const [themeStyle, setThemeStyle] = useState(getMascotStyle('default'))
 
   useEffect(() => {
-    setDismissed(storage.get(MASCOT_DISMISSED_KEY) === 'true')
+    setDismissed(storage.get(MASCOT_DISMISSED_KEY) === 'true') // eslint-disable-line react-hooks/set-state-in-effect
   }, [])
 
   // Theme-aware styling
@@ -139,7 +139,7 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
             whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
           >
-            <Sparkles className="w-6 h-6 text-white" />
+            <Sparkles className="w-6 h-6 text-white" aria-hidden="true" />
           </motion.div>
           <motion.span
             animate={{ scale: [1, 1.3, 1] }}
@@ -171,8 +171,8 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
             animate={{ opacity: 1, x: 0 }}
             className="text-xs font-bold text-[#5C4033] mb-0.5 flex items-center gap-1"
           >
-            {expression === 'excited' && <Star className="w-3 h-3 text-amber-500" />}
-            {expression === 'thinking' && <Lightbulb className="w-3 h-3 text-sky-500" />}
+            {expression === 'excited' && <Star className="w-3 h-3 text-amber-500" aria-hidden="true" />}
+            {expression === 'thinking' && <Lightbulb className="w-3 h-3 text-sky-500" aria-hidden="true" />}
             {msg.title}
           </motion.p>
 
@@ -201,9 +201,9 @@ export default function BookingMascotGuide({ step, currentCategory, onSuggestion
                   onClick={() => handleSuggestionClick(name)}
                   className="w-full flex items-center gap-1.5 text-xs text-left text-[#5C4033] bg-pink-50/70 hover:bg-pink-100 rounded-lg px-2 py-2.5 transition-colors cursor-pointer min-h-[44px]"
                 >
-                  <ThumbsUp className="w-3 h-3 shrink-0" />
+                  <ThumbsUp className="w-3 h-3 shrink-0" aria-hidden="true" />
                   <span className="font-medium">{name}</span>
-                  <ChevronRight className="w-3 h-3 ml-auto shrink-0" />
+                  <ChevronRight className="w-3 h-3 ml-auto shrink-0" aria-hidden="true" />
                 </button>
               ))}
             </motion.div>

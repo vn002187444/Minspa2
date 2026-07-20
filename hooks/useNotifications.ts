@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { logger } from "@/lib/logger";
 import type { Notification } from '@/types';
 
 interface UseNotificationsReturn {
@@ -28,7 +29,9 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
         const data = await res.json();
         setUnreadCount(data.count ?? 0);
       }
-    } catch {}
+    } catch (e) {
+      logger.error('[Notifications] Failed to query unread count', e instanceof Error ? e : undefined);
+    }
   }, []);
 
   const fetchNotifications = useCallback(async () => {
@@ -39,7 +42,9 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
         const data = await res.json();
         setNotifications(data.notifications ?? []);
       }
-    } catch {}
+    } catch (e) {
+      logger.error('[Notifications] Failed to query notifications', e instanceof Error ? e : undefined);
+    }
     setLoading(false);
   }, []);
 
@@ -48,7 +53,9 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
       await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' });
       setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
       setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch {}
+    } catch (e) {
+      logger.error('[Notifications] Failed to mark notification as read', e instanceof Error ? e : undefined);
+    }
   }, []);
 
   const markAllRead = useCallback(async () => {
@@ -56,7 +63,9 @@ export function useNotifications(userId?: string): UseNotificationsReturn {
       await fetch('/api/notifications/read-all', { method: 'POST' });
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setUnreadCount(0);
-    } catch {}
+    } catch (e) {
+      logger.error('[Notifications] Failed to mark all notifications as read', e instanceof Error ? e : undefined);
+    }
   }, []);
 
   useEffect(() => {

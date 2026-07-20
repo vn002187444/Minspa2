@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useNoindex } from '@/lib/use-noindex';
+import { Button } from '@/components/ui/Button';
 
 export default function RootError({ error, reset }: { error: Error; reset: () => void }) {
   useNoindex();
@@ -18,9 +19,9 @@ export default function RootError({ error, reset }: { error: Error; reset: () =>
         <h1 className="text-lg font-bold text-[#3A2E2B]">Có lỗi xảy ra</h1>
         <p className="text-sm text-gray-500">Vui lòng thử lại hoặc quay về trang chủ.</p>
         <div className="flex gap-3 justify-center">
-          <button onClick={() => reset()} className="px-6 py-2.5 bg-[#5C4033] text-white text-sm font-bold rounded-xl hover:bg-[#4A3227] transition-colors">
+          <Button onClick={() => reset()}>
             Thử lại
-          </button>
+          </Button>
           <Link href="/" className="px-6 py-2.5 bg-white text-[#5C4033] text-sm font-bold rounded-xl border border-[#EADDCD] hover:bg-[#FAF6F0] transition-colors">
             Về trang chủ
           </Link>

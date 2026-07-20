@@ -6,7 +6,7 @@ import { X, Search, Loader2, Image as ImageIcon, AlertCircle, Check } from 'luci
 import { listStorageImages } from '@/app/admin/actions';
 
 interface S3ImageBrowserProps {
-  onSelect: (url: string) => void;
+  onSelect: (_url: string) => void;
   onClose: () => void;
   initialUrl?: string;
 }
@@ -23,8 +23,8 @@ export default function S3ImageBrowser({ onSelect, onClose, initialUrl }: S3Imag
         setLoading(true);
         const data = await listStorageImages();
         setImages(data);
-      } catch (e: any) {
-        setError(e.message || 'Không thể tải danh sách ảnh');
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : String(e) || 'Không thể tải danh sách ảnh');
       } finally {
         setLoading(false);
       }
@@ -43,7 +43,7 @@ export default function S3ImageBrowser({ onSelect, onClose, initialUrl }: S3Imag
         <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-pink-100 text-pink-600 rounded-xl">
-              <ImageIcon className="w-5 h-5" />
+              <ImageIcon className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-[#3A2E2B]">Thư viện ảnh S3</h3>
@@ -61,7 +61,7 @@ export default function S3ImageBrowser({ onSelect, onClose, initialUrl }: S3Imag
         {/* Search Bar */}
         <div className="p-4 bg-gray-50 border-b border-gray-100">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
             <input 
               type="text" 
               placeholder="Tìm kiếm ảnh theo tên..." 
@@ -76,12 +76,12 @@ export default function S3ImageBrowser({ onSelect, onClose, initialUrl }: S3Imag
         <div className="flex-1 overflow-y-auto p-5 bg-[#FAF6F0]">
           {loading ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 text-gray-400">
-              <Loader2 className="w-8 h-8 animate-spin text-pink-500" />
+              <Loader2 className="w-8 h-8 animate-spin text-pink-500" aria-hidden="true" />
               <p className="text-sm font-medium">Đang tải thư viện...</p>
             </div>
           ) : error ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 text-rose-500 p-8 text-center">
-              <AlertCircle className="w-10 h-10" />
+              <AlertCircle className="w-10 h-10" aria-hidden="true" />
               <p className="text-sm font-medium">{error}</p>
               <button 
                 onClick={() => { setLoading(true); setError(null); /* retry logic */ }}
@@ -92,7 +92,7 @@ export default function S3ImageBrowser({ onSelect, onClose, initialUrl }: S3Imag
             </div>
           ) : filteredImages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center gap-3 text-gray-400 p-8 text-center">
-              <ImageIcon className="w-12 h-12 opacity-20" />
+              <ImageIcon className="w-12 h-12 opacity-20" aria-hidden="true" />
               <p className="text-sm font-medium">Không tìm thấy ảnh nào</p>
             </div>
           ) : (
@@ -117,7 +117,7 @@ export default function S3ImageBrowser({ onSelect, onClose, initialUrl }: S3Imag
                   </div>
                   {initialUrl === img.url && (
                     <div className="absolute top-2 right-2 bg-pink-500 text-white rounded-full p-1 shadow-lg">
-                      <Check className="w-3 h-3" />
+                      <Check className="w-3 h-3" aria-hidden="true" />
                     </div>
                   )}
                 </div>

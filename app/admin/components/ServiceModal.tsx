@@ -6,6 +6,7 @@ import { RefreshCw, Sparkles, ImageIcon, Database } from "lucide-react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { saveService, uploadImageAction } from "../actions";
 import S3ImageBrowser from '@/components/S3ImageBrowser';
+import { Button } from "@/components/ui/Button";
 
 interface ServiceModalService {
   id?: string | null;
@@ -267,8 +268,8 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
                           const base64 = reader.result as string;
                           const url = await uploadImageAction(base64);
                           setForm({ ...form, image_url: url });
-                        } catch (err: any) {
-                          setErrorMsg(err.message);
+                        } catch (err: unknown) {
+                          setErrorMsg(err instanceof Error ? err.message : 'Lỗi không xác định');
                         }
                       };
                       reader.readAsDataURL(file);
@@ -343,20 +344,12 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
             </label>
           </div>
           <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200"
-            >
+            <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
               Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 py-3 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" disabled={loading} className="flex-1">
               Lưu
-            </button>
+            </Button>
           </div>
         </form>
       </div>

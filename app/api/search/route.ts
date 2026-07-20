@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   try {
@@ -8,6 +9,12 @@ export async function GET(req: NextRequest) {
 
     if (!query) {
       return NextResponse.json({ success: true, results: { articles: [], services: [] } });
+    }
+
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anonymous';
+    const rl = await rateLimit(`search:${ip}`, 20, 60);
+    if (!rl.allowed) {
+      return NextResponse.json({ success: false, error: 'Quá nhiều yêu cầu. Thử lại sau.' }, { status: 429 });
     }
 
     const supabase = await createClient();

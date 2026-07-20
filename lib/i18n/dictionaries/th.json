@@ -1,0 +1,45 @@
+{
+  "nav.deal": "ดีลร้อน",
+  "nav.hairWash": "สระผม & ดูแลหนังศีรษะ",
+  "nav.footScrub": "ขัดเท้า",
+  "nav.massage": "นวดผ่อนคลาย",
+  "nav.nail": "ดูแลเล็บ & เพ้นท์เล็บ",
+  "nav.about": "เกี่ยวกับเรา",
+  "nav.faq": "คำถามที่พบบ่อย",
+  "nav.staff": "พนักงาน",
+  "nav.booking": "จองคิว",
+
+  "nav.mobile.deal": "🔥 ดีลเด็ด",
+  "nav.mobile.hairWash": "💆 สระผม",
+  "nav.mobile.massage": "💪 นวด",
+  "nav.mobile.nail": "💅 ทำเล็บ",
+  "nav.mobile.footScrub": "👣 ขัดเท้า",
+  "nav.mobile.vipCombo": "🎁 VIPคอมโบ",
+  "nav.mobile.reviews": "⭐ รีวิว",
+  "nav.mobile.about": "📖 เกี่ยวกับเรา",
+  "nav.mobile.faq": "❓ คำถาม",
+
+  "booking.title": "จองคิว",
+  "booking.phone": "เบอร์โทรศัพท์",
+  "booking.name": "ชื่อ-นามสกุล",
+  "booking.service": "บริการ",
+  "booking.staff": "พนักงาน",
+  "booking.date": "วันที่",
+  "booking.time": "เวลา",
+  "booking.note": "หมายเหตุ",
+
+  "login.title": "เข้าสู่ระบบ",
+  "login.username": "ชื่อผู้ใช้",
+  "login.password": "รหัสผ่าน",
+
+  "common.bookNow": "จองเลย",
+  "common.readMore": "อ่านเพิ่มเติม",
+  "common.viewAll": "ดูทั้งหมด",
+  "common.close": "ปิด",
+  "common.save": "บันทึก",
+  "common.cancel": "ยกเลิก",
+  "common.loading": "กำลังโหลด...",
+
+  "lang.switchLanguage": "เลือกภาษา",
+  "lang.poweredBy": "ภาษา"
+}

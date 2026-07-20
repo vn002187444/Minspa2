@@ -3,6 +3,9 @@
 import { createClient } from "@/utils/supabase/server";
 import { sendPushNotification } from "@/utils/push";
 import { unlockTimeSlots } from "@/lib/booking-engine";
+import { logger } from "@/lib/logger";
+
+import { z } from 'zod';
 
 export async function checkCustomerHistory(phone: string) {
   const supabase = await createClient();
@@ -129,11 +132,19 @@ export async function lookupAppointmentsByPhone(phone: string) {
   };
 }
 
+const reviewSchema = z.object({
+  appointmentId: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  quickTags: z.array(z.string()),
+  comment: z.string().max(1000).default(''),
+});
+
 export async function submitAppointmentReview(appointmentId: string, rating: number, quickTags: string[], comment: string = "") {
   const supabase = await createClient();
 
-  if (rating < 1 || rating > 5) {
-    return { success: false, error: 'Mức điểm đánh giá không hợp lệ.' };
+  const parsed = reviewSchema.safeParse({ appointmentId, rating, quickTags, comment });
+  if (!parsed.success) {
+    return { success: false, error: 'Dữ liệu đánh giá không hợp lệ.' };
   }
 
   const { data: existingReviews } = await supabase
@@ -208,8 +219,8 @@ export async function cancelAppointmentByCustomer(appointmentId: string) {
           'Lịch hẹn bị hủy! ❌',
           `Một lịch hẹn vừa bị khách hàng hủy trên hệ thống.`,
           '/admin/orders'
-        ).catch(() => {})
-      )).catch(() => {});
+        ).catch(e => logger.error('[Push] Failed to notify admin of cancelled appointment', e))
+      )).catch(e => logger.error('[Notifications] Failed to notify admins of cancelled appointment', e));
     }
   });
 

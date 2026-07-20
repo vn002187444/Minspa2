@@ -4,6 +4,7 @@ import {
   createClient, getSession, format, subDays, eachDayOfInterval,
   startOfMonth, endOfMonth, checkAdminOrManager, StaffReportEntry,
 } from "./_shared";
+import { logger } from "@/lib/logger";
 
 export async function getDashboardData(startDateStr?: string, endDateStr?: string) {
   const session = await getSession();
@@ -145,7 +146,7 @@ export async function getDashboardData(startDateStr?: string, endDateStr?: strin
       todayAppointments: todayAppts || []
     };
   } catch (error: unknown) {
-    console.error('Supabase query error:', error);
+    logger.error('Supabase query error:', error instanceof Error ? error : undefined);
     return {
       userRole,
       totalRevenue: 0,
@@ -324,7 +325,7 @@ export async function getCommissionReport(startDateStr: string, endDateStr: stri
       }
     };
   } catch (error: unknown) {
-    console.error("Commission Report aggregation error:", error);
+    logger.error("Commission Report aggregation error:", error instanceof Error ? error : undefined);
     return { success: false, error: error instanceof Error ? error.message : 'Lỗi khi lấy báo cáo hoa hồng' };
   }
 }

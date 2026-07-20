@@ -42,8 +42,8 @@ export default function ReviewCustomerModal({ appointmentId, customerName, onClo
       if (!res.success) throw new Error(res.error || "Submit failed");
       toast.success("Đã gửi đánh giá khách hàng");
       onClose();
-    } catch (err: any) {
-      toast.error("Lỗi gửi đánh giá: " + (err.message || "Unknown error"));
+    } catch (err: unknown) {
+      toast.error("Lỗi gửi đánh giá: " + (err instanceof Error ? err.message : String(err) || "Unknown error"));
     } finally {
       setIsSubmitting(false);
     }

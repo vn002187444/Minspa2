@@ -10,9 +10,9 @@ import { createClient } from '@/utils/supabase/client';
 export async function safeSubscribe(channel: RealtimeChannel) {
   try {
     return await channel.subscribe();
-  } catch (e: any) {
+  } catch (e: unknown) {
     // iOS Safari throws a DOMException with name "SecurityError" when WebSocket connections are blocked.
-    if (e && e.name === 'SecurityError') {
+    if (e instanceof Error && e.name === 'SecurityError') {
       console.warn('[Realtime] Subscription blocked by browser security policy (SecurityError).');
     } else {
       console.warn('[Realtime] Subscription failed (possibly blocked by browser security policy):', e);

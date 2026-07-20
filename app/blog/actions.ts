@@ -155,7 +155,7 @@ export async function saveBlogPost(postData: {
 
   revalidatePath('/blog');
   revalidatePath(`/blog/${normalized.slug}`);
-  revalidatePath('/sitemap');
+  revalidatePath('/sitemap.xml');
   revalidatePath('/admin/blog');
   return { success: true };
 }
@@ -178,7 +178,7 @@ export async function deleteBlogPost(id: string) {
   }
 
   revalidatePath('/blog');
-  revalidatePath('/sitemap');
+  revalidatePath('/sitemap.xml');
   revalidatePath('/admin/blog');
   return { success: true };
 }

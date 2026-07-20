@@ -129,8 +129,8 @@ export default function AdminSeoArticlesPage() {
       } else {
         throw new Error(res.error || 'Lỗi khi lưu');
       }
-    } catch (err: any) {
-      const errMsg = err?.message || 'Có lỗi xảy ra khi lưu bài viết.';
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err) || 'Có lỗi xảy ra khi lưu bài viết.';
       setError(errMsg);
       toast.error(errMsg);
     } finally {

@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { insertNotification } from "@/utils/notifications";
 import { format } from "date-fns";
 import { getCached, setCache, buildSlotCacheKey, invalidateCache } from "@/lib/slot-cache";
+import { logger } from "@/lib/logger";
 
 export interface TimeLock {
   id: string;
@@ -63,7 +64,7 @@ export async function lockTimeSlots(
   const supabase = await createClient();
   const lockDate = startTime.split('T')[0];
 
-  await supabase.from('time_slot_locks').insert({
+  const { error } = await supabase.from('time_slot_locks').insert({
     staff_id: staffId,
     appointment_id: appointmentId,
     lock_date: lockDate,
@@ -71,27 +72,36 @@ export async function lockTimeSlots(
     end_time: endTime,
     is_active: true,
   });
+  if (error) {
+    logger.error('[BookingEngine] Failed to lock time slot', error, { appointmentId, staffId, startTime, endTime });
+  }
 }
 
 export async function unlockTimeSlots(appointmentId: string): Promise<void> {
   const supabase = await createClient();
 
-  await supabase
+  const { error } = await supabase
     .from('time_slot_locks')
     .update({ is_active: false })
     .eq('appointment_id', appointmentId);
+  if (error) {
+    logger.error('[BookingEngine] Failed to unlock time slots', error, { appointmentId });
+  }
 }
 
 export async function unlockTimeSlotsInRange(staffId: string, startTime: string, endTime: string): Promise<void> {
   const supabase = await createClient();
 
-  await supabase
+  const { error } = await supabase
     .from('time_slot_locks')
     .update({ is_active: false })
     .eq('staff_id', staffId)
     .eq('is_active', true)
     .gte('start_time', startTime)
     .lte('end_time', endTime);
+  if (error) {
+    logger.error('[BookingEngine] Failed to unlock time slots in range', error, { staffId, startTime, endTime });
+  }
 }
 
 export async function cascadeShiftForward(
@@ -101,19 +111,22 @@ export async function cascadeShiftForward(
 ): Promise<void> {
   const supabase = await createClient();
 
-  const { data: completedAppt } = await supabase
+  const { data: completedAppt, error: completedApptErr } = await supabase
     .from('appointments')
     .select('start_time, end_time')
     .eq('id', completedAppointmentId)
     .single();
 
-  if (!completedAppt) return;
+  if (completedApptErr || !completedAppt) {
+    if (completedApptErr) logger.error('[BookingEngine] Failed to fetch completed appointment', completedApptErr, { completedAppointmentId });
+    return;
+  }
 
   const compDate = new Date(completedAppt.start_time);
   const _dayStart = new Date(Date.UTC(compDate.getUTCFullYear(), compDate.getUTCMonth(), compDate.getUTCDate(), 0, 0, 0)).toISOString();
   const dayEnd = new Date(Date.UTC(compDate.getUTCFullYear(), compDate.getUTCMonth(), compDate.getUTCDate(), 23, 59, 59, 999)).toISOString();
 
-  const { data: nextAppts } = await supabase
+  const { data: nextAppts, error: nextApptsErr } = await supabase
     .from('appointments')
     .select('id, start_time, end_time, actual_start_time, actual_end_time')
     .eq('staff_id', staffId)
@@ -123,6 +136,10 @@ export async function cascadeShiftForward(
     .not('status', 'in', ['CANCELLED', 'COMPLETED'])
     .order('start_time', { ascending: true });
 
+  if (nextApptsErr) {
+    logger.error('[BookingEngine] Failed to fetch next appointments for cascade', nextApptsErr, { staffId, completedAppointmentId });
+    return;
+  }
   if (!nextAppts || nextAppts.length === 0) return;
 
   const completedEnd = new Date(completionTime);
@@ -143,7 +160,7 @@ export async function cascadeShiftForward(
     const oldLockEnd = appt.actual_end_time || appt.end_time;
 
     // Parallel: update appointment + unlock old slot + lock new slot
-    await Promise.all([
+    const results = await Promise.all([
       supabase.from('appointments').update({
         actual_start_time: newStart.toISOString(),
         actual_end_time: newEnd.toISOString(),
@@ -151,6 +168,9 @@ export async function cascadeShiftForward(
       unlockTimeSlotsInRange(staffId, oldLockStart, oldLockEnd),
       lockTimeSlots(appt.id, staffId, newStart.toISOString(), newEnd.toISOString()),
     ]);
+    if (results[0]?.error) {
+      logger.error('[BookingEngine] Failed to cascade update appointment', results[0].error, { appointmentId: appt.id });
+    }
 
     const minutesShifted = Math.round((newStart.getTime() - originalStart.getTime()) / 60000);
     const apptCustomerId = (appt as any).customer_id;
@@ -161,7 +181,7 @@ export async function cascadeShiftForward(
         'Lịch hẹn đã được dời',
         `Lịch hẹn của bạn đã được đẩy lên sớm hơn ${minutesShifted} phút do ca trước hoàn thành sớm.`,
         '/booking'
-      ).catch(() => {});
+      ).catch(e => logger.error('[BookingEngine] Failed to notify customer of cascade shift', e, { appointmentId: appt.id }));
     }
     insertNotification(
       'user',
@@ -169,7 +189,7 @@ export async function cascadeShiftForward(
       'Lịch hẹn dời lịch',
       `Lịch hẹn lúc ${format(new Date(originalStart), 'HH:mm')} được dời lên ${format(newStart, 'HH:mm')} (sớm hơn ${minutesShifted} phút).`,
       '/staff?tab=SCHEDULE'
-    ).catch(() => {});
+    ).catch(e => logger.error('[BookingEngine] Failed to notify staff of cascade shift', e, { appointmentId: appt.id }));
 
     cursor = newEnd;
   }
@@ -178,7 +198,7 @@ export async function cascadeShiftForward(
     const gapStart = new Date(completedEnd.getTime());
     const gapEnd = new Date(completedEnd.getTime() + timeSaved);
 
-    const { data: gapLocks } = await supabase
+    const { data: gapLocks, error: gapLocksErr } = await supabase
       .from('time_slot_locks')
       .select('id')
       .eq('staff_id', staffId)
@@ -186,11 +206,16 @@ export async function cascadeShiftForward(
       .gte('start_time', gapStart.toISOString())
       .lte('end_time', gapEnd.toISOString());
 
-    if (gapLocks && gapLocks.length > 0) {
-      await supabase
+    if (gapLocksErr) {
+      logger.error('[BookingEngine] Failed to fetch gap locks', gapLocksErr, { staffId });
+    } else if (gapLocks && gapLocks.length > 0) {
+      const { error: gapUnlockErr } = await supabase
         .from('time_slot_locks')
         .update({ is_active: false })
         .in('id', gapLocks.map(l => l.id));
+      if (gapUnlockErr) {
+        logger.error('[BookingEngine] Failed to unlock gap locks', gapUnlockErr, { staffId, count: gapLocks.length });
+      }
     }
   }
 }
@@ -198,18 +223,24 @@ export async function cascadeShiftForward(
 export async function handleCancelAndUnlock(appointmentId: string): Promise<void> {
   const supabase = await createClient();
 
-  const { data: appt } = await supabase
+  const { data: appt, error: apptErr } = await supabase
     .from('appointments')
     .select('id, staff_id, customer_id, start_time, end_time, actual_start_time, actual_end_time, status')
     .eq('id', appointmentId)
     .single();
 
-  if (!appt) return;
+  if (apptErr || !appt) {
+    if (apptErr) logger.error('[BookingEngine] Failed to fetch appointment for cancel', apptErr, { appointmentId });
+    return;
+  }
 
-  await supabase
+  const { error: cancelErr } = await supabase
     .from('appointments')
     .update({ status: 'CANCELLED' })
     .eq('id', appointmentId);
+  if (cancelErr) {
+    logger.error('[BookingEngine] Failed to cancel appointment', cancelErr, { appointmentId });
+  }
 
   await unlockTimeSlots(appointmentId);
 
@@ -221,7 +252,7 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
       'Lịch hẹn đã hủy',
       `Lịch hẹn lúc ${format(new Date(appt.start_time), 'HH:mm')} đã bị hủy.`,
       '/staff?tab=SCHEDULE'
-    ).catch(() => {});
+    ).catch(e => logger.error('[BookingEngine] Failed to notify staff of cancellation', e, { appointmentId }));
   }
   if (appt.customer_id) {
     insertNotification(
@@ -230,7 +261,7 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
       'Lịch hẹn đã hủy',
       'Lịch hẹn của bạn tại Min Nail & Hair đã được hủy.',
       '/booking'
-    ).catch(() => {});
+    ).catch(e => logger.error('[BookingEngine] Failed to notify customer of cancellation', e, { appointmentId }));
   }
 
   if (appt.staff_id) {
@@ -238,7 +269,7 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
     const dayStart = new Date(appt.start_time).toISOString().split('T')[0];
     const dayEnd = `${dayStart}T23:59:59.999Z`;
 
-    const { data: remainingAppts } = await supabase
+    const { data: remainingAppts, error: remainingErr } = await supabase
       .from('appointments')
       .select('id, start_time, end_time, actual_start_time, actual_end_time')
       .eq('staff_id', appt.staff_id)
@@ -246,6 +277,11 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
       .lte('start_time', dayEnd)
       .not('status', 'in', ['CANCELLED', 'COMPLETED'])
       .order('start_time', { ascending: true });
+
+    if (remainingErr) {
+      logger.error('[BookingEngine] Failed to fetch remaining appointments after cancel', remainingErr, { appointmentId, staffId: appt.staff_id });
+      return;
+    }
 
     if (remainingAppts && remainingAppts.length > 0) {
       let cursor = new Date(actualEnd);
@@ -259,7 +295,7 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
         const oldLockEnd = ra.actual_end_time || ra.end_time;
 
         // Parallel: unlock old slot + update appointment + lock new slot
-        await Promise.all([
+        const results = await Promise.all([
           unlockTimeSlotsInRange(appt.staff_id, oldLockStart, oldLockEnd),
           supabase.from('appointments').update({
             actual_start_time: newStart.toISOString(),
@@ -267,6 +303,9 @@ export async function handleCancelAndUnlock(appointmentId: string): Promise<void
           }).eq('id', ra.id),
           lockTimeSlots(ra.id, appt.staff_id, newStart.toISOString(), newEnd.toISOString()),
         ]);
+        if (results[1]?.error) {
+          logger.error('[BookingEngine] Failed to reschedule appointment after cancel', results[1].error, { appointmentId: ra.id });
+        }
 
         cursor = newEnd;
       }
@@ -308,25 +347,36 @@ export async function findNextAvailableDate(
 
 export async function incrementSlotLimit(date: string, time: string): Promise<void> {
   const supabase = await createClient();
-  const { data: existing } = await supabase
+  const { data: existing, error: selectErr } = await supabase
     .from('slot_limits')
     .select('id, current_bookings')
     .eq('lock_date', date)
     .eq('time_slot', time)
     .single();
 
+  if (selectErr) {
+    logger.error('[BookingEngine] Failed to fetch slot limit', selectErr, { date, time });
+    return;
+  }
+
   if (existing) {
-    await supabase
+    const { error: updateErr } = await supabase
       .from('slot_limits')
       .update({ current_bookings: existing.current_bookings + 1 })
       .eq('id', existing.id);
+    if (updateErr) {
+      logger.error('[BookingEngine] Failed to update slot limit', updateErr, { date, time, id: existing.id });
+    }
   } else {
-    await supabase.from('slot_limits').insert({
+    const { error: insertErr } = await supabase.from('slot_limits').insert({
       lock_date: date,
       time_slot: time,
       max_bookings: 1,
       current_bookings: 1,
     });
+    if (insertErr) {
+      logger.error('[BookingEngine] Failed to insert slot limit', insertErr, { date, time });
+    }
   }
 
   invalidateCache(date);

@@ -1,6 +1,7 @@
 import { sendPushNotification } from './push';
 import { format } from 'date-fns';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { logger } from "@/lib/logger";
 
 let _supabase: SupabaseClient | null = null;
 function getSupabase(): SupabaseClient {
@@ -74,7 +75,7 @@ export async function runRemindersCheck() {
             'Nhắc nhở điểm danh! ⏰',
             `Bạn ơi, đã qua 10:00 sáng rồi mà bạn chưa điểm danh nhận việc hôm nay. Hãy vào app thực hiện ngay nhé để không bị lỡ ngày công! (${log.count + 1}/2)`,
             '/staff'
-          ).catch(err => console.error(`[Reminders] Failed to notify staff ${staff.id}:`, err));
+          ).catch(err => logger.error(`[Reminders] Failed to notify staff ${staff.id}:`, err instanceof Error ? err : undefined));
           log.count += 1;
           log.last_sent = now.toISOString();
         }
@@ -101,7 +102,7 @@ export async function runRemindersCheck() {
           'Nhận khách ngay bạn ơi! 💅',
           `Đang có đơn đặt lịch ngẫu nhiên vào lúc ${apptTime} ngày ${apptDate} chưa có thợ phục vụ. Hiện tại bạn đang rảnh, hãy vào nhận đơn ngay nhé!`,
           '/staff'
-        ).catch(err => console.error(`[Reminders] Failed to notify staff ${staff.id}:`, err));
+        ).catch(err => logger.error(`[Reminders] Failed to notify staff ${staff.id}:`, err instanceof Error ? err : undefined));
         db.random_booking_reminders_log.push({ staff_id: staff.id, appointment_id: appt.id, sent_at: now.toISOString() });
       }
     }
@@ -124,7 +125,7 @@ export async function runRemindersCheck() {
           'Khách đang đợi kìa bạn ơi! ⏰',
           `Lịch hẹn của bạn lúc ${apptTime} hôm nay đã đến giờ thực hiện nhưng hệ thống chưa ghi nhận bạn bấm nhận đơn. Hãy nhấn bắt đầu phục vụ ngay nhé!`,
           '/staff'
-        ).catch(err => console.error(`[Reminders] Failed to notify staff ${appt.staff_id}:`, err));
+          ).catch(err => logger.error(`[Reminders] Failed to notify staff ${appt.staff_id}:`, err instanceof Error ? err : undefined));
       } else if (appt.status === 'PENDING_RANDOM') {
         console.log(`[Reminders] Overdue unassigned random booking ${appt.id}. Notifying all staff.`);
         for (const staff of staffUsers) {
@@ -133,7 +134,7 @@ export async function runRemindersCheck() {
             'Lịch đặt ngẫu nhiên quá giờ! 📅',
             `Đơn khách đặt lúc ${apptTime} đã đến giờ hẹn nhưng chưa thợ nào bấm nhận đơn. Hãy vào tiệm nhận ngay phục vụ khách nhé!`,
             '/staff'
-          ).catch(err => console.error(`[Reminders] Failed to notify staff ${staff.id}:`, err));
+          ).catch(err => logger.error(`[Reminders] Failed to notify staff ${staff.id}:`, err instanceof Error ? err : undefined));
         }
       }
       db.unaccepted_booking_reminders_log.push({ appointment_id: appt.id, sent_at: now.toISOString() });
@@ -155,7 +156,7 @@ export async function runRemindersCheck() {
         'Quên bấm hoàn thành đơn? 🤔',
         `Lịch hẹn mã #${appt.id.slice(-6).toUpperCase()} với khách đã quá 15 phút so với giờ kết thúc dự kiến. Hãy kiểm tra và bấm "Hoàn thành" trên app để ghi nhận doanh số nhé!`,
         '/staff'
-      ).catch(err => console.error(`[Reminders] Failed to send overdue reminder:`, err));
+      ).catch(err => logger.error(`[Reminders] Failed to send overdue reminder:`, err instanceof Error ? err : undefined));
       db.uncompleted_booking_reminders_log.push({ appointment_id: appt.id, sent_at: now.toISOString() });
     }
   }

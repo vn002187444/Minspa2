@@ -2,8 +2,9 @@
 
 import {
   createClient, getSession, revalidatePath, logAuditAction,
-  checkAdminOrManager, checkAdmin, ServiceInput, PackageInput,
+  checkAdminOrManager, ServiceInput, PackageInput,
 } from "./_shared";
+import { logger } from "@/lib/logger";
 
 export async function getServices() {
   await checkAdminOrManager();
@@ -12,7 +13,8 @@ export async function getServices() {
     const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, commission_percentage, commission_amount, is_active').order('category', { ascending: true }).limit(200);
     if (error) throw error;
     return data || [];
-  } catch {
+  } catch (e) {
+    logger.error('[Database] Failed to fetch services', e instanceof Error ? e : undefined);
     return [];
   }
 }
@@ -92,7 +94,8 @@ export async function getTreatmentPackages() {
       .limit(200);
     if (error) throw error;
     return data || [];
-  } catch {
+  } catch (e) {
+    logger.error('[Database] Failed to fetch packages', e instanceof Error ? e : undefined);
     return [];
   }
 }
@@ -325,7 +328,7 @@ export async function uploadBase64ToStorage(base64Url: string): Promise<string> 
   const supabase = await createClient();
   const { error } = await supabase.storage.from('service-images').upload(fileName, optimized, { contentType, upsert: true });
   if (error) {
-    console.error('[STORAGE UPLOAD ERROR]', error);
+    logger.error('[STORAGE UPLOAD ERROR]', error instanceof Error ? error : undefined);
     throw new Error('Không thể tải ảnh lên máy chủ. Vui lòng thử lại.');
   }
   const { data: urlData } = supabase.storage.from('service-images').getPublicUrl(fileName);

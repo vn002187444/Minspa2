@@ -31,13 +31,9 @@ export default function TabStaff({
   
   const [rangeType, setRangeType] = useState<"week" | "month" | "last_month" | "custom">("month");
   
-  const [customStartDate, setCustomStartDate] = useState<string>('');
-  const [customEndDate, setCustomEndDate] = useState<string>('');
-  useEffect(() => {
-    const d = new Date();
-    setCustomStartDate(new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]);
-    setCustomEndDate(d.toISOString().split('T')[0]);
-  }, []);
+  const d = new Date();
+  const [customStartDate, setCustomStartDate] = useState<string>(new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]);
+  const [customEndDate, setCustomEndDate] = useState<string>(d.toISOString().split('T')[0]);
   
   const calculateDates = (type: string) => {
     const today = new Date();

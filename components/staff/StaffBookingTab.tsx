@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Search, User, CalendarCheck, Package, CheckCircle2, ChevronRight, ChevronLeft, Printer } from "lucide-react"
+import { Search, User, CalendarCheck, Package, CheckCircle2, ChevronRight, ChevronLeft } from "lucide-react"
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { toast } from "sonner"
 import { submitBooking } from "@/app/booking/actions/booking"
@@ -10,6 +10,7 @@ import { getCustomerActivePackages } from "@/app/staff/actions"
 import { getSlotAvailability } from "@/app/booking/actions/slots"
 import type { SlotInfo } from "@/app/booking/actions/slots"
 import BookingCalendar from "@/components/BookingCalendar"
+import { Button } from "@/components/ui/Button"
 import LoadingButton from "@/components/LoadingButton"
 
 type Props = {
@@ -520,12 +521,12 @@ export default function StaffBookingTab({ staffId, allServices, staffList, onBoo
         </div>
 
         <div className="flex gap-3">
-          <button onClick={handlePrint} className="flex-1 py-3.5 text-gray-600 font-bold bg-gray-100 rounded-xl active:scale-95 transition-transform cursor-pointer flex items-center justify-center gap-2">
-            <Printer className="w-4 h-4" /> In
-          </button>
-          <button onClick={resetForm} className="flex-1 py-3.5 bg-pink-600 text-white font-bold rounded-xl shadow-lg active:scale-95 transition-transform cursor-pointer">
+          <Button type="button" variant="ghost" onClick={handlePrint} className="flex-1">
+            In
+          </Button>
+          <Button onClick={resetForm} variant="danger" className="flex-1">
             Đặt thêm
-          </button>
+          </Button>
         </div>
       </div>
     )

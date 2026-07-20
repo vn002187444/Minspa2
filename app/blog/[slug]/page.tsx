@@ -86,8 +86,7 @@ function markdownToHtml(text: string): string {
 }
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import dynamic from 'next/dynamic';
-const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
+import BottomNavigation from '@/components/BottomNavigation';
 import { ArrowLeft, Calendar, Sparkles, User, BookOpen, Clock } from 'lucide-react';
 import ViewTracker from '@/components/ViewTracker';
 import ArticleSchema from '@/components/ArticleSchema';

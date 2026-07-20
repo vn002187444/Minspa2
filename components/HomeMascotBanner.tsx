@@ -57,14 +57,14 @@ export default function HomeMascotBanner() {
             className="relative shrink-0"
           >
             <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${themeStyle.gradient} flex items-center justify-center shadow-md ${themeStyle.border} border-2`}>
-              <Sparkles className="w-7 h-7 text-white" />
+              <Sparkles className="w-7 h-7 text-white" aria-hidden="true" />
             </div>
             <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2 border-white" />
           </motion.div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <Star className="w-4 h-4 text-amber-500" />
+              <Star className="w-4 h-4 text-amber-500" aria-hidden="true" />
               <span className="text-xs font-bold theme-text-secondary uppercase tracking-wider">Min gợi ý hôm nay</span>
             </div>
 
@@ -100,7 +100,7 @@ export default function HomeMascotBanner() {
                 onClick={() => setCurrentTip((currentTip + 1) % tips.length)}
                 className="ml-auto text-[11px] font-bold theme-text-secondary hover:text-[#5C4033] flex items-center gap-0.5 cursor-pointer"
               >
-                Xem tiếp <ChevronRight className="w-3 h-3" />
+                Xem tiếp <ChevronRight className="w-3 h-3" aria-hidden="true" />
               </button>
             </div>
 
@@ -129,7 +129,7 @@ export default function HomeMascotBanner() {
               onClick={() => setShowAll(!showAll)}
               className="mt-2 text-[11px] font-bold text-pink-600 hover:text-pink-700 cursor-pointer flex items-center gap-1"
             >
-              <Heart className="w-3 h-3" />
+              <Heart className="w-3 h-3" aria-hidden="true" />
               {showAll ? 'Thu gọn' : 'Xem tất cả dịch vụ Min đề xuất'}
             </button>
           </div>

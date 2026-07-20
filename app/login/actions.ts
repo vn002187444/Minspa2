@@ -1,9 +1,17 @@
 'use server'
 
+import { z } from 'zod';
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
 import { createSession } from '@/utils/auth';
-import { hashPassword, verifyPassword } from '@/lib/password';
+import { verifyPassword } from '@/lib/password';
+import { rateLimit } from '@/lib/rate-limit';
+
+const loginSchema = z.object({
+  username: z.string().min(1, 'Vui lòng nhập tên đăng nhập').max(50),
+  password: z.string().min(1, 'Vui lòng nhập mật khẩu').max(100),
+});
 
 async function doLogin(username: string, password: string): Promise<string> {
   const supabase = await createClient();
@@ -34,62 +42,36 @@ async function doLogin(username: string, password: string): Promise<string> {
   return (userRoleNormalized === 'ADMIN' || userRoleNormalized === 'MANAGER') ? '/admin' : '/staff';
 }
 
-export async function loginUser(prevState: any, formData: FormData) {
+export async function loginUser(prevState: unknown, formData: FormData) {
   try {
-    const username = formData.get('username') as string | null;
-    const password = formData.get('password') as string | null;
+    const raw = {
+      username: formData.get('username'),
+      password: formData.get('password'),
+    };
 
-    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
-      return { success: false, message: 'Vui lòng nhập tài khoản và mật khẩu' };
+    const parsed = loginSchema.safeParse(raw);
+    if (!parsed.success) {
+      return { success: false, message: parsed.error.issues[0].message };
     }
 
+    const { username, password } = parsed.data;
     const normUsername = username.trim().toLowerCase();
     const normPassword = password.trim();
 
-    // 1. EMERGENCY BYPASS via env vars (bắt buộc set trong production)
-    const bypassAdminUser = process.env.BYPASS_ADMIN_USER;
-    const bypassAdminPass = process.env.BYPASS_ADMIN_PASS;
-    const bypassStaffUser = process.env.BYPASS_STAFF1_USER;
-    const bypassStaffPass = process.env.BYPASS_STAFF1_PASS;
+    const headerList = await headers();
+    const ip = headerList.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
 
-    if (bypassAdminUser && bypassAdminPass && normUsername === bypassAdminUser && (normPassword === bypassAdminPass || normPassword === bypassAdminUser)) {
-      try {
-        const supabase = await createClient();
-        const { data } = await supabase.from('users').select('id').eq('username', 'admin').maybeSingle();
-        if (!data) {
-          const hashedBypassAdminPass = await hashPassword(bypassAdminPass);
-          await supabase.from('users').insert({
-            id: '00000000-0000-0000-0000-000000000000', role: 'ADMIN', username: 'admin', password_hash: hashedBypassAdminPass, full_name: 'Admin'
-          });
-        }
-      } catch (e) {
-        console.error("Admin seeding warning:", e);
-      }
-      await createSession({ id: '00000000-0000-0000-0000-000000000000', role: 'ADMIN', username: 'admin' });
-      redirect('/admin');
-    }
-
-    if (bypassStaffUser && bypassStaffPass && normUsername === bypassStaffUser && (normPassword === bypassStaffPass || normPassword === bypassStaffUser)) {
-      try {
-        const supabase = await createClient();
-        const { data } = await supabase.from('users').select('id').eq('username', 'staff1').maybeSingle();
-        if (!data) {
-          const hashedBypassStaffPass = await hashPassword(bypassStaffPass);
-          await supabase.from('users').insert({
-            id: '00000000-0000-0000-0000-000000000001', role: 'STAFF', username: 'staff1', password_hash: hashedBypassStaffPass, full_name: 'Thợ Makeup 1', cccd: '000000000000'
-          });
-        }
-      } catch (e) {
-        console.error("Staff1 seeding warning:", e);
-      }
-      await createSession({ id: '00000000-0000-0000-0000-000000000001', role: 'STAFF', username: 'staff1' });
-      redirect('/staff');
+    const rl = await rateLimit(`login:${ip}`, 5, 60);
+    if (!rl.allowed) {
+      return { success: false, message: 'Quá nhiều lần thử. Vui lòng thử lại sau 60 giây.' };
     }
 
     const dest = await doLogin(normUsername, normPassword);
     redirect(dest);
-  } catch (error: any) {
-    if (error?.digest?.startsWith('NEXT_REDIRECT')) throw error;
-    return { success: false, message: error?.message || 'Hệ thống đang gặp sự cố kết nối, vui lòng thử lại sau.' };
+  } catch (error) {
+    if (error instanceof Error && 'digest' in error && typeof (error as any).digest === 'string' && (error as any).digest.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+    return { success: false, message: error instanceof Error ? error.message : 'Hệ thống đang gặp sự cố kết nối, vui lòng thử lại sau.' };
   }
 }

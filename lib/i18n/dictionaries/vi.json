@@ -1,0 +1,45 @@
+{
+  "nav.deal": "Góc Deal",
+  "nav.hairWash": "Gội Dưỡng Sinh",
+  "nav.footScrub": "Chà Gót Chân",
+  "nav.massage": "Massage Body",
+  "nav.nail": "Chăm Sóc & Trang Trí Móng",
+  "nav.about": "Giới Thiệu",
+  "nav.faq": "Hỏi Đáp",
+  "nav.staff": "Nhân Viên",
+  "nav.booking": "Booking",
+
+  "nav.mobile.deal": "🔥 Hot Deal",
+  "nav.mobile.hairWash": "💆 Gội Dưỡng Sinh",
+  "nav.mobile.massage": "💪 Massage",
+  "nav.mobile.nail": "💅 Làm Móng",
+  "nav.mobile.footScrub": "👣 Chà Gót",
+  "nav.mobile.vipCombo": "🎁 Combo VIP",
+  "nav.mobile.reviews": "⭐ Đánh Giá",
+  "nav.mobile.about": "📖 Giới Thiệu",
+  "nav.mobile.faq": "❓ Hỏi Đáp",
+
+  "booking.title": "Đặt Lịch Hẹn",
+  "booking.phone": "Số Điện Thoại",
+  "booking.name": "Họ và Tên",
+  "booking.service": "Dịch Vụ",
+  "booking.staff": "Nhân Viên",
+  "booking.date": "Ngày",
+  "booking.time": "Giờ",
+  "booking.note": "Ghi Chú",
+
+  "login.title": "Đăng Nhập",
+  "login.username": "Tên Đăng Nhập",
+  "login.password": "Mật Khẩu",
+
+  "common.bookNow": "Đặt Ngay",
+  "common.readMore": "Đọc Bài Viết",
+  "common.viewAll": "Xem Thêm",
+  "common.close": "Đóng",
+  "common.save": "Lưu",
+  "common.cancel": "Hủy",
+  "common.loading": "Đang tải...",
+
+  "lang.switchLanguage": "Chọn ngôn ngữ",
+  "lang.poweredBy": "Ngôn ngữ"
+}

@@ -28,9 +28,9 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
     }
 
     return { success: true, data };
-  } catch (err: any) {
-    logger.error(`Email critical error to ${to}`, err);
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    logger.error(`Email critical error to ${to}`, err instanceof Error ? err : undefined);
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
   }
 }
 
@@ -52,8 +52,8 @@ export async function sendZalo({ phone, message, templateId, params }: { phone: 
     );
 
     return { success: true, data: res.data };
-  } catch (err: any) {
-    logger.error(`Zalo failed to ${phone}`, err);
-    return { success: false, error: err.response?.data?.error?.message || err.message };
+  } catch (err: unknown) {
+    logger.error(`Zalo failed to ${phone}`, err instanceof Error ? err : undefined);
+    return { success: false, error: err instanceof Error ? (err as any).response?.data?.error?.message || err.message : String(err) };
   }
 }

@@ -90,7 +90,7 @@ export default function BlogRichEditor({ content, onChange, placeholder }: BlogR
         <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Tiêu đề H2"><Heading2 className="w-3.5 h-3.5" /></ToolBtn>
         <ToolBtn onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Tiêu đề H3"><Heading3 className="w-3.5 h-3.5" /></ToolBtn>
         <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle" />
-        <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Danh sách"><List className="w-3.5 h-3.5" /></ToolBtn>
+        <ToolBtn onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Danh sách"><List className="w-3.5 h-3.5" aria-hidden="true" /></ToolBtn>
         <ToolBtn onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Danh sách số"><ListOrdered className="w-3.5 h-3.5" /></ToolBtn>
         <span className="w-px h-5 bg-[#EADDCD] mx-0.5 inline-block align-middle" />
         <ToolBtn onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Trích dẫn"><Quote className="w-3.5 h-3.5" /></ToolBtn>

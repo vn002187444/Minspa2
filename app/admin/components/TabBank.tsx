@@ -4,6 +4,7 @@ import { useState, useEffect, startTransition } from 'react';
 import { CheckCircle2, CreditCard } from 'lucide-react';
 import { saveBankSettings } from '../actions';
 import { VIETNAMESE_BANKS } from '../banks';
+import { Button } from '@/components/ui/Button';
 
 interface BankData {
   bank_id: string;
@@ -88,10 +89,9 @@ export default function TabBank({ data, onReload }: { data: BankData | null; onR
           </div>
         </div>
         <div className="pt-4 border-t border-gray-100 flex justify-end">
-          <button type="submit" disabled={loading} className="px-8 py-3.5 bg-gray-900 hover:bg-black text-white font-medium rounded-xl disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer">
-            {loading ? <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div> : <CheckCircle2 className="w-5 h-5" />}
+          <Button type="submit" disabled={loading} isLoading={loading} className="px-8">
             Lưu thông tin Bank
-          </button>
+          </Button>
         </div>
       </form>
     </div>

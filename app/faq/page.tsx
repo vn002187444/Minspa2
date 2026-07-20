@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
-import dynamic from 'next/dynamic';
-const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
+import BottomNavigation from '@/components/BottomNavigation';
 import Link from 'next/link';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import FaqSection from '@/components/FaqSection';
@@ -72,7 +71,7 @@ export default function FaqPage() {
         <section className="relative overflow-hidden bg-[#5C4033] text-[#FAF6F0] py-16 md:py-24 px-4 text-center">
           <div className="absolute inset-0 bg-[url('/pattern-grid.svg')] opacity-5" />
           <div className="relative max-w-3xl mx-auto">
-            <HelpCircle className="w-8 h-8 mx-auto mb-4 text-[#EADDCD]" />
+            <HelpCircle className="w-8 h-8 mx-auto mb-4 text-[#EADDCD]" aria-hidden="true" />
             <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight mb-4">
               Câu Hỏi Thường Gặp
             </h1>
@@ -95,7 +94,7 @@ export default function FaqPage() {
         {/* Still have questions */}
         <section className="max-w-3xl mx-auto px-4 mt-16">
           <div className="bg-white rounded-2xl border border-[#EADDCD] p-8 md:p-10 text-center">
-            <MessageCircle className="w-10 h-10 text-[#8D6E53] mx-auto mb-4" />
+            <MessageCircle className="w-10 h-10 text-[#8D6E53] mx-auto mb-4" aria-hidden="true" />
             <h2 className="text-xl md:text-2xl font-display font-bold text-[#3A2E2B] mb-2">
               Chưa Tìm Thấy Câu Trả Lời?
             </h2>
@@ -107,13 +106,13 @@ export default function FaqPage() {
                 href="tel:+84934323878"
                 className="inline-flex items-center gap-2 bg-[#8D6E53] text-white font-bold px-6 py-3 rounded-full text-sm hover:bg-[#3A2E2B] transition-all shadow-md"
               >
-                <Mail className="w-4 h-4" /> Gọi 0934 323 878
+                <Mail className="w-4 h-4" aria-hidden="true" /> Gọi 0934 323 878
               </a>
               <Link
                 href="/booking"
                 className="inline-flex items-center gap-2 border border-[#8D6E53] text-[#8D6E53] font-bold px-6 py-3 rounded-full text-sm hover:bg-[#8D6E53] hover:text-white transition-all"
               >
-                Đặt Lịch Hẹn <ArrowRight className="w-4 h-4" />
+                Đặt Lịch Hẹn <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </div>
           </div>

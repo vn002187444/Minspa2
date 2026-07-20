@@ -5,6 +5,7 @@ import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { Plus, Trash2, ArrowUpCircle, ArrowDownCircle, Wallet } from 'lucide-react'
 import { getCashRegisterTransactions, addCashTransaction, deleteCashTransaction } from '../actions'
+import { Button } from '@/components/ui/Button'
 
 interface CashItem {
   id: string
@@ -21,12 +22,10 @@ interface CashItem {
 const CATEGORIES = ['Tiền dịch vụ', 'Tiền gói liệu trình', 'Thu khác', 'Chi mua sắm', 'Chi mặt bằng', 'Chi lương', 'Chi quảng cáo', 'Chi khác']
 
 export default function TabCashRegister() {
-  const [month, setMonth] = useState('')
+  const [month, setMonth] = useState(format(new Date(), 'yyyy-MM'))
   const [data, setData] = useState<{ items: CashItem[]; totalThu: number; totalChi: number; balance: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
-
-  useEffect(() => { setMonth(format(new Date(), 'yyyy-MM')); }, []);
 
   const fetchData = useCallback(async () => {
     startTransition(() => { setLoading(true) })
@@ -294,16 +293,16 @@ function AddTransactionModal({ onClose, onSaved }: { onClose: () => void; onSave
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button onClick={onClose} className="flex-1 py-3 text-gray-600 font-bold bg-gray-100 rounded-xl hover:bg-gray-200 cursor-pointer">
+          <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
             Huỷ
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={!category || !amount || Number(amount) <= 0 || saving}
-            className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 disabled:opacity-50 cursor-pointer"
+            className="flex-1 bg-emerald-600 hover:bg-emerald-700"
           >
             {saving ? 'Đang lưu...' : 'Lưu'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

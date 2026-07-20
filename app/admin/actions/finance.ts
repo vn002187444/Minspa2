@@ -1,9 +1,10 @@
 'use server'
 
 import {
-  createClient, getSession, format, checkAdminOrManager, checkAdmin,
+  createClient, getSession, format, checkAdmin,
   CashInput, StaffPayrollInfo, PayrollStaffRow, PayrollRecord, BankInput,
 } from "./_shared";
+import { logger } from "@/lib/logger";
 
 export async function getStaffPayrollInfo(): Promise<StaffPayrollInfo[]> {
   const session = await getSession();
@@ -168,7 +169,7 @@ export async function savePayrollCalculations(
       net_pay: netPay,
       status: 'PENDING',
     });
-    if (error) console.error(`[PAYROLL] Failed to save ${row.fullName}:`, error);
+    if (error) logger.error(`[PAYROLL] Failed to save ${row.fullName}:`, error instanceof Error ? error : undefined);
   }
 }
 
@@ -296,7 +297,7 @@ export async function getBankSettings() {
       };
     }
   } catch (e: unknown) {
-    console.error(e);
+    logger.error('Failed to fetch bank settings', e instanceof Error ? e : undefined);
   }
   return { bank_id: 'vcb', bank_name: 'Vietcombank', account_number: '', account_owner: '' };
 }
@@ -316,7 +317,7 @@ export async function saveBankSettings(payload: BankInput) {
     if (error) throw error;
     return { success: true };
   } catch (e: unknown) {
-    console.error(e instanceof Error ? e.message : e);
+    logger.error('Failed to save bank settings', e instanceof Error ? e : undefined);
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }

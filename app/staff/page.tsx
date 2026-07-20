@@ -4,11 +4,10 @@ import { useState, useEffect, useRef, startTransition } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { TIP_AMOUNTS } from "@/lib/constants";
-import Image from "next/image";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { sendZalo } from "@/lib/notify";
-import Link from "next/link";
+import { logger } from "@/lib/logger";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import {
@@ -19,28 +18,15 @@ import {
   swapAppointment,
   updateAppointmentStatus,
   completeAppointment,
-  getStaffStats,
-  changePassword,
   updateTip,
 } from "./actions";
 import {
-  getDashboardData,
-  getStaffs,
-  createStaff,
-  getServices,
-  saveService,
-  getReviews,
-  getCommissionReport,
-} from "../admin/actions";
-import {
   CalendarCheck,
-  User,
   Clock,
   CheckCircle2,
   Navigation,
   RefreshCw,
   DollarSign,
-  Star,
   History,
   Info,
   LogOut,
@@ -48,24 +34,13 @@ import {
   Home,
   Key,
   ShieldCheck,
-  Globe,
-  PenTool,
   PlusCircle,
-  Image as ImageIcon,
-  Search,
-  Share2,
-  FileText,
-  Facebook,
-  Twitter,
-  Send,
-  Sparkles,
   Bell,
   Package,
   ListTodo,
   Menu,
   X,
 } from "lucide-react";
-import PushNotificationManager from "@/components/PushNotificationManager";
 import LoadingButton from "@/components/LoadingButton";
 import LoadingOverlay from "@/components/LoadingOverlay";
 const MasterSchedule = dynamic(() => import("@/components/MasterSchedule"), { ssr: false });
@@ -80,8 +55,7 @@ import StaffBookingTab from "@/components/staff/StaffBookingTab";
 
 export default function StaffDashboard() {
   const router = useRouter();
-  const [todayDateStr, setTodayDateStr] = useState('');
-  useEffect(() => { setTodayDateStr(format(new Date(), "EEEE, dd/MM/yyyy", { locale: vi })); }, []);
+  const [todayDateStr] = useState(format(new Date(), "EEEE, dd/MM/yyyy", { locale: vi }));
   const [activeTab, setActiveTab] = useState<
     "ATTENDANCE" | "SCHEDULE" | "MASTER" | "REPORTS" | "PASSWORD" | "MANAGEMENT" | "SELL_PACKAGE" | "BOOKING" | "TASKS"
   >("SCHEDULE");
@@ -217,7 +191,7 @@ export default function StaffDashboard() {
       return () => {
         supabase.removeChannel(channel);
       };
-    }).catch(() => {});
+    }).catch(e => logger.error('[Realtime] Failed to subscribe to staff appointments', e));
   }, [data?.staffId]);
 
   // Hook to detect newly placed random/unassigned appointments and alert staff
@@ -383,8 +357,8 @@ export default function StaffDashboard() {
     try {
       await checkIn();
       toast.success('Điểm danh thành công!');
-    } catch (err: any) {
-      toast.error('Lỗi điểm danh: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Lỗi điểm danh: ' + (err instanceof Error ? err.message : 'Lỗi không xác định'));
       // Rollback: reset attendance to null if it failed
       setData((prev: any) => ({ ...prev, attendance: null }));
     } finally {
@@ -885,7 +859,7 @@ export default function StaffDashboard() {
               sendZalo({
                 phone: completeModal.appt.customers?.phone || '',
                 message: `Cảm ơn ${completeModal.appt.customers?.full_name || 'quý khách'} đã sử dụng dịch vụ tại Min Nail & Hair! Chúc bạn một ngày tuyệt vời. ✨`
-              }).catch(() => {})
+              }).catch(e => logger.error('[Notifications] Failed to send Zalo message', e))
             } else {
               toast.error("Lỗi khi hoàn thành đơn: " + res.error)
             }
@@ -906,10 +880,10 @@ export default function StaffDashboard() {
                  swapAppointment(swapModal.appt.id, staffId),
                );
                toast.success('Đã chuyển lịch hẹn thành công!');
-             } catch (err: any) {
-               toast.error('Lỗi khi chuyển lịch: ' + err.message);
-               setSwapModal({ appt: swapModal.appt, isOpen: true }); // Rollback
-             }
+              } catch (err: unknown) {
+                 toast.error('Lỗi khi chuyển lịch: ' + (err instanceof Error ? err.message : 'Lỗi không xác định'));
+                 setSwapModal({ appt: swapModal.appt, isOpen: true }); // Rollback
+              }
            }}
         />
       )}
@@ -1007,9 +981,9 @@ function AppointmentCard({
     try {
       await onAction(() => updateAppointmentStatus(appt.id, "IN_PROGRESS"));
       toast.success('Đã bắt đầu phục vụ khách!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setOptimisticStatus(null);
-      toast.error('Lỗi: ' + err.message);
+      toast.error('Lỗi: ' + (err instanceof Error ? err.message : 'Lỗi không xác định'));
     } finally {
       setActionLoading(false);
     }
@@ -1021,9 +995,9 @@ function AppointmentCard({
     try {
       await onAction(() => takeRandomAppointment(appt.id));
       toast.success('Đã nhận lịch hẹn!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setOptimisticStatus(null);
-      toast.error('Lỗi: ' + err.message);
+      toast.error('Lỗi: ' + (err instanceof Error ? err.message : 'Lỗi không xác định'));
     } finally {
       setActionLoading(false);
     }
@@ -1296,8 +1270,8 @@ function EditTipModal({ appt, onClose, onSaved }: any) {
       } else {
         toast.error(res.error || 'Lỗi khi cập nhật tip');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Lỗi không xác định');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error ? err.message : 'Lỗi không xác định') || 'Lỗi không xác định');
     } finally {
       setSaving(false);
     }
@@ -1475,8 +1449,8 @@ function TabSellPackage({
       } else {
         setMessage({ type: "error", text: res.error || "Có lỗi xảy ra" });
       }
-    } catch (err: any) {
-      setMessage({ type: "error", text: "Lỗi kết nối máy chủ: " + err.message });
+    } catch (err: unknown) {
+      setMessage({ type: "error", text: "Lỗi kết nối máy chủ: " + (err instanceof Error ? err.message : 'Lỗi không xác định') });
     } finally {
       setSubmitting(false);
     }

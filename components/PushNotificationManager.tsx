@@ -113,9 +113,9 @@ export default function PushNotificationManager({ customerId }: { customerId?: s
       }`}
     >
       {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
+        <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
       ) : isSubscribed ? (
-        <Bell className="w-4 h-4 text-green-600" />
+        <Bell className="w-4 h-4 text-green-600" aria-hidden="true" />
       ) : (
         <BellOff className="w-4 h-4" />
       )}

@@ -26,7 +26,7 @@ export async function encrypt(payload: SessionPayload) {
   return await new SignJWT(payload as unknown as Record<string, unknown>)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime('30d')
+    .setExpirationTime('7d')
     .sign(getKey());
 }
 
@@ -42,7 +42,7 @@ export async function decrypt(input: string): Promise<SessionPayload | null> {
 }
 
 export async function createSession(user: { id: string; role: string; username: string }) {
-  const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   const session = await encrypt({ user, expires });
   const cookieStore = await cookies();
   
@@ -50,9 +50,9 @@ export async function createSession(user: { id: string; role: string; username: 
     expires,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 7 * 24 * 60 * 60,
   });
 }
 
@@ -68,9 +68,9 @@ export function setSessionCookie(response: NextResponse, token: string) {
   response.cookies.set('session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
-    maxAge: 60 * 60 * 24 * 30,
+    maxAge: 7 * 24 * 60 * 60,
   });
 }
 
@@ -81,7 +81,7 @@ export async function logout() {
     maxAge: 0,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    sameSite: 'strict',
     path: '/',
   });
 }

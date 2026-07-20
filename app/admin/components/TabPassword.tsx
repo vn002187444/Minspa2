@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Key, CheckCircle2 } from 'lucide-react';
+import { Key } from 'lucide-react';
 import { changePassword } from '../actions';
 import PushNotificationManager from '@/components/PushNotificationManager';
+import { Button } from '@/components/ui/Button';
 
 export default function TabPassword() {
   const [oldPassword, setOldPassword] = useState('');
@@ -62,10 +63,9 @@ export default function TabPassword() {
           <input id="pwd_confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Xác nhận lại mật khẩu mới" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
         </div>
         <div className="pt-4 border-t border-gray-100 flex justify-end">
-          <button type="submit" disabled={loading} className="px-8 py-3.5 bg-gray-900 text-white font-medium rounded-xl hover:bg-black disabled:opacity-50 transition-colors flex items-center gap-2 cursor-pointer font-semibold">
-            {loading ? <div className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></div> : <CheckCircle2 className="w-5 h-5" />}
+          <Button type="submit" disabled={loading} isLoading={loading} className="px-8">
             Cập nhật mật khẩu
-          </button>
+          </Button>
         </div>
       </form>
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5 mt-6">

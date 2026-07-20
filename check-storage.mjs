@@ -14,7 +14,7 @@ async function main() {
     anonKey
   );
   
-  const { data: uploadData, error: uploadErr } = await anonSupabase.storage
+  const { data: _uploadData, error: uploadErr } = await anonSupabase.storage
     .from('service-images')
     .upload('test-permissions.txt', new Blob(['test']), { contentType: 'text/plain' });
   

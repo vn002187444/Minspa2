@@ -6,6 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'), { ssr: false });
 import { Bell, ArrowLeft, CheckCheck, Loader2 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 
@@ -63,12 +64,12 @@ export default function NotificationsPage() {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     );
-    await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {});
+    await fetch(`/api/notifications/${id}/read`, { method: 'PATCH' }).catch(e => logger.error('[Notifications] Failed to mark notification as read', e));
   };
 
   const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    await fetch('/api/notifications/read-all', { method: 'POST' }).catch(() => {});
+    await fetch('/api/notifications/read-all', { method: 'POST' }).catch(e => logger.error('[Notifications] Failed to mark all notifications as read', e));
   };
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -88,7 +89,7 @@ export default function NotificationsPage() {
             onClick={handleMarkAllRead}
             className="flex items-center gap-1.5 text-xs font-semibold text-[#8D6E53] hover:text-[#5C4033] transition-colors"
           >
-            <CheckCheck className="w-4 h-4" />
+            <CheckCheck className="w-4 h-4" aria-hidden="true" />
             Đọc tất cả
           </button>
         </div>
@@ -123,7 +124,7 @@ export default function NotificationsPage() {
           </div>
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center py-16 text-gray-400">
-            <Bell className="w-12 h-12 mb-3" />
+            <Bell className="w-12 h-12 mb-3" aria-hidden="true" />
             <p className="text-sm font-medium">Không có thông báo</p>
           </div>
         ) : (

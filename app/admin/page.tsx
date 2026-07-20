@@ -140,8 +140,8 @@ export default function AdminDashboard() {
       if (tab === "STAFF") {
         try {
           setStaffs(await getStaffs());
-        } catch (e: any) {
-          setStaffError(e.message || "Lỗi không xác định khi tải danh sách nhân viên");
+        } catch (e: unknown) {
+          setStaffError(e instanceof Error ? e.message : String(e) || "Lỗi không xác định khi tải danh sách nhân viên");
           console.error(e);
         }
       }

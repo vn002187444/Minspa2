@@ -312,7 +312,7 @@ INSERT INTO services (name, category, description, price, duration, discount_per
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   recipient_type VARCHAR(20) NOT NULL CHECK (recipient_type IN ('user', 'customer')),
-  recipient_id UUID NOT NULL,
+  recipient_id UUID NOT NULL, -- FK: references users(id) when recipient_type='user', customers(id) when recipient_type='customer'
   title VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
   link VARCHAR(500),
@@ -456,8 +456,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   assignee_type VARCHAR(10) NOT NULL DEFAULT 'specific'
     CHECK (assignee_type IN ('specific', 'all')),
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled', 'REJECTED')),
+  status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
+    CHECK (status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED')),
   priority VARCHAR(10) NOT NULL DEFAULT 'medium'
     CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
   deadline TIMESTAMP WITH TIME ZONE,
@@ -489,7 +489,7 @@ CREATE TABLE IF NOT EXISTS cash_register (
   description TEXT DEFAULT '',
   reference_type VARCHAR(30),
   reference_id UUID,
-  recorded_by UUID REFERENCES users(id),
+  recorded_by UUID REFERENCES users(id) ON DELETE SET NULL,
   recorded_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
   created_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
   updated_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
@@ -570,25 +570,63 @@ ALTER TABLE background_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for new tables added via V3.9/V3.13
+-- NOTE: uses auth.jwt() ->> 'role' because the app manages auth via custom JWT (jose)
 CREATE POLICY faqs_admin_all ON faqs
-  FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
+  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
 
 CREATE POLICY faqs_public_read ON faqs
-  FOR SELECT USING (true);
+  FOR SELECT TO anon, authenticated
+  USING (true);
+
 CREATE POLICY cash_register_admin_all ON cash_register
-  FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
+  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
 
 CREATE POLICY salary_payments_admin_all ON salary_payments
-  FOR ALL USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
+  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
 
+-- cron_job_logs: service_role bypasses RLS; authenticated users with STAFF/MANAGER can read
 CREATE POLICY "service_role_all" ON cron_job_logs
-  FOR ALL USING (true) WITH CHECK (true);
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') = 'service_role');
 
-CREATE POLICY "authenticated_select" ON cron_job_logs
-  FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "staff_read" ON cron_job_logs
+  FOR SELECT TO authenticated
+  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER', 'STAFF'));
 
 CREATE POLICY "service_role_all" ON background_tasks
-  FOR ALL USING (true) WITH CHECK (true);
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') = 'service_role');
+
+-- Notifications RLS: users see only their own notifications
+CREATE POLICY notifications_user_read ON notifications
+  FOR SELECT TO authenticated
+  USING (
+    recipient_type = 'user'
+    AND recipient_id = (auth.jwt() ->> 'userId')::uuid
+  );
+
+CREATE POLICY notifications_admin_all ON notifications
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
+  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
+
+-- ai_cache RLS: service_role only (internal cache, not user-facing)
+CREATE POLICY ai_cache_service_role ON ai_cache
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') = 'service_role')
+  WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
+
+-- rate_limits RLS: service_role only (internal, not user-facing)
+CREATE POLICY rate_limits_service_role ON rate_limits
+  FOR ALL TO authenticated
+  USING ((auth.jwt() ->> 'role') = 'service_role')
+  WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
 ALTER TABLE salary_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bank_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE banner_settings ENABLE ROW LEVEL SECURITY;
@@ -714,41 +752,7 @@ BEGIN
 END;
 $$;
 
--- deduct_package_session: Atomically deduct a session from customer_packages
--- Note: DB has TWO overloads — this is the jsonb version (SECURITY DEFINER, full logic).
--- The void version (used by staff/actions.ts) is simpler and does not reference updated_at.
-CREATE OR REPLACE FUNCTION deduct_package_session(
-  p_customer_package_id UUID,
-  p_appointment_id UUID,
-  p_staff_id UUID
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_remaining INTEGER;
-  v_result JSONB;
-BEGIN
-  UPDATE customer_packages
-  SET remaining_sessions = remaining_sessions - 1,
-      updated_at = NOW()
-  WHERE id = p_customer_package_id
-    AND remaining_sessions > 0
-  RETURNING remaining_sessions INTO v_remaining;
-
-  IF NOT FOUND THEN
-    RETURN jsonb_build_object('success', false, 'error', 'No remaining sessions');
-  END IF;
-
-  INSERT INTO package_usage_logs (customer_package_id, appointment_id, staff_id)
-  VALUES (p_customer_package_id, p_appointment_id, p_staff_id);
-
-  RETURN jsonb_build_object('success', true, 'remaining', v_remaining);
-END;
-$$;
-
--- Void overload of deduct_package_session (used by staff complete appointment flow)
+-- deduct_package_session: Atomically deduct a session from customer_packages (used by staff/actions.ts)
 CREATE OR REPLACE FUNCTION deduct_package_session(
   p_pkg_id UUID,
   p_appt_id UUID,
@@ -756,6 +760,7 @@ CREATE OR REPLACE FUNCTION deduct_package_session(
 )
 RETURNS void
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
   UPDATE customer_packages
@@ -763,7 +768,8 @@ BEGIN
       status = CASE
         WHEN remaining_sessions - 1 <= 0 THEN 'EXHAUSTED'
         ELSE 'ACTIVE'
-      END
+      END,
+      updated_at = NOW()
   WHERE id = p_pkg_id
     AND remaining_sessions > 0;
 
@@ -774,39 +780,7 @@ BEGIN
 END;
 $$;
 
--- refund_package_session: Refund a session when appointment is cancelled
-CREATE OR REPLACE FUNCTION refund_package_session(
-  p_customer_package_id UUID,
-  p_appointment_id UUID
-)
-RETURNS JSONB
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  v_remaining INTEGER;
-  v_total_sessions INTEGER;
-BEGIN
-  SELECT tp.total_sessions INTO v_total_sessions
-  FROM customer_packages cp
-  JOIN treatment_packages tp ON tp.id = cp.package_id
-  WHERE cp.id = p_customer_package_id;
-
-  UPDATE customer_packages
-  SET remaining_sessions = LEAST(remaining_sessions + 1, v_total_sessions),
-      updated_at = NOW()
-  WHERE id = p_customer_package_id
-  RETURNING remaining_sessions INTO v_remaining;
-
-  DELETE FROM package_usage_logs
-  WHERE customer_package_id = p_customer_package_id
-    AND appointment_id = p_appointment_id;
-
-  RETURN jsonb_build_object('success', true, 'remaining', v_remaining);
-END;
-$$;
-
--- Void overload of refund_package_session (used by customer cancel flow)
+-- refund_package_session: Refund a session when appointment is cancelled (used by customer.ts)
 CREATE OR REPLACE FUNCTION refund_package_session(
   p_pkg_id UUID,
   p_appt_id UUID,
@@ -814,6 +788,7 @@ CREATE OR REPLACE FUNCTION refund_package_session(
 )
 RETURNS void
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
   UPDATE customer_packages
@@ -821,7 +796,8 @@ BEGIN
       status = CASE
         WHEN status = 'EXHAUSTED' THEN 'ACTIVE'
         ELSE status
-      END
+      END,
+      updated_at = NOW()
   WHERE id = p_pkg_id;
 
   IF FOUND THEN
@@ -887,8 +863,41 @@ BEGIN
 END $$;
 
 -- ========================================
--- CHECK constraints
+-- Service Categories (Phase 6 — migrated from CHECK constraint)
 -- ========================================
+CREATE TABLE IF NOT EXISTS service_categories (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name VARCHAR(100) NOT NULL UNIQUE,
+  slug VARCHAR(100) NOT NULL UNIQUE,
+  sort_order INT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+);
+
+INSERT INTO service_categories (name, slug, sort_order) VALUES
+  ('Móng', 'mong', 1),
+  ('Gội dưỡng sinh', 'goi-duong-sinh', 2),
+  ('Massage', 'massage', 3),
+  ('Deal', 'deal', 4)
+ON CONFLICT (name) DO NOTHING;
+
+-- Add category_id column to services (nullable initially)
+ALTER TABLE services ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES service_categories(id) ON DELETE SET NULL;
+
+-- Migrate existing data: map old category values to new FK
+UPDATE services s
+SET category_id = sc.id
+FROM service_categories sc
+WHERE s.category = sc.name;
+
+-- Drop the old CHECK constraint now that data is migrated
+ALTER TABLE services DROP CONSTRAINT IF EXISTS services_category_check;
+
+-- Make category_id NOT NULL once migration is verified
+ALTER TABLE services ALTER COLUMN category_id SET NOT NULL;
+
+-- Index for category lookups
+CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);
 ALTER TABLE time_slot_locks DROP CONSTRAINT IF EXISTS chk_time_slot_locks_end_gt_start;
 ALTER TABLE time_slot_locks ADD CONSTRAINT chk_time_slot_locks_end_gt_start CHECK (end_time > start_time);
 

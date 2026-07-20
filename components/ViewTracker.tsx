@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { logger } from '@/lib/logger';
 
 export default function ViewTracker({ postId }: { postId: string }) {
   useEffect(() => {
@@ -8,7 +9,7 @@ export default function ViewTracker({ postId }: { postId: string }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ postId }),
-    }).catch(() => {});
+    }).catch(e => logger.error('[Analytics] Failed to track blog view', e));
   }, [postId]);
 
   return null;

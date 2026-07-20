@@ -27,7 +27,7 @@ export default function TestimonialsCarousel() {
             >
               <div className="flex gap-0.5">
                 {Array.from({ length: 5 }).map((_, j) => (
-                  <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" aria-hidden="true" />
                 ))}
               </div>
               <p className="text-xs text-[#3A2E2B] leading-relaxed italic line-clamp-4">

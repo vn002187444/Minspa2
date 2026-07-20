@@ -1,6 +1,7 @@
 import { unstable_cache } from 'next/cache';
 import { createClient } from '@/utils/supabase/server';
 import { normalizeNFC } from '@/lib/utils';
+import { getSeoSettings } from '@/lib/seo';
 
 /**
  * Wrapper to cache Supabase calls and normalize all text to NFC.
@@ -19,11 +20,8 @@ export async function cachedFetch<T>(key: string, fn: () => Promise<T>, revalida
 // --- Specific Caches for Homepage ---
 
 export async function getCachedSeoSettings() {
-  return cachedFetch('homepage-seo-settings', async () => {
-    const supabase = await createClient();
-    const { data } = await supabase.from('seo_settings').select('hotline, facebook_url, zalo_url, logo_url').eq('id', 1).single();
-    return data;
-  }, 3600);
+  const seo = await getSeoSettings();
+  return { hotline: seo?.hotline, facebook_url: seo?.facebook_url, zalo_url: seo?.zalo_url, logo_url: seo?.logo_url };
 }
 
 export async function getCachedServices() {

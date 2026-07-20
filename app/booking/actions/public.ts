@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/server";
 import { stripHtml } from "@/lib/sanitize";
+import { getSeoSettings } from '@/lib/seo';
 
 export async function getPublicServices() {
   const supabase = await createClient();
@@ -14,15 +15,13 @@ export async function getPublicServices() {
 }
 
 export async function getPublicSeoSettings() {
-  const supabase = await createClient();
-  const { data } = await supabase.from('seo_settings').select('online_discount_enabled, online_discount_percent, default_commission_percent, hotline').eq('id', 1).single();
-  if (data) return {
-    discountEnabled: data.online_discount_enabled !== false,
-    discountPercent: Number(data.online_discount_percent) || 5,
-    defaultCommissionPercent: Number(data.default_commission_percent) || 15,
-    hotline: data.hotline || '0934 323 878',
+  const seo = await getSeoSettings();
+  return {
+    discountEnabled: seo.online_discount_enabled !== false,
+    discountPercent: Number(seo.online_discount_percent) || 5,
+    defaultCommissionPercent: Number(seo.default_commission_percent) || 15,
+    hotline: seo.hotline || '0934 323 878',
   };
-  return { discountEnabled: true, discountPercent: 5, defaultCommissionPercent: 15, hotline: '0934 323 878' };
 }
 
 export async function getPublicPackages() {

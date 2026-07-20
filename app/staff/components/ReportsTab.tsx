@@ -61,7 +61,7 @@ export default function ReportsTab() {
 
   useEffect(() => {
     const d = calculateDates(rangeType);
-    setStartDate(d.startInput);
+    setStartDate(d.startInput); // eslint-disable-line react-hooks/set-state-in-effect
     setEndDate(d.endInput);
     if (rangeType !== "custom") {
       startTransition(() => { fetchStats(d.start, d.end); });

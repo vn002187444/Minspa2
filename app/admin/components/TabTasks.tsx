@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, startTransition } from 'react'
 import { toast } from 'sonner'
 import { Plus, Filter, CheckCircle2, Clock, XCircle, Search, ListTodo, RefreshCw, User, Calendar, AlertCircle } from 'lucide-react'
 import LoadingButton from '@/components/LoadingButton'
+import { Button } from '@/components/ui/Button'
 import { getTasks, createTask, deleteTask, getStaffs, getTaskStats } from '../actions'
 
 export default function TabTasks() {
@@ -42,12 +43,10 @@ export default function TabTasks() {
     loadTasks()
   }, [loadTasks])
 
-  const [now, setNow] = useState<Date | null>(null)
-  useEffect(() => { setNow(new Date()) }, [])
   const isOverdue = (task: { status: string; deadline?: string | null }) => {
     if (task.status === 'COMPLETED' || task.status === 'CANCELLED') return false
     if (!task.deadline) return false
-    return now ? new Date(task.deadline) < now : false
+    return new Date(task.deadline) < new Date()
   }
 
   const statusColors: Record<string, string> = {
@@ -469,9 +468,9 @@ function CreateTaskModal({ staffs, onClose, onSaved }: CreateTaskModalProps) {
           </div>
 
           <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-bold text-gray-700 cursor-pointer">
+            <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
               Hủy
-            </button>
+            </Button>
             <LoadingButton
               type="submit"
               isLoading={saving}

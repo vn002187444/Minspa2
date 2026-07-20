@@ -44,6 +44,16 @@ const pageMessages: Record<string, { title: string; body: string }> = {
   '/staff': { title: 'Trang nhân viên', body: 'Quản lý công việc và lịch làm của bạn.' },
 }
 
+let mascotSettingsPromise: Promise<MascotConfig | null> | null = null;
+function fetchMascotSettingsOnce(): Promise<MascotConfig | null> {
+  if (!mascotSettingsPromise) {
+    mascotSettingsPromise = fetch('/api/mascot-settings')
+      .then(res => res.ok ? res.json() : null)
+      .catch(() => null);
+  }
+  return mascotSettingsPromise;
+}
+
 export default function MascotProvider({ children }: { children: ReactNode }) {
   const [config, setConfig] = useState<MascotConfig>(defaultConfig)
   const [_configLoaded, setConfigLoaded] = useState(false)
@@ -71,9 +81,8 @@ export default function MascotProvider({ children }: { children: ReactNode }) {
         const cached = storage.get(MASCOT_CONFIG_CACHE_KEY)
         const cacheData = cached ? JSON.parse(cached) : null
 
-        const res = await fetch('/api/mascot-settings')
-        if (res.ok) {
-          const server = await res.json()
+        const server = await fetchMascotSettingsOnce()
+        if (server) {
           const merged = { ...defaultConfig, ...server }
           setConfig(merged)
           storage.set(MASCOT_CONFIG_CACHE_KEY, JSON.stringify(merged))

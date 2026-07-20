@@ -71,7 +71,7 @@ export default function GlobalSearch() {
   return (
     <div ref={containerRef} className="relative w-full max-w-md group">
       <div className="relative flex items-center">
-        <Search className="absolute left-3 w-4 h-4 text-stone-400 group-focus-within:text-[#8D6E53] transition-colors" />
+        <Search className="absolute left-3 w-4 h-4 text-stone-400 group-focus-within:text-[#8D6E53] transition-colors" aria-hidden="true" />
         <input
           id="global-search"
           name="query"
@@ -124,10 +124,10 @@ export default function GlobalSearch() {
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-bold text-stone-800 truncate group-hover:text-[#8D6E53]">{art.title}</div>
                               <div className="text-[10px] text-stone-500 flex items-center gap-1">
-                                <BookOpen className="w-3 h-3" /> {art.type === 'auto' ? 'AI Research' : 'Blog'}
+                                <BookOpen className="w-3 h-3" aria-hidden="true" /> {art.type === 'auto' ? 'AI Research' : 'Blog'}
                               </div>
                             </div>
-                            <ArrowRight className="w-3 h-3 text-stone-300 group-hover:text-[#8D6E53] transition-colors" />
+                            <ArrowRight className="w-3 h-3 text-stone-300 group-hover:text-[#8D6E53] transition-colors" aria-hidden="true" />
                           </Link>
                         ))}
                       </div>
@@ -149,7 +149,7 @@ export default function GlobalSearch() {
                           >
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 rounded-full bg-[#FAF6F0] flex items-center justify-center shrink-0">
-                                <Sparkles className="w-3.5 h-3.5 text-[#8D6E53]" />
+                                <Sparkles className="w-3.5 h-3.5 text-[#8D6E53]" aria-hidden="true" />
                               </div>
                               <div className="text-xs font-bold text-stone-800 truncate group-hover:text-[#8D6E53]">{svc.title}</div>
                             </div>

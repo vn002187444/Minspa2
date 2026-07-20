@@ -57,8 +57,8 @@ export async function runMarketingCampaign() {
     }
 
     return { success: true };
-  } catch (err: any) {
-    logger.error('Marketing campaign failed', err);
-    return { success: false, error: err.message };
+  } catch (err: unknown) {
+    logger.error('Marketing campaign failed', err instanceof Error ? err : undefined);
+    return { success: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

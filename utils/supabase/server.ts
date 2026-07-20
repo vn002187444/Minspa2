@@ -29,8 +29,6 @@ export const createClient = async () => {
 
   const client = createRealClient(supabaseUrl, supabaseKey);
 
-  // Override auth.getUser to resolve from our custom JWT cookie session,
-  // since we manage users via a custom `users` table, not Supabase Auth.
   client.auth.getUser = async () => {
     try {
       const { cookies } = await import('next/headers');
@@ -39,14 +37,14 @@ export const createClient = async () => {
       if (session) {
         const { decrypt } = await import('@/utils/auth');
         const parsed = await decrypt(session);
-        if (parsed && parsed.user) {
-          return { data: { user: parsed.user }, error: null } as any;
+        if (parsed?.user) {
+          return { data: { user: parsed.user as any }, error: null };
         }
       }
     } catch {
       // Session cookie not available (e.g. called outside request context)
     }
-    return { data: { user: null }, error: null } as any;
+    return { data: { user: null }, error: null };
   };
 
   return client;

@@ -53,13 +53,13 @@ export async function sendPushNotification(recipientId: string, title: string, b
 
     await webpush.sendNotification(subscription, payload);
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Clean up invalid/expired token
-    if (error.statusCode === 410 || error.statusCode === 404) {
+    if (error instanceof Error && 'statusCode' in error && ((error as any).statusCode === 410 || (error as any).statusCode === 404)) {
       await supabase.from('users').update({ notification_token: null }).eq('id', recipientId);
       await supabase.from('customers').update({ notification_token: null }).eq('id', recipientId);
     }
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 

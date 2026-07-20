@@ -4,6 +4,7 @@ import { useState } from "react";
 import { XIcon } from "lucide-react";
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { saveTreatmentPackage } from "../actions";
+import { Button } from "@/components/ui/Button";
 
 interface EditPackageModalPkg {
   id?: string;
@@ -221,20 +222,12 @@ export default function EditPackageModal({ pkg, services, onClose, onReload }: E
           )}
 
           <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-500 hover:text-gray-900 font-medium text-sm transition-colors cursor-pointer border border-transparent"
-            >
+            <Button type="button" variant="ghost" onClick={onClose}>
               Hủy
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-gray-900 text-white px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-black transition-transform active:scale-95 disabled:opacity-50 cursor-pointer shadow-md"
-            >
+            </Button>
+            <Button type="submit" disabled={loading}>
               {loading ? "Đang lưu..." : "Lưu Gói Liệu Trình"}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

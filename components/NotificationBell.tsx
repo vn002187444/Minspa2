@@ -3,8 +3,10 @@
 import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import Link from 'next/link';
 import { Bell } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { logger } from '@/lib/logger';
 
 
 interface Notification {
@@ -89,7 +91,7 @@ export default function NotificationBell() {
             startTransition(() => { setAuthenticated(true); });
           }
         }
-      }).catch(() => {});
+      }).catch(e => logger.error('[Auth] Failed to fetch current user', e));
     });
 
     // Polling fallback — 5 minutes (Realtime handles instant updates)
@@ -102,60 +104,66 @@ export default function NotificationBell() {
     if (typeof window === 'undefined') return;
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL) return;
 
+    let channel: any = null;
+    let cancelled = false;
+
     import('@/utils/supabase/client').then(async ({ createClient }) => {
+      if (cancelled) return;
       const supabase = createClient();
- 
-       const channel: any = supabase
-          .channel('notifications_bell')
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'notifications',
-              filter: `recipient_type=eq.user`,
-            },
-            (payload: unknown) => {
-              const newNotif = (payload as { new: Notification }).new;
-              if (newNotif.recipient_id !== userIdRef.current) return;
-              setUnreadCount((prev) => prev + 1);
-              setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
-              
-              // Trigger bounce animation
-              setIsBouncing(true);
-              setTimeout(() => setIsBouncing(false), 1000);
-            }
-          )
-          .on(
-            'postgres_changes',
-            {
-              event: 'UPDATE',
-              schema: 'public',
-              table: 'notifications',
-              filter: `recipient_type=eq.user`,
-            },
-            (payload: unknown) => {
-              const updated = (payload as { new: Notification }).new;
-              if (updated.recipient_id !== userIdRef.current) return;
-              setNotifications((prev) =>
-                prev.map((n) => (n.id === updated.id ? { ...n, is_read: updated.is_read } : n))
-              );
-              setUnreadCount((prev) => Math.max(0, prev - (updated.is_read ? 1 : 0)));
-            }
-          );
- 
-          try {
-            const { safeSubscribe } = await import('@/lib/realtime');
-            await safeSubscribe(channel);
-          } catch (e) {
-            console.warn('[Realtime] NotificationBell subscription failed:', e);
+
+      channel = supabase
+        .channel('notifications_bell')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `recipient_type=eq.user`,
+          },
+          (payload: unknown) => {
+            const newNotif = (payload as { new: Notification }).new;
+            if (newNotif.recipient_id !== userIdRef.current) return;
+            setUnreadCount((prev) => prev + 1);
+            setNotifications((prev) => [newNotif, ...prev].slice(0, 100));
+            setIsBouncing(true);
+            setTimeout(() => setIsBouncing(false), 1000);
           }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `recipient_type=eq.user`,
+          },
+          (payload: unknown) => {
+            const updated = (payload as { new: Notification }).new;
+            if (updated.recipient_id !== userIdRef.current) return;
+            setNotifications((prev) =>
+              prev.map((n) => (n.id === updated.id ? { ...n, is_read: updated.is_read } : n))
+            );
+            setUnreadCount((prev) => Math.max(0, prev - (updated.is_read ? 1 : 0)));
+          }
+        );
 
+      try {
+        const { safeSubscribe } = await import('@/lib/realtime');
+        await safeSubscribe(channel);
+      } catch (e) {
+        console.warn('[Realtime] NotificationBell subscription failed:', e);
+      }
+    }).catch(e => logger.error('[Realtime] Failed to subscribe to notifications', e));
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }).catch(() => {});
+    return () => {
+      cancelled = true;
+      if (channel) {
+        import('@/utils/supabase/client').then(({ createClient }) => {
+          createClient().removeChannel(channel);
+        }).catch(() => {});
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -168,6 +176,12 @@ export default function NotificationBell() {
   }, [isOpen, fetchNotifications]);
 
   useEffect(() => {
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+        bellRef.current?.querySelector('button')?.focus();
+      }
+    }
     function handleClickOutside(e: MouseEvent) {
       if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
         setIsOpen(false);
@@ -175,7 +189,11 @@ export default function NotificationBell() {
     }
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener('keydown', handleEscape);
+      };
     }
   }, [isOpen]);
 
@@ -220,8 +238,12 @@ export default function NotificationBell() {
         onClick={() => setIsOpen((prev) => !prev)}
         className="relative p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
         title="Thông báo"
+        aria-label="Thông báo"
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        aria-controls="notification-menu"
       >
-        <Bell className="w-5 h-5" />
+        <Bell className="w-5 h-5" aria-hidden="true" />
          {unreadCount > 0 && (
            <span className={`absolute -top-1 -right-1 inline-flex items-center justify-center w-5 h-5 text-[11px] font-bold text-white bg-red-500 rounded-full shadow-sm ${isBouncing ? 'animate-bounce' : ''}`}>
              {unreadCount > 99 ? '99+' : unreadCount}
@@ -230,16 +252,18 @@ export default function NotificationBell() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-[100] mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden  animate-in fade-in slide-in-from-top-2 duration-200">
+        <div id="notification-menu" role="menu" className="absolute right-0 z-[100] mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden  animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h3 className="font-bold text-sm text-gray-900">Thông báo</h3>
             {unreadCount > 0 && (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleMarkAllRead}
-                className="text-xs font-semibold text-[#8D6E53] hover:text-[#5C4033] transition-colors"
+                className="p-0 h-auto text-xs"
               >
                 Đánh dấu tất cả đã đọc
-              </button>
+              </Button>
             )}
           </div>
 
@@ -250,13 +274,14 @@ export default function NotificationBell() {
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-gray-400">
-                <Bell className="w-8 h-8 mb-2" />
+                <Bell className="w-8 h-8 mb-2" aria-hidden="true" />
                 <p className="text-sm">Không có thông báo nào</p>
               </div>
             ) : (
               notifications.map((n) => (
                 <button
                   key={n.id}
+                  role="menuitem"
                   onClick={() => handleItemClick(n)}
                   className={`w-full text-left px-4 py-3 border-b border-gray-50 transition-colors hover:bg-gray-50 ${
                     !n.is_read ? 'bg-amber-50/60' : ''

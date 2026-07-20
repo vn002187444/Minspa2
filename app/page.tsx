@@ -18,9 +18,6 @@ const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
 import { getBannerSettings } from './admin/actions';
 import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, getCachedBlogPosts } from '@/lib/cache';
 import ServiceSchema from '@/components/ServiceSchema';
-import ReviewSchema from '@/components/ReviewSchema';
-import { testimonials } from '@/lib/testimonials';
-import { getBaseUrl } from '@/lib/env';
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => (
@@ -54,7 +51,6 @@ function slugify(text: string) {
 }
 
 export default async function Home() {
-  const baseUrl = getBaseUrl();
   
   // Parallel fetch using caches to eliminate TTFB bottleneck
   const [bannerSettings, seoRow, services, treatmentPackages] = await Promise.all([
@@ -134,7 +130,7 @@ export default async function Home() {
 
         <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto text-center space-y-8 4k:space-y-12 animate-slideUp">
           <div className="inline-flex items-center gap-2 px-4 py-2.5 4k:px-6 4k:py-2 bg-[rgb(var(--color-bg-warm))] theme-text rounded-full text-xs 4k:text-sm font-bold ring-1 theme-border tracking-widest uppercase min-h-[44px]">
-            <Sparkles className="w-3.5 h-3.5 4k:w-5 4k:h-5 theme-text-secondary animate-pulse" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
+            <Sparkles className="w-3.5 h-3.5 4k:w-5 4k:h-5 theme-text-secondary animate-pulse"  aria-hidden="true" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
           </div>
 
           <div className="space-y-4 4k:space-y-6">
@@ -160,9 +156,9 @@ export default async function Home() {
                 href="/booking"
                 className="inline-flex items-center gap-2 bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-8 4k:px-10 4k:py-4 py-3.5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all shadow-lg hover:shadow-xl active:scale-95 hover-magnetic"
               >
-                <Calendar className="w-4 h-4 4k:w-5 4k:h-5" />
+                <Calendar className="w-4 h-4 4k:w-5 4k:h-5"  aria-hidden="true" />
                 Đặt lịch ngay
-                <ArrowRight className="w-4 h-4 4k:w-5 4k:h-5" />
+                <ArrowRight className="w-4 h-4 4k:w-5 4k:h-5"  aria-hidden="true" />
               </Link>
               <Link
                 href="#services"
@@ -176,7 +172,7 @@ export default async function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 4k:gap-6 max-w-3xl xxl:max-w-4xl 4k:max-w-5xl mx-auto pt-4">
             <div className="flex items-center gap-3 bg-white/70 p-4 rounded-2xl border border-[#EADDCD] backdrop-blur-sm hover:border-[#8D6E53] hover-magnetic transition-all cursor-default">
               <div className="w-10 h-10 rounded-full bg-[#FAF0E6] flex items-center justify-center shrink-0 shadow-sm">
-                <MapPin className="w-5 h-5 text-[#8D6E53]" />
+                <MapPin className="w-5 h-5 text-[#8D6E53]"  aria-hidden="true" />
               </div>
               <div className="text-left">
                 <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Địa chỉ</p>
@@ -186,7 +182,7 @@ export default async function Home() {
             
             <a href={`tel:${hotline.replace(/\s/g, '')}`} className="flex items-center gap-3 bg-white/70 p-4 rounded-2xl border border-[#EADDCD] backdrop-blur-sm hover:border-[#8D6E53] hover-magnetic transition-all">
               <div className="w-10 h-10 rounded-full bg-[#FAF0E6] flex items-center justify-center shrink-0 shadow-sm">
-                <Phone className="w-5 h-5 text-[#8D6E53]" />
+                <Phone className="w-5 h-5 text-[#8D6E53]"  aria-hidden="true" />
               </div>
               <div className="text-left">
                 <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Hotline đặt lịch</p>
@@ -196,7 +192,7 @@ export default async function Home() {
 
             <div className="flex items-center gap-3 bg-white/70 p-4 rounded-2xl border border-[#EADDCD] backdrop-blur-sm hover:border-[#8D6E53] hover-magnetic transition-all cursor-default">
               <div className="w-10 h-10 rounded-full bg-[#FAF0E6] flex items-center justify-center shrink-0 shadow-sm">
-                <Clock className="w-5 h-5 text-[#8D6E53]" />
+                <Clock className="w-5 h-5 text-[#8D6E53]"  aria-hidden="true" />
               </div>
               <div className="text-left">
                 <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Giờ mở cửa</p>
@@ -216,7 +212,7 @@ export default async function Home() {
           <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full filter blur-2xl pointer-events-none group-hover:scale-110 transition-transform duration-700"></div>
           <div className="space-y-2 text-center md:text-left">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-bold uppercase tracking-wider animate-fadeIn">
-              <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-pulse" /> Trợ lý ảo AI đắc lực
+              <Sparkles className="w-3.5 h-3.5 text-amber-200 animate-pulse"  aria-hidden="true" /> Trợ lý ảo AI đắc lực
             </div>
              <h2 className="text-lg md:text-xl 4k:text-2xl font-display font-medium text-amber-100 group-hover:text-amber-250 transition-colors">Bắt số điện thoại - Nhận đề xuất dịch vụ cá nhân hóa tức thì!</h2>
             <p className="text-xs md:text-sm 4k:text-base text-gray-300 max-w-xl 4k:max-w-2xl">
@@ -227,7 +223,7 @@ export default async function Home() {
             href="/booking" 
             className="shrink-0 bg-amber-150 hover:bg-amber-200 text-gray-900 font-bold text-xs 4k:text-sm tracking-wider uppercase px-6 4k:px-8 py-3.5 4k:py-4 rounded-full shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group-hover:scale-105 active:scale-95 hover-magnetic"
           >
-            Trải nghiệm AI Ngay <ChevronRight className="w-4 h-4 animate-bounce" />
+            Trải nghiệm AI Ngay <ChevronRight className="w-4 h-4 animate-bounce"  aria-hidden="true" />
           </Link>
         </div>
       </section>
@@ -316,7 +312,7 @@ export default async function Home() {
                       className="px-4 py-2.5 bg-gray-900 hover:bg-[#3A2E2B] text-white text-xs font-bold rounded-xl transition-all shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer uppercase"
                       aria-label={`Đặt mua gói ${pkg.name}`}
                     >
-                      Đặt Mua <ArrowRight className="w-3.5 h-3.5" />
+                      Đặt Mua <ArrowRight className="w-3.5 h-3.5"  aria-hidden="true" />
                     </Link>
                   </div>
                 </div>
@@ -381,7 +377,7 @@ export default async function Home() {
                     >
                       {service.image_url && (
                           <div className="relative w-full h-36 md:h-48 overflow-hidden bg-gray-50">
-                          <Image src={service.image_url} alt={service.name} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover hover:scale-105 transition-transform duration-500" />
+                          <Image src={service.image_url} alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover hover:scale-105 transition-transform duration-500" />
                         </div>
                       )}
                       <div className="p-6">
@@ -424,7 +420,7 @@ export default async function Home() {
                       <div className="mt-6 pt-4 border-t border-[#FAF6F0] flex items-center justify-between">
                         <div>
                           <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-[#8D6E53]" /> {service.duration} Phút
+                            <Clock className="w-3.5 h-3.5 text-[#8D6E53]"  aria-hidden="true" /> {service.duration} Phút
                           </div>
                           <div className="mt-1 font-display font-bold text-xl text-[#8D6E53]">
                             {service.price.toLocaleString('vi-VN')} ₫
@@ -470,7 +466,6 @@ export default async function Home() {
       </ScrollReveal>
 
       {/* Testimonials Carousel */}
-      <ReviewSchema reviews={testimonials} baseUrl={baseUrl} />
       <TestimonialsCarousel />
 
             {/* Extra Service Guarantee Banner */}
@@ -521,14 +516,14 @@ export default async function Home() {
                 href="/booking" 
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FAF6F0] hover:bg-[#F5EBE0] text-[#5C4033] px-8 4k:px-10 py-4 4k:py-5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all shadow-lg hover:shadow-xl hover-magnetic"
               >
-                <Calendar className="w-4 h-4 text-[#5C4033]" />
+                <Calendar className="w-4 h-4 text-[#5C4033]"  aria-hidden="true" />
                 ĐẶT LỊCH GỒI & LÀM MÓNG
               </Link>
               <a 
                 href={`tel:${hotline.replace(/\s/g, '')}`} 
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-white/40 hover:border-white text-white px-8 4k:px-10 py-4 4k:py-5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all hover-magnetic"
               >
-                <Phone className="w-4 h-4 text-white" />
+                <Phone className="w-4 h-4 text-white"  aria-hidden="true" />
                 ĐIỆN THOẠI ĐẶT TRỰC TIẾP
               </a>
             </div>
@@ -604,7 +599,7 @@ export default async function Home() {
                   title="Kết nối qua Zalo OA"
                   aria-label="Zalo OA"
                 >
-                  <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  <MessageSquare className="w-5 h-5 group-hover:scale-110 transition-transform"  aria-hidden="true" />
                 </a>
               </div>
             </div>
@@ -649,19 +644,19 @@ export default async function Home() {
               </h4>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2.5 py-0.5">
-                  <MapPin className="w-4 h-4 text-[#8D6E53] shrink-0 mt-0.5" />
+                  <MapPin className="w-4 h-4 text-[#8D6E53] shrink-0 mt-0.5"  aria-hidden="true" />
                   <span className="text-xs text-gray-300 font-medium leading-relaxed">
                     TM14 Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức, TP. Hồ Chí Minh
                   </span>
                 </li>
                 <li className="flex items-center gap-2.5 py-0.5">
-                  <Phone className="w-4 h-4 text-[#8D6E53] shrink-0" />
+                  <Phone className="w-4 h-4 text-[#8D6E53] shrink-0"  aria-hidden="true" />
                   <a href={`tel:${hotline.replace(/\s+/g, '')}`} className="text-xs text-amber-300 hover:text-amber-400 font-bold transition-colors">
                     {hotline}
                   </a>
                 </li>
                 <li className="flex items-center gap-2.5 py-0.5">
-                  <Clock className="w-4 h-4 text-[#8D6E53] shrink-0" />
+                  <Clock className="w-4 h-4 text-[#8D6E53] shrink-0"  aria-hidden="true" />
                   <span className="text-xs text-gray-300 font-medium">
                     09:00 - 20:30 (Tất cả các ngày)
                   </span>
@@ -724,7 +719,7 @@ async function LatestBlogPosts() {
         <span className="inline-block px-3 py-1 rounded-full bg-[#8D6E53]/10 text-[#8D6E53] text-[10px] font-bold uppercase tracking-widest mb-3">
           Blog
         </span>
-        <h2 className="text-2xl md:text-4xl font-serif font-black text-[#5C4033]">
+        <h2 className="text-2xl md:text-4xl font-display font-black text-[#5C4033]">
           Bài viết mới nhất
         </h2>
         <p className="text-sm text-stone-500 mt-2 max-w-lg mx-auto">
@@ -773,7 +768,7 @@ async function LatestBlogPosts() {
           href="/blog"
           className="inline-flex items-center gap-2 text-xs font-bold text-[#8D6E53] bg-white border-2 border-[#EADDCD] hover:bg-[#FAF6F0] px-6 py-3 rounded-full transition-all"
         >
-          Xem tất cả bài viết <ArrowRight className="w-3.5 h-3.5" />
+          Xem tất cả bài viết <ArrowRight className="w-3.5 h-3.5"  aria-hidden="true" />
         </Link>
       </div>
     </section>

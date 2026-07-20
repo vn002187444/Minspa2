@@ -3,7 +3,14 @@
 import { createClient } from "@/utils/supabase/server";
 import { getSlotAvailabilityWithNames } from "@/lib/booking-engine";
 
-function getEffectiveTimeRange(appt: any): { start: Date; end: Date } {
+interface AppointmentTimeInfo {
+  start_time: string;
+  end_time: string;
+  actual_start_time?: string | null;
+  actual_end_time?: string | null;
+}
+
+function getEffectiveTimeRange(appt: AppointmentTimeInfo): { start: Date; end: Date } {
   const expectedStart = new Date(appt.start_time);
   const expectedEnd = new Date(appt.end_time);
   const actualStart = appt.actual_start_time ? new Date(appt.actual_start_time) : null;
@@ -54,7 +61,7 @@ export async function getAvailableStaff(date: string, time: string, durationMinu
     return [];
   }
 
-  const presentStaffIds = new Set((attendanceResult?.data || []).map((a: any) => a.staff_id));
+  const presentStaffIds = new Set((attendanceResult?.data || []).map((a: { staff_id: string }) => a.staff_id));
 
   const slotStart = new Date(`${date}T${time}:00+07:00`);
   const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
@@ -69,7 +76,7 @@ export async function getAvailableStaff(date: string, time: string, durationMinu
     }
   }
 
-  const freeStaff = allStaff.filter((staff: any) =>
+  const freeStaff = allStaff.filter((staff: { id: string; full_name: string }) =>
     presentStaffIds.has(staff.id) && !busyStaffIds.has(staff.id)
   );
   return freeStaff;

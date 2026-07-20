@@ -24,6 +24,7 @@ import {
   Sparkles,
   DollarSign,
 } from "lucide-react";
+import { logger } from "@/lib/logger";
 
 export default function TabDashboard() {
   const [rangeType, setRangeType] = useState<"week" | "month" | "last_month" | "custom">("month");
@@ -255,7 +256,7 @@ export default function TabDashboard() {
       return () => {
         supabase.removeChannel(channel);
       };
-    }).catch(() => {});
+    }).catch(e => logger.error('[Realtime] Failed to subscribe to dashboard updates', e));
   }, [rangeType]);
 
   const handleCustomSearch = () => {

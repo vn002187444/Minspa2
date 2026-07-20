@@ -5,11 +5,10 @@ import { useOnlineSync } from '@/hooks/useOnlineSync';
 import { CloudOff, RefreshCw } from 'lucide-react';
 
 export default function OfflineIndicator() {
-  const [isOffline, setIsOffline] = useState(false);
+  const [isOffline, setIsOffline] = useState(typeof navigator !== 'undefined' && !navigator.onLine);
   const { pendingCount, isSyncing, sync } = useOnlineSync();
 
   useEffect(() => {
-    setIsOffline(!navigator.onLine);
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
     window.addEventListener('online', handleOnline);
@@ -29,9 +28,9 @@ export default function OfflineIndicator() {
       isOffline ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'
     }`}>
       {isOffline ? (
-        <><CloudOff className="w-4 h-4" /> Đang offline</>
+        <><CloudOff className="w-4 h-4" aria-hidden="true" /> Đang offline</>
       ) : (
-        <><RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+        <><RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} aria-hidden="true" />
           Đang đồng bộ ({pendingCount})
           <button onClick={sync} className="ml-1 underline">Đồng bộ ngay</button>
         </>

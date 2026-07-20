@@ -6,8 +6,9 @@ import dynamic from 'next/dynamic'
 import {
   BarChart3, TrendingUp, Users, DollarSign, ShoppingBag,
   User, Activity, ChevronDown, RefreshCw,
-  ArrowUpRight, ArrowDownRight, FileText, FileSpreadsheet, Download,
+  ArrowUpRight, ArrowDownRight,
 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
 const ResponsiveContainer = dynamic(() => import('recharts').then(m => m.ResponsiveContainer), { ssr: false })
 const AreaChart = dynamic(() => import('recharts').then(m => m.AreaChart), { ssr: false })
 const Area = dynamic(() => import('recharts').then(m => m.Area), { ssr: false })
@@ -257,16 +258,16 @@ export default function TabReports() {
           Báo cáo & Thống kê
         </h2>
          <div className="flex items-center gap-2">
-           <button onClick={exportPDF} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer">
-             <FileText className="w-4 h-4" /> PDF
-           </button>
-           <button onClick={exportExcel} className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl text-xs font-bold text-gray-700 flex items-center gap-1.5 cursor-pointer">
-             <FileSpreadsheet className="w-4 h-4" /> Excel
-           </button>
-           <div className="relative group">
-             <button className="px-3 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer hover:bg-black transition-colors shadow-sm">
-               <Download className="w-4 h-4" /> Export Raw
-             </button>
+            <Button onClick={exportPDF} variant="ghost" size="sm">
+              PDF
+            </Button>
+            <Button onClick={exportExcel} variant="ghost" size="sm">
+              Excel
+            </Button>
+            <div className="relative group">
+              <Button variant="primary" size="sm">
+                Export Raw
+              </Button>
               <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-2xl shadow-xl z-50 hidden group-hover:block group-focus-within:block p-2 space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
                <div className="px-2 py-1 text-[10px] font-bold text-gray-400 uppercase">Appointments</div>
                <div className="grid grid-cols-2 gap-1">

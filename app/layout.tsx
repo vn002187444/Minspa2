@@ -1,9 +1,9 @@
 // Reconstructed layout.tsx for Min Nail & Hair application
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { cookies } from "next/headers";
 import "./globals.css";
 
-import dynamic from "next/dynamic";
 import SkipLink from "@/components/SkipLink";
 import ThemeProvider from "@/components/ThemeProvider";
 import ThemeBanner from "@/components/ThemeBanner";
@@ -11,23 +11,20 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import WebVitals from "@/components/WebVitals";
 
 import PwaSupport from "@/components/PwaSupport";
+import { DEFAULT_LOCALE, LANGUAGES, COOKIE_NAME } from "@/lib/i18n/config";
 
 import { getBaseUrl } from "@/lib/env";
+import { getSeoSettings } from "@/lib/seo";
+import { createClient } from "@/utils/supabase/server";
+import { testimonials } from "@/lib/testimonials";
 
-const MascotProvider = dynamic(() => import("@/components/MascotProvider"));
+import MascotLoader from "@/components/MascotLoader";
 
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
  
-import AggregateRatingSchema from "@/components/AggregateRatingSchema";
 import WebSiteSchema from "@/components/WebSiteSchema";
-
-// Simple in-memory cache for metadata (TTL 5 minutes)
-let metadataCache: { data: Metadata | null; fetchedAt: number } = {
-  data: null,
-  fetchedAt: 0,
-};
 
 export const viewport: Viewport = {
   themeColor: "#fbbf24",
@@ -38,13 +35,6 @@ export const viewport: Viewport = {
 };
 
 export async function generateMetadata(): Promise<Metadata> {
-  // In‑memory cache (TTL 5 minutes)
-  const now = Date.now();
-  const TTL = 5 * 60 * 1000; // 5 minutes in ms
-  if (metadataCache.data && now - metadataCache.fetchedAt < TTL) {
-    return metadataCache.data;
-  }
-
   const baseUrl = getBaseUrl();
   const defaultMeta: Metadata = {
     metadataBase: new URL(baseUrl),
@@ -73,55 +63,82 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 
   try {
-    const { createClient } = await import("@/utils/supabase/server");
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from("seo_settings")
-      .select("page_title, meta_description, meta_keywords, og_image_url")
-      .eq("id", 1)
-      .single();
-
-    if (!error && data) {
+    const seo = await getSeoSettings();
+    if (seo?.page_title) {
       const result: Metadata = {
         ...defaultMeta,
-        title: data.page_title || defaultMeta.title,
-        description: data.meta_description || defaultMeta.description,
-        keywords: data.meta_keywords || "",
+        title: seo.page_title || defaultMeta.title,
+        description: seo.meta_description || defaultMeta.description,
+        keywords: seo.meta_keywords || "",
         openGraph: {
-          ...defaultMeta.openGraph,
-          title: data.page_title || defaultMeta.openGraph?.title || defaultMeta.title,
-          description: data.meta_description || defaultMeta.openGraph?.description || defaultMeta.description,
-          images: [{ url: data.og_image_url || `${baseUrl}/og-default.svg`, width: 1200, height: 630, alt: data.page_title || "Min Nail & Hair" }],
+          type: "website",
+          locale: "vi_VN",
+          siteName: "Min Nail & Hair",
+          title: seo.page_title || "Min Nail & Hair - Salon Booking",
+          description: seo.meta_description || "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
+          url: baseUrl,
+          images: [{ url: seo.og_image_url || `${baseUrl}/og-default.svg`, width: 1200, height: 630, alt: seo.page_title || "Min Nail & Hair" }],
         },
         twitter: {
-          ...defaultMeta.twitter,
-          title: data.page_title || defaultMeta.twitter?.title || defaultMeta.title,
-          description: data.meta_description || defaultMeta.twitter?.description || defaultMeta.description,
-          images: [{ url: data.og_image_url || `${baseUrl}/og-default.svg`, alt: data.page_title || "Min Nail & Hair" }],
+          card: "summary_large_image",
+          title: seo.page_title || "Min Nail & Hair - Salon Booking",
+          description: seo.meta_description || "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
+          images: [{ url: seo.og_image_url || `${baseUrl}/og-default.svg`, alt: seo.page_title || "Min Nail & Hair" }],
         },
       };
-      metadataCache = { data: result, fetchedAt: now };
       return result;
     }
   } catch (e) {
     console.error("Error loading SEO metadata:", e);
   }
 
-  // Fallback to default metadata and cache it
-  metadataCache = { data: defaultMeta, fetchedAt: now };
   return defaultMeta;
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   const baseUrl = getBaseUrl();
+  const cookieStore = await cookies();
+  const locale = cookieStore.get(COOKIE_NAME)?.value;
+  const lang = locale && LANGUAGES[locale] ? locale : DEFAULT_LOCALE;
+
+  let aggregateRating = null;
+  let reviewList: { author: string; text: string; rating: number }[] = [];
+  try {
+    const supabase = await createClient();
+    const { data: reviews } = await supabase
+      .from("reviews")
+      .select("rating, comment");
+    if (reviews && reviews.length > 0) {
+      const total = reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0);
+      aggregateRating = {
+        "@type": "AggregateRating",
+        "ratingValue": (total / reviews.length).toFixed(1),
+        "bestRating": "5",
+        "worstRating": "1",
+        "ratingCount": reviews.length,
+      };
+    }
+    reviewList = testimonials.map((t) => ({
+      author: t.name,
+      text: t.text,
+      rating: t.rating,
+    }));
+  } catch {
+    reviewList = testimonials.map((t) => ({
+      author: t.name,
+      text: t.text,
+      rating: t.rating,
+    }));
+  }
   return (
     <html
-      lang="vi"
+      lang={lang}
       className="antialiased font-sans text-gray-900 bg-gray-50"
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
     >
       <head>
@@ -140,7 +157,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
+        {process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID}`}
@@ -157,7 +174,7 @@ export default function RootLayout({
             __html: JSON.stringify({
               "@context": "https://schema.org",
               "@type": "LocalBusiness",
-              "@id": "#local-business",
+              "@id": `${baseUrl}/#local-business`,
               "name": "Min Nail & Hair",
               "image": `${baseUrl}/icons/icon-512.png`,
               "logo": {
@@ -195,12 +212,28 @@ export default function RootLayout({
                 }
               ],
               "priceRange": "100000-1000000",
-              "sameAs": ["https://facebook.com/minnailhair"]
+              "sameAs": ["https://facebook.com/minnailhair"],
+              ...(aggregateRating ? { "aggregateRating": aggregateRating } : {}),
+              ...(reviewList.length > 0
+                ? {
+                    "review": reviewList.map((r, i) => ({
+                      "@type": "Review",
+                      "@id": `${baseUrl}/#review-${i + 1}`,
+                      "author": { "@type": "Person", "name": r.author },
+                      "reviewBody": r.text,
+                      "reviewRating": {
+                        "@type": "Rating",
+                        "ratingValue": r.rating,
+                        "bestRating": 5,
+                        "worstRating": 1,
+                      },
+                    })),
+                  }
+                : {}),
             })
           }}
         />
         <WebSiteSchema baseUrl={baseUrl} />
-        <AggregateRatingSchema />
         <Analytics />
         <SpeedInsights />
         
@@ -210,15 +243,14 @@ export default function RootLayout({
         <WebVitals />
         <ErrorBoundary>
           <Toaster position="top-right" richColors closeButton />
-          {/* GoogleTranslate moved to HeaderNav */}
           <SkipLink />
           <div className="overflow-x-clip">
             <ThemeProvider>
               <ThemeBanner />
-              <MascotProvider>
-                <main id="main-content">{children}</main>
+              <MascotLoader>
+                <main id="main-content" tabIndex={-1}>{children}</main>
                 <PwaSupport />
-              </MascotProvider>
+              </MascotLoader>
             </ThemeProvider>
           </div>
         </ErrorBoundary>

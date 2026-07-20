@@ -6,7 +6,11 @@ import { verifyPassword, hashPassword } from "@/lib/password";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { lockTimeSlots, unlockTimeSlots, cascadeShiftForward, incrementSlotLimit } from "@/lib/booking-engine";
+import { logger } from "@/lib/logger";
 import { getBaseUrl } from '@/lib/env';
+import { revalidatePath } from 'next/cache';
+
+type ActionResult = Promise<{ success: boolean; error?: string; [key: string]: unknown }>;
 
 export async function getStaffData() {
   const session = await getSession();
@@ -28,22 +32,24 @@ export async function getStaffData() {
   const endOfTodayISO = new Date(`${todayStr}T23:59:59.999+07:00`).toISOString();
 
   // Get profile details — use maybeSingle to avoid throw if user not found
-  const { data: profile } = await supabase
+  const { data: profile, error: profileErr } = await supabase
     .from('users')
     .select('id, full_name, role, username')
     .eq('id', staffId)
     .maybeSingle();
+  if (profileErr) logger.error('[Staff] Failed to fetch profile', profileErr, { staffId });
 
   // Check attendance — use maybeSingle to avoid throw if no record
-  const { data: attendance } = await supabase
+  const { data: attendance, error: attendanceErr } = await supabase
     .from('attendance')
     .select('id, staff_id, date, status, check_in_time')
     .eq('staff_id', staffId)
     .eq('date', todayStr)
     .maybeSingle();
+  if (attendanceErr) logger.error('[Staff] Failed to fetch attendance', attendanceErr, { staffId });
 
   // Assigned appointments (today)
-  const { data: myAppointments } = await supabase
+  const { data: myAppointments, error: myAppointmentsErr } = await supabase
     .from('appointments')
     .select(`
       id, start_time, end_time, actual_start_time, actual_end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
@@ -57,9 +63,10 @@ export async function getStaffData() {
     .lte('start_time', endOfTodayISO)
     .order('start_time', { ascending: true })
     .limit(50);
+  if (myAppointmentsErr) logger.error('[Staff] Failed to fetch myAppointments', myAppointmentsErr, { staffId });
 
   // Random appointments (all unclaimed pending random or confirmed bookings so staff can claim them immediately)
-  const { data: randomAppointments } = await supabase
+  const { data: randomAppointments, error: randomAppointmentsErr } = await supabase
     .from('appointments')
     .select(`
       id, start_time, end_time, status, total_amount, staff_id, is_package_session, use_package_id, buy_package_id,
@@ -72,30 +79,34 @@ export async function getStaffData() {
     .in('status', ['PENDING_RANDOM', 'CONFIRMED'])
     .order('start_time', { ascending: true })
     .limit(50);
+  if (randomAppointmentsErr) logger.error('[Staff] Failed to fetch randomAppointments', randomAppointmentsErr, { staffId });
 
   // Other staff & managers for swap
-  const { data: otherStaff } = await supabase
+  const { data: otherStaff, error: otherStaffErr } = await supabase
     .from('users')
     .select('id, full_name')
     .in('role', ['STAFF', 'MANAGER'])
     .neq('id', staffId)
     .eq('is_active', true)
     .limit(100);
+  if (otherStaffErr) logger.error('[Staff] Failed to fetch otherStaff', otherStaffErr, { staffId });
 
   // All active services for upsell
-  const { data: allServices } = await supabase
+  const { data: allServices, error: allServicesErr } = await supabase
     .from('services')
     .select('id, name, category, price, duration, description, is_active')
     .eq('is_active', true)
     .limit(200);
+  if (allServicesErr) logger.error('[Staff] Failed to fetch allServices', allServicesErr, { staffId });
 
   // Active treatment packages
-  const { data: treatmentPackages } = await supabase
+  const { data: treatmentPackages, error: treatmentPackagesErr } = await supabase
     .from('treatment_packages')
     .select('*, services(name)')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
     .limit(200);
+  if (treatmentPackagesErr) logger.error('[Staff] Failed to fetch treatmentPackages', treatmentPackagesErr, { staffId });
 
   return {
     staffId,
@@ -109,7 +120,7 @@ export async function getStaffData() {
   };
 }
 
-export async function checkIn() {
+export async function checkIn(): ActionResult {
   const session = await getSession();
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   
@@ -127,13 +138,14 @@ export async function checkIn() {
   
   if (error) return { success: false, error: error.message };
 
-  // Fire-and-forget: push notification to staff
+  revalidatePath('/staff');
+
   sendPushNotification(
     session.user.id,
     'Điểm danh thành công! ⏰',
     `Bạn đã điểm danh có mặt lúc ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ngày ${format(new Date(), 'dd/MM/yyyy')}. Chúc một ngày làm việc tuyệt vời!`,
     '/staff'
-  ).catch(() => {});
+  ).catch(e => logger.error('[Push] Failed to send check-in push notification', e));
 
   return { success: true };
 }
@@ -171,7 +183,7 @@ export async function getCustomerHistory(customerId: string) {
   return data || [];
 }
 
-export async function takeRandomAppointment(appointmentId: string) {
+export async function takeRandomAppointment(appointmentId: string): ActionResult {
   const session = await getSession();
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   
@@ -186,10 +198,12 @@ export async function takeRandomAppointment(appointmentId: string) {
     
   if (error) return { success: false, error: error.message };
   if (!data || data.length === 0) return { success: false, error: 'Đơn đã có thợ nhận trước đó, vui lòng chọn đơn khác.' };
+
+  revalidatePath('/staff');
   return { success: true };
 }
 
-export async function swapAppointment(appointmentId: string, newStaffId: string) {
+export async function swapAppointment(appointmentId: string, newStaffId: string): ActionResult {
   const session = await getSession();
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
@@ -203,6 +217,7 @@ export async function swapAppointment(appointmentId: string, newStaffId: string)
     .eq('id', appointmentId);
     
   if (error) return { success: false, error: error.message };
+  revalidatePath('/staff');
   return { success: true };
 }
 
@@ -214,7 +229,7 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
   endTime?: string;
   status?: string;
   serviceIds?: string[];
-}) {
+}): ActionResult {
   const session = await getSession();
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
     return { success: false, error: 'Bạn không có quyền thực hiện việc này.' };
@@ -300,9 +315,8 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
       }
 
       if (payload.status !== undefined && (session.user.role === 'ADMIN' || session.user.role === 'MANAGER')) {
-         import('@/utils/audit').then(({ logAuditAction }) => {
-            logAuditAction(session.user.id, "STATUS_CHANGE", `Admin cập nhật đơn '${appointmentId}' sang ${payload.status}`);
-         });
+         const { logAuditAction } = await import('@/utils/audit');
+         await logAuditAction(session.user.id, "STATUS_CHANGE", `Admin cập nhật đơn '${appointmentId}' sang ${payload.status}`);
       }
     }
 
@@ -321,13 +335,14 @@ export async function updateAppointmentByStaffOrAdmin(appointmentId: string, pay
       }
     }
 
+    revalidatePath('/staff');
     return { success: true };
   } catch (error: unknown) {
     return { success: false, error: error instanceof Error ? error.message : 'Lỗi không xác định' };
   }
 }
 
-export async function updateAppointmentStatus(appointmentId: string, status: string) {
+export async function updateAppointmentStatus(appointmentId: string, status: string): ActionResult {
   const session = await getSession();
   if (!session) {
     return { success: false, error: 'Unauthorized' };
@@ -370,17 +385,17 @@ export async function updateAppointmentStatus(appointmentId: string, status: str
     }
   }
 
-  // Fire-and-forget: audit log
+  // Audit log
   if (session && oldAppt && oldAppt.status !== status && (session.user.role === 'ADMIN' || session.user.role === 'MANAGER')) {
-    import('@/utils/audit').then(({ logAuditAction }) =>
-      logAuditAction(session.user.id, "STATUS_CHANGE", `Đổi trạng thái đơn '${appointmentId}': ${oldAppt.status} ➔ ${status}`)
-    ).catch(() => {});
+    const { logAuditAction } = await import('@/utils/audit');
+    await logAuditAction(session.user.id, "STATUS_CHANGE", `Đổi trạng thái đơn '${appointmentId}': ${oldAppt.status} ➔ ${status}`);
   }
 
+  revalidatePath('/staff');
   return { success: true };
 }
 
-export async function completeAppointment(appointmentId: string, extraServiceIds: string[] = [], tipAmount: number = 0, discountPercent: number = 0) {
+export async function completeAppointment(appointmentId: string, extraServiceIds: string[] = [], tipAmount: number = 0, discountPercent: number = 0): ActionResult {
   const session = await getSession();
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
@@ -487,7 +502,7 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
     const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     if (bookingDate === tomorrowStr) {
       const timeStr = new Date(dbAppt.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Ho_Chi_Minh' });
-      incrementSlotLimit(bookingDate, timeStr).catch(() => {});
+      incrementSlotLimit(bookingDate, timeStr).catch(e => logger.error('[Database] Failed to increment slot limit', e));
     }
   }
 
@@ -509,13 +524,14 @@ export async function completeAppointment(appointmentId: string, extraServiceIds
         appointmentDate: dbAppt.start_time,
         appointmentTime: dbAppt.start_time ? new Date(dbAppt.start_time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : '',
       }),
-    }).catch(() => {});
+    }).catch(e => logger.error('[Background] Failed to trigger background tasks', e));
   }
 
+  revalidatePath('/staff');
   return { success: true, total: discountedTotal };
 }
 
-export async function submitReview(appointmentId: string, rating: number, tags: string[], comment: string = "") {
+export async function submitReview(appointmentId: string, rating: number, tags: string[], comment: string = ""): ActionResult {
   const session = await getSession();
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) throw new Error('Unauthorized');
   const supabase = await createClient();
@@ -529,6 +545,7 @@ export async function submitReview(appointmentId: string, rating: number, tags: 
     });
     
   if (error) return { success: false, error: error.message };
+  revalidatePath('/staff');
   return { success: true };
 }
 
@@ -690,7 +707,7 @@ export async function getStaffStats(startDateStr?: string, endDateStr?: string) 
   }
 }
 
-export async function changePassword(oldPassword: string, newPassword: string) {
+export async function changePassword(oldPassword: string, newPassword: string): ActionResult {
   const session = await getSession();
   if (!session) {
     return { success: false, error: 'Chưa đăng nhập hoặc phiên làm việc hết hạn' };
@@ -720,11 +737,12 @@ export async function changePassword(oldPassword: string, newPassword: string) {
   if (updateErr) {
     return { success: false, error: 'Lỗi cập nhật mật khẩu mới: ' + updateErr.message };
   }
-  
+
+  revalidatePath('/staff');
   return { success: true };
 }
 
-export async function updateTip(appointmentId: string, newTipAmount: number) {
+export async function updateTip(appointmentId: string, newTipAmount: number): ActionResult {
   const session = await getSession();
   if (!session || (session.user.role !== 'STAFF' && session.user.role !== 'MANAGER')) {
     return { success: false, error: 'Bạn không có quyền thực hiện việc này.' };
@@ -753,6 +771,7 @@ export async function updateTip(appointmentId: string, newTipAmount: number) {
     .eq('id', appointmentId);
 
   if (error) return { success: false, error: error.message };
+  revalidatePath('/staff');
   return { success: true, newTip: newTipAmount };
 }
 
@@ -782,7 +801,7 @@ export async function getCustomerPackagesDetailed(customerId: string) {
     .order('purchased_at', { ascending: false })
     .limit(50);
   if (error) {
-    console.error("Lỗi lấy chi tiết gói của khách:", error);
+    logger.error("Lỗi lấy chi tiết gói của khách:", error instanceof Error ? error : undefined);
     return [];
   }
   return data || [];

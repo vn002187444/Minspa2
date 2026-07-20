@@ -1,0 +1,45 @@
+{
+  "nav.deal": "特惠",
+  "nav.hairWash": "护发与头皮护理",
+  "nav.footScrub": "足部去角质",
+  "nav.massage": "按摩",
+  "nav.nail": "美甲护理与艺术",
+  "nav.about": "关于我们",
+  "nav.faq": "常见问题",
+  "nav.staff": "员工",
+  "nav.booking": "预约",
+
+  "nav.mobile.deal": "🔥 特惠",
+  "nav.mobile.hairWash": "💆 护发",
+  "nav.mobile.massage": "💪 按摩",
+  "nav.mobile.nail": "💅 美甲",
+  "nav.mobile.footScrub": "👣 足部护理",
+  "nav.mobile.vipCombo": "🎁 VIP套餐",
+  "nav.mobile.reviews": "⭐ 评价",
+  "nav.mobile.about": "📖 关于我们",
+  "nav.mobile.faq": "❓ FAQ",
+
+  "booking.title": "预约",
+  "booking.phone": "电话号码",
+  "booking.name": "姓名",
+  "booking.service": "服务",
+  "booking.staff": "员工",
+  "booking.date": "日期",
+  "booking.time": "时间",
+  "booking.note": "备注",
+
+  "login.title": "登录",
+  "login.username": "用户名",
+  "login.password": "密码",
+
+  "common.bookNow": "立即预约",
+  "common.readMore": "阅读更多",
+  "common.viewAll": "查看全部",
+  "common.close": "关闭",
+  "common.save": "保存",
+  "common.cancel": "取消",
+  "common.loading": "加载中...",
+
+  "lang.switchLanguage": "选择语言",
+  "lang.poweredBy": "语言"
+}

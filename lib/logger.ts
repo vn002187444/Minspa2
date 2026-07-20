@@ -1,5 +1,3 @@
-import * as Sentry from "@sentry/nextjs";
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogEntry {
@@ -44,7 +42,9 @@ function log(level: LogLevel, message: string, context?: Record<string, unknown>
 
   if (process.env.NODE_ENV === 'production' && level === 'error') {
     try {
-      Sentry.captureException(error || new Error(message), { extra: context });
+      import("@sentry/nextjs").then(Sentry => {
+        Sentry.captureException(error || new Error(message), { extra: context });
+      }).catch(() => {});
       fetch('/api/log', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry), signal: AbortSignal.timeout(2000) }).catch(() => {});
     } catch {}
   }

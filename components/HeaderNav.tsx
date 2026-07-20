@@ -1,11 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import Image from 'next/image';
-
-const GoogleTranslate = dynamic(() => import('@/components/GoogleTranslate'), { ssr: false });
+import LanguageSwitcher from '@/lib/i18n/LanguageSwitcher';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import NotificationBell from '@/components/NotificationBell';
@@ -184,12 +182,12 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
         {/* CTAs */}
         <div className="flex items-center gap-1.5 md:gap-3 shrink-0">
           <NotificationBell />
-          <GoogleTranslate />
+          <LanguageSwitcher />
           <Link 
             href="/booking" 
             className="text-[10px] md:text-xs font-bold tracking-widest text-[#FFF] bg-[#8D6E53] hover:bg-[#3A2E2B] px-3 md:px-5 py-2 md:py-3 rounded-full transition-all flex items-center gap-1 md:gap-2 shadow-md hover:shadow-lg uppercase"
           >
-            Booking <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F5EBE0]" />
+            Booking             <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F5EBE0]" aria-hidden="true" />
           </Link>
           <Link 
             href="/login" 

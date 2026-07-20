@@ -121,8 +121,8 @@ export async function callGemini(options: CallGeminiOptions): Promise<CallGemini
       }
 
       return result;
-    } catch (err: any) {
-      console.warn(`[GEMINI] ${model} failed:`, err?.message || err);
+    } catch (err: unknown) {
+      console.warn(`[GEMINI] ${model} failed:`, err instanceof Error ? err.message : String(err));
       if (!isQuotaError(err) || model === modelsToTry[modelsToTry.length - 1]) {
         return { text: null, sources: [], modelUsed: model, fromCache: false };
       }

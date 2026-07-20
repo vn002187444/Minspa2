@@ -31,7 +31,7 @@ export default async function FaqSection({ category }: { category?: string }) {
   return (
     <section id="faq" className="scroll-mt-28 md:scroll-mt-24 max-w-3xl mx-auto my-12 px-4">
       <div className="text-center mb-8">
-        <Sparkles className="w-6 h-6 text-[#8D6E53] mx-auto mb-2" />
+        <Sparkles className="w-6 h-6 text-[#8D6E53] mx-auto mb-2" aria-hidden="true" />
         <h2 className="text-2xl font-bold text-[#3A2E2B] tracking-tight">
           Câu Hỏi Thường Gặp
         </h2>

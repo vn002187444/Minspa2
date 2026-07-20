@@ -1,9 +1,10 @@
 'use server'
 
 import {
-  createClient, getSession, revalidatePath, normalizeNFC,
+  createClient, getSession, normalizeNFC,
   checkAdminOrManager, SeoInput,
 } from "./_shared";
+import { logger } from "@/lib/logger";
 import { uploadBase64ToStorage } from "./services";
 
 export async function getSeoSettings() {
@@ -28,7 +29,7 @@ export async function getSeoSettings() {
       };
     }
   } catch (e: unknown) {
-    console.error(e);
+    logger.error('Failed to fetch SEO settings', e instanceof Error ? e : undefined);
   }
   return { page_title: '', meta_description: '', meta_keywords: '', og_image_url: '', logo_url: '', online_discount_enabled: true, online_discount_percent: 5, default_commission_percent: 15, hotline: '0934 323 878', facebook_url: 'https://facebook.com/minnailhair', zalo_url: 'https://zalo.me/0934323878' };
 }
@@ -55,7 +56,7 @@ export async function saveSeoSettings(payload: SeoInput) {
     if (error) throw error;
     return { success: true };
   } catch (e: unknown) {
-    console.error(e instanceof Error ? e.message : e);
+    logger.error('Failed to save SEO settings', e instanceof Error ? e : undefined);
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
@@ -91,7 +92,7 @@ export async function getSeoArticles() {
       }
     });
   } catch (e: unknown) {
-    console.error(e);
+    logger.error('Failed to fetch SEO articles', e instanceof Error ? e : undefined);
   }
   return [];
 }
@@ -108,7 +109,7 @@ export async function getSeoArticleById(id: string) {
     if (error) throw error;
     return normalizeNFC(data);
   } catch (e: unknown) {
-    console.error(e);
+    logger.error('Failed to fetch SEO article by ID', e instanceof Error ? e : undefined);
     return null;
   }
 }
@@ -154,7 +155,7 @@ export async function saveSeoArticle(article: Record<string, unknown>) {
     }
     return { success: true };
   } catch (e: unknown) {
-    console.error(e instanceof Error ? e.message : e);
+    logger.error('Failed to save SEO article', e instanceof Error ? e : undefined);
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
@@ -167,7 +168,7 @@ export async function deleteSeoArticle(id: string) {
     if (error) throw error;
     return { success: true };
   } catch (e: unknown) {
-    console.error(e instanceof Error ? e.message : e);
+    logger.error('Failed to delete SEO article', e instanceof Error ? e : undefined);
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
@@ -244,7 +245,7 @@ export async function publishSeoArticleToBlog(
   const { revalidatePath } = await import('next/cache');
   revalidatePath('/blog');
   revalidatePath(`/blog/${slug}`);
-  revalidatePath('/sitemap');
+  revalidatePath('/sitemap.xml');
   revalidatePath('/admin/blog');
 
   return { success: true, slug };
@@ -256,7 +257,8 @@ export async function getAutoSeoConfig() {
     const supabase = await createClient();
     const { data } = await supabase.from('auto_seo_config').select('*').eq('id', 1).single();
     return data || { enabled: false, schedule_days: ['THU'], schedule_hour: 20, topic_pool: [] };
-  } catch {
+  } catch (e) {
+    logger.error('[Database] Failed to fetch auto SEO config', e instanceof Error ? e : undefined);
     return { enabled: false, schedule_days: ['THU'], schedule_hour: 20, topic_pool: [] };
   }
 }
@@ -298,7 +300,8 @@ export async function getAutoSeoHistory() {
       blogSlug: a.blog_slug,
       publishedAt: a.published_at,
     }));
-  } catch {
+  } catch (e) {
+    logger.error('[Database] Failed to fetch auto SEO history', e instanceof Error ? e : undefined);
     return [];
   }
 }

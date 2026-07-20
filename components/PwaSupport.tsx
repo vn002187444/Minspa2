@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { storage } from '@/lib/storage';
 import InstallPWA from './InstallPWA';
 import OfflineIndicator from './OfflineIndicator';
+import { logger } from '@/lib/logger';
 
 const LS_KEY_DISMISS = 'notif_widget_dismissed_at';
 const NOTIF_COOLDOWN_DAYS = 3;
@@ -55,28 +56,26 @@ export default function PwaSupport() {
   }, []);
 
 useEffect(() => {
-  // 2. Register Service Worker
-  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-    try {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => {
-          console.info('[PWA] Service Worker registered:', reg.scope);
-          // Listen for background sync trigger from SW
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data?.type === 'trigger-sync') {
-              window.dispatchEvent(new Event('online'));
-            }
-          });
-          // Register background sync for offline queue if supported
-          if ('sync' in reg) {
-            (reg as any).sync.register('sync-queue').catch(() => {});
-          }
-        })
-        .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
-    } catch (e) {
-      console.warn('[PWA] Service Worker registration blocked by browser security policy:', e);
-    }
-  }
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+
+  navigator.serviceWorker.register('/sw.js')
+    .then((reg) => {
+      console.info('[PWA] Service Worker registered:', reg.scope);
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data?.type === 'trigger-sync') {
+          window.dispatchEvent(new Event('online'));
+        }
+      });
+      return navigator.serviceWorker.ready;
+    })
+    .then((readyReg) => {
+      if ('sync' in readyReg) {
+        (readyReg as any).sync.register('sync-queue').catch((e: unknown) => {
+          logger.error('[PWA] Failed to register background sync', e instanceof Error ? e : new Error(String(e)));
+        });
+      }
+    })
+    .catch((err) => console.error('[PWA] Service Worker registration failed:', err));
 }, []);
 
   // Helper method to sync token to Backend database
@@ -188,7 +187,7 @@ useEffect(() => {
             {notificationPermission === 'denied' ? (
               <BellOff className="w-4.5 h-4.5 text-white" />
             ) : (
-              <Bell className="w-4.5 h-4.5 text-white animate-bounce" />
+              <Bell className="w-4.5 h-4.5 text-white animate-bounce" aria-hidden="true" />
             )}
           </div>
 
@@ -202,7 +201,7 @@ useEffect(() => {
 
             {notificationStatusMsg && (
               <p className="text-[10px] italic font-semibold text-[#8D6E53] flex items-center gap-1">
-                {notificationPermission === 'granted' && <CheckCircle className="w-3 h-3 text-green-600 inline" />}
+                {notificationPermission === 'granted' && <CheckCircle className="w-3 h-3 text-green-600 inline" aria-hidden="true" />}
                 {notificationStatusMsg}
               </p>
             )}
@@ -231,7 +230,7 @@ useEffect(() => {
             className="text-gray-400 hover:text-gray-700 p-0.5 rounded-full hover:bg-gray-200/50 transition-colors shrink-0 cursor-pointer"
             aria-label="Đóng bảng thông báo"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-3.5 h-3.5" aria-hidden="true" />
           </button>
         </div>
       )}

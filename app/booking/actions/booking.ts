@@ -1,16 +1,42 @@
 'use server'
 
+import { z } from 'zod';
 import { createClient } from "@/utils/supabase/server";
 import { format } from "date-fns";
 import { sendPushNotification } from "@/utils/push";
 import { lockTimeSlots, incrementSlotLimit } from "@/lib/booking-engine";
 import { getPublicSeoSettings } from "./public";
 import { sendEmail } from "@/lib/notify";
+import { logger } from "@/lib/logger";
 
-export async function submitBooking(formData: any) {
+const bookingSchema = z.object({
+  customerId: z.string().nullable().optional(),
+  name: z.string().min(1, 'Vui lòng nhập họ tên').max(100),
+  phone: z.string().min(10, 'Số điện thoại không hợp lệ').max(15),
+  email: z.string().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày không hợp lệ'),
+  time: z.string().regex(/^\d{2}:\d{2}$/, 'Giờ không hợp lệ'),
+  staffId: z.string().nullable().optional(),
+  serviceIds: z.array(z.string()).min(1, 'Vui lòng chọn ít nhất 1 dịch vụ'),
+  usePackageId: z.string().nullable().optional(),
+  buyPackageId: z.string().nullable().optional(),
+});
+
+interface ServiceRow {
+  id: string;
+  price: number | null;
+  duration: number | null;
+}
+
+export async function submitBooking(inputData: unknown) {
   const supabase = await createClient();
   
   try {
+    const parsed = bookingSchema.safeParse(inputData);
+    if (!parsed.success) {
+      return { success: false, error: `Dữ liệu không hợp lệ: ${parsed.error.issues.map(i => i.message).join(', ')}` };
+    }
+    const formData = parsed.data;
     let customerId = formData.customerId;
     const cleanPhone = formData.phone.replace(/\s+/g, '');
     
@@ -47,7 +73,7 @@ export async function submitBooking(formData: any) {
     let totalDuration = 60;
     if (dbServices.length > 0) {
         let rawTotal = 0;
-        dbServices.forEach((s: any) => {
+        dbServices.forEach((s: ServiceRow) => {
           let svcPrice = s.price || 0;
           if (custPkg?.treatment_packages?.length && String(s.id) === String(custPkg.treatment_packages[0].service_id)) {
             svcPrice = 0;
@@ -58,7 +84,7 @@ export async function submitBooking(formData: any) {
         const discountPercent = seoSettings.discountEnabled ? seoSettings.discountPercent / 100 : 0;
         const discountAmount = Math.round(rawTotal * discountPercent);
         totalAmount = rawTotal - discountAmount;
-        totalDuration = dbServices.reduce((sum: number, s: any) => sum + (s.duration || 30), 0);
+        totalDuration = dbServices.reduce((sum: number, s: ServiceRow) => sum + (s.duration || 30), 0);
       }
 
     const startTimeISO = new Date(`${formData.date}T${formData.time}:00+07:00`).toISOString();
@@ -89,7 +115,7 @@ export async function submitBooking(formData: any) {
 
     if (!staffIdToUse && formData.serviceIds && formData.serviceIds.length > 0) {
       const { autoAssignStaff } = await import('@/lib/scheduling');
-      const autoStaffId = await autoAssignStaff(formData.serviceIds, startTimeISO, endDateTime, customerId);
+      const autoStaffId = await autoAssignStaff(formData.serviceIds, startTimeISO, endDateTime, customerId || null);
       if (autoStaffId) {
         await supabase
           .from('appointments')
@@ -105,7 +131,7 @@ export async function submitBooking(formData: any) {
     const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
     const bookingDate = formData.date;
     if (bookingDate === tomorrowStr && formData.time) {
-      incrementSlotLimit(bookingDate, formData.time).catch(() => {});
+      incrementSlotLimit(bookingDate, formData.time).catch(e => logger.error('[Database] Failed to increment slot limit', e));
     }
 
     if (formData.serviceIds && formData.serviceIds.length > 0) {
@@ -123,27 +149,27 @@ export async function submitBooking(formData: any) {
       .single();
 
     const assignedStaffId = finalAppt?.staff_id || formData.staffId;
-    const bgTasks: Promise<any>[] = [
+    const bgTasks: Promise<void | unknown>[] = [
       sendPushNotification(
-        customerId,
+        customerId!,
         'Đặt lịch thành công! ✨',
         `Lịch hẹn của bạn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')} đã được ghi nhận thành công.`,
         '/booking'
-      ).catch(() => {}),
+      ).catch(e => logger.error('[Push] Failed to send booking confirmation push', e)),
       sendEmail({
         to: formData.email || formData.phone + '@example.com',
         subject: 'Xác nhận đặt lịch hẹn tại Min Nail & Hair',
         html: `<p>Chào <b>${formData.name}</b>,</p><p>Lịch hẹn của bạn lúc <b>${formData.time}</b> ngày <b>${format(new Date(formData.date), 'dd/MM/yyyy')}</b> đã được xác nhận thành công.</p><p>Hẹn gặp bạn tại salon!</p>`
-      }).catch(() => {}),
+      }).catch(e => logger.error('[Email] Failed to send booking confirmation email', e)),
     ];
     if (assignedStaffId && assignedStaffId !== 'Ngẫu nhiên') {
       bgTasks.push(
         sendPushNotification(
-          assignedStaffId,
+          assignedStaffId!,
           'Lịch hẹn mới! 📅',
           `Khách hàng ${formData.name} đã đặt lịch hẹn trực tuyến với bạn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
           '/staff'
-        ).catch(() => {})
+        ).catch(e => logger.error('[Push] Failed to notify assigned staff', e))
       );
     }
     supabase.from('users').select('id').in('role', ['ADMIN', 'MANAGER']).eq('is_active', true).then(({ data: admins }) => {
@@ -154,7 +180,7 @@ export async function submitBooking(formData: any) {
             'Đơn đặt lịch mới! 🛎️',
             `Khách hàng ${formData.name} vừa đặt lịch hẹn lúc ${formData.time} ngày ${format(new Date(formData.date), 'dd/MM/yyyy')}.`,
             '/admin/orders'
-          ).catch(() => {})
+          ).catch(e => logger.error('[Push] Failed to notify admin of new booking', e))
         ));
       }
     });
@@ -162,7 +188,7 @@ export async function submitBooking(formData: any) {
     Promise.all(bgTasks);
 
     return { success: true, customerId: customerId };
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : 'Lỗi không xác định' };
   }
 }

@@ -1,10 +1,11 @@
 'use server'
 
 import {
-  createClient, getSession, revalidatePath, logAuditAction,
+  createClient, getSession, revalidatePath,
   hashPassword, verifyPassword, stripHtml, cachedFetch,
-  checkAdminOrManager, checkAdmin, redirect,
+  checkAdminOrManager, redirect,
 } from "./_shared";
+import { logger } from "@/lib/logger";
 
 export async function getReviews() {
   await checkAdminOrManager();
@@ -24,7 +25,8 @@ export async function getReviews() {
       .limit(200);
     if (error) throw error;
     return data || [];
-  } catch {
+  } catch (e) {
+    logger.error('[Database] Failed to fetch reviews', e instanceof Error ? e : undefined);
     return [];
   }
 }
@@ -78,7 +80,7 @@ export async function getBannerSettings() {
         };
       }
     } catch (e: unknown) {
-      console.error(e);
+      logger.error('Failed to fetch banner settings', e instanceof Error ? e : undefined);
     }
     let hotline = '0934 323 878';
     try {
@@ -86,7 +88,8 @@ export async function getBannerSettings() {
       const { data: seo } = await supabase.from('seo_settings').select('hotline').eq('id', 1).single();
       if (seo?.hotline) hotline = seo.hotline;
       return { is_enabled: false, content: hotline };
-    } catch {
+    } catch (e) {
+      logger.error('[Database] Failed to fetch banner settings', e instanceof Error ? e : undefined);
       return { is_enabled: false, content: hotline };
     }
   });
@@ -105,7 +108,7 @@ export async function saveBannerSettings(payload: { is_enabled?: boolean; conten
     if (error) throw error;
     return { success: true };
   } catch (e: unknown) {
-    console.error(e instanceof Error ? e.message : e);
+    logger.error('Failed to save banner settings', e instanceof Error ? e : undefined);
     return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
   }
 }
@@ -114,13 +117,14 @@ export async function getThemeSettings() {
   try {
     const supabase = await createClient();
     const { data } = await supabase.from('seo_settings').select('theme_override, theme_particles_enabled').eq('id', 1).single();
-    return {
-      override: data?.theme_override || null,
-      particlesEnabled: data?.theme_particles_enabled ?? true,
-    };
-  } catch {
-    return { override: null, particlesEnabled: true };
-  }
+      return {
+        override: data?.theme_override || null,
+        particlesEnabled: data?.theme_particles_enabled ?? true,
+      };
+    } catch (e) {
+      logger.error('[Database] Failed to fetch theme settings', e instanceof Error ? e : undefined);
+      return { override: null, particlesEnabled: true };
+    }
 }
 
 export async function saveThemeSettings(payload: { override: string | null; particlesEnabled: boolean }) {
@@ -144,14 +148,15 @@ export async function getMascotSettings() {
   try {
     const supabase = await createClient();
     const { data } = await supabase.from('seo_settings').select('mascot_enabled, mascot_character, mascot_sound').eq('id', 1).single();
-    return {
-      enabled: data?.mascot_enabled ?? true,
-      character: data?.mascot_character || 'min',
-      soundEnabled: data?.mascot_sound ?? true,
-    };
-  } catch {
-    return { enabled: true, character: 'min', soundEnabled: true };
-  }
+      return {
+        enabled: data?.mascot_enabled ?? true,
+        character: data?.mascot_character || 'min',
+        soundEnabled: data?.mascot_sound ?? true,
+      };
+    } catch (e) {
+      logger.error('[Database] Failed to fetch mascot settings', e instanceof Error ? e : undefined);
+      return { enabled: true, character: 'min', soundEnabled: true };
+    }
 }
 
 export async function saveMascotSettings(payload: { enabled: boolean; character: string; soundEnabled: boolean }) {

@@ -97,6 +97,8 @@ export default function ThemeBanner() {
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       className={`fixed top-0 left-0 right-0 z-[60] transition-all duration-500 ${
         visible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       }`}
@@ -115,7 +117,7 @@ export default function ThemeBanner() {
             className="shrink-0 p-1 rounded-full hover:bg-white/20 transition-colors"
             aria-label="Đóng banner"
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       </div>

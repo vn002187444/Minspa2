@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { TIP_AMOUNTS } from '@/lib/constants';
 import { adminUpdateTip } from '@/app/admin/actions';
 import LoadingButton from '@/components/LoadingButton';
+import { Button } from '@/components/ui/Button';
 
 export default function AdminEditTipModal({ appt, onClose, onSaved }: any) {
   const [tipAmount, setTipAmount] = useState(appt?.tip_amount || 0);
@@ -21,8 +22,8 @@ export default function AdminEditTipModal({ appt, onClose, onSaved }: any) {
       } else {
         toast.error(res.error || 'Lỗi khi cập nhật tip');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Lỗi không xác định');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : String(err) || 'Lỗi không xác định');
     } finally {
       setSaving(false);
     }
@@ -65,9 +66,9 @@ export default function AdminEditTipModal({ appt, onClose, onSaved }: any) {
         </div>
 
         <div className="flex gap-3 pt-2">
-          <button onClick={onClose} className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-bold text-gray-700 cursor-pointer">
+          <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
             Hủy
-          </button>
+          </Button>
           <LoadingButton
             onClick={handleSave}
             isLoading={saving}

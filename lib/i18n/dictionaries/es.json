@@ -1,0 +1,45 @@
+{
+  "nav.deal": "Ofertas",
+  "nav.hairWash": "Cuidado del cabello y cuero cabelludo",
+  "nav.footScrub": "Exfoliación de pies",
+  "nav.massage": "Masaje corporal",
+  "nav.nail": "Cuidado de uñas y arte",
+  "nav.about": "Sobre nosotros",
+  "nav.faq": "Preguntas frecuentes",
+  "nav.staff": "Personal",
+  "nav.booking": "Reserva",
+
+  "nav.mobile.deal": "🔥 Ofertas",
+  "nav.mobile.hairWash": "💆 Cuidado capilar",
+  "nav.mobile.massage": "💪 Masaje",
+  "nav.mobile.nail": "💅 Uñas",
+  "nav.mobile.footScrub": "👣 Exfoliación",
+  "nav.mobile.vipCombo": "🎁 Combo VIP",
+  "nav.mobile.reviews": "⭐ Reseñas",
+  "nav.mobile.about": "📖 Sobre nosotros",
+  "nav.mobile.faq": "❓ FAQ",
+
+  "booking.title": "Reservar cita",
+  "booking.phone": "Teléfono",
+  "booking.name": "Nombre completo",
+  "booking.service": "Servicio",
+  "booking.staff": "Personal",
+  "booking.date": "Fecha",
+  "booking.time": "Hora",
+  "booking.note": "Nota",
+
+  "login.title": "Iniciar sesión",
+  "login.username": "Usuario",
+  "login.password": "Contraseña",
+
+  "common.bookNow": "Reservar ahora",
+  "common.readMore": "Leer más",
+  "common.viewAll": "Ver todo",
+  "common.close": "Cerrar",
+  "common.save": "Guardar",
+  "common.cancel": "Cancelar",
+  "common.loading": "Cargando...",
+
+  "lang.switchLanguage": "Seleccionar idioma",
+  "lang.poweredBy": "Idioma"
+}

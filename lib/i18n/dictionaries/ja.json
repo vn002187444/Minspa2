@@ -1,0 +1,45 @@
+{
+  "nav.deal": "お得な情報",
+  "nav.hairWash": "ヘア＆頭皮ケア",
+  "nav.footScrub": "フットスクラブ",
+  "nav.massage": "マッサージ",
+  "nav.nail": "ネイルケア＆アート",
+  "nav.about": "私たちについて",
+  "nav.faq": "よくある質問",
+  "nav.staff": "スタッフ",
+  "nav.booking": "予約",
+
+  "nav.mobile.deal": "🔥 お得",
+  "nav.mobile.hairWash": "💆 ヘアケア",
+  "nav.mobile.massage": "💪 マッサージ",
+  "nav.mobile.nail": "💅 ネイル",
+  "nav.mobile.footScrub": "👣 フットケア",
+  "nav.mobile.vipCombo": "🎁 VIPコンボ",
+  "nav.mobile.reviews": "⭐ レビュー",
+  "nav.mobile.about": "📖 私たちについて",
+  "nav.mobile.faq": "❓ FAQ",
+
+  "booking.title": "予約する",
+  "booking.phone": "電話番号",
+  "booking.name": "お名前",
+  "booking.service": "サービス",
+  "booking.staff": "スタッフ",
+  "booking.date": "日付",
+  "booking.time": "時間",
+  "booking.note": "メモ",
+
+  "login.title": "ログイン",
+  "login.username": "ユーザー名",
+  "login.password": "パスワード",
+
+  "common.bookNow": "予約する",
+  "common.readMore": "続きを読む",
+  "common.viewAll": "すべて表示",
+  "common.close": "閉じる",
+  "common.save": "保存",
+  "common.cancel": "キャンセル",
+  "common.loading": "読み込み中...",
+
+  "lang.switchLanguage": "言語を選択",
+  "lang.poweredBy": "言語"
+}

@@ -62,7 +62,7 @@ const LoadingButton = forwardRef<HTMLButtonElement, LoadingButtonProps>(
       >
         {isLoading ? (
           <>
-            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
             <span>{loadingText || 'Đang xử lý...'}</span>
           </>
         ) : (

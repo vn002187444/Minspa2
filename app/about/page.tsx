@@ -84,7 +84,7 @@ export default function AboutPage() {
         <section className="relative overflow-hidden bg-[#5C4033] text-[#FAF6F0] py-20 md:py-28 px-4 text-center">
           <div className="absolute inset-0 bg-[url('/pattern-grid.svg')] opacity-5" />
           <div className="relative max-w-4xl mx-auto">
-            <Sparkles className="w-8 h-8 mx-auto mb-4 text-[#EADDCD]" />
+            <Sparkles className="w-8 h-8 mx-auto mb-4 text-[#EADDCD]" aria-hidden="true" />
             <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight mb-4">
               Min Nail &amp; Hair
             </h1>
@@ -99,7 +99,7 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {stats.map((s, i) => (
               <div key={i} className="bg-white rounded-2xl shadow-lg border border-[#EADDCD] p-6 text-center">
-                {s.icon && <s.icon className="w-5 h-5 text-[#8D6E53] mx-auto mb-2 fill-current" />}
+                {s.icon && <s.icon className="w-5 h-5 text-[#8D6E53] mx-auto mb-2 fill-current" aria-hidden="true" />}
                 <div className="text-2xl md:text-3xl font-black text-[#5C4033]">{s.value}</div>
                 <div className="text-xs text-gray-500 mt-1">{s.label}</div>
               </div>
@@ -129,7 +129,7 @@ export default function AboutPage() {
             </div>
             <div className="bg-[#EADDCD]/40 rounded-2xl p-8 flex items-center justify-center min-h-[300px]">
               <div className="text-center">
-                <Scissors className="w-16 h-16 text-[#8D6E53] mx-auto mb-4" />
+                <Scissors className="w-16 h-16 text-[#8D6E53] mx-auto mb-4" aria-hidden="true" />
                 <p className="text-sm text-gray-500 italic">Không gian làm đẹp tại Lavita Charm, Thủ Đức</p>
               </div>
             </div>
@@ -149,7 +149,7 @@ export default function AboutPage() {
               {values.map((v, i) => (
                 <div key={i} className="text-center p-6 rounded-2xl border border-[#EADDCD] bg-[#FAF6F0]/50 hover:shadow-lg transition-all">
                   <div className="w-14 h-14 bg-[#8D6E53]/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <v.icon className="w-7 h-7 text-[#8D6E53]" />
+                    <v.icon className="w-7 h-7 text-[#8D6E53]" aria-hidden="true" />
                   </div>
                   <h3 className="font-bold text-[#3A2E2B] mb-2">{v.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{v.desc}</p>
@@ -178,7 +178,7 @@ export default function AboutPage() {
             ].map((s, i) => (
               <div key={i} className="p-6 rounded-2xl border border-[#EADDCD] bg-white hover:shadow-lg transition-all">
                 <div className="w-12 h-12 bg-[#8D6E53]/10 rounded-xl flex items-center justify-center mb-4">
-                  <s.icon className="w-6 h-6 text-[#8D6E53]" />
+                  <s.icon className="w-6 h-6 text-[#8D6E53]" aria-hidden="true" />
                 </div>
                 <h3 className="font-bold text-[#3A2E2B] mb-2">{s.title}</h3>
                 <p className="text-sm text-gray-500 leading-relaxed">{s.desc}</p>
@@ -198,21 +198,21 @@ export default function AboutPage() {
                 <div className="w-16 h-1 bg-[#EADDCD] mb-6" />
                 <div className="space-y-4 text-[#EADDCD]/90">
                   <div className="flex items-start gap-3">
-                    <MapPin className="w-5 h-5 mt-0.5 shrink-0" />
+                    <MapPin className="w-5 h-5 mt-0.5 shrink-0" aria-hidden="true" />
                     <div>
                       <p className="font-bold">Địa chỉ</p>
                       <p className="text-sm">TM14 Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức, TP. Hồ Chí Minh</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Phone className="w-5 h-5 mt-0.5 shrink-0" />
+                    <Phone className="w-5 h-5 mt-0.5 shrink-0" aria-hidden="true" />
                     <div>
                       <p className="font-bold">Hotline</p>
                       <a href="tel:+84934323878" className="text-sm hover:underline">0934 323 878</a>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 mt-0.5 shrink-0" />
+                    <Clock className="w-5 h-5 mt-0.5 shrink-0" aria-hidden="true" />
                     <div>
                       <p className="font-bold">Giờ mở cửa</p>
                       <p className="text-sm">09:00 – 20:30 (Tất cả các ngày trong tuần)</p>
@@ -223,12 +223,12 @@ export default function AboutPage() {
                   href="/booking"
                   className="inline-flex items-center gap-2 mt-6 bg-white text-[#5C4033] font-bold px-6 py-3 rounded-full text-sm hover:bg-[#EADDCD] transition-all shadow-lg"
                 >
-                  Đặt lịch ngay <ArrowRight className="w-4 h-4" />
+                  Đặt lịch ngay <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 </Link>
               </div>
               <div className="bg-[#3A2E2B]/50 rounded-2xl p-8 flex items-center justify-center min-h-[250px]">
                 <div className="text-center">
-                  <MapPin className="w-12 h-12 text-[#EADDCD] mx-auto mb-3" />
+                  <MapPin className="w-12 h-12 text-[#EADDCD] mx-auto mb-3" aria-hidden="true" />
                   <p className="text-sm text-[#EADDCD]/70">Lavita Charm, Trường Thọ, Thủ Đức</p>
                 </div>
               </div>
@@ -248,7 +248,7 @@ export default function AboutPage() {
             href="/booking"
             className="inline-flex items-center gap-2 bg-[#8D6E53] text-white font-bold px-8 py-3.5 rounded-full text-sm hover:bg-[#3A2E2B] transition-all shadow-lg"
           >
-            Đặt Lịch Ngay <ArrowRight className="w-4 h-4" />
+            Đặt Lịch Ngay <ArrowRight className="w-4 h-4" aria-hidden="true" />
           </Link>
         </section>
 

@@ -56,8 +56,8 @@ export default function StaffSkillsModal({ staffId, staffName, onClose, onReload
         
         if (servicesError) throw servicesError;
         startTransition(() => { setServices(servicesData || []); });
-      } catch (err: any) {
-        startTransition(() => { toast.error("Lỗi tải dữ liệu kỹ năng: " + (err.message || "Unknown error")); });
+      } catch (err: unknown) {
+        startTransition(() => { toast.error("Lỗi tải dữ liệu kỹ năng: " + (err instanceof Error ? err.message : "Unknown error")); });
       } finally {
         startTransition(() => { setLoading(false); });
       }
@@ -86,8 +86,8 @@ export default function StaffSkillsModal({ staffId, staffName, onClose, onReload
       setIsAdding(false);
       await onReload();
       setSkills(await getStaffSkills(staffId));
-    } catch (err: any) {
-      toast.error("Lỗi lưu kỹ năng: " + (err.message || "Unknown error"));
+    } catch (err: unknown) {
+      toast.error("Lỗi lưu kỹ năng: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   };
 
@@ -98,8 +98,8 @@ export default function StaffSkillsModal({ staffId, staffName, onClose, onReload
       toast.success("Đã xoá kỹ năng");
       await onReload();
       setSkills(await getStaffSkills(staffId));
-    } catch (err: any) {
-      toast.error("Lỗi xoá kỹ năng: " + (err.message || "Unknown error"));
+    } catch (err: unknown) {
+      toast.error("Lỗi xoá kỹ năng: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   };
 

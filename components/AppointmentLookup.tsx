@@ -99,7 +99,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
       <div className="bg-[#FAF0E6]/30 p-4 rounded-2xl border border-[#EADDCD]/40 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs font-bold text-[#8D6E53] uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" aria-hidden="true" />
             Đánh giá của bạn:
           </div>
           <div className="flex items-center gap-0.5">
@@ -143,7 +143,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
     return (
       <div className="flex items-center justify-between bg-emerald-50/30 p-4 rounded-2xl border border-emerald-100/60">
         <div className="flex items-start gap-2.5">
-          <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+          <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" aria-hidden="true" />
           <div className="space-y-0.5">
             <p className="text-xs font-bold text-emerald-900">Liệu trình hoàn thành xuất sắc!</p>
             <p className="text-[11px] text-gray-500 font-medium">Hãy chia sẻ trải nghiệm thư giãn của bạn nhé.</p>
@@ -163,7 +163,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
     <div className="bg-[#FAF0E6]/30 p-4 rounded-2xl border border-[#EADDCD] space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
       <div className="flex items-center justify-between">
         <h5 className="text-xs font-bold uppercase tracking-wider text-[#3A2E2B] flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" /> Đánh giá dịch vụ
+          <Sparkles className="w-4 h-4 text-amber-500 animate-pulse" aria-hidden="true" /> Đánh giá dịch vụ
         </h5>
         <button
           onClick={() => setShowForm(false)}
@@ -260,7 +260,7 @@ function AppointmentReviewSection({ apptId, existingReview, onReviewSubmitted }:
         {isSubmitting ? (
           <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
         ) : (
-          <Check className="w-4 h-4" />
+          <Check className="w-4 h-4" aria-hidden="true" />
         )}
         Gửi phản hồi của bạn
       </button>
@@ -294,7 +294,7 @@ function CancelAppointmentManager({ apptId, startTime, onCancelled }: { apptId: 
     return (
       <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-200/60 mt-3 space-y-3 animate-in fade-in slide-in-from-top-1 duration-200">
         <div className="flex gap-2 text-rose-800">
-          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+          <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
           <div className="space-y-0.5">
             <p className="text-xs font-bold font-display">Xác nhận hủy đặt lịch</p>
             <p className="text-[11px] text-gray-500 leading-normal font-medium">
@@ -321,7 +321,7 @@ function CancelAppointmentManager({ apptId, startTime, onCancelled }: { apptId: 
             {isSubmitting ? (
               <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <Trash2 className="w-3.5 h-3.5" />
+              <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
             )}
             Xác nhận hủy
           </button>
@@ -337,7 +337,7 @@ function CancelAppointmentManager({ apptId, startTime, onCancelled }: { apptId: 
         onClick={() => setShowConfirm(true)}
         className="text-[11px] font-bold uppercase tracking-widest text-[#8D6E53] hover:text-white bg-[#FAF0E6] hover:bg-rose-600 px-3.5 py-2.5 rounded-xl transition-all border border-[#EADDCD] hover:border-rose-600 cursor-pointer flex items-center gap-1.5 shadow-sm hover:shadow min-h-[44px]"
       >
-        <Trash2 className="w-3.5 h-3.5" />
+        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
         Hủy lịch đặt này
       </button>
     </div>
@@ -391,7 +391,7 @@ function AiPostCareAdviceCard({ services }: { services: { name: string }[] }) {
   return (
     <div className="bg-[#FAF6F0]/60 p-4 rounded-2xl border border-[#EADDCD]/50 mt-3 space-y-2">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-[#8D6E53] fill-[#8D6E53]/20" />
+        <Sparkles className="w-4 h-4 text-[#8D6E53] fill-[#8D6E53]/20" aria-hidden="true" />
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-[#8D6E53]">Cẩm Nang Dưỡng Tại Nhà (Tư Vấn Bởi Chuyên Viên)</h5>
       </div>
       <div className="text-[11px] text-[#5C4033] space-y-1 bg-white p-3.5 rounded-xl border border-[#EADDCD]/30 leading-relaxed font-semibold whitespace-pre-line animate-in fade-in duration-200">
@@ -477,7 +477,7 @@ export default function AppointmentLookup() {
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center gap-3 justify-center md:justify-start">
           <div className="w-10 h-10 rounded-full bg-[#FAF0E6] flex items-center justify-center shrink-0">
-            <Search className="w-5 h-5 text-[#8D6E53]" />
+            <Search className="w-5 h-5 text-[#8D6E53]" aria-hidden="true" />
           </div>
           <div className="text-left">
             <h3 className="font-display font-semibold text-lg text-[#3A2E2B]">Tra Cứu Lịch Hẹn Trực Tuyến</h3>
@@ -515,7 +515,7 @@ export default function AppointmentLookup() {
             {isLoading ? (
               <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4" aria-hidden="true" />
             )}
             Tra cứu ngay
           </button>
@@ -561,11 +561,11 @@ export default function AppointmentLookup() {
                             <div className="flex flex-wrap justify-between items-start gap-4">
                               <div className="space-y-1">
                                 <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5">
-                                  <Calendar className="w-3.5 h-3.5 text-[#8D6E53]" />
+                                  <Calendar className="w-3.5 h-3.5 text-[#8D6E53]" aria-hidden="true" />
                                   <span>{format(new Date(appt.startTime), 'EEEE, d MMMM yyyy', { locale: vi })}</span>
                                 </div>
                                 <div className="text-xs text-gray-500 font-medium flex items-center gap-1.5 mt-0.5">
-                                  <Clock className="w-3.5 h-3.5 text-[#8D6E53]" />
+                                  <Clock className="w-3.5 h-3.5 text-[#8D6E53]" aria-hidden="true" />
                                   <span className="font-semibold text-gray-800">
                                     {format(new Date(appt.startTime), 'HH:mm')} - {format(new Date(appt.endTime), 'HH:mm')}
                                   </span>
@@ -625,7 +625,7 @@ export default function AppointmentLookup() {
                                             } ${isCurrent ? 'ring-4 ring-[#EADDCD]' : ''}`}
                                           >
                                             {isPassed && statusInfo.step > s.step ? (
-                                              <Check className="w-4 h-4 text-white" />
+                                              <Check className="w-4 h-4 text-white" aria-hidden="true" />
                                             ) : (
                                               s.step
                                             )}
@@ -648,11 +648,11 @@ export default function AppointmentLookup() {
                             {/* Status Helper Description */}
                             <div className="bg-[#FAF0E6]/30 p-3 rounded-xl border border-[#EADDCD]/40 flex items-start gap-2.5">
                               {isCancelled ? (
-                                <ShieldAlert className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" />
+                                <ShieldAlert className="w-4 h-4 text-rose-600 mt-0.5 shrink-0" aria-hidden="true" />
                               ) : isCompleted ? (
-                                <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                                <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" aria-hidden="true" />
                               ) : (
-                                <BadgeInfo className="w-4 h-4 text-[#8D6E53] mt-0.5 shrink-0" />
+                                <BadgeInfo className="w-4 h-4 text-[#8D6E53] mt-0.5 shrink-0" aria-hidden="true" />
                               )}
                               <p className="text-xs text-gray-500 leading-relaxed font-medium">
                                 {statusInfo.desc}

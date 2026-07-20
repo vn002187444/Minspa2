@@ -1,29 +1,21 @@
-const ALLOWED_TAGS = new Set(['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div']);
-const ALLOWED_ATTR = new Set(['href', 'target', 'rel', 'class']);
+import DOMPurify from 'dompurify';
+import { JSDOM } from 'jsdom';
+
+const window = new JSDOM('').window;
+const purify = DOMPurify(window as any);
+
+const ALLOWED_TAGS = ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'div'];
+const ALLOWED_ATTR = ['href', 'target', 'rel', 'class'];
 
 export function sanitizeHtml(dirty: string): string {
   if (!dirty) return '';
-  return dirty
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-    .replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '')
-    .replace(/\s+on\w+\s*=\s*'[^']*'/gi, '')
-    .replace(/\s+\w+\s*=\s*"(?:[^"]*javascript\s*:[^"]*)"/gi, '')
-    .replace(/\s+\w+\s*=\s*'(?:[^']*javascript\s*:[^']*)'/gi, '')
-    .replace(/javascript\s*:/gi, '')
-    .replace(/<(\/?)(\w+)([^>]*)>/g, (match, close, tag, attrs) => {
-      if (ALLOWED_TAGS.has(tag.toLowerCase())) {
-        if (close) return `</${tag}>`;
-        const safeAttrs = attrs.replace(/(\w+)\s*=\s*"[^"]*"/g, (attrMatch: string, name: string) => {
-          return ALLOWED_ATTR.has(name) ? attrMatch : '';
-        });
-        return `<${tag}${safeAttrs}>`;
-      }
-      return '';
-    });
+  return purify.sanitize(dirty, {
+    ALLOWED_TAGS,
+    ALLOWED_ATTR,
+  });
 }
 
 export function stripHtml(html: string): string {
   if (!html) return '';
-  return html.replace(/<[^>]*>/g, '');
+  return purify.sanitize(html, { ALLOWED_TAGS: [] });
 }

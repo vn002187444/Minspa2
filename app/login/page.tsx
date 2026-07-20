@@ -4,12 +4,21 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sparkles, User, Lock, AlertCircle, ArrowRight, LogIn, ArrowLeft } from 'lucide-react';
 import { loginUser } from './actions';
+import { z } from 'zod';
+import { Button } from '@/components/ui/Button';
+import { logger } from '@/lib/logger';
 
 export default function LoginPage() {
   const router = useRouter();
   const [authError, setAuthError] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, setIsPending] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const loginFormSchema = z.object({
+    username: z.string().min(1, 'Vui lòng nhập tên đăng nhập').max(100),
+    password: z.string().min(1, 'Vui lòng nhập mật khẩu').max(200),
+  });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,27 +40,37 @@ export default function LoginPage() {
           router.push(role === 'ADMIN' || role === 'MANAGER' ? '/admin' : '/staff');
         }
       })
-      .catch(() => {});
+      .catch(e => logger.error('[Auth] Failed to check current session', e));
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsPending(true);
     setErrorMsg("");
+    setFieldErrors({});
 
     const formData = new FormData(e.currentTarget);
+    const raw = { username: String(formData.get('username') ?? ''), password: String(formData.get('password') ?? '') };
+    const parsed = loginFormSchema.safeParse(raw);
+    if (!parsed.success) {
+      const fieldErr: Record<string, string> = {};
+      for (const issue of parsed.error.issues) {
+        fieldErr[issue.path[0] as string] = issue.message;
+      }
+      setFieldErrors(fieldErr);
+      setIsPending(false);
+      return;
+    }
+
     try {
       const data = await loginUser(null, formData);
       if (data && !data.success) {
         setErrorMsg(data.message || 'Sai tên đăng nhập hoặc mật khẩu.');
       }
-    } catch (err: any) {
-      // NEXT_REDIRECT is thrown by redirect() on successful login — don't swallow it
-      if (err?.digest?.startsWith('NEXT_REDIRECT')) throw err;
+    } catch (err: unknown) {
+      if (err instanceof Error && 'digest' in err && (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw err;
       console.error('Login error caught:', err);
-      setErrorMsg(
-        err?.message || 'Không thể kết nối đến máy chủ. Vui lòng mở trang web trong tab mới (Open in new tab) hoặc sử dụng các tài khoản khẩn cấp dưới đây.'
-      );
+      setErrorMsg('Không thể kết nối đến máy chủ.');
     } finally {
       setIsPending(false);
     }
@@ -68,7 +87,7 @@ export default function LoginPage() {
         <div className="p-8">
           <div className="mb-6 flex justify-start">
             <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors">
-              <ArrowLeft className="w-3.5 h-3.5" /> ← Quay lại trang chủ
+              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> ← Quay lại trang chủ
             </Link>
           </div>
           <div className="w-20 h-20 bg-gray-900 rounded-[2rem] flex items-center justify-center mx-auto mb-6 relative overflow-hidden shadow-lg shadow-gray-200/50">
@@ -84,32 +103,34 @@ export default function LoginPage() {
           </p>
 
           <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-xs border border-emerald-100 flex flex-col gap-2 relative group animate-in fade-in duration-200">
-            <p className="font-semibold flex items-center gap-1"><Sparkles className="w-3" /> Tài khoản thử nghiệm nhanh (Quick Credentials):</p>
+            <p className="font-semibold flex items-center gap-1"><Sparkles className="w-3" aria-hidden="true" /> Tài khoản thử nghiệm nhanh (Quick Credentials):</p>
             <p>• Admin: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">admin</span> / mật khẩu: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">Admin</span> hoặc <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">admin</span></p>
             <p>• Staff: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">staff1</span> / mật khẩu: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">Staff@1</span> hoặc <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">staff1</span></p>
             <p className="mt-1 text-[10px] text-emerald-700/85 italic border-t border-emerald-200/50 pt-1.5">• Mẹo: Nếu trình duyệt của bạn chặn cookie bên thứ ba (Third-party Cookies) trong khung preview này, hãy nhấn nút <span className="font-semibold">Mở trong tab mới (Open in new tab)</span> ở góc trên bên phải màn hình để đăng nhập trơn tru nhất!</p>
-            <button 
+            <Button 
                type="button"
                onClick={() => {
                   const u = document.querySelector('input[name="username"]') as HTMLInputElement;
                   const p = document.querySelector('input[name="password"]') as HTMLInputElement;
                   if(u && p) { u.value='admin'; p.value='admin'; }
                }} 
-               className="absolute top-4 right-4 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-medium transition-colors cursor-pointer text-xs flex items-center gap-1 shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 min-h-[44px]">
-               <LogIn className="w-3" /> Auto-Fill
-            </button>
+               className="absolute top-4 right-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 min-h-[44px]" 
+               variant="primary" 
+               size="sm">
+               <LogIn className="w-3" aria-hidden="true" /> Auto-Fill
+            </Button>
           </div>
 
           {errorMsg && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl flex items-start gap-3 text-sm border border-red-100">
-              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" aria-hidden="true" />
               <p className="font-medium">{errorMsg}</p>
             </div>
           )}
 
           {authError && (
             <div className="mb-6 p-4 bg-amber-50 text-amber-900 rounded-2xl flex items-start gap-3 text-xs border border-amber-200 font-medium animate-in fade-in duration-200">
-              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
               <div>
                 <p className="font-bold mb-1 col-span-2">Phát hiện chặn Cookie bên thứ ba</p>
                 <p>Hệ thống vừa từ chối truy cập vì không tìm thấy cookie phiên. Điều này thường do trình duyệt của bạn đang chặn Cookie bên thứ ba (Third-party Cookies) trong khung iframe preview.</p>
@@ -123,66 +144,76 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label htmlFor="login_username" className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
-                Tài khoản
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                  <User className="h-5 w-5" />
-                </div>
-                <input
-                  id="login_username"
-                  name="username"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none"
-                  placeholder="Nhập tên đăng nhập"
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1.5 ml-1 pr-1">
-                <label htmlFor="login_password" className="block text-sm font-medium text-gray-700">
-                  Mật khẩu
+              <div>
+                <label htmlFor="login_username" className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
+                  Tài khoản
                 </label>
-                <button type="button" className="text-xs font-semibold text-pink-600 hover:text-pink-700 transition-colors">
-                  Quên mật khẩu?
-                </button>
-              </div>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                  <Lock className="h-5 w-5" />
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <User className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <input
+                    id="login_username"
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    required
+                    aria-invalid={fieldErrors.username ? 'true' : undefined}
+                    aria-describedby={fieldErrors.username ? 'username-error' : undefined}
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none"
+                    placeholder="Nhập tên đăng nhập"
+                  />
                 </div>
-                <input
-                  id="login_password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none"
-                  placeholder="••••••••"
-                />
+                {fieldErrors.username && (
+                  <p id="username-error" className="mt-1 text-xs text-red-500 ml-1">{fieldErrors.username}</p>
+                )}
               </div>
-            </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1.5 ml-1 pr-1">
+                  <label htmlFor="login_password" className="block text-sm font-medium text-gray-700">
+                    Mật khẩu
+                  </label>
+                  <Button type="button" variant="ghost" size="sm" className="text-pink-600 hover:text-pink-700 p-0 h-auto rounded-none">
+                    Quên mật khẩu?
+                  </Button>
+                </div>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <Lock className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <input
+                    id="login_password"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    aria-invalid={fieldErrors.password ? 'true' : undefined}
+                    aria-describedby={fieldErrors.password ? 'password-error' : undefined}
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none"
+                    placeholder="••••••••"
+                  />
+                </div>
+                {fieldErrors.password && (
+                  <p id="password-error" className="mt-1 text-xs text-red-500 ml-1">{fieldErrors.password}</p>
+                )}
+              </div>
 
             <div className="pt-2">
-              <button
+              <Button
                 type="submit"
-                disabled={isPending}
-                className="w-full bg-gray-900 hover:bg-black text-white font-medium py-3.5 px-4 rounded-2xl transition-all flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-gray-900/20"
+                isLoading={isPending}
+                className="w-full rounded-2xl py-3.5"
               >
                 {isPending ? (
                   <span className="animate-pulse">Đang đăng nhập...</span>
                 ) : (
                   <>
                     <span>Đăng nhập</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </div>

@@ -27,9 +27,9 @@ export async function savePushSubscription(subscription: any) {
     // so we return an instruction that customer needs to be identified.
     return { success: false, error: 'User not authenticated' };
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving push subscription:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }
 
@@ -44,8 +44,8 @@ export async function saveCustomerPushSubscription(customerId: string, subscript
       
     if (error) throw error;
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving customer push subscription:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 }

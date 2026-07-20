@@ -2,9 +2,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Metadata } from 'next';
 import { getBlogPosts } from './actions';
-import dynamic from 'next/dynamic';
 import { BookOpen, Calendar, ArrowLeft, ArrowRight, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
-const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
+import BottomNavigation from '@/components/BottomNavigation';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import GlobalSearch from '@/components/GlobalSearch';
@@ -70,7 +69,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
 
           <div className="flex items-center gap-3">
             <Link href="/" className="text-xs font-bold text-[#8D6E53] hover:text-[#3A2E2B] flex items-center gap-1 transition-all">
-              <ArrowLeft className="w-3.5 h-3.5" /> Về Trang Chủ
+              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Về Trang Chủ
             </Link>
             <Link href="/booking" className="text-xs font-bold bg-[#8D6E53] text-white hover:bg-[#3A2E2B] px-4 py-2.5 rounded-full uppercase tracking-wider shadow-md transition-all">
               Booking ⚡
@@ -85,7 +84,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#FAF6F0_1px,transparent_1px)] [background-size:16px_16px]"></div>
         <div className="relative max-w-3xl mx-auto space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#FAF6F0]/10 border border-[#FAF6F0]/20 text-xs font-bold uppercase tracking-widest text-[#EADDCD]">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin-slow" /> Cẩm nang làm đẹp độc quyền
+            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-spin-slow" aria-hidden="true" /> Cẩm nang làm đẹp độc quyền
           </div>
           <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight text-white leading-tight">
             Min Nail &amp; Hair Blogs
@@ -103,7 +102,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
       <main className="max-w-6xl mx-auto px-4 md:px-6 mt-12 space-y-12">
         {posts.length === 0 ? (
           <div className="bg-white p-12 text-center rounded-3xl border border-[#EADDCD] max-w-md mx-auto space-y-4 shadow-sm">
-            <BookOpen className="w-12 h-12 text-gray-300 mx-auto" />
+            <BookOpen className="w-12 h-12 text-gray-300 mx-auto" aria-hidden="true" />
             <h3 className="font-bold text-stone-700">Chưa có bài viết nào</h3>
             <p className="text-xs text-stone-500">Chúng tôi đang chuẩn bị nội dung hay nhất phục vụ bạn. Vui lòng quay lại sau nhé!</p>
             <Link href="/" className="inline-block text-xs font-bold text-pink-600 hover:underline">Về trang chủ</Link>
@@ -135,7 +134,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                   <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
                     <div className="space-y-2">
                       <div className="flex items-center text-[10px] text-stone-400 font-bold font-mono tracking-wider gap-1.5 uppercase">
-                        <Calendar className="w-3.5 h-3.5 text-[#8D6E53]" />
+                        <Calendar className="w-3.5 h-3.5 text-[#8D6E53]" aria-hidden="true" />
                         <span>{formattedDate}</span>
                       </div>
                       <h2 className="font-display font-bold text-lg text-stone-900 group-hover:text-[#8D6E53] line-clamp-2 transition-colors leading-snug">
@@ -153,7 +152,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                         href={`/blog/${post.slug}`}
                         className="text-xs font-black text-[#8D6E53] group-hover:text-[#5C4033] flex items-center gap-1 uppercase tracking-wider cursor-pointer font-sans"
                       >
-                        Đọc bài viết <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+                        Đọc bài viết <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                       </Link>
                     </div>
                   </div>
@@ -171,7 +170,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                 href={`/blog?page=${page - 1}`}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
               >
-                <ChevronLeft className="w-4 h-4" /> Trước
+                <ChevronLeft className="w-4 h-4" aria-hidden="true" /> Trước
               </Link>
             )}
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -192,7 +191,7 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
                 href={`/blog?page=${page + 1}`}
                 className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
               >
-                Sau <ChevronRight className="w-4 h-4" />
+                Sau <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             )}
           </div>

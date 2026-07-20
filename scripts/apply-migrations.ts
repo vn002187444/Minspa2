@@ -35,8 +35,8 @@ async function main() {
     pg = await pool.connect();
     const { rows } = await pg.query('SELECT version()');
     console.log(`Connected: ${rows[0].version.split(',')[0]}\n`);
-  } catch (err: any) {
-    console.error(`Cannot connect to database: ${err.message}`);
+  } catch (err: unknown) {
+    console.error(`Cannot connect to database: ${err instanceof Error ? err.message : String(err)}`);
     console.error('\nApply manually via Supabase SQL Editor:');
     console.error('  https://supabase.com/dashboard/project/' + supabaseUrl.replace('https://', '').replace('.supabase.co', '') + '/sql/new');
     process.exit(1);
@@ -78,8 +78,8 @@ async function main() {
         fs.copyFileSync(filePath, path.join(archiveDir, file));
         fs.unlinkSync(filePath);
         console.log(`  → Moved to scripts/archive/migrations/\n`);
-      } catch (err: any) {
-        console.error(`  ✗ FAILED: ${err.message}\n`);
+      } catch (err: unknown) {
+        console.error(`  ✗ FAILED: ${err instanceof Error ? err.message : String(err)}\n`);
         process.exit(1);
       }
     }

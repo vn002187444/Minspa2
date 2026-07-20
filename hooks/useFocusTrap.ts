@@ -42,7 +42,7 @@ export function useFocusTrap(isActive: boolean, onClose?: () => void) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isActive]);
+  }, [isActive, onClose]);
 
   return ref;
 }

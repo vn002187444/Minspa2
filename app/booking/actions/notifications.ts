@@ -3,6 +3,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { getSession } from "@/utils/auth";
 import { stripHtml } from "@/lib/sanitize";
+import { logger } from "@/lib/logger";
 
 export async function getCustomerNotifications(customerId: string) {
   const session = await getSession();
@@ -19,7 +20,7 @@ export async function getCustomerNotifications(customerId: string) {
     .limit(10);
 
   if (error) {
-    console.error('[NOTIFICATIONS] Failed to fetch customer notifications:', error);
+    logger.error('[NOTIFICATIONS] Failed to fetch customer notifications:', error instanceof Error ? error : undefined);
     return [];
   }
 
@@ -40,7 +41,7 @@ export async function markCustomerNotificationRead(notificationId: string, custo
     .eq('recipient_id', customerId);
 
   if (error) {
-    console.error('[NOTIFICATIONS] Failed to mark customer notification as read:', error);
+    logger.error('[NOTIFICATIONS] Failed to mark customer notification as read:', error instanceof Error ? error : undefined);
   }
 }
 
@@ -54,6 +55,6 @@ export async function markAllCustomerNotificationsRead(customerId: string) {
     .eq('is_read', false);
 
   if (error) {
-    console.error('[NOTIFICATIONS] Failed to mark all customer notifications as read:', error);
+    logger.error('[NOTIFICATIONS] Failed to mark all customer notifications as read:', error instanceof Error ? error : undefined);
   }
 }
