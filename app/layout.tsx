@@ -154,7 +154,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
         <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
         <link rel="alternate icon" href="/icons/icon-192.png" type="image/png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" /><meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Min Salon" />
         {process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
