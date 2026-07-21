@@ -38,11 +38,11 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
   return { posts: (posts || []).map(sanitizePost), total: count || 0, page, pageSize, totalPages: Math.ceil((count || 0) / pageSize) };
 }
 
-function sanitizePost(post: any) {
+async function sanitizePost(post: any) {
   const normalized = normalizeNFC(post || {});
   return {
     ...normalized,
-    content: sanitizeHtml(normalized.content || ''),
+    content: await sanitizeHtml(normalized.content || ''),
     summary: stripHtml(normalized.summary || ''),
   };
 }
@@ -87,7 +87,7 @@ export async function saveBlogPost(postData: {
       title: normalized.title,
       slug: normalized.slug,
       summary: stripHtml(normalized.summary || ''),
-      content: sanitizeHtml(normalized.content || ''),
+      content: await sanitizeHtml(normalized.content || ''),
       image_url: normalized.image_url,
       image_alt: normalized.image_alt || '',
       keywords: normalized.keywords || '',
@@ -139,7 +139,7 @@ export async function saveBlogPost(postData: {
         title: normalized.title,
         slug: normalized.slug,
         summary: stripHtml(normalized.summary || ''),
-        content: sanitizeHtml(normalized.content || ''),
+        content: await sanitizeHtml(normalized.content || ''),
         image_url: normalized.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
         image_alt: normalized.image_alt || '',
         keywords: normalized.keywords || '',
