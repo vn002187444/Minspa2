@@ -28,11 +28,16 @@ const envSchema = z.object({
 
 const _env = envSchema.safeParse(process.env);
 
+const isBuildPhase =
+  process.env.npm_lifecycle_event === 'build' ||
+  process.argv.some((a) => a === 'build') ||
+  !!process.env.NEXT_PHASE;
+
 if (!_env.success) {
   console.error('❌ Invalid environment variables:');
   console.error(JSON.stringify(_env.error.format(), null, 2));
   
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && !isBuildPhase) {
     throw new Error('Invalid environment variables. Process terminated.');
   }
 }
