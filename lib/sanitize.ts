@@ -3,7 +3,7 @@ export function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 }
 
-let _purify: { sanitize: (dirty: string, opts: any) => string } | null = null;
+let _purify: { sanitize: (..._args: any[]) => string } | null = null;
 
 async function getPurify() {
   if (!_purify) {
