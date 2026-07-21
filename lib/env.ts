@@ -35,10 +35,10 @@ function validateEnv() {
   return result.success ? result.data : (process.env as any);
 }
 
-let _env: z.infer<typeof envSchema> | null = null;
+let _env: z.infer<typeof envSchema> | undefined;
 
 export function getEnv(): z.infer<typeof envSchema> {
-  if (!_env) _env = validateEnv();
+  if (_env === undefined) _env = validateEnv();
   return _env;
 }
 
