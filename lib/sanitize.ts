@@ -2,7 +2,7 @@ const ALLOWED_TAGS = new Set(['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'o
 const ALLOWED_ATTR = new Set(['href', 'target', 'rel', 'class', 'src', 'alt', 'width', 'height', 'loading']);
 
 const TAG_RE = /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g;
-const ATTR_RE = /\s+([a-zA-Z-]+)(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/g;
+const ATTR_RE = /\s+([a-zA-Z-]+)(?:\s*=\s*("[^"]*"|'[^']*'|[^\s>]+))?/g;
 const SRC_RE = /^\s*(https?:|\/)/i;
 
 function stripUnsafe(input: string): string {
@@ -15,6 +15,8 @@ export function sanitizeHtml(dirty: string): string {
   s = s.replace(TAG_RE, (full, tag) => {
     const lower = tag.toLowerCase();
     if (!ALLOWED_TAGS.has(lower)) return '';
+    const closing = full.startsWith('</');
+    if (closing) return `</${lower}>`;
     const attrs: string[] = [];
     let m: RegExpExecArray | null;
     ATTR_RE.lastIndex = 0;
