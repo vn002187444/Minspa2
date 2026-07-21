@@ -32,10 +32,10 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
       console.error("Error reading blogs:", error);
       return { posts: [], total: 0, page: 1, pageSize: 6, totalPages: 0 };
     }
-    return { posts: (data || []).map(sanitizePost), total: data?.length || 0, page: 1, pageSize: 6, totalPages: 1 };
+    return { posts: await Promise.all((data || []).map(sanitizePost)), total: data?.length || 0, page: 1, pageSize: 6, totalPages: 1 };
   }
 
-  return { posts: (posts || []).map(sanitizePost), total: count || 0, page, pageSize, totalPages: Math.ceil((count || 0) / pageSize) };
+  return { posts: await Promise.all((posts || []).map(sanitizePost)), total: count || 0, page, pageSize, totalPages: Math.ceil((count || 0) / pageSize) };
 }
 
 async function sanitizePost(post: any) {
@@ -59,7 +59,7 @@ export async function getBlogPostBySlug(slug: string) {
     console.warn(`Blog not found for slug: ${slug}, error:`, error?.message);
     return null;
   }
-  return sanitizePost(data);
+  return await sanitizePost(data);
 }
 
 export async function saveBlogPost(postData: {
