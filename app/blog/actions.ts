@@ -32,17 +32,17 @@ export async function getBlogPosts(page: number = 1, pageSize: number = 6, inclu
       console.error("Error reading blogs:", error);
       return { posts: [], total: 0, page: 1, pageSize: 6, totalPages: 0 };
     }
-    return { posts: await Promise.all((data || []).map(sanitizePost)), total: data?.length || 0, page: 1, pageSize: 6, totalPages: 1 };
+    return { posts: (data || []).map(sanitizePost), total: data?.length || 0, page: 1, pageSize: 6, totalPages: 1 };
   }
 
-  return { posts: await Promise.all((posts || []).map(sanitizePost)), total: count || 0, page, pageSize, totalPages: Math.ceil((count || 0) / pageSize) };
+  return { posts: (posts || []).map(sanitizePost), total: count || 0, page, pageSize, totalPages: Math.ceil((count || 0) / pageSize) };
 }
 
-async function sanitizePost(post: any) {
+function sanitizePost(post: any) {
   const normalized = normalizeNFC(post || {});
   return {
     ...normalized,
-    content: await sanitizeHtml(normalized.content || ''),
+    content: sanitizeHtml(normalized.content || ''),
     summary: stripHtml(normalized.summary || ''),
   };
 }
@@ -59,7 +59,7 @@ export async function getBlogPostBySlug(slug: string) {
     console.warn(`Blog not found for slug: ${slug}, error:`, error?.message);
     return null;
   }
-  return await sanitizePost(data);
+  return sanitizePost(data);
 }
 
 export async function saveBlogPost(postData: {
@@ -87,7 +87,7 @@ export async function saveBlogPost(postData: {
       title: normalized.title,
       slug: normalized.slug,
       summary: stripHtml(normalized.summary || ''),
-      content: await sanitizeHtml(normalized.content || ''),
+      content: sanitizeHtml(normalized.content || ''),
       image_url: normalized.image_url,
       image_alt: normalized.image_alt || '',
       keywords: normalized.keywords || '',
@@ -139,7 +139,7 @@ export async function saveBlogPost(postData: {
         title: normalized.title,
         slug: normalized.slug,
         summary: stripHtml(normalized.summary || ''),
-        content: await sanitizeHtml(normalized.content || ''),
+        content: sanitizeHtml(normalized.content || ''),
         image_url: normalized.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
         image_alt: normalized.image_alt || '',
         keywords: normalized.keywords || '',

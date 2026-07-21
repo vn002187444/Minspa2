@@ -283,9 +283,9 @@ export default async function BlogPostDetailPage({ params }: Props) {
               {!post.content ? (
                 <p className="text-stone-400">Không có dữ liệu bài viết.</p>
               ) : isHtmlContent(post.content) ? (
-                <div dangerouslySetInnerHTML={{ __html: await sanitizeHtml(post.content) }} />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }} />
               ) : (
-                <div dangerouslySetInnerHTML={{ __html: await sanitizeHtml(markdownToHtml(post.content)) }} />
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(markdownToHtml(post.content)) }} />
               )}
             </div>
 
