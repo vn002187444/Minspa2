@@ -26,29 +26,32 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
 });
 
-const _env = envSchema.safeParse(process.env);
-
-const isBuildPhase =
-  process.env.npm_lifecycle_event === 'build' ||
-  process.argv.some((a) => a === 'build') ||
-  !!process.env.NEXT_PHASE;
-
-if (!_env.success) {
-  console.error('❌ Invalid environment variables:');
-  console.error(JSON.stringify(_env.error.format(), null, 2));
-  
-  if (process.env.NODE_ENV === 'production' && !isBuildPhase) {
-    throw new Error('Invalid environment variables. Process terminated.');
+function validateEnv() {
+  const result = envSchema.safeParse(process.env);
+  if (!result.success) {
+    console.error('⚠️  Environment variable warnings:');
+    console.error(JSON.stringify(result.error.format(), null, 2));
   }
+  return result.success ? result.data : (process.env as any);
 }
 
-export const env = _env.success ? _env.data : process.env;
+let _env: z.infer<typeof envSchema> | null = null;
+
+export function getEnv(): z.infer<typeof envSchema> {
+  if (!_env) _env = validateEnv();
+  return _env;
+}
+
+export const env = new Proxy({} as z.infer<typeof envSchema>, {
+  get(_target, prop: string) {
+    return (getEnv() as any)[prop];
+  },
+});
 
 export function getBaseUrl(): string {
-  if (typeof env.NEXT_PUBLIC_APP_URL === 'string' && env.NEXT_PUBLIC_APP_URL.length > 0) {
-    return env.NEXT_PUBLIC_APP_URL;
+  if (typeof process.env.NEXT_PUBLIC_APP_URL === 'string' && process.env.NEXT_PUBLIC_APP_URL.length > 0) {
+    return process.env.NEXT_PUBLIC_APP_URL;
   }
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
   if (process.env.NODE_ENV === 'production') return 'https://minhair.vercel.app';
   return 'http://localhost:3000';
 }
