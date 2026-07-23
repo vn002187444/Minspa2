@@ -76,7 +76,7 @@ export default function AnimeMascot() {
 
   return (
     <div
-      className="fixed bottom-0 right-5 z-50 pointer-events-none"
+      className="fixed bottom-0 right-5 z-40 pointer-events-none md:z-50"
       draggable={false}
     >
       <AnimatePresence>
