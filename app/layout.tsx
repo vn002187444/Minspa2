@@ -18,7 +18,7 @@ import { getSeoSettings } from "@/lib/seo";
 import { createClient } from "@/utils/supabase/server";
 import { testimonials } from "@/lib/testimonials";
 
-import MascotLoader from "@/components/MascotLoader";
+import AnimeMascot from "@/components/AnimeMascot";
 
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -113,26 +113,29 @@ export default async function RootLayout({
       .from("reviews")
       .select("rating, comment");
     if (reviews && reviews.length > 0) {
-      const total = reviews.reduce((s: number, r: { rating: number }) => s + r.rating, 0);
-      aggregateRating = {
-        "@type": "AggregateRating",
-        "ratingValue": (total / reviews.length).toFixed(1),
-        "bestRating": "5",
-        "worstRating": "1",
-        "ratingCount": reviews.length,
-      };
+      reviewList = reviews.map((r) => ({
+        author: "Khách hàng",
+        text: r.comment || "",
+        rating: r.rating,
+      }));
     }
+  } catch {}
+  if (reviewList.length === 0) {
     reviewList = testimonials.map((t) => ({
       author: t.name,
       text: t.text,
       rating: t.rating,
     }));
-  } catch {
-    reviewList = testimonials.map((t) => ({
-      author: t.name,
-      text: t.text,
-      rating: t.rating,
-    }));
+  }
+  if (reviewList.length > 0) {
+    const total = reviewList.reduce((s: number, r) => s + r.rating, 0);
+    aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": (total / reviewList.length).toFixed(1),
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": reviewList.length,
+    };
   }
   return (
     <html
@@ -247,10 +250,9 @@ export default async function RootLayout({
           <div className="overflow-x-clip">
             <ThemeProvider>
               <ThemeBanner />
-              <MascotLoader>
-                <main id="main-content" tabIndex={-1}>{children}</main>
-                <PwaSupport />
-              </MascotLoader>
+              <main id="main-content" tabIndex={-1}>{children}</main>
+              <PwaSupport />
+              <AnimeMascot />
             </ThemeProvider>
           </div>
         </ErrorBoundary>

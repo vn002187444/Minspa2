@@ -6,7 +6,7 @@ export async function GET() {
     const supabase = await createClient();
     const { data } = await supabase
       .from('seo_settings')
-      .select('mascot_enabled, mascot_character, mascot_sound')
+      .select('mascot_enabled, mascot_character, mascot_sound, mascot_image_urls')
       .eq('id', 1)
       .single();
 
@@ -14,12 +14,14 @@ export async function GET() {
       enabled: data?.mascot_enabled ?? true,
       character: data?.mascot_character || 'min',
       soundEnabled: data?.mascot_sound ?? true,
+      imageUrls: data?.mascot_image_urls || [],
     });
   } catch {
     return NextResponse.json({
       enabled: true,
       character: 'min',
       soundEnabled: true,
+      imageUrls: [],
     });
   }
 }

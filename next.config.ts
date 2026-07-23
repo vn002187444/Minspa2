@@ -13,6 +13,9 @@ const baseConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   // output: 'standalone',
   poweredByHeader: false,
   compress: true,

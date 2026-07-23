@@ -147,19 +147,20 @@ export async function saveThemeSettings(payload: { override: string | null; part
 export async function getMascotSettings() {
   try {
     const supabase = await createClient();
-    const { data } = await supabase.from('seo_settings').select('mascot_enabled, mascot_character, mascot_sound').eq('id', 1).single();
+    const { data } = await supabase.from('seo_settings').select('mascot_enabled, mascot_character, mascot_sound, mascot_image_urls').eq('id', 1).single();
       return {
         enabled: data?.mascot_enabled ?? true,
         character: data?.mascot_character || 'min',
         soundEnabled: data?.mascot_sound ?? true,
+        imageUrls: data?.mascot_image_urls || [],
       };
     } catch (e) {
       logger.error('[Database] Failed to fetch mascot settings', e instanceof Error ? e : undefined);
-      return { enabled: true, character: 'min', soundEnabled: true };
+      return { enabled: true, character: 'min', soundEnabled: true, imageUrls: [] };
     }
 }
 
-export async function saveMascotSettings(payload: { enabled: boolean; character: string; soundEnabled: boolean }) {
+export async function saveMascotSettings(payload: { enabled: boolean; character: string; soundEnabled: boolean; imageUrls?: string[] }) {
   await checkAdminOrManager();
   try {
     const supabase = await createClient();
@@ -168,6 +169,7 @@ export async function saveMascotSettings(payload: { enabled: boolean; character:
       mascot_enabled: payload.enabled,
       mascot_character: payload.character,
       mascot_sound: payload.soundEnabled,
+      mascot_image_urls: payload.imageUrls ?? undefined,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'id' });
     if (error) throw error;

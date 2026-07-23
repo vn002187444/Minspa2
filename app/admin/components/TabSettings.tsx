@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Activity,
   Clock,
@@ -15,6 +15,10 @@ import {
   Volume2,
   VolumeX,
   CloudSun,
+  Plus,
+  Trash2,
+  Code,
+  ImageIcon,
 } from "lucide-react";
 import {
   getSystemHealth,
@@ -52,6 +56,7 @@ export default function TabSettings() {
   const [mascotLoading, setMascotLoading] = useState(false);
   const [mascotSaving, setMascotSaving] = useState(false);
   const [mascotMsg, setMascotMsg] = useState<string | null>(null);
+  const [newUrl, setNewUrl] = useState('');
 
   // Theme
   const [theme, setTheme] = useState<any>(null);
@@ -70,6 +75,8 @@ export default function TabSettings() {
   const [backupLoading, setBackupLoading] = useState(false);
   const [backupMsg, setBackupMsg] = useState<string | null>(null);
   const [backupSql, setBackupSql] = useState<string | null>(null);
+
+  useEffect(() => { loadMascot(); }, []);
 
   // Notification
   const [notifRole, setNotifRole] = useState("STAFF");
@@ -359,6 +366,143 @@ export default function TabSettings() {
                 className="px-4 py-2 bg-[#8D6E53] text-white rounded-lg text-sm font-semibold hover:bg-[#7A5F47] transition-colors disabled:opacity-50"
               >
                 {mascotSaving ? "Đang lưu..." : "Lưu cấu hình"}
+              </button>
+              {mascotMsg && (
+                <span className={`text-xs font-medium ${mascotMsg.startsWith("Đã") ? "text-green-600" : "text-red-600"}`}>
+                  {mascotMsg}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Mascot Image URLs */}
+      <div className="bg-white p-4 md:p-6 rounded-2xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-gray-600" />
+            <h3 className="font-bold text-gray-900">Cấu hình Mascot ảnh</h3>
+          </div>
+        </div>
+
+        {mascot && (
+          <div className="space-y-4">
+            <p className="text-xs text-gray-500">
+              Danh sách URL ảnh mascot. Ảnh sẽ được chọn ngẫu nhiên mỗi lần tải trang hoặc click vào mascot.
+            </p>
+
+            {/* Image URL preview strip */}
+            {mascot.imageUrls && mascot.imageUrls.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {mascot.imageUrls.slice(0, 10).map((url: string, i: number) => (
+                  <div key={i} className="relative shrink-0">
+                    <img
+                      src={url}
+                      alt={`Mascot ${i + 1}`}
+                      className="w-16 h-16 rounded-xl object-cover border border-gray-200"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    />
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gray-800 text-white text-[9px] rounded-full flex items-center justify-center font-bold">
+                      {i + 1}
+                    </span>
+                  </div>
+                ))}
+                {mascot.imageUrls.length > 10 && (
+                  <div className="shrink-0 w-16 h-16 rounded-xl bg-gray-100 border border-gray-200 flex items-center justify-center text-xs text-gray-400 font-bold">
+                    +{mascot.imageUrls.length - 10}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* URL list */}
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {(mascot.imageUrls || []).map((url: string, i: number) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-[10px] text-gray-400 font-mono w-5 shrink-0">{i + 1}</span>
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => {
+                      const urls = [...(mascot.imageUrls || [])]
+                      urls[i] = e.target.value
+                      setMascot({ ...mascot, imageUrls: urls })
+                    }}
+                    className="flex-1 px-2 py-1.5 text-[11px] rounded-lg border border-gray-200 focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent font-mono"
+                  />
+                  <button
+                    onClick={() => {
+                      const urls = (mascot.imageUrls || []).filter((_: string, j: number) => j !== i)
+                      setMascot({ ...mascot, imageUrls: urls })
+                    }}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                    aria-label="Xoá URL"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Add URL */}
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                placeholder="https://example.com/mascot.png"
+                value={newUrl}
+                onChange={(e) => setNewUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newUrl.trim()) {
+                    setMascot({ ...mascot, imageUrls: [...(mascot.imageUrls || []), newUrl.trim()] })
+                    setNewUrl('')
+                  }
+                }}
+                className="flex-1 px-3 py-2 text-sm rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent"
+              />
+              <button
+                onClick={() => {
+                  if (newUrl.trim()) {
+                    setMascot({ ...mascot, imageUrls: [...(mascot.imageUrls || []), newUrl.trim()] })
+                    setNewUrl('')
+                  }
+                }}
+                className="p-2 rounded-xl bg-[#8D6E53] text-white hover:bg-[#7A5F47] transition-colors cursor-pointer shrink-0"
+                aria-label="Thêm URL"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Raw JSON editor toggle */}
+            <details className="group">
+              <summary className="flex items-center gap-2 text-xs font-semibold text-gray-500 cursor-pointer hover:text-gray-700">
+                <Code className="w-3.5 h-3.5" />
+                JSON Editor
+              </summary>
+              <textarea
+                value={JSON.stringify(mascot.imageUrls || [], null, 2)}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value)
+                    if (Array.isArray(parsed)) {
+                      setMascot({ ...mascot, imageUrls: parsed })
+                    }
+                  } catch {}
+                }}
+                rows={8}
+                className="mt-2 w-full px-3 py-2 text-[11px] font-mono rounded-xl border border-gray-200 focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent"
+              />
+            </details>
+
+            <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+              <span className="text-xs text-gray-400">{mascot.imageUrls?.length || 0} ảnh</span>
+              <button
+                onClick={handleSaveMascot}
+                disabled={mascotSaving}
+                className="px-4 py-2 bg-[#8D6E53] text-white rounded-lg text-sm font-semibold hover:bg-[#7A5F47] transition-colors disabled:opacity-50"
+              >
+                {mascotSaving ? "Đang lưu..." : "Lưu danh sách ảnh"}
               </button>
               {mascotMsg && (
                 <span className={`text-xs font-medium ${mascotMsg.startsWith("Đã") ? "text-green-600" : "text-red-600"}`}>
