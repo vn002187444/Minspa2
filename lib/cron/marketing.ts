@@ -5,7 +5,17 @@ import { logger } from '@/lib/logger';
 
 export async function runMarketingCampaign() {
   const supabase = await createClient();
-  
+
+  // Check if marketing is enabled (via seo_settings flag)
+  try {
+    const { data: settings } = await supabase.from('seo_settings').select('marketing_enabled').eq('id', 1).single();
+    if (settings && (settings as any).marketing_enabled === false) {
+      return { success: true, skipped: true, reason: 'Marketing disabled via seo_settings.marketing_enabled' };
+    }
+  } catch {
+    // Column may not exist yet — proceed if check fails
+  }
+
   try {
     // 1. Find customers who haven't booked in > 30 days
     const { data: dormantCustomers, error: dormantErr } = await supabase

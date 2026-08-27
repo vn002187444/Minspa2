@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/utils/auth';
 import { createClient } from '@/utils/supabase/server';
+import { rateLimit } from '@/lib/rate-limit';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const session = await getSession();
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const rl = await rateLimit(`read-all:${session.user.id}`, 5, 60);
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' }, { status: 429 });
     }
 
     const supabase = await createClient();

@@ -1,5 +1,4 @@
 import { createClient } from '@/utils/supabase/server';
-import { logger } from "@/lib/logger";
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -11,11 +10,14 @@ export interface RateLimitResult {
  * @param key Unique identifier for the requester (e.g., IP address or User ID)
  * @param limit Maximum requests allowed per window
  * @param windowSeconds Time window in seconds
+ * @param failClosed If true, block requests when DB is unavailable (for critical endpoints like login)
  */
-export async function rateLimit(key: string, limit: number = 10, windowSeconds: number = 60): Promise<RateLimitResult> {
+export async function rateLimit(key: string, limit: number = 10, windowSeconds: number = 60, failClosed: boolean = false): Promise<RateLimitResult> {
+  // Critical endpoints (login) should fail closed when DB is down
+  const isCritical = failClosed || key.startsWith('login:');
   const supabase = await createClient();
   const now = new Date();
-  
+
   const { data, error } = await supabase
     .from('rate_limits')
     .select('request_count, last_request')
@@ -23,8 +25,12 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
     .maybeSingle();
 
   if (error) {
-    logger.error('[RATE_LIMIT] Error fetching rate limit:', error instanceof Error ? error : undefined);
-    return { allowed: true, remaining: limit }; // Fail open to avoid blocking users
+    console.error('[RATE_LIMIT] Error fetching rate limit:', error);
+    if (isCritical) {
+      console.error('[RATE_LIMIT] Fail CLOSED for critical endpoint:', key);
+      return { allowed: false, remaining: 0 };
+    }
+    return { allowed: true, remaining: limit }; // Fail open for non-critical
   }
 
   if (!data) {
@@ -32,7 +38,8 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
       .from('rate_limits')
       .insert({ key, request_count: 1, last_request: now.toISOString() });
     if (insertErr) {
-      logger.error('[RATE_LIMIT] Error inserting rate limit:', insertErr instanceof Error ? insertErr : undefined);
+      console.error('[RATE_LIMIT] Error inserting rate limit:', insertErr);
+      if (isCritical) return { allowed: false, remaining: 0 };
       return { allowed: true, remaining: limit };
     }
     return { allowed: true, remaining: limit - 1 };
@@ -47,7 +54,8 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
       .update({ request_count: 1, last_request: now.toISOString() })
       .eq('key', key);
     if (updateErr) {
-      logger.error('[RATE_LIMIT] Error resetting rate limit:', updateErr instanceof Error ? updateErr : undefined);
+      console.error('[RATE_LIMIT] Error resetting rate limit:', updateErr);
+      if (isCritical) return { allowed: false, remaining: 0 };
       return { allowed: true, remaining: limit };
     }
     return { allowed: true, remaining: limit - 1 };
@@ -62,7 +70,8 @@ export async function rateLimit(key: string, limit: number = 10, windowSeconds: 
     .update({ request_count: data.request_count + 1, last_request: now.toISOString() })
     .eq('key', key);
   if (incErr) {
-    logger.error('[RATE_LIMIT] Error incrementing rate limit:', incErr instanceof Error ? incErr : undefined);
+    console.error('[RATE_LIMIT] Error incrementing rate limit:', incErr);
+    if (isCritical) return { allowed: false, remaining: 0 };
     return { allowed: true, remaining: limit };
   }
 

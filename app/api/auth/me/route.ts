@@ -7,10 +7,12 @@ export async function GET() {
     if (!session) {
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
-    return NextResponse.json({
+    const res = NextResponse.json({
       authenticated: true,
       user: session.user,
     });
+    res.headers.set('Cache-Control', 'private, max-age=30');
+    return res;
   } catch {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }

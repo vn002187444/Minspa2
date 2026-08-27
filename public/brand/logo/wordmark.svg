@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="160" viewBox="0 0 600 160" role="img" aria-label="Min Nail and Hair wordmark">
+<rect width="600" height="160" fill="white"/>
+<text x="300" y="72" text-anchor="middle" font-family="Playfair Display, serif" font-size="42" font-weight="700" letter-spacing="6" fill="#3A2E2B">MIN</text>
+<text x="300" y="92" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" letter-spacing="6" fill="#8D6E53">NAIL &amp; HAIR</text>
+<line x1="220" y1="102" x2="380" y2="102" stroke="#EADDCD" stroke-width="1"/>
+<text x="300" y="118" text-anchor="middle" font-family="Inter, sans-serif" font-size="8" letter-spacing="3" fill="#B49678">LAVITA CHARM • THỦ ĐỨC</text>
+<circle cx="300" cy="38" r="2.5" fill="#C08063"/>
+</svg>

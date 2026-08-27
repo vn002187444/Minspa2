@@ -1,110 +1,137 @@
-# Min Nail & Hair — Agent Skill
+---
+name: minspa
+description: >-
+  Min Nail & Hair Salon project knowledge base. Next.js 16 + Supabase + custom JWT auth. Use for all tasks related to this codebase — booking engine, admin, staff scheduling, SEO, marketing, monitoring, infrastructure.
+---
 
-## Project Overview
+# MinSpa Project Skill
 
-Min Nail & Hair là salon spa tại Thủ Đức. Stack: Next.js 16.2.9, Supabase PostgreSQL, Custom JWT auth (HS256), Tailwind CSS v4, TypeScript.
+## 1. Project Overview
+- **Name:** Min Nail & Hair Salon
+- **Stack:** Next.js 16 (React 19) + Supabase (PostgreSQL) + TypeScript
+- **Deploy:** Vercel (free tier)
+- **Auth:** Custom JWT (NOT Supabase Auth) — `app/login/` + middleware
+- **AI Tools:** Google Gemini (`gemini-3.1-flash-lite`) via `@google/genai`
+- **Styling:** Tailwind CSS v4 + Framer Motion (`framer-motion`) for animations
 
-## Architecture Rules
+## 2. Critical Rules
+1. **`database.sql` is the schema source of truth** — keep it in sync with all migration files. When adding tables/columns via migrations, also add them to `database.sql` (tables → RLS → Realtime). See section 10 for the sync checklist.
+2. **Soft delete only** — use `is_active` or `deleted_at` columns, never DELETE FROM
+3. **No SELECT \*** — always specify columns in queries
+4. **Cycle Protocol (revised):** Audit first → Read UPGRADE_PLAN.md + AI_MAP.md → Read existing files for conventions → Code → Update docs (PLAN.md, UPGRADE_PLAN.md, SKILL.md) → `npm run build` verify → Commit
+5. **Build check:** Must pass `npm run build` before any commit (TypeScript + 41 static pages). Run after EVERY batch of changes.
+6. **File management:** Prefer editing existing files over creating new ones. Check git log / git diff before creating new files.
+7. **Initial audit required:** At the start of any session, first audit the existing codebase to find orphan features (BE without FE UI), mojibake/encoding issues, and types that don't match reality.
+8. **Batch parallel reads:** Read all relevant files in parallel at the start of a task to understand conventions and avoid type cascading errors.
+9. **Types first:** Define interfaces/types before writing logic. Never use `any` as a function parameter type. If Supabase query returns unknown shape, define an interface.
+10. **Form accessibility checklist:** Every form must have `htmlFor` on label + matching `id` on input. Every modal must have `useFocusTrap` with `ref={trapRef}` on the dialog container.
+11. **No orphan migrations:** After applying a migration to Supabase, move the file to `scripts/archive/` or add `.applied` suffix — don't leave hanging files that create confusion about what has been applied.
+12. **Single source of truth:** PLAN.md is the permanent project plan. UPGRADE_PLAN.md is the active execution plan. After completing a session, merge the results into PLAN.md and remove from UPGRADE_PLAN.md.
+13. **Supabase features first:** Before writing code for any new feature, check `SUPABASE_FEATURES.md` (root) + `.agents/skills/minspa/SUPABASE_FEATURES.md` to see if Supabase đã có sẵn giải pháp. Ưu tiên pg_cron (schedule), pgmq (queue), Realtime (live update), Storage (file), pg_net (webhook) thay vì tự viết mới.
+14. **PgBouncer compatibility:** Supabase pooler (port 6543) uses PgBouncer transaction mode. Multi-statement SQL may fail silently. Always use `DO $$ ... END $$;` blocks instead of multiple `;`-separated statements for complex operations (publication membership, conditional DDL, etc.). The `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` syntax does NOT pass through PgBouncer — use a DO block with `pg_publication` + `pg_publication_rel` check instead.
+15. **RLS + Realtime audit after migrations:** After applying any migration that adds new tables, immediately verify:
+    - All new tables have `ALTER TABLE ... ENABLE ROW LEVEL SECURITY;`
+    - Tables that need realtime subscriptions are added to `supabase_realtime` publication
+    - `database.sql` is updated to reflect the new schema + RLS + Realtime status
+    - Archive directory is cleaned (delete old migration files once merged into `database.sql`)
+16. **Verify SQL before running:** Test DDL syntax in a safe way before applying to production. `CREATE INDEX IF NOT EXISTS`, `ALTER TABLE ... IF NOT EXISTS` are safe but `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` is NOT universally supported (fails through PgBouncer). When in doubt, use a DO block with existence checks.
 
-### Auth & Session
-- Custom JWT (HS256), stored in "session" cookie (httpOnly, sameSite=lax, 30d)
-- Auth server actions: `@/utils/supabase/server` → `createClient()`, not `@supabase/supabase-js` directly
-- Client components: `@/utils/supabase/client` singleton
-- Login flow: server action → `redirect()` (throws NEXT_REDIRECT, flushes cookie)
-- Proxy/middleware: `proxy.ts` (export `function proxy`), NOT `middleware.ts`
-- Session sliding: re-encrypt + set cookie every request in proxy.ts
+## 3. Auth System
+- **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)
+- **Middleware:** `middleware.ts` — protects `/admin/*` routes with JWT verification
+- **Login:** `/app/login/actions.ts` — server actions that return JWT
+- **Logout:** Clear `session` cookie
+- **Admin bypass:** Route handler `/api/auth/me` as fallback
+- **Password:** bcrypt hash via `lib/password.ts` stored in `users.password_hash` column
 
-### Database
-- `database.sql` is the single source of truth (not migrations folder)
-- Migrations use idempotent DO blocks
-- Status: UPPERCASE (CONFIRMED, COMPLETED, CANCELLED)
-- All new tables need RLS policies, indexes on FK columns, proper constraints
+## 4. Database Quick Ref (31 tables)
+Main tables: `users`, `services`, `appointments`, `appointment_services`, `audit_logs`, `blogs`, `blog_views`, `blog_stats`, `customers`, `treatment_packages`, `customer_packages`, `package_usage_logs`, `notifications`, `time_slot_locks`, `reviews`, `seo_settings`, `seo_articles`, `banner_settings`, `bank_settings`, `attendance`, `attendance_reminders_log`, `random_booking_reminders_log`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache`
 
-### Storage Buckets
-- `seo-images`: SEO/blog/service generated images
-- `service-images`: Uploaded service images (S3ImageBrowser reads from this)
-- Each bucket needs 4 RLS policies: SELECT, INSERT, UPDATE, DELETE
+Migration-only tables (not in original `database.sql`): `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache` — these were added via migration files and synced back to `database.sql`.
 
-## Critical Lessons (From Production Bugs)
+Key conventions:
+- `created_at`/`updated_at` timestamps (prefer `timezone('utc', now())`)
+- `is_active` boolean for soft delete
+- `staff_id` references `users(id)`
+- `appointment_id` references `appointments(id)`
+- Single-row config tables (`seo_settings`, `banner_settings`, `bank_settings`, `auto_seo_config`) use `CHECK (id = 1)`
 
-### 1. Storage Bucket Naming
-- **Bug**: S3ImageBrowser listed from `seo-images` but upload wrote to `service-images` → images never appeared
-- **Rule**: Always verify bucket name consistency between list and upload operations
+## 5. Booking Engine
+Flow: Select date → Select staff → Select services → Select time slot → Customer info → Confirm
 
-### 2. Google Translate + React Strict Mode
-- **Bug**: React Strict Mode double-mounts components in dev → 2 Google Translate scripts → infinite MutationObserver loop → `Maximum call stack size exceeded`
-- **Fix**: Guard with `document.querySelector('script[src*="translate.googleapis.com"]')` + `window.__googleTranslateInitialized` flag
-- **Rule**: Always guard third-party script injection against double-mount
+Key logic (`lib/booking-engine.ts`):
+- **Cascade Shift:** If service A (30min) + service B (60min) = total 90min → adjacent slots are locked
+- **Time slots:** 9:00-20:30, 15min intervals
+- **Staff timezone:** Vietnam (UTC+7)
+- **Slot resolution:** `parseTime` helper with fallback logic
 
-### 3. Google Translate Banner Hiding
-- **Bug**: `.goog-te-banner-frame.skiptranslate` selector doesn't match all versions of Google Translate
-- **Fix**: Use `.goog-te-banner-frame` alone (without `.skiptranslate`) + `position: static` on body
-- **Rule**: Use multiple CSS selectors for third-party iframe hiding
+## 6. Notification & Monitoring
+- **Realtime:** Supabase Realtime via `lib/realtime.ts` — listens for appointment changes
+- **Push:** Web Push API via `utils/push.ts` + `app/api/subscribe/`
+- **Email:** Resend via `lib/notify.ts` — reminder + marketing campaigns
+- **Zalo OA:** Zalo Official Account via `lib/zalo.ts` — minibar notifications
+- **Cron Marketing:** `app/api/cron/marketing/` — dormant >30 day push + birthday offers (bảo vệ CRON_SECRET)
+- **Monitoring:** `/api/health` endpoint (Supabase connectivity), Sentry (`sentry.client.config.ts` + `sentry.server.config.ts` + `instrumentation.ts`)
+- **Logger:** `lib/logger.ts` — `Sentry.captureException` for server errors, `logAuditAction` for audit trail
+- **Error tracking:** `global-error.tsx`, `error.tsx` per route segment
 
-### 4. Dynamic Elements + Translation
-- **Bug**: Rapidly changing text nodes (counters, timers) trigger Google Translate's MutationObserver loop
-- **Fix**: Add `notranslate` class to any element whose text changes frequently
-- **Rule**: Any element with `setInterval`-driven text updates must have `notranslate`
+## 7. File Management Rules
+1. **Do not create new files** if existing files can be modified
+2. **Check git log** before creating files — the file might have been deleted/renamed
+3. **Use `scripts/debug/`** for one-time/utility scripts
+4. **Use `scripts/tools/`** for reusable tooling scripts
+5. **Archive old docs** in `docs/archive/`
+6. **Source data** goes in `data/`, executable scripts in `scripts/`
+7. **Types** go in `types/` or co-located with components (prefer co-located)
+8. **Remove unused files** — check git log for deletion history
 
-### 5. GoTrueClient Singleton
-- **Bug**: 3 components called `createClient()` from `@supabase/supabase-js` in `useEffect` → multiple GoTrueClient instances
-- **Fix**: Always import from `@/utils/supabase/client`, not `@supabase/supabase-js`
-- **Rule**: Never instantiate Supabase client inside a component effect
+## 8. Key Files Reference
+| File | Purpose |
+|------|---------|
+| `app/booking/` | Booking flow (6 steps) |
+| `app/admin/` | Admin dashboard (incl. `components/TabCampaign.tsx` → tab CAMPAIGN) |
+| `app/api/` | API routes (auth, booking, cron, marketing, health, etc.) |
+| `components/` | React components (incl. `CampaignActivationButton.tsx`, `brand/`) |
+| `lib/` | Shared utilities (auth, booking-engine, database, themes, etc.) |
+| `scripts/` | Seed, migrate, backup |
+| `types/` | TypeScript interfaces |
+| `docs/brand/` | Brand tokens (`tokens.json`) + `BRAND_GUIDE.md` |
+| `public/brand/logo/` | Logo variants (monogram/wordmark/badge SVG) |
+| `public/icons/custom/` | Custom service icons (nail/herbal/massage SVG) |
+| `public/cip/` | CIP mockups (business-card, appointment, voucher, menu, letterhead HTML) |
+| `public/campaign/` | Pre-generated campaign assets (banners 1920x600+820x312, social 1080x1080, slides deck) |
+| `docs/` | Documentation |
+| `.agents/skills/` | AI skill files |
+| `app/api/cron/` | Cron job endpoints (reminders, marketing, auto-assign) |
 
-### 6. Preload Only Used Resources
-- **Bug**: `<link rel="preload">` for PWA icons caused "not used within 3 seconds" warning
-- **Rule**: Only preload resources consumed as `<img>` or CSS `url()` within 3s of page load
+## 9. RLS & Realtime Reference
 
-### 7. Playwright MCP over Custom Tools
-- `opencode.json` `tools` field only accepts booleans; custom tools require MCP server
-- Playwright MCP (`@playwright/mcp`) is the recommended approach for browser automation
+All 31 tables have RLS enabled ✅. Realtime publication `supabase_realtime` includes 8 tables:
 
-### 8. Blog Title Font — `font-serif` vs `font-display`
-- **Bug**: Blog detail page `<h1>` used `font-serif` which resolved to Times New Roman (system serif), not Playfair Display. Tailwind only defines `sans` and `display` in config — no `font-serif` var, so it fell through to default serif stack.
-- **Fix**: Change `font-serif` → `font-display` on blog title elements.
-- **Rule**: Never use `font-serif` in this project unless a `--font-serif` CSS variable is explicitly defined. Always use `font-display` for Playfair Display.
-- **Note**: `font-serif` + `font-display` together in className → `font-serif` wins (later in CSS cascade). Use only `font-display`.
+| Table | Realtime | Why |
+|-------|----------|-----|
+| `appointments` | ✅ | Booking status updates (subscribe in Staff/Admin UI) |
+| `appointment_services` | ✅ | Booking service details |
+| `attendance` | ✅ | Staff check-in/out live updates |
+| `auto_assign_logs` | ✅ | Auto-assignment events for staff UI |
+| `notifications` | ✅ | In-app notification bell |
+| `staff_skills` | ✅ | Staff skill/certificate assignments |
+| `tasks` | ✅ | Staff task assignments |
+| `time_slot_locks` | ✅ | Slot availability for booking |
 
-### 9. Self-Hosted Font Subsets — Vietnamese Support
-- Vietnamese characters need their own `@font-face` with `unicode-range: U+0102-0103, U+0110-0111, ..., U+1EA0-1EF9, U+20AB`
-- Both Latin and Vietnamese subset `.woff2` files must be present in `public/fonts/`
-- Preload all 4 font files (NotoSans-Latin, NotoSans-Vietnamese, PlayfairDisplay-Latin, PlayfairDisplay-Vietnamese) in `layout.tsx`
-- Both subsets share the same `font-family` name — CSS `unicode-range` selects the correct file per character
-- Test with actual Vietnamese text like `Gội đầu dưỡng sinh thảo dược` to verify rendering
+Remaining 23 tables (no realtime): `ai_cache`, `attendance_reminders_log`, `audit_logs`, `auto_seo_config`, `bank_settings`, `banner_settings`, `blog_stats`, `blog_views`, `blogs`, `customer_packages`, `customers`, `package_usage_logs`, `random_booking_reminders_log`, `rate_limits`, `reviews`, `seo_articles`, `seo_settings`, `services`, `slot_limits`, `treatment_packages`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `users`
 
-### 10. Commit Hygiene — Auto-Generated Files
-- **Don't commit**: `next-env.d.ts` (changes path between dev/prod), `tsconfig.tsbuildinfo` (build artifact)
-- **Always commit only**: intentional source changes in `app/`, `components/`, `lib/`, etc.
-- Use `git diff --cached --name-only` to verify staged files before committing
-
-### 11. Blog Content Rendering — `prose` + HTML Converter
-- **Bug**: Blog content rendered inline JSX per-paragraph, no typography plugin → flat unstyled text. Prose classes were dead without `@tailwindcss/typography`.
-- **Fix**: Install `@tailwindcss/typography`, add it to `tailwind.config.ts` plugins. Convert plain-text markdown (###, **bold**, [link](url), * list, > quote, ---, 1. list) to HTML via `markdownToHtml()`, then render with `prose prose-stone` + `dangerouslySetInnerHTML`.
-- **Rule**: Always install `@tailwindcss/typography` when using `prose` classes. Keep a `markdownToHtml` converter for blog content that isn't stored as HTML. Use `sanitizeHtml` on the output for XSS safety.
-
-## Tailwind Conventions
-- Breakpoints: `xs` (480px), `sm` (640px), `md` (768px), `lg` (1024px), `xl` (1280px), `xxl` (1600px), `4k` (2560px)
-- Mobile-first: `grid-cols-1` base → `md:grid-cols-2` → `lg:grid-cols-3`
-- Safe areas: `env(safe-area-inset-top/bottom)` on body, bottom nav, drawers
-- Touch targets: minimum `min-h-[44px]` (WCAG 2.5.5)
-
-## Mobile UI Patterns
-- 3-tier navigation: scroll-aware pill row (public), slide-in drawer (admin/staff), bottom tab bar (all)
-- Bottom nav hidden on desktop via `md:hidden`
-- Drawers use `h-dvh` (dynamic viewport height), backdrop blur
-- Viewport: `width=device-width, initial-scale=1` with `userScalable` enabled (WCAG 1.4.4)
-
-## Performance Optimization
-- Dynamic import for heavy components: `BookingCalendar`, `BookingMascotGuide`, motion components
-- `optimizePackageImports` in next.config for `lucide-react`, `date-fns`, `motion`
-- GA4 via `next/script` strategy `afterInteractive`
-- Vercel Speed Insights for production RUM
-- Safari/iOS: unregister old Service Workers if CSP changes (SW retains stale CSP context)
-
-## SEO Checklist
-- robots.txt: Disallow /admin/ /staff/ /api/ /login/
-- sitemap: all public routes (home, services, blog, booking, blog posts, seo_articles)
-- Admin + staff pages: `noindex` via layout
-- JSON-LD schemas: LocalBusiness, WebSite, BreadcrumbList, Article/BlogPosting, FAQPage, AggregateRating, Service, Review
-- OG/Twitter: title, description, image, image:alt, card type
-- Canonical URLs on all public pages
+## 10. Current Status
+- **All migrations consolidated** into `database.sql` (31 tables + unaccent extension/function/3 GIN indexes, all RLS enabled, 8 realtime)
+- **No orphan migration files** — archive cleared, `migrations/` directory empty
+- `scripts/run-migrations.mjs` — robust runner with per-statement execution + idempotent error tolerance
+- `scripts/tools/monitor_queries.sql` — EXPLAIN ANALYZE perf tool (not a table to create)
+- **All 86 items completed** across Sessions 1–16 (4 Khối chiến lược)
+- **Khối 1 (Cleanup)** — 10/10 items ✅
+- **Khối 2 (Security & Data)** — 18/18 items ✅ (incl. RLS, rate-limit, env validation, testing, analytics, notifications, backup, CI/CD)
+- **Khối 3 (AI & Performance)** — 18/18 items ✅ (incl. Gemini schema, caching, Realtime, pg_cron migration, pgmq queue)
+- **Khối 4 (UX Polish)** — 32/32 items ✅ (incl. PWA, SEO, accessibility, dynamic theming, marketing automation, monitoring)
+- **Brand & Campaign (05-06/2026)** — Brand tokens (`docs/brand/tokens.json` + `BRAND_GUIDE.md`), 3 logo variants (`public/brand/logo/*.svg`), 3 custom icons (`public/icons/custom/*.svg`), 5 CIP mockups (`public/cip/*.html`), campaign system (`components/CampaignActivationButton.tsx` + `app/admin/components/TabCampaign.tsx` + `/admin?tab=CAMPAIGN`), pre-generated banners/social/slides (`public/campaign/banners/*.html`, `public/campaign/social/*.html`, `public/campaign/slides/deck.html`) với nút kích hoạt `min_campaign_active` + `data-campaign`
+- **UPGRADE_PLAN.md** — Execution plan chính (đã hoàn thành toàn bộ)
+- **PLAN.md** — Bản nháp tham khảo (giữ workflow + cycle protocol)
+- **AI_MAP.md** — AI context map for file relationships

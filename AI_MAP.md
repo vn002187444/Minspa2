@@ -8,7 +8,7 @@ Chào mừng bạn đến với tài liệu **AI-Map**. Đây là bản đồ ch
 
 | Package | Version | Mục đích |
 |---------|---------|----------|
-| next | ^16.2.9 | Framework |
+| next | ^16.2.7 | Framework |
 | react / react-dom | ^19.2.7 | UI |
 | @supabase/supabase-js | ^2.107.0 | Database client |
 | @supabase/ssr | ^0.10.3 | SSR helpers (không dùng override auth) |
@@ -21,25 +21,11 @@ Chào mừng bạn đến với tài liệu **AI-Map**. Đây là bản đồ ch
 | web-push | ^3.6.7 | Web push notifications |
 | @google/genai | ^2.7.0 | Gemini AI integration |
 | bcryptjs | ^2.4.3 | Password hashing |
-| dompurify | ^3.2.4 | XSS sanitization (server + client) |
-| @sentry/nextjs | — | Error tracking (logger utility) |
-| zod | — | Input validation (login, booking) |
+| dompurify | ^3.2.4 | XSS sanitization |
+| jose | ^6.2.3 | JWT encrypt/decrypt session cookie |
 | TypeScript | ^5 | Language |
 
-**next.config.ts** — Custom config (security headers, image remote patterns, logging, CSP-Report-Only)
-
-### New files added in this session
-| File | Purpose |
-|------|---------|
-| `components/ui/Button.tsx` | Design system button (5 variants, 3 sizes, loading) |
-| `components/ui/Input.tsx` | Design system input (label, error, leftIcon) |
-| `lib/cn.ts` | `clsx` + `tailwind-merge` utility |
-| `lib/design-tokens.ts` | CSS variable design tokens |
-| `lib/services.ts` | Service category normalization + grouping |
-| `lib/logger.ts` | Logger with Sentry integration (production) |
-| `lib/sanitize.client.ts` | Client-side DOMPurify |
-| `hooks/useReducedMotion.ts` | `prefers-reduced-motion` hook |
-| `lib/i18n/*` | 9-language i18n system (LanguageSwitcher) |
+**next.config.ts** — Custom config (security headers, image remote patterns, logging)
 
 ---
 
@@ -174,10 +160,6 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 - `summary` (TEXT)
 - `content` (TEXT - Markdown)
 - `image_url` (VARCHAR)
-- `image_alt` (VARCHAR, Nullable — SEO alt text, fallback to title)
-- `keywords` (TEXT, Nullable)
-- `published` (BOOLEAN, DEFAULT false)
-- `published_at` (TIMESTAMP, Nullable)
 - `created_at` (TIMESTAMP)
 - `updated_at` (TIMESTAMP)
 
@@ -240,8 +222,8 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 ### 19. Bảng cấu hình single-row
 | Table | Key columns |
 |-------|-------------|
-| `seo_settings` | id=1, page_title, meta_description, meta_keywords, og_image_url, logo_url, facebook_url, zalo_url, hotline, online_discount_enabled, online_discount_percent, default_commission_percent |
-| `seo_articles` | id(VARCHAR PK), topic, keywords, article, image_url, image_alt, status (draft/published), topic_source, blog_slug, published_at |
+| `seo_settings` | id=1, page_title, meta_description, meta_keywords, og_image_url, online_discount_enabled, online_discount_percent, default_commission_percent, hotline |
+| `seo_articles` | id(VARCHAR PK), topic, keywords, article, image_url |
 | `banner_settings` | id=1, is_enabled, content |
 | `bank_settings` | id=1, bank_id, bank_name, account_number, account_owner |
 
@@ -251,66 +233,7 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 - `unaccepted_booking_reminders_log` — id, appointment_id FK, sent_at
 - `uncompleted_booking_reminders_log` — id, appointment_id FK, sent_at
 
-### 21. Bảng `tasks` (Công việc)
-- `id` (UUID, PK)
-- `title` (VARCHAR)
-- `description` (TEXT)
-- `task_type` (VARCHAR - 'daily', 'adhoc', etc.)
-- `assignee_id` (UUID, FK → users.id, Nullable)
-- `assignee_type` (VARCHAR - 'specific' | 'all')
-- `created_by` (UUID, FK → users.id)
-- `status` (VARCHAR - `PENDING` | `IN_PROGRESS` | `COMPLETED` | `CANCELLED` | `REJECTED`) — ALL UPPERCASE
-- `priority` (VARCHAR - 'low' | 'medium' | 'high' | 'urgent')
-- `deadline` (TIMESTAMP, Nullable)
-- `time_slot` (VARCHAR, Nullable)
-- `original_task_id` (UUID, FK → tasks.id, Nullable)
-- `completed_at` (TIMESTAMP, Nullable)
-- `created_at` (TIMESTAMP)
-- `updated_at` (TIMESTAMP)
-
-### 22. Bảng `background_tasks` (Queue)
-- `id` (UUID, PK)
-- `task_type` (VARCHAR)
-- `payload` (JSONB)
-- `status` (VARCHAR - 'pending' | 'processing' | 'completed' | 'failed') — lowercase
-- `created_at` (TIMESTAMP)
-- `updated_at` (TIMESTAMP)
-
-### 23. Bảng `salary_payments` (Bảng lương)
-- `id` (UUID, PK)
-- `staff_id` (UUID, FK → users.id)
-- `period_start`, `period_end` (TIMESTAMP)
-- `base_salary`, `total_commission`, `total_tips`, `total_package_commission`, `bonus`, `deduction`, `advance`, `net_pay` (DECIMAL)
-- `status` (VARCHAR)
-- `notes`, `paid_by` (TEXT/UUID)
-- `paid_at`, `created_at` (TIMESTAMP)
-
-### 24. Bảng `faqs` (Câu hỏi thường gặp)
-- `id` (UUID, PK)
-- `question`, `answer` (TEXT)
-- `category` (VARCHAR)
-- `sort_order` (INT)
-- `is_active` (BOOLEAN)
-- `created_at`, `updated_at` (TIMESTAMP)
-
-### 25. Bảng `service_categories` (Danh mục dịch vụ)
-- `id` (UUID, PK)
-- `name` (VARCHAR)
-- `slug` (VARCHAR)
-- `sort_order` (INT)
-- `is_active` (BOOLEAN)
-- `created_at` (TIMESTAMP)
-- **LƯU Ý:** Table tồn tại trong schema nhưng code vẫn dùng legacy `category` text column
-
-### 26. RPC Functions
-- `deduct_package_session` — Trừ buổi liệu trình
-- `refund_package_session` — Hoàn buổi liệu trình
-- `enqueue_background_task` — Thêm task vào queue
-- `dequeue_all_background_tasks` — Lấy tất cả pending tasks
-- `increment_blog_view` — Tăng lượt xem blog
-- `exec_sql` — Execute raw SQL (dev tool only, không trong database.sql)
-
-### 27. Storage `seo-images`
+### 17. Storage `seo-images`
 - Public bucket, file_size_limit=5MB, allowed MIME: png/jpeg/webp
 - Upload flow: Base64 → `sharp` resize 1200px → WebP quality 80 → Supabase Storage
 
@@ -325,8 +248,8 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | `/booking` | `app/booking/page.tsx` | Đặt lịch 3 bước: (1) chọn ngày-giờ-dịch vụ, (2) nhập thông tin KH, (3) xác nhận |
 | `/booking/actions/` | 6 server action files | `public.ts` (services/SEO/packages), `slots.ts` (availability), `booking.ts` (submit), `customer.ts` (history/review/cancel), `suggestions.ts` (AI care), `notifications.ts` (CRUD) |
 | `/login` | `app/login/page.tsx` | Đăng nhập admin/staff với auto-fill buttons |
-| `/login/actions.ts` | Server action | `loginUser(prevState, formData)` — Zod validation, rate-limit, DB auth |
-| `/admin` | `app/admin/page.tsx` | Dashboard: charts, staff table, services, packages, blog SEO AI, settings (424 dòng — đã tách ra 16 component files) |
+| `/login/actions.ts` | Server action | `loginUser(prevState, formData)` — bypass + DB path |
+| `/admin` | `app/admin/page.tsx` | Dashboard: 17 tabs incl. CAMPAIGN (`TabCampaign.tsx` + `CampaignActivationButton.tsx`) — charts, staff, services, packages, blog SEO AI, settings |
 | `/admin/schedule` | `app/admin/schedule/page.tsx` + `actions.ts` | MasterSchedule lịch ngang (grid: `MasterScheduleGrid.tsx`, list: `MasterScheduleList.tsx`, DnD: `ScheduleDndComponents.tsx`, modal: `AppointmentDetailModal.tsx`) |
 | `/admin/customers` | `app/admin/customers/page.tsx` + `actions.ts` + `CustomerCRM.tsx` | CRM khách hàng |
 | `/admin/blog` | `app/admin/blog/page.tsx` | Quản lý bài viết SEO |
@@ -336,31 +259,35 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 | `/notifications` | `app/notifications/page.tsx` | Danh sách thông báo |
 | `/offline` | `app/offline/page.tsx` | Offline fallback page |
 | `/admin/blog-analytics` | `app/admin/blog-analytics/page.tsx` | Thống kê blog |
-| `/blog` | `app/blog/page.tsx` | Danh sách bài viết (phân trang 6/page); BreadcrumbSchema |
-| `/blog/[slug]` | `app/blog/[slug]/page.tsx` + `ShareButton.tsx` + `ViewTracker.tsx` | Chi tiết bài viết SEO; BreadcrumbSchema + ArticleSchema |
-| `/admin/seo-articles` | `app/admin/seo-articles/page.tsx` | SEO articles CRUD (list, create, edit, delete, publish to blog) |
+| `/blog` | `app/blog/page.tsx` | Danh sách bài viết (phân trang 6/page) |
+| `/blog/[slug]` | `app/blog/[slug]/page.tsx` + `ShareButton.tsx` + `ViewTracker.tsx` | Chi tiết bài viết SEO |
+| `/dich-vu/[slug]` | `app/dich-vu/[slug]/page.tsx` | Service detail SSG (slugify name) + Service/Breadcrumb/FAQ JSON-LD |
+| Brand/Campaign assets | `public/brand/logo/*.svg`, `public/icons/custom/*.svg`, `public/cip/*.html`, `public/campaign/{banners,social,slides}/*.html` | Pre-generated brand & campaign HTML (hero 1920x600, FB 820x312, IG 1080x1080, deck 1280x720) — kích hoạt qua `min_campaign_active` |
 
 ### API Routes
 | Endpoint | Method | Mô tả |
 |----------|--------|-------|
 | `api/auth/me` | GET | `{ authenticated: boolean, user: ... }` từ session cookie |
+| `api/login` | POST | Login form → set session cookie |
 | `api/logout` | POST | Xóa session cookie |
 | `api/vapid` | GET | Trả VAPID public key cho push notification |
 | `api/subscribe` | POST | Lưu push subscription |
+| `api/booking/cancel` | POST | Hủy appointment + unlock slots + cascade shift |
+| `api/booking/complete-early` | POST | Kết thúc sớm appointment + cascade shift |
+| `api/booking/locks` | POST | Quản lý time_slot_locks |
 | `api/notifications` | GET | Danh sách notifications (có phân trang) |
 | `api/notifications/unread-count` | GET | Số lượng chưa đọc |
 | `api/notifications/[id]/read` | PATCH | Đánh dấu đã đọc |
 | `api/notifications/read-all` | POST | Đánh dấu tất cả đã đọc |
-| `api/cron/reminders` | GET | Cron job: 4 reminder rules (cần CRON_SECRET) |
-| `api/cron/marketing` | GET | Cron job: marketing auto-posts (cần CRON_SECRET) |
-| `api/cron/auto-assign` | GET | Cron job: auto-assign staff to unassigned bookings |
+| `api/cron/reminders` | POST | Cron job: 4 reminder rules (cần CRON_SECRET) |
+| `api/cron-check` | GET | Health check cho cron |
 | `api/generate-description` | POST | AI sinh mô tả dịch vụ |
 | `api/generate-seo-article` | POST | AI sinh bài viết SEO |
 | `api/generate-seo-image` | POST | AI sinh ảnh SEO |
 | `api/ai-assist` | POST | AI assistant chat |
 | `api/seo-search` | POST | Tìm kiếm từ khóa SEO |
 | `api/blog/view` | POST | Track blog view (ip_hash, user_agent) |
-| `sitemap.ts` | GET | Sitemap XML — blogs, services, seo_articles (with blog_slug) |
+| `api/queue/sync` | POST | Trigger offline queue sync |
 
 ---
 
@@ -372,9 +299,9 @@ Hệ thống dùng Supabase PostgreSQL thật. **Không có mock DB** trong prod
 Cookie: session=<JWT>
 ├── httpOnly: true
 ├── secure: true (production)
-├── sameSite: 'strict'
+├── sameSite: 'lax'
 ├── path: /
-├── maxAge: 24h access + 7d refresh (sliding session)
+├── maxAge: 30 days
 └── payload: { user: { id, role, username }, expires }
 ```
 
@@ -382,14 +309,14 @@ Cookie: session=<JWT>
 
 ```
 Client → Login form → loginUser() server action
-                        ├── Zod validation + rate-limit (5/min)
-                        └── DB path: query users → check is_active → compare password_hash → createSession → redirect()
+                        ├── Hardcoded bypass (admin/staff1) → createSession → redirect
+                        └── DB path: query users → check is_active → compare password_hash → createSession → redirect
 
 Mỗi request:
-  proxy.ts (formerly middleware.ts)
+  middleware.ts
     ├── Đọc cookie "session"
-    ├── Decrypt JWT → nếu OK → re-encrypt với exp mới → set cookie (sliding session)
-    ├── Nếu fail → redirect /login
+    ├── Decrypt JWT → nếu OK → re-encrypt với exp mới → set cookie
+    ├── Nếu fail → clear cookie
     ├── /admin chỉ cho ADMIN/MANAGER
     └── /staff chỉ cho STAFF/MANAGER
 
@@ -412,24 +339,19 @@ createClient() → nếu có env vars → real client
               → nếu không → mock client (trả data rỗng)
 ```
 
-### Login validation (app/login/actions.ts)
+### ~~`utils/supabase/middleware.ts`~~ (Đã xóa — P4.7)
+
+### Login bypass (app/login/actions.ts)
 ```
-Zod schema: username (min 1), password (min 1)
-Rate-limit: 5 attempts/min per username
-No bypass logic — all auth through DB path
+admin → password 'Admin' hoặc 'admin' → redirect /admin
+staff1 → password 'Staff@1' hoặc 'staff1' → redirect /staff
 ```
+DB auto-seeds user nếu chưa tồn tại. Các user khác xác thực qua DB path.
 
 ### JWT Secret
 ```
-process.env.JWT_SECRET — REQUIRED in production (validates at startup)
-```
-
-### Error Logging
-```
-lib/logger.ts → logger.error() sends to Sentry in production
-All server actions use logger.error() instead of console.error
-All .catch(() => {}) replaced with logger.error()
-All bare catch {} blocks log errors via logger
+process.env.JWT_SECRET
+Fallback: 'min-nail-hair-super-secret-key-24h'
 ```
 
 ---
@@ -443,15 +365,12 @@ All bare catch {} blocks log errors via logger
 | `calculateProgressiveDuration` | Function | Tính tổng duration từ service IDs |
 | `getEffectiveTimeRange` | Function | Lấy actual start/end, fallback về expected |
 | `doRangesOverlap` | Function | Kiểm tra 2 khoảng thời gian overlap |
-| `lockTimeSlots` | Function | Insert time_slot_locks + error logging |
-| `unlockTimeSlots` | Function | Deactivate locks cho appointment + error logging |
-| `unlockTimeSlotsInRange` | Function | Deactivate locks trong khoảng thời gian + error logging |
-| `cascadeShiftForward` | Function | Dời lịch tới khi hoàn thành sớm + error logging |
-| `handleCancelAndUnlock` | Function | Hủy + unlock + cascade + notif + error logging |
-| `incrementSlotLimit` | Function | Tăng slot counter + error logging |
+| `lockTimeSlots` | Function | Insert time_slot_locks |
+| `unlockTimeSlots` | Function | Deactivate locks cho appointment |
+| `unlockTimeSlotsInRange` | Function | Deactivate locks trong khoảng thời gian |
+| `cascadeShiftForward` | Function | Dời lịch tới khi hoàn thành sớm |
+| `handleCancelAndUnlock` | Function | Hủy + unlock + cascade + notif |
 | `getSlotAvailabilityWithNames` | Function | Grid availability (dùng `durationMinutes` động) |
-
-> **Error checking:** Tất cả functions đều check `{ error }` từ Supabase và log qua `logger.error()` → Sentry. Ngăn silent double-booking.
 
 ### Booking flow
 ```
@@ -488,14 +407,6 @@ utils/push.ts → web-push (VAPID)
        └── Gửi qua web-push
 ```
 
-### insertNotification (utils/notifications.ts)
-```
-insertNotification(recipientType, recipientId, title, content, link)
-  → Promise<{ success: boolean; error?: string }>
-  → Logs errors via logger.error() → Sentry
-  → Returns success/failure indicator (not void)
-```
-
 ### Reminder Cron
 ```
 api/cron/reminders → utils/reminders.ts → runRemindersCheck()
@@ -506,26 +417,19 @@ api/cron/reminders → utils/reminders.ts → runRemindersCheck()
   Bảo vệ bởi CRON_SECRET + prevent duplicate bằng reminder log tables
 ```
 
-### Cron Routes (GET method)
-```
-api/cron/reminders    → GET (admin UI trigger hoặc pg_cron)
-api/cron/marketing    → GET (admin UI trigger hoặc pg_cron)
-api/cron/auto-assign  → GET (admin UI trigger hoặc pg_cron)
-api/cron/seo-publish  → GET (admin UI trigger hoặc pg_cron)
-Auth: CRON_SECRET Bearer token OR x-supabase-cron header
-```
-
 ---
 
 ## ⚙️ CRITICAL CONFIG FILES
 
 | File | Vai trò |
 |------|---------|
-| `database.sql` | **Source of truth** cho DB schema. Chạy 1 phát trên Supabase SQL Editor |
+| `database.sql` | **Source of truth** cho DB schema (incl. `unaccent` extension + `public.immutable_unaccent(text)` + 3 GIN `idx_*_search_unaccent`). Chạy 1 phát trên Supabase SQL Editor |
+| `docs/brand/tokens.json` | Design tokens + seasonal themes (sync với `app/globals.css` :root) |
+| `docs/brand/BRAND_GUIDE.md` | Brand voice, màu, typo, logo/icon spec |
 | `.env.local` | Chứa: SUPABASE_*, JWT_SECRET, GEMINI_API_KEY, VAPID_*, CRON_SECRET, UNSPLASH_ACCESS_KEY |
 | `.env.example` | Mẫu các biến môi trường |
-| `next.config.ts` | images.remotePatterns + logging.fetches (P4.3) |
-| `proxy.ts` | Session refresh + route protection (Next.js 16, replaces middleware.ts) |
+| `next.config.ts` | images.remotePatterns + logging.fetches + CSP (bỏ `unsafe-eval`) |
+| `middleware.ts` | Session refresh + route protection |
 | `scripts/migrate_schema.sql` | Upgrade script (ALTER ADD COLUMN IF NOT EXISTS) |
 
 ### Environment Variables
@@ -577,13 +481,13 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
 ## ⚠️ QUY CHẾ VẬN HÀNH (CYCLE PROTOCOL)
 
-> **Chi tiết hơn:** Xem `PLAN.md` mục "QUY TẮC VẬN HÀNH & GIAO TIẾP"
+> **Chi tiết hơn:** Xem `UPGRADE_PLAN.md` phần "QUY TẮC VẬN HÀNH & GIAO TIẾP" hoặc `PLAN.md` (archive)
 
 1. **Đọc `UPGRADE_PLAN.md`** → Các mục chưa làm + ưu tiên
 2. **Đọc `PLAN.md`** → Workflows + cycle protocol (nếu cần reference cũ)
 3. **Đọc `AI_MAP.md`** → Kiến trúc, DB schema, quy tắc kỹ thuật
 4. **Viết code** theo đúng kiến trúc
-5. **Cập nhật `PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
+5. **Cập nhật `UPGRADE_PLAN.md`** (dấu `[x]`) và **`AI_MAP.md`** sau mỗi thay đổi
 6. **Commit** với message rõ ràng: `feat:`, `fix:`, `refactor:`
 7. **Không push secrets** (.env.local, .env)
 
@@ -628,7 +532,7 @@ app/
 ├── api/              → API routes (cron, auth, notifications...)
 └── login/            → Trang đăng nhập
 
-components/           → Shared UI components (SEO schema: WebSiteSchema, BreadcrumbSchema, BreadcrumbNav, ArticleSchema, GoogleTranslate, ServiceSchema, FaqSchema, AggregateRatingSchema, ProductSchema, ReviewCustomerModal)
+components/           → Shared UI components
 lib/                  → Business logic (booking-engine.ts)
 utils/                → Helpers (supabase, push, reminders)
 scripts/              → DB migration + seed
@@ -653,13 +557,7 @@ scripts/              → DB migration + seed
 □ Commit message rõ ràng
 ```
 
-### Step 5: Đọc docs trước khi hỏi
-```
-docs/Log.md      → Lịch sử các phiên làm việc trước (biết đã làm gì)
-docs/workflow.md → Sơ đồ quy trình nghiệp vụ (booking, notification, auth, v.v.)
-```
-
-### Step 6: Nếu cần help
+### Step 5: Nếu cần help
 - Thắc mắc về logic → Hỏi người dùng
 - Không chắc về architecture → Đọc lại AI_MAP.md
-- Muốn biết đã làm gì → Đọc UPGRADE_PLAN.md + AI_MAP.md + docs/Log.md
+- Muốn biết đã làm gì → Đọc UPGRADE_PLAN.md + AI_MAP.md

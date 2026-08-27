@@ -290,6 +290,16 @@ html {
 /* Smooth and natural scroll behaviors */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem; /* offset for sticky HeaderNav */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* App-Like Mobile UX Enhancements */
@@ -317,11 +327,21 @@ input,
 
 /* Prevent accidental visual text-selection on pure click/tap elements */
 button,
-[role="button"],
-nav a,
+[role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 img {
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Allow selecting contact info even inside nav/footer */
+.allow-select,
+.allow-select * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
 }
 
 @layer utilities {
@@ -362,6 +382,13 @@ img {
   .hover-magnetic:hover {
     transform: translateY(-4px) scale(1.02);
     box-shadow: 0 12px 24px -10px rgba(141, 110, 83, 0.15);
+  }
+
+  @media (max-width: 768px) {
+    .hover-magnetic:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 6px 14px -10px rgba(141, 110, 83, 0.12);
+    }
   }
 
   /* Theme-aware utility classes — dùng CSS variables từ data-theme */

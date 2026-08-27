@@ -19,11 +19,14 @@ export async function GET(req: NextRequest) {
 
     const supabase = await createClient();
 
-    // Search in Blogs (Manual) + SEO Articles (Auto)
+    // Normalize query for Vietnamese accent-insensitive search
+    const normalizedQuery = query.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+
+    // Search in Blogs (Manual) + SEO Articles (Auto) — try FTS first, fallback to ilike with unaccent
     const { data: blogPosts, error: blogErr } = await supabase
       .from('blogs')
       .select('id, title, slug, image_url')
-      .textSearch('search_vector', query, {
+      .textSearch('search_vector', normalizedQuery || query, {
         config: 'simple',
         type: 'websearch',
       })
@@ -32,7 +35,7 @@ export async function GET(req: NextRequest) {
     const { data: seoArticles, error: seoErr } = await supabase
       .from('seo_articles')
       .select('id, topic, image_url')
-      .textSearch('search_vector', query, {
+      .textSearch('search_vector', normalizedQuery || query, {
         config: 'simple',
         type: 'websearch',
       })
@@ -43,7 +46,7 @@ export async function GET(req: NextRequest) {
       .from('services')
       .select('id, name, price, duration')
       .eq('is_active', true)
-      .textSearch('search_vector', query, {
+      .textSearch('search_vector', normalizedQuery || query, {
         config: 'simple',
         type: 'websearch',
       })

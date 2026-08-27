@@ -419,11 +419,22 @@ export default function BookingPage() {
               <p className="text-gray-300 text-xs mb-6">Chỉ mất 1 phút để trải nghiệm dịch vụ đẳng cấp</p>
             </div>
             
-            <div className="flex items-center gap-2 relative z-10 max-w-sm mx-auto">
+            <div className="flex items-center gap-2 relative z-10 max-w-sm mx-auto" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={3} aria-label={`Bước ${step} trên 3`}>
               {[1, 2, 3].map(i => (
                 <div key={i} className="flex-1 h-1 rounded-full bg-[#3A2E2B] overflow-hidden">
                   <div className={`h-full bg-amber-400 transition-all duration-500 ${step >= i ? 'w-full' : 'w-0'}`}></div>
                 </div>
+              ))}
+            </div>
+            <div className="flex justify-between max-w-sm mx-auto mt-2 text-[10px] font-bold tracking-wider uppercase">
+              {[
+                { n: 1, label: 'Chọn dịch vụ' },
+                { n: 2, label: 'Chọn giờ' },
+                { n: 3, label: 'Hoàn tất' },
+              ].map(s => (
+                <span key={s.n} className={step >= s.n ? 'text-amber-200' : 'text-white/40'} aria-current={step === s.n ? 'step' : undefined}>
+                  {s.n}. {s.label}
+                </span>
               ))}
             </div>
         </div>

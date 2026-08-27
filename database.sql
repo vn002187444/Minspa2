@@ -11,9 +11,6 @@ CREATE TABLE users (
   cccd VARCHAR(20),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   notification_token JSONB,
-  base_salary DECIMAL(10,2) NOT NULL DEFAULT 0,
-  bank_account VARCHAR(50),
-  bank_name VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   CONSTRAINT users_role_cccd_check CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
 );
@@ -33,9 +30,6 @@ CREATE TABLE customers (
   full_name VARCHAR(255) NOT NULL,
   phone VARCHAR(20) UNIQUE NOT NULL,
   notification_token JSONB,
-  email VARCHAR(255),
-  birthday DATE,
-  last_booking_date TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
@@ -47,8 +41,7 @@ CREATE TABLE services (
   description TEXT,
   price DECIMAL(10, 2) NOT NULL,
   duration INT NOT NULL, -- minutes
-  image_url TEXT,
-  image_alt VARCHAR(500) DEFAULT '',
+  image_url VARCHAR(255),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   discount_percentage DECIMAL(5, 2) DEFAULT 0,
   commission_percentage DECIMAL(5,2) DEFAULT 0,
@@ -68,7 +61,6 @@ CREATE TABLE appointments (
   status VARCHAR(50) NOT NULL CHECK (status IN ('PENDING_RANDOM', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED')),
   tip_amount DECIMAL(10, 2) DEFAULT 0,
   total_amount DECIMAL(10, 2) DEFAULT 0,
-  discount_amount DECIMAL(10,2) DEFAULT 0,
   commission_amount DECIMAL(10, 2) DEFAULT 0,
   is_package_session BOOLEAN DEFAULT FALSE,
   use_package_id UUID,  -- FK to customer_packages (set after table is created)
@@ -78,11 +70,8 @@ CREATE TABLE appointments (
 
 -- Appointment Services Junction Table
 CREATE TABLE appointment_services (
-  id UUID DEFAULT gen_random_uuid(),
   appointment_id UUID REFERENCES appointments(id) ON DELETE CASCADE,
   service_id UUID REFERENCES services(id) ON DELETE CASCADE,
-  price DECIMAL(10,2),
-  discount_amount DECIMAL(10,2) DEFAULT 0,
   PRIMARY KEY (appointment_id, service_id)
 );
 
@@ -104,7 +93,6 @@ CREATE TABLE attendance (
   status VARCHAR(50) NOT NULL CHECK (status IN ('PRESENT', 'ABSENT')),
   check_in_time TIMESTAMP WITH TIME ZONE,
   check_out_time TIMESTAMP WITH TIME ZONE,
-  note TEXT,
   UNIQUE(staff_id, date)
 );
 
@@ -134,8 +122,7 @@ CREATE TABLE customer_packages (
   expires_at TIMESTAMP WITH TIME ZONE DEFAULT (timezone('utc', now()) + INTERVAL '2 years'),
   sold_by_staff_id UUID REFERENCES users(id) ON DELETE SET NULL,
   commission_amount DECIMAL(10, 2) DEFAULT 0,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
 -- Add FK constraints for appointment package columns (after customer_packages is created)
@@ -160,8 +147,7 @@ CREATE TABLE blogs (
   slug VARCHAR(255) UNIQUE NOT NULL,
   summary TEXT,
   content TEXT,
-  image_url TEXT,
-  image_alt VARCHAR(500) DEFAULT '',
+  image_url VARCHAR(255),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(title, '') || ' ' || coalesce(summary, '') || ' ' || coalesce(content, ''))) STORED
@@ -222,20 +208,13 @@ CREATE TABLE seo_settings (
   online_discount_percent DECIMAL(5,2) DEFAULT 5.00,
   default_commission_percent DECIMAL(5,2) DEFAULT 15.00,
   hotline VARCHAR(20) DEFAULT '0934 323 878',
-  facebook_url VARCHAR(500) DEFAULT 'https://facebook.com/minnailhair',
-  zalo_url VARCHAR(500) DEFAULT 'https://zalo.me/0934323878',
-  theme_override VARCHAR(50),
-  theme_particles_enabled BOOLEAN DEFAULT TRUE,
-  mascot_enabled BOOLEAN DEFAULT TRUE,
-  mascot_character VARCHAR(50) DEFAULT 'min',
-  mascot_sound BOOLEAN DEFAULT TRUE,
-  logo_url VARCHAR(500) DEFAULT '',
+  marketing_enabled BOOLEAN DEFAULT FALSE,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   CHECK (id = 1)
 );
 
 INSERT INTO seo_settings (id, page_title, meta_description, meta_keywords, og_image_url)
-VALUES (1, 'Min Nail & Hair', 'Tiệm gội đầu dưỡng sinh thảo dược.', 'gội đầu, nail, hair', '/og-image.png')
+VALUES (1, 'Gội Đầu Dưỡng Sinh & Nail Thủ Đức | Min Lavita Charm', 'Min Nail & Hair — Gội dưỡng sinh thảo dược, massage body, chăm sóc móng tại TM14 Lavita Charm, Thủ Đức. Đặt lịch online giảm 5%. Hotline 0934 323 878.', 'gội đầu dưỡng sinh thủ đức, nail thủ đức, massage body thủ đức, lavita charm, min nail hair', '/icons/icon-512.png')
 ON CONFLICT (id) DO NOTHING;
 
 -- SEO Articles Table
@@ -245,12 +224,7 @@ CREATE TABLE seo_articles (
   topic VARCHAR(100) DEFAULT '',
   keywords TEXT DEFAULT '',
   article TEXT DEFAULT '',
-  image_url TEXT DEFAULT '',
-  image_alt VARCHAR(500) DEFAULT '',
-  status VARCHAR(20) DEFAULT 'draft',
-  topic_source VARCHAR(50) DEFAULT 'manual',
-  blog_slug VARCHAR(255),
-  published_at TIMESTAMP WITH TIME ZONE,
+  image_url VARCHAR(500) DEFAULT '',
   search_vector tsvector GENERATED ALWAYS AS (to_tsvector('simple', coalesce(topic, '') || ' ' || coalesce(keywords, '') || ' ' || coalesce(article, ''))) STORED
 );
 
@@ -312,7 +286,7 @@ INSERT INTO services (name, category, description, price, duration, discount_per
 CREATE TABLE IF NOT EXISTS notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   recipient_type VARCHAR(20) NOT NULL CHECK (recipient_type IN ('user', 'customer')),
-  recipient_id UUID NOT NULL, -- FK: references users(id) when recipient_type='user', customers(id) when recipient_type='customer'
+  recipient_id UUID NOT NULL,
   title VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
   link VARCHAR(500),
@@ -324,6 +298,14 @@ CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipien
 CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(recipient_type, recipient_id, is_read);
 CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at DESC);
 
+-- Enable unaccent for Vietnamese accent-insensitive search (Long-term 11)
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE OR REPLACE FUNCTION public.immutable_unaccent(text) RETURNS text LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT AS $$ SELECT public.unaccent($1) $$;
+-- Functional GIN indexes for accent-insensitive FTS (complement generated search_vector)
+CREATE INDEX IF NOT EXISTS idx_services_search_unaccent ON services USING GIN (to_tsvector('simple', public.immutable_unaccent(coalesce(name,'') || ' ' || coalesce(description,''))));
+CREATE INDEX IF NOT EXISTS idx_blogs_search_unaccent ON blogs USING GIN (to_tsvector('simple', public.immutable_unaccent(coalesce(title,'') || ' ' || coalesce(summary,'') || ' ' || coalesce(content,''))));
+CREATE INDEX IF NOT EXISTS idx_seo_articles_search_unaccent ON seo_articles USING GIN (to_tsvector('simple', public.immutable_unaccent(coalesce(topic,'') || ' ' || coalesce(keywords,'') || ' ' || coalesce(article,''))));
+
 -- Performance indexes
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(is_active);
 CREATE INDEX IF NOT EXISTS idx_services_is_active ON services(is_active);
@@ -331,6 +313,11 @@ CREATE INDEX IF NOT EXISTS idx_services_search_vector ON services USING GIN (sea
 CREATE INDEX IF NOT EXISTS idx_treatment_packages_is_active ON treatment_packages(is_active);
 CREATE INDEX IF NOT EXISTS idx_attendance_date_status ON attendance(date, status);
 CREATE INDEX IF NOT EXISTS idx_appointments_start_time_status ON appointments(start_time, status);
+-- Indexes added 2026-08-27 (audit §7.3)
+CREATE INDEX IF NOT EXISTS idx_customer_packages_customer_status ON customer_packages(customer_id, status);
+CREATE INDEX IF NOT EXISTS idx_appointments_staff_status_start ON appointments(staff_id, status, start_time);
+CREATE INDEX IF NOT EXISTS idx_treatment_packages_service ON treatment_packages(service_id);
+CREATE INDEX IF NOT EXISTS idx_package_usage_logs_appointment ON package_usage_logs(appointment_id);
 
 -- Storage bucket cho ảnh SEO/Gemini
 -- ========================================
@@ -343,18 +330,6 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public Access seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
     CREATE POLICY "Public Access seo-images" ON storage.objects
       FOR SELECT USING (bucket_id = 'seo-images');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Upload seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
-    CREATE POLICY "Upload seo-images" ON storage.objects
-      FOR INSERT WITH CHECK (bucket_id = 'seo-images');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Update seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
-    CREATE POLICY "Update seo-images" ON storage.objects
-      FOR UPDATE USING (bucket_id = 'seo-images') WITH CHECK (bucket_id = 'seo-images');
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Delete seo-images' AND tablename = 'objects' AND schemaname = 'storage') THEN
-    CREATE POLICY "Delete seo-images" ON storage.objects
-      FOR DELETE USING (bucket_id = 'seo-images');
   END IF;
 END $$;
 
@@ -399,15 +374,18 @@ CREATE INDEX idx_blog_stats_date ON blog_stats(date);
 
 -- Rate limits (V3.10)
 CREATE TABLE IF NOT EXISTS rate_limits (
-  key TEXT PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key TEXT NOT NULL UNIQUE,
   request_count INT NOT NULL DEFAULT 0,
-  last_request TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  last_request TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- AI cache (V3.11)
 CREATE TABLE IF NOT EXISTS ai_cache (
-  id TEXT PRIMARY KEY,
-  response JSONB NOT NULL,
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  prompt_hash VARCHAR(64) NOT NULL UNIQUE,
+  response TEXT NOT NULL,
+  model VARCHAR(50) NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -445,113 +423,34 @@ CREATE TABLE IF NOT EXISTS slot_limits (
   UNIQUE(lock_date, time_slot)
 );
 
--- Tasks (V3.4, fixed V3.13)
+-- Tasks (V3.4)
 CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   title VARCHAR(255) NOT NULL,
   description TEXT,
-  task_type VARCHAR(20) NOT NULL DEFAULT 'one_time'
-    CHECK (task_type IN ('daily', 'one_time')),
-  assignee_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  assignee_type VARCHAR(10) NOT NULL DEFAULT 'specific'
-    CHECK (assignee_type IN ('specific', 'all')),
-  created_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'PENDING'
-    CHECK (status IN ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', 'REJECTED')),
+  assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
+  assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'in_progress', 'completed', 'cancelled')),
   priority VARCHAR(10) NOT NULL DEFAULT 'medium'
     CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-  deadline TIMESTAMP WITH TIME ZONE,
-  time_slot VARCHAR(20),
-  original_task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
+  due_date TIMESTAMP WITH TIME ZONE,
   completed_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
 );
 
--- Auto SEO config (V3.12 → V3.13)
+-- Auto SEO config (V3.12)
 CREATE TABLE IF NOT EXISTS auto_seo_config (
   id BIGINT PRIMARY KEY DEFAULT 1,
   enabled BOOLEAN NOT NULL DEFAULT false,
-  schedule_day VARCHAR(10) DEFAULT 'THU',
+  schedule_day VARCHAR(10) NOT NULL DEFAULT 'THU',
   schedule_hour INTEGER NOT NULL DEFAULT 20,
-  schedule_days JSONB NOT NULL DEFAULT '["THU"]'::jsonb,
-  topic_pool JSONB NOT NULL DEFAULT '[]'::jsonb,
+  topic_pool JSONB NOT NULL DEFAULT '["gội đầu dưỡng sinh thảo dược Lavita Charm","massage cổ vai gáy giảm stress Thủ Đức","nail art xu hướng 2026 Thủ Đức","chăm sóc tóc hư tổn tại nhà","móng gel bền màu 3 tuần","massage body thư giãn 90 phút","combo gội + nail tiết kiệm Thủ Đức","chăm sóc da đầu dầu đúng cách","màu nail hot mùa hè 2026","gội dưỡng sinh cho dân văn phòng"]'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK (id = 1)
 );
-
-CREATE TABLE IF NOT EXISTS cash_register (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  type VARCHAR(10) NOT NULL CHECK (type IN ('THU', 'CHI')),
-  category VARCHAR(50) NOT NULL,
-  amount DECIMAL(10,2) NOT NULL CHECK (amount > 0),
-  description TEXT DEFAULT '',
-  reference_type VARCHAR(30),
-  reference_id UUID,
-  recorded_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  recorded_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
-  created_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
-  updated_at TIMESTAMPTZ DEFAULT timezone('utc', now()),
-  is_active BOOLEAN DEFAULT TRUE
-);
-
--- Cron job logs (V3.13)
-CREATE TABLE IF NOT EXISTS cron_job_logs (
-  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  job_name VARCHAR(100) NOT NULL,
-  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  finished_at TIMESTAMPTZ,
-  success BOOLEAN NOT NULL DEFAULT false,
-  error TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Background tasks queue (V3.13)
-CREATE TABLE IF NOT EXISTS background_tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  task_type VARCHAR(100) NOT NULL,
-  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
-  status VARCHAR(20) NOT NULL DEFAULT 'pending'
-    CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- Salary payments (V3.14 Payroll)
-CREATE TABLE IF NOT EXISTS salary_payments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  staff_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  period_start DATE NOT NULL,
-  period_end DATE NOT NULL,
-  base_salary DECIMAL(10,2) NOT NULL DEFAULT 0,
-  total_commission DECIMAL(10,2) NOT NULL DEFAULT 0,
-  total_tips DECIMAL(10,2) NOT NULL DEFAULT 0,
-  total_package_commission DECIMAL(10,2) NOT NULL DEFAULT 0,
-  bonus DECIMAL(10,2) NOT NULL DEFAULT 0,
-  deduction DECIMAL(10,2) NOT NULL DEFAULT 0,
-  advance DECIMAL(10,2) NOT NULL DEFAULT 0,
-  net_pay DECIMAL(10,2) NOT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'PAID', 'CANCELLED')),
-  notes TEXT,
-  paid_at TIMESTAMPTZ,
-  paid_by UUID REFERENCES users(id),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
--- FAQs (V3.15 SEO FAQ System)
-CREATE TABLE IF NOT EXISTS faqs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  question TEXT NOT NULL,
-  answer TEXT NOT NULL,
-  category VARCHAR(50) NOT NULL DEFAULT 'general',
-  sort_order INT NOT NULL DEFAULT 0,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS idx_faqs_category ON faqs(category);
-CREATE INDEX IF NOT EXISTS idx_faqs_is_active ON faqs(is_active);
 
 -- ========================================
 -- Row Level Security (RLS) for ALL tables
@@ -564,70 +463,6 @@ ALTER TABLE attendance_reminders_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auto_assign_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auto_seo_config ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cash_register ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cron_job_logs ENABLE ROW LEVEL SECURITY;
-ALTER TABLE background_tasks ENABLE ROW LEVEL SECURITY;
-ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
-
--- RLS policies for new tables added via V3.9/V3.13
--- NOTE: uses auth.jwt() ->> 'role' because the app manages auth via custom JWT (jose)
-CREATE POLICY faqs_admin_all ON faqs
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
-  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
-
-CREATE POLICY faqs_public_read ON faqs
-  FOR SELECT TO anon, authenticated
-  USING (true);
-
-CREATE POLICY cash_register_admin_all ON cash_register
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
-  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
-
-CREATE POLICY salary_payments_admin_all ON salary_payments
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
-  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
-
--- cron_job_logs: service_role bypasses RLS; authenticated users with STAFF/MANAGER can read
-CREATE POLICY "service_role_all" ON cron_job_logs
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') = 'service_role');
-
-CREATE POLICY "staff_read" ON cron_job_logs
-  FOR SELECT TO authenticated
-  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER', 'STAFF'));
-
-CREATE POLICY "service_role_all" ON background_tasks
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') = 'service_role');
-
--- Notifications RLS: users see only their own notifications
-CREATE POLICY notifications_user_read ON notifications
-  FOR SELECT TO authenticated
-  USING (
-    recipient_type = 'user'
-    AND recipient_id = (auth.jwt() ->> 'userId')::uuid
-  );
-
-CREATE POLICY notifications_admin_all ON notifications
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'))
-  WITH CHECK ((auth.jwt() ->> 'role') IN ('ADMIN', 'MANAGER'));
-
--- ai_cache RLS: service_role only (internal cache, not user-facing)
-CREATE POLICY ai_cache_service_role ON ai_cache
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') = 'service_role')
-  WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
-
--- rate_limits RLS: service_role only (internal, not user-facing)
-CREATE POLICY rate_limits_service_role ON rate_limits
-  FOR ALL TO authenticated
-  USING ((auth.jwt() ->> 'role') = 'service_role')
-  WITH CHECK ((auth.jwt() ->> 'role') = 'service_role');
-ALTER TABLE salary_payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bank_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE banner_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_stats ENABLE ROW LEVEL SECURITY;
@@ -644,7 +479,6 @@ ALTER TABLE seo_articles ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_seo_articles_search_vector ON seo_articles USING GIN (search_vector);
 ALTER TABLE seo_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE services ENABLE ROW LEVEL SECURITY;
-ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE slot_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_skills ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
@@ -653,6 +487,63 @@ ALTER TABLE treatment_packages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE unaccepted_booking_reminders_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE uncompleted_booking_reminders_log ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+
+-- ========================================
+-- RLS Policies (2026-08-27) — anon chỉ đọc public tables, service_role bypass all
+-- ========================================
+-- Public tables: cho phép anon SELECT (dùng với createAnonClient)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_services' AND tablename = 'services') THEN
+    CREATE POLICY "anon_select_services" ON services FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_blogs' AND tablename = 'blogs') THEN
+    CREATE POLICY "anon_select_blogs" ON blogs FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_seo_settings' AND tablename = 'seo_settings') THEN
+    CREATE POLICY "anon_select_seo_settings" ON seo_settings FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_seo_articles' AND tablename = 'seo_articles') THEN
+    CREATE POLICY "anon_select_seo_articles" ON seo_articles FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_banner_settings' AND tablename = 'banner_settings') THEN
+    CREATE POLICY "anon_select_banner_settings" ON banner_settings FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_bank_settings' AND tablename = 'bank_settings') THEN
+    CREATE POLICY "anon_select_bank_settings" ON bank_settings FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_treatment_packages' AND tablename = 'treatment_packages') THEN
+    CREATE POLICY "anon_select_treatment_packages" ON treatment_packages FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_blog_stats' AND tablename = 'blog_stats') THEN
+    CREATE POLICY "anon_select_blog_stats" ON blog_stats FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_blog_views' AND tablename = 'blog_views') THEN
+    CREATE POLICY "anon_select_blog_views" ON blog_views FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'anon_select_slot_limits' AND tablename = 'slot_limits') THEN
+    CREATE POLICY "anon_select_slot_limits" ON slot_limits FOR SELECT USING (true);
+  END IF;
+END $$;
+-- Sensitive tables: chỉ service_role mới ALL (fix 2026-08-27: trước đó roles={public} cho phép anon đọc password_hash!)
+DO $$
+DECLARE
+  tbl text;
+  pol text;
+BEGIN
+  FOREACH tbl IN ARRAY ARRAY['users','customers','appointments','rate_limits']
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON %I', 'Service role all ' || tbl, tbl);
+    EXECUTE format('CREATE POLICY %I ON %I FOR ALL TO service_role USING (true) WITH CHECK (true)', 'Service role all ' || tbl, tbl);
+  END LOOP;
+  FOREACH pol IN ARRAY ARRAY['Service role all notifications','Service role can insert notifications','Service role can update notifications']
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS %I ON notifications', pol);
+  END LOOP;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname='Service role all notifications' AND tablename='notifications') THEN
+    CREATE POLICY "Service role all notifications" ON notifications FOR ALL TO service_role USING (true) WITH CHECK (true);
+  END IF;
+END $$;
 
 -- ========================================
 -- Realtime publication membership
@@ -689,17 +580,16 @@ END $$;
 -- ========================================
 -- Database Review Summary (June 2026)
 -- ========================================
--- TOTAL TABLES: 35 (all ✅ RLS enabled)
+-- TOTAL TABLES: 31 (all ✅ RLS enabled)
 --
 -- Bảng có Realtime (8): appointments, appointment_services, attendance,
---   auto_assign_logs, cron_job_logs, notifications, staff_skills, tasks, time_slot_locks
+--   auto_assign_logs, notifications, staff_skills, tasks, time_slot_locks
 --
--- Bảng KHÔNG có Realtime (27): ai_cache, attendance_reminders_log,
---   audit_logs, auto_seo_config, background_tasks, bank_settings, banner_settings,
---   faqs,
---   blog_stats, blog_views, blogs, cash_register, customer_packages, customers,
---   package_usage_logs, random_booking_reminders_log, rate_limits, reviews,
---   seo_articles, seo_settings, services, slot_limits, treatment_packages,
+-- Bảng KHÔNG có Realtime (23): ai_cache, attendance_reminders_log,
+--   audit_logs, auto_seo_config, bank_settings, banner_settings, blog_stats,
+--   blog_views, blogs, customer_packages, customers, package_usage_logs,
+--   random_booking_reminders_log, rate_limits, reviews, seo_articles,
+--   seo_settings, services, slot_limits, treatment_packages,
 --   unaccepted_booking_reminders_log, uncompleted_booking_reminders_log, users
 
 CREATE OR REPLACE FUNCTION increment_blog_view(p_post_id UUID)
@@ -713,196 +603,3 @@ BEGIN
   END IF;
 END;
 $$ LANGUAGE plpgsql;
-
--- ========================================
--- RPC Functions (V3.13)
--- ========================================
-
--- enqueue_background_task: Insert a task into background_tasks queue
-CREATE OR REPLACE FUNCTION enqueue_background_task(
-  task_type TEXT,
-  task_payload JSONB
-)
-RETURNS UUID
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-  task_id UUID;
-BEGIN
-  INSERT INTO background_tasks (task_type, payload, status)
-  VALUES (task_type, task_payload, 'pending')
-  RETURNING id INTO task_id;
-  RETURN task_id;
-END;
-$$;
-
--- dequeue_all_background_tasks: Claim all pending tasks atomically
-CREATE OR REPLACE FUNCTION dequeue_all_background_tasks()
-RETURNS SETOF background_tasks
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  RETURN QUERY
-  UPDATE background_tasks
-  SET status = 'processing', updated_at = NOW()
-  WHERE status = 'pending'
-  RETURNING *;
-END;
-$$;
-
--- deduct_package_session: Atomically deduct a session from customer_packages (used by staff/actions.ts)
-CREATE OR REPLACE FUNCTION deduct_package_session(
-  p_pkg_id UUID,
-  p_appt_id UUID,
-  p_used_at TIMESTAMP WITH TIME ZONE
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  UPDATE customer_packages
-  SET remaining_sessions = remaining_sessions - 1,
-      status = CASE
-        WHEN remaining_sessions - 1 <= 0 THEN 'EXHAUSTED'
-        ELSE 'ACTIVE'
-      END,
-      updated_at = NOW()
-  WHERE id = p_pkg_id
-    AND remaining_sessions > 0;
-
-  IF FOUND THEN
-    INSERT INTO package_usage_logs (customer_package_id, appointment_id, used_at, notes)
-    VALUES (p_pkg_id, p_appt_id, p_used_at, 'Khấu trừ tự động 1 buổi khi hoàn thành lịch hẹn');
-  END IF;
-END;
-$$;
-
--- refund_package_session: Refund a session when appointment is cancelled (used by customer.ts)
-CREATE OR REPLACE FUNCTION refund_package_session(
-  p_pkg_id UUID,
-  p_appt_id UUID,
-  p_used_at TIMESTAMP WITH TIME ZONE
-)
-RETURNS void
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  UPDATE customer_packages
-  SET remaining_sessions = remaining_sessions + 1,
-      status = CASE
-        WHEN status = 'EXHAUSTED' THEN 'ACTIVE'
-        ELSE status
-      END,
-      updated_at = NOW()
-  WHERE id = p_pkg_id;
-
-  IF FOUND THEN
-    INSERT INTO package_usage_logs (customer_package_id, appointment_id, used_at, notes)
-    VALUES (p_pkg_id, p_appt_id, p_used_at, 'Hoàn buổi do khách hàng hủy lịch');
-  END IF;
-END;
-$$;
-
--- ========================================
--- FK Indexes (Phase 4 — Database Hardening)
--- ========================================
-CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON audit_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_appointments_use_package_id ON appointments(use_package_id);
-CREATE INDEX IF NOT EXISTS idx_appointment_services_service_id ON appointment_services(service_id);
-CREATE INDEX IF NOT EXISTS idx_customer_packages_package_id ON customer_packages(package_id);
-CREATE INDEX IF NOT EXISTS idx_customer_packages_customer_id ON customer_packages(customer_id);
-CREATE INDEX IF NOT EXISTS idx_customer_packages_sold_by_staff_id ON customer_packages(sold_by_staff_id);
-CREATE INDEX IF NOT EXISTS idx_package_usage_logs_customer_package_id ON package_usage_logs(customer_package_id);
-CREATE INDEX IF NOT EXISTS idx_package_usage_logs_appointment_id ON package_usage_logs(appointment_id);
-CREATE INDEX IF NOT EXISTS idx_package_usage_logs_staff_id ON package_usage_logs(staff_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
-CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by);
-CREATE INDEX IF NOT EXISTS idx_salary_payments_staff_id ON salary_payments(staff_id);
-CREATE INDEX IF NOT EXISTS idx_salary_payments_paid_by ON salary_payments(paid_by);
-CREATE INDEX IF NOT EXISTS idx_cash_register_recorded_by ON cash_register(recorded_by);
-CREATE INDEX IF NOT EXISTS idx_reviews_appointment_id ON reviews(appointment_id);
-CREATE INDEX IF NOT EXISTS idx_auto_assign_logs_appointment_id ON auto_assign_logs(appointment_id);
-
--- ========================================
--- updated_at auto trigger
--- ========================================
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-DO $$
-DECLARE
-  tbl text;
-  tables_with_updated_at text[] := ARRAY[
-    'customer_packages', 'blogs', 'cash_register', 'background_tasks',
-    'faqs', 'auto_seo_config', 'tasks', 'seo_settings',
-    'banner_settings', 'bank_settings'
-  ];
-BEGIN
-  FOREACH tbl IN ARRAY tables_with_updated_at
-  LOOP
-    IF NOT EXISTS (
-      SELECT 1 FROM pg_trigger
-      WHERE tgname = 'trigger_update_updated_at'
-        AND tgrelid = quote_ident(tbl)::regclass
-    ) THEN
-      EXECUTE format(
-        'CREATE TRIGGER trigger_update_updated_at BEFORE UPDATE ON %I FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()',
-        tbl
-      );
-    END IF;
-  END LOOP;
-END $$;
-
--- ========================================
--- Service Categories (Phase 6 — migrated from CHECK constraint)
--- ========================================
-CREATE TABLE IF NOT EXISTS service_categories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name VARCHAR(100) NOT NULL UNIQUE,
-  slug VARCHAR(100) NOT NULL UNIQUE,
-  sort_order INT NOT NULL DEFAULT 0,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now())
-);
-
-INSERT INTO service_categories (name, slug, sort_order) VALUES
-  ('Móng', 'mong', 1),
-  ('Gội dưỡng sinh', 'goi-duong-sinh', 2),
-  ('Massage', 'massage', 3),
-  ('Deal', 'deal', 4)
-ON CONFLICT (name) DO NOTHING;
-
--- Add category_id column to services (nullable initially)
-ALTER TABLE services ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES service_categories(id) ON DELETE SET NULL;
-
--- Migrate existing data: map old category values to new FK
-UPDATE services s
-SET category_id = sc.id
-FROM service_categories sc
-WHERE s.category = sc.name;
-
--- Drop the old CHECK constraint now that data is migrated
-ALTER TABLE services DROP CONSTRAINT IF EXISTS services_category_check;
-
--- Make category_id NOT NULL once migration is verified
-ALTER TABLE services ALTER COLUMN category_id SET NOT NULL;
-
--- Index for category lookups
-CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);
-ALTER TABLE time_slot_locks DROP CONSTRAINT IF EXISTS chk_time_slot_locks_end_gt_start;
-ALTER TABLE time_slot_locks ADD CONSTRAINT chk_time_slot_locks_end_gt_start CHECK (end_time > start_time);
-
-ALTER TABLE salary_payments DROP CONSTRAINT IF EXISTS chk_salary_payments_period_end_gt_start;
-ALTER TABLE salary_payments ADD CONSTRAINT chk_salary_payments_period_end_gt_start CHECK (period_end > period_start);
-
-ALTER TABLE customers DROP CONSTRAINT IF EXISTS chk_customers_email_format;
-ALTER TABLE customers ADD CONSTRAINT chk_customers_email_format CHECK (email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');

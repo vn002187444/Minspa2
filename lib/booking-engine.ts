@@ -379,7 +379,7 @@ export async function incrementSlotLimit(date: string, time: string): Promise<vo
     }
   }
 
-  invalidateCache(date);
+  void invalidateCache(date);
 }
 
 export async function getSlotAvailabilityWithNames(
@@ -389,7 +389,7 @@ export async function getSlotAvailabilityWithNames(
   skipAttendanceCheck: boolean = false
 ): Promise<SlotAvailability[]> {
   const cacheKey = buildSlotCacheKey(date, selectedServiceIds);
-  const cached = getCached<SlotAvailability[]>(cacheKey);
+  const cached = await getCached<SlotAvailability[]>(cacheKey);
   if (cached) return cached;
 
   const supabase = await createClient();
@@ -516,6 +516,6 @@ export async function getSlotAvailabilityWithNames(
     }
   }
 
-  setCache(cacheKey, slots, selectedServiceIds.length > 0 ? 15_000 : 30_000);
+  await setCache(cacheKey, slots, selectedServiceIds.length > 0 ? 15_000 : 30_000);
   return slots;
 }

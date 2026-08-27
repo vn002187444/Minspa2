@@ -45,9 +45,10 @@ export async function sendPushNotification(recipientId: string, title: string, b
 
   try {
     const subscription = typeof token === 'string' ? JSON.parse(token) : token;
+    const { stripHtml } = await import('@/lib/sanitize');
     const payload = JSON.stringify({
-      title,
-      body,
+      title: stripHtml(title),
+      body: stripHtml(body),
       data: { url }
     });
 

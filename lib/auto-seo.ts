@@ -1,182 +1,170 @@
 import { createClient } from '@/utils/supabase/server';
 import { callGemini } from '@/lib/ai/gemini';
-import { searchImages } from '@/lib/image-search';
-import { normalizeNFC } from '@/lib/utils';
+import { logger } from '@/lib/logger';
+import { sendEmail } from '@/lib/notify';
 
-const SYSTEM_INSTRUCTION = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam. Bạn viết cho thương hiệu Min Nail & Hair — một salon cao cấp tại Thủ Đức, TP.HCM, chuyên gội đầu dưỡng sinh thảo dược, nail và massage body.
+const ARTICLE_SYSTEM = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
-PHONG CÁCH VIẾT:
-- Giọng văn ấm áp, thân thiện nhưng chuyên nghiệp — như một người bạn am hiểu đang chia sẻ bí quyết.
-- Không viết như bài báo hay giáo trình. Viết như người thật trải nghiệm thật.
-- Mỗi đoạn văn TỐI ĐA 3-4 câu. Luôn xuống dòng sau mỗi ý.
-- Bắt đầu bài viết bằng 1 câu hỏi hoặc 1 tình huống gần gũi để giữ chân người đọc.
+QUY TẮC:
+- Chỉ viết về chăm sóc sắc đẹp, không tư vấn y tế.
 - Luôn trả về JSON đúng schema yêu cầu.
-- Tiếng Việt có dấu đầy đủ, không dùng từ nước ngoài khi có từ Việt tương đương.
-
-ĐỊNH DẠNG MARKDOWN BẮT BUỘC (hệ thống chỉ render được ## và ###):
-
-1. CẤU TRÚC BÀI VIẾT:
-   - Mở bài: 2-3 đoạn ngắn (không có heading), bắt đầu bằng câu hỏi hoặc tình huống.
-   - 3-4 phần ## (section chính), mỗi phần có 2-3 ### (sub-section).
-   - Kết bài: 1-2 đoạn ngắn + CTA.
-
-2. QUY TẮC HEADING:
-   - Dùng ## cho tiêu đề phần (section chính).
-   - Dùng ### cho tiêu đề con (sub-section).
-   - KHÔNG BAO GIỜ dùng # (H1) — hệ thống không hỗ lý, sẽ render thành text thô.
-   - Mỗi heading PHẢI có 1 dòng trống TRƯỚC và SAU nó.
-   - Tiêu đề con ### phải cụ thể, mô tả nội dung bên trong — KHÔNG viết chung chung.
-
-3. QUY TẮC ĐOẠN VĂN:
-   - Mỗi đoạn văn tối đa 3-4 câu.
-   - Mỗi đoạn cách nhau 1 dòng trống.
-   - KHÔNG viết liền 2 đoạn thành 1 block.
-   - Từ khóa chính xuất hiện trong 1-2 câu đầu tiên của bài viết.
-
-4. QUY TẮC IN ĐẬM:
-   - In đậm thuật ngữ quan trọng bằng **thuật ngữ** khi mới giới thiệu lần đầu.
-   - Tiêu đề con ### kết thúc bằng dấu hai chấm và in đậm: ### **Tiêu đề con:**
-   - KHÔNG in đậm cả câu, chỉ in đậm từ/cụm từ quan trọng.
-
-5. QUY TẮC LIST:
-   - Khi liệt kê 3+ mục, dùng markdown list (- hoặc 1.) thay vì viết liền dòng.
-   - Mỗi item list trên 1 dòng riêng.
-
-6. INTERNAL LINK:
-   - Dùng markdown link: [đặt lịch ngay](https://minhair.vercel.app/booking)
-   - KHÔNG bao giờ dùng URL trần.
-   - Anchor text phải tự nhiên: "đặt lịch", "đặt lịch ngay", "đặt lịch hẹn", "tư vấn miễn phí".
-
-7. CTA KẾT BÀI:
-   - Luôn có 1 đoạn CTA cuối bài, ngắn gọn, mạnh mẽ.
-   - Gợi ý hành động cụ thể: đặt lịch, gọi điện, ghé salon.`;
+- Giọng văn thân thiện, chuyên nghiệp, tự nhiên.
+- Tiếng Việt có dấu đầy đủ.`;
 
 const ARTICLE_SCHEMA = {
   type: 'object',
   properties: {
-    title: { type: 'string', description: 'Tiêu đề SEO, tối đa 70 ký tự, chứa từ khóa chính, gây tò mò, không dùng ký tự đặc biệt' },
-    metaDescription: { type: 'string', description: 'Thẻ mô tả SEO, tối đa 160 ký tự, tóm tắt nội dung + CTA, chứa từ khóa phụ' },
-    keywords: { type: 'string', description: 'Các từ khóa SEO chính và phụ, phân cách bằng dấu phẩy' },
-    imageAlt: { type: 'string', description: 'Mô tả ảnh Alt text chuẩn SEO, chứa từ khóa chính, mô tả hình ảnh liên quan' },
-    content: { type: 'string', description: 'Nội dung Markdown. Cấu trúc: mở bài 2-3 đoạn ngắn không heading, 3-4 phần ## có 2-3 ### bên trong, kết bài 1-2 đoạn + CTA. Tối đa 1200 từ. KHÔNG dùng # (H1). Mỗi ### in đậm tiêu đề con bằng ### **Tiêu đề:**.' },
+    title: { type: 'string', description: 'Tiêu đề bài viết, tối đa 70 ký tự, chứa từ khóa chính' },
+    metaDescription: { type: 'string', description: 'Thẻ mô tả ngắn gọn, tối đa 160 ký tự' },
+    content: { type: 'string', description: 'Nội dung Markdown gồm 3-4 phần H2, kèm CTA đặt lịch' },
   },
-  required: ['title', 'metaDescription', 'keywords', 'imageAlt', 'content'],
+  required: ['title', 'metaDescription', 'content'],
 };
 
-const KEYWORD_SYSTEM = `Bạn là chuyên gia nghiên cứu từ khóa SEO trong lĩnh vực làm đẹp.
+const RESEARCH_SYSTEM = `Bạn là cố vấn SEO cho chuỗi dịch vụ "Min Nail & Hair" tại TP.HCM. Trả về JSON đúng schema. Tiếng Việt có dấu.`;
 
-QUY TẮC:
-- Chỉ đưa ra từ khóa tiếng Việt có dấu.
-- Từ khóa chính và từ khóa phụ (long-tail) xoay quanh chủ đề được yêu cầu.
-- Trả về JSON.`;
-
-const KEYWORD_SCHEMA = {
+const RESEARCH_SCHEMA = {
   type: 'object',
   properties: {
-    keywords: { type: 'string', description: 'Danh sách 10-15 từ khóa chính và phụ, phân cách bằng dấu phẩy' },
-    primary: { type: 'string', description: 'Từ khóa chính nhất' },
-    searchVolume: { type: 'string', description: 'Ước lượng lượng tìm kiếm hàng tháng (VD: "500-1000" hoặc "Không có dữ liệu")' },
+    keywords: { type: 'array', items: { type: 'string' }, description: 'Danh sách 5 từ khóa chính & phụ' },
+    trends: { type: 'string', description: 'Xu hướng nổi bật của khách hàng' },
+    outline: { type: 'string', description: 'Cấu trúc dàn bài SEO đề nghị' },
   },
-  required: ['keywords', 'primary'],
+  required: ['keywords', 'trends', 'outline'],
 };
 
-function pickRandom<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+const TOPIC_POOL_SYSTEM = `Bạn là strategist SEO cho Min Nail & Hair (Lavita Charm, Thủ Đức). Chỉ trả về JSON đúng schema.`;
+const TOPIC_POOL_SCHEMA = {
+  type: 'object',
+  properties: {
+    topics: { type: 'array', items: { type: 'string' }, description: '10 chủ đề SEO mới, mỗi chủ đề 6-12 từ, gắn địa phương Thủ Đức/Lavita Charm nếu hợp lý' },
+  },
+  required: ['topics'],
+};
+
+const DEFAULT_FALLBACK_TOPICS = [
+  'gội đầu dưỡng sinh thảo dược Lavita Charm',
+  'massage cổ vai gáy giảm stress Thủ Đức',
+  'nail art xu hướng 2026 Thủ Đức',
+  'chăm sóc tóc hư tổn tại nhà',
+  'móng gel bền màu 3 tuần',
+  'massage body thư giãn 90 phút',
+  'combo gội + nail tiết kiệm Thủ Đức',
+  'chăm sóc da đầu dầu đúng cách',
+  'màu nail hot mùa hè 2026',
+  'gội dưỡng sinh cho dân văn phòng',
+];
+
+async function refillTopicPoolIfNeeded(supabase: any): Promise<void> {
+  const { data: config } = await supabase.from('auto_seo_config').select('topic_pool').eq('id', 1).single();
+  const pool: string[] = config?.topic_pool || [];
+  if (pool.length >= 5) return;
+
+  // avoid duplicates: exclude already published topics (last 100)
+  const { data: recent } = await supabase.from('seo_articles').select('topic').eq('topic_source', 'auto_seo').order('created_at', { ascending: false }).limit(100);
+  const recentSet = new Set((recent || []).map((r: any) => (r.topic || '').toLowerCase().trim()));
+
+  let newTopics: string[] = [];
+  try {
+    const result = await callGemini({
+      systemInstruction: TOPIC_POOL_SYSTEM,
+      prompt: `Tạo 10 chủ đề SEO mới cho spa nail/hair gội dưỡng sinh tại Thủ Đức/Lavita Charm. Tránh trùng với: ${Array.from(recentSet).slice(0, 20).join(' | ') || 'không có'}.`,
+      jsonSchema: TOPIC_POOL_SCHEMA,
+      useCache: false,
+    });
+    if (result.text) {
+      const parsed = JSON.parse(result.text);
+      newTopics = (parsed.topics || []).map((t: string) => t.trim()).filter(Boolean);
+    }
+  } catch (e: any) {
+    logger.error('[AutoSEO] refill Gemini failed', e);
+  }
+
+  if (newTopics.length < 5) {
+    // fallback: use defaults not in recentSet
+    const fallback = DEFAULT_FALLBACK_TOPICS.filter(t => !recentSet.has(t.toLowerCase()));
+    newTopics = [...newTopics, ...fallback].slice(0, 10);
+  }
+
+  // dedup + merge
+  const merged = [...pool];
+  for (const t of newTopics) {
+    const key = t.toLowerCase().trim();
+    if (!merged.some(m => m.toLowerCase().trim() === key) && !recentSet.has(key)) merged.push(t);
+    if (merged.length >= 15) break;
+  }
+
+  if (merged.length !== pool.length) {
+    const { error } = await supabase.from('auto_seo_config').update({ topic_pool: merged, updated_at: new Date().toISOString() }).eq('id', 1);
+    if (error) logger.error('[AutoSEO] refill update failed', error);
+    else logger.info('[AutoSEO] refilled pool', { added: merged.length - pool.length, total: merged.length });
+  }
 }
 
-async function generateKeywords(topic: string): Promise<{ keywords: string; primary: string }> {
-  const prompt = `Phân tích và đưa ra từ khóa SEO cho chủ đề: "${topic}"
-Lĩnh vực: làm đẹp, spa, nail, hair tại Việt Nam.
-Ưu tiên từ khóa có lượng tìm kiếm cao và long-tail keywords.`;
+export async function pickTopic(): Promise<string | null> {
+  const supabase = await createClient();
+  await refillTopicPoolIfNeeded(supabase);
+  const { data: config } = await supabase.from('auto_seo_config').select('topic_pool').eq('id', 1).single();
+  if (!config?.topic_pool?.length) return null;
+  const pool: string[] = config.topic_pool;
+  // prefer topics not used recently
+  const { data: recent } = await supabase.from('seo_articles').select('topic').eq('topic_source', 'auto_seo').order('created_at', { ascending: false }).limit(50);
+  const recentSet = new Set((recent || []).map((r: any) => (r.topic || '').toLowerCase().trim()));
+  const unused = pool.filter(t => !recentSet.has(t.toLowerCase().trim()));
+  const candidates = unused.length ? unused : pool;
+  const picked = candidates[Math.floor(Math.random() * candidates.length)];
+  return picked;
+}
+
+export async function researchTopic(topic: string): Promise<{ keywords: string[]; trends: string; outline: string } | null> {
+  const prompt = `Nghiên cứu SEO cho chủ đề: "${topic}"`;
+  const result = await callGemini({
+    systemInstruction: RESEARCH_SYSTEM,
+    prompt,
+    jsonSchema: RESEARCH_SCHEMA,
+    useCache: true,
+  });
+  if (!result.text) return null;
+  try {
+    const parsed = JSON.parse(result.text);
+    return {
+      keywords: parsed.keywords || [],
+      trends: parsed.trends || '',
+      outline: parsed.outline || '',
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateArticle(topic: string, keywords: string[]): Promise<{ title: string; content: string; summary: string } | null> {
+  const prompt = `Viết bài SEO về chủ đề: "${topic}"
+Từ khóa phụ: "${keywords.join(', ') || 'Không có'}"
+Địa điểm: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức.
+Thương hiệu: Min Nail & Hair`;
 
   const result = await callGemini({
-    systemInstruction: KEYWORD_SYSTEM,
+    systemInstruction: ARTICLE_SYSTEM,
     prompt,
-    jsonSchema: KEYWORD_SCHEMA,
+    jsonSchema: ARTICLE_SCHEMA,
     useCache: true,
   });
 
-  if (result.text) {
-    try {
-      const parsed = JSON.parse(result.text);
-      return { keywords: parsed.keywords || '', primary: parsed.primary || topic };
-    } catch { /* fall through */ }
+  if (!result.text) return null;
+  try {
+    const parsed = JSON.parse(result.text);
+    return {
+      title: parsed.title || topic,
+      content: parsed.content || '',
+      summary: parsed.metaDescription || '',
+    };
+  } catch {
+    return null;
   }
-  return { keywords: topic, primary: topic };
 }
 
-async function generateArticle(topic: string, keywords: string, primary: string): Promise<{ title: string; metaDescription: string; imageAlt: string; content: string } | null> {
-  const prompt = `Viết bài SEO chuẩn về chủ đề: "${topic}"
-Từ khóa chính: "${primary}"
-Từ khóa phụ: "${keywords}"
-
-THÔNG TIN THƯƠNG HIỆU:
-- Tên: Min Nail & Hair (Min Salon)
-- Địa chỉ: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức, TP.HCM
-- Dịch vụ chính: gội đầu dưỡng sinh thảo dược Tây Bắc, nail nghệ thuật, massage body chuyên sâu
-- Website: https://minhair.vercel.app
-- Trang đặt lịch: https://minhair.vercel.app/booking
-
-CẤU TRÚC BÀI VIẾT:
-
-1. MỞ BÀI (không có heading):
-   - Bắt đầu bằng 1 câu hỏi hoặc 1 tình huống gần gũi (VD: "Bạn có bao giờ...?")
-   - 2-3 đoạn ngắn, mỗi đoạn 2-3 câu.
-   - Lồng từ khóa chính vào 1-2 câu đầu.
-   - Cuối mở bài, gợi ý rằng bài viết sẽ giải quyết vấn đề.
-
-2. THÂN BÀI (3-4 phần ##):
-   - Mỗi phần ## có tên tiêu đề cụ thể, mô tả nội dung bên trong.
-   - Mỗi phần có 2-3 ### con.
-   - Mỗi ### in đậm tiêu đề con: ### **Tiêu đề con:**
-   - Mỗi ### có 2-3 đoạn ngắn (tối đa 3-4 câu/đoạn).
-   - Khi liệt kê 3+ mục → dùng markdown list (- item).
-   - In đậm thuật ngữ quan trọng khi mới giới thiệu: **thuật ngữ**.
-   - Lồng từ khóa phụ tự nhiên, KHÔNG nhồi nhét.
-   - Có 1 internal link markdown [đặt lịch ngay](https://minhair.vercel.app/booking) trong bài.
-
-3. KẾT BÀI (không có heading):
-   - 1-2 đoạn tóm tắt ngắn gọn.
-   - 1 đoạn CTA mạnh mẽ: gợi ý hành động cụ thể (đặt lịch, gọi điện, ghé salon).
-   - Anchor text link phải tự nhiên, KHÔNG dùng URL trần.
-
-QUY TẮC MARKDOWN (BẮT BUỘC):
-- ## cho section chính, ### cho sub-section.
-- KHÔNG BAO GIỜ dùng # (H1).
-- Mỗi ### dạng: ### **Tiêu đề con:**
-- Mỗi block cách nhau 1 dòng trống.
-- Đoạn văn tối đa 3-4 câu, xuống dòng sau mỗi ý.
-- Dùng list (- item) khi liệt kê 3+ mục.
-- Internal link dạng markdown: [anchor text](url).`;
-
-  const result = await callGemini({
-    systemInstruction: SYSTEM_INSTRUCTION,
-    prompt,
-    jsonSchema: ARTICLE_SCHEMA,
-    useCache: false,
-  });
-
-  if (result.text) {
-    try {
-      const parsed = JSON.parse(result.text);
-      return {
-        title: parsed.title || topic,
-        metaDescription: parsed.metaDescription || '',
-        imageAlt: parsed.imageAlt || topic,
-        content: parsed.content || '',
-      };
-    } catch { /* fall through */ }
-  }
-  return null;
-}
-
-async function selectImage(topic: string): Promise<string> {
-  const result = await searchImages(topic, 1)
-  return result.images[0] || ''
-}
-
-function slugify(text: string): string {
-  return text
+export async function publishToBlog(supabase: any, title: string, content: string, summary: string): Promise<{ slug: string } | null> {
+  const slug = title
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
@@ -184,277 +172,106 @@ function slugify(text: string): string {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .substring(0, 200) || 'bai-viet-seo-' + Date.now();
+
+  const { data: existing } = await supabase
+    .from('blogs')
+    .select('id')
+    .eq('slug', slug)
+    .maybeSingle();
+
+  if (existing) {
+    const { error } = await supabase
+      .from('blogs')
+      .update({ title, summary, content })
+      .eq('id', existing.id);
+    if (error) { logger.error('AutoSEO update blog failed', error); return null; }
+    return { slug };
+  }
+
+  const { error } = await supabase.from('blogs').insert({
+    title,
+    slug,
+    summary,
+    content,
+    image_url: 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
+    created_at: new Date().toISOString(),
+  });
+
+  if (error) { logger.error('AutoSEO publish blog failed', error); return null; }
+  return { slug };
 }
 
-function extractSummary(content: string, title: string): string {
-  const firstParagraph = content.replace(/^##\s+.+\n*/gm, '').match(/^(.+?)(?:\n\n|$)/m);
-  return firstParagraph
-    ? firstParagraph[1].replace(/\*\*/g, '').trim().substring(0, 300)
-    : title;
+export async function saveArticleRecord(supabase: any, article: {
+  topic: string; keywords: string; article: string; status: string;
+  scheduled_at?: string; topic_source?: string; blog_slug?: string;
+}) {
+  const id = 'art_' + Math.random().toString(36).substring(2, 11);
+  const { error } = await supabase.from('seo_articles').insert({
+    id, ...article, created_at: new Date().toISOString(),
+  });
+  if (error) { logger.error('AutoSEO save article failed', error); return null; }
+  return id;
 }
 
-export async function runAutoSeo(force = false): Promise<{
-  success: boolean;
-  message: string;
-  slug?: string;
-  title?: string;
-}> {
-  const startTime = Date.now();
+export async function notifyAdmin(article: { title: string; slug: string }) {
+  const url = `https://minnailhair.vn/blog/${article.slug}`;
+  await Promise.allSettled([
+    sendEmail({
+      to: process.env.ADMIN_EMAIL || 'minnailhair@gmail.com',
+      subject: `📝 [Auto SEO] Bài viết mới: ${article.title}`,
+      html: `<p>Bài viết <b>${article.title}</b> đã được đăng tự động.</p><p>URL: <a href="${url}">${url}</a></p>`,
+    }).catch(e => logger.error('AutoSEO notify email failed', e)),
+  ]);
+}
+
+export async function runAutoSeo(): Promise<{ success: boolean; message: string }> {
+  const supabase = await createClient();
 
   try {
-    // 1. Check config
-    const supabase = await createClient();
-    const { data: config } = await supabase
-      .from('auto_seo_config')
-      .select('*')
-      .eq('id', 1)
-      .single();
+    const { data: config } = await supabase.from('auto_seo_config').select('*').eq('id', 1).single();
+    if (!config?.enabled) return { success: false, message: 'Auto SEO is disabled' };
 
-    if (!config || !config.enabled) {
-      return { success: false, message: 'Auto SEO is disabled' };
-    }
+    // ensure pool is refilled before picking (weekly safeguard + handles "hết tiêu đề" incident)
+    await refillTopicPoolIfNeeded(supabase);
 
-    // 2. Check schedule (day of week + hour)
-    const now = new Date();
-    const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    const currentDay = days[now.getUTCDay()];
-    const currentHour = now.getUTCHours();
+    const topic = await pickTopic();
+    if (!topic) return { success: false, message: 'No topic in pool (refill failed)' };
 
-    // Compare in UTC — schedule_days/schedule_hour are stored in Vietnam time (UTC+7)
-    const vnHour = (currentHour + 7) % 24;
-    const scheduleDays: string[] = config.schedule_days || [config.schedule_day].filter(Boolean);
-    
-    const isScheduled = scheduleDays.includes(currentDay) && config.schedule_hour === vnHour;
-    
-    if (!force && !isScheduled) {
-      return { success: false, message: `Schedule mismatch: current ${currentDay} ${vnHour}h, config [${scheduleDays.join(',')}] ${config.schedule_hour}h` };
-    }
+    const research = await researchTopic(topic);
+    const keywords = research?.keywords || [];
 
-    // 3. Pick a topic from pool
-    const pool: string[] = config.topic_pool || [];
-    if (pool.length === 0) {
-      return { success: false, message: 'Topic pool is empty. Add topics in Auto SEO config.' };
-    }
+    const article = await generateArticle(topic, keywords);
+    if (!article) return { success: false, message: 'Article generation returned empty' };
 
-    const topic = pickRandom(pool);
+    const published = await publishToBlog(supabase, article.title, article.content, article.summary);
+    if (!published) return { success: false, message: 'Publish to blog failed' };
 
-    // 4. Generate keywords
-    const kwResult = await generateKeywords(topic);
-    const keywords = kwResult.keywords;
-    const primary = kwResult.primary;
-
-    // 5. Generate article
-    const article = await generateArticle(topic, keywords, primary);
-    if (!article) {
-      return { success: false, message: 'Failed to generate article from Gemini' };
-    }
-
-    // 6. Select image
-    const imageUrl = await selectImage(topic);
-
-    // 7. Check duplicate slug
-    const slug = slugify(article.title);
-    const { data: existing } = await supabase
-      .from('blogs')
-      .select('id')
-      .eq('slug', slug)
-      .single();
-
-    const finalSlug = existing ? slug + '-' + Date.now() : slug;
-
-    // 8. Insert into blogs
-    const { error: blogError } = await supabase.from('blogs').insert({
-      title: normalizeNFC(article.title).substring(0, 255),
-      slug: finalSlug.substring(0, 255),
-      summary: normalizeNFC(article.metaDescription || extractSummary(article.content, article.title)).substring(0, 500),
-      content: normalizeNFC(article.content),
-      image_url: (imageUrl || '').substring(0, 255),
-      image_alt: normalizeNFC(article.imageAlt || topic.substring(0, 100)).substring(0, 255),
-      published: true,
-      published_at: now.toISOString(),
-      created_at: now.toISOString(),
-    });
-
-    if (blogError) {
-      return { success: false, message: `Failed to publish blog: ${blogError.message}` };
-    }
-
-    // 9. Log to seo_articles
-    const articleId = 'auto-' + Date.now();
-    await supabase.from('seo_articles').upsert({
-      id: articleId,
-      topic: normalizeNFC(topic),
-      keywords: normalizeNFC(keywords),
-      article: normalizeNFC(article.content),
-      image_url: (imageUrl || '').substring(0, 255),
-      image_alt: normalizeNFC(article.imageAlt || topic.substring(0, 100)).substring(0, 255),
+    await saveArticleRecord(supabase, {
+      topic,
+      keywords: keywords.join(', '),
+      article: article.content,
       status: 'published',
       topic_source: 'auto_seo',
-      blog_slug: finalSlug,
-      published_at: now.toISOString(),
-    }, { onConflict: 'id' });
-
-    // 10. Log cron job
-    await supabase.from('cron_job_logs').insert({
-      job_name: 'seo-publish',
-      started_at: new Date(startTime).toISOString(),
-      finished_at: new Date().toISOString(),
-      success: true,
-      error: null,
+      blog_slug: published.slug,
     });
 
-    // 11. Revalidate paths
+    // consume topic from pool to avoid immediate repeat; refill will replenish when <5
     try {
-      const { revalidatePath } = await import('next/cache');
-      revalidatePath('/blog');
-      revalidatePath(`/blog/${finalSlug}`);
-    } catch { /* silent */ }
+      const { data: cfg2 } = await supabase.from('auto_seo_config').select('topic_pool').eq('id', 1).single();
+      const pool2: string[] = cfg2?.topic_pool || [];
+      const idx = pool2.findIndex((t: string) => t.toLowerCase().trim() === topic.toLowerCase().trim());
+      if (idx !== -1) {
+        pool2.splice(idx, 1);
+        await supabase.from('auto_seo_config').update({ topic_pool: pool2, updated_at: new Date().toISOString() }).eq('id', 1);
+      }
+    } catch {}
 
-    // 12. Remove used topic from pool & auto-refresh if running low
-    const updatedPool = pool.filter(t => t !== topic);
-    const needsRefresh = updatedPool.length < 5;
+    await notifyAdmin({ title: article.title, slug: published.slug });
 
-    await supabase.from('auto_seo_config').upsert({
-      id: 1,
-      topic_pool: updatedPool,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
-
-    if (needsRefresh) {
-      runKeywordResearch().catch(e =>
-        console.warn('[AUTO-SEO] Keyword research failed:', e)
-      );
-    }
-
-    return {
-      success: true,
-      message: `Published: "${article.title}"`,
-      slug: finalSlug,
-      title: article.title,
-    };
-  } catch (error: unknown) {
-    const elapsed = Date.now() - startTime;
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-
-    // Log failure
-    try {
-      const supabase = await createClient();
-      await supabase.from('cron_job_logs').insert({
-        job_name: 'seo-publish',
-        started_at: new Date(startTime).toISOString(),
-        finished_at: new Date().toISOString(),
-        success: false,
-        error: errorMsg,
-      });
-    } catch { /* silent */ }
-
-    return { success: false, message: `Error after ${elapsed}ms: ${errorMsg}` };
-  }
-}
-
-const KEYWORD_RESEARCH_SYSTEM = `Bạn là chuyên gia SEO và trend research trong ngành làm đẹp Việt Nam.
-
-NHIỆM VỤ:
-- Đưa ra 10 chủ đề hot nhất hiện tại về nail, tóc, gội dưỡng sinh, spa, massage tại Việt Nam.
-- Mỗi chủ đề kèm từ khóa chính và ước lượng search volume.
-- Trả về JSON.`;
-
-const KEYWORD_RESEARCH_SCHEMA = {
-  type: 'object',
-  properties: {
-    topics: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          topic: { type: 'string', description: 'Chủ đề' },
-          primary: { type: 'string', description: 'Từ khóa chính' },
-          volume: { type: 'string', description: 'Ước lượng tìm kiếm/tháng' },
-        },
-        required: ['topic', 'primary'],
-      },
-    },
-  },
-  required: ['topics'],
-};
-
-export async function runKeywordResearch(): Promise<{
-  success: boolean;
-  message: string;
-  topics?: string[];
-}> {
-  try {
-    const prompt = `Research xu hướng làm đẹp mới nhất tại Việt Nam năm 2026-2027.
-Tập trung vào: nail art, gội đầu dưỡng sinh thảo dược, massage body, chăm sóc tóc, spa tại nhà.
-Đưa ra 10 chủ đề có lượng tìm kiếm cao và tiềm năng SEO tốt nhất cho spa tại Thủ Đức, TP.HCM.`;
-
-    const result = await callGemini({
-      systemInstruction: KEYWORD_RESEARCH_SYSTEM,
-      prompt,
-      jsonSchema: KEYWORD_RESEARCH_SCHEMA,
-      useCache: false,
-    });
-
-    if (!result.text) {
-      return { success: false, message: 'Gemini returned empty' };
-    }
-
-    let parsed: any;
-    try {
-      parsed = JSON.parse(result.text);
-    } catch {
-      return { success: false, message: 'Gemini returned invalid JSON in keyword research' };
-    }
-    const topics: { topic: string; primary: string }[] = parsed.topics || [];
-
-    if (topics.length === 0) {
-      return { success: false, message: 'No topics generated' };
-    }
-
-    const topicList = topics.map((t) => t.topic);
-
-    // Fetch already-published topics to avoid duplicates
-    const supabase = await createClient();
-    const { data: published } = await supabase
-      .from('seo_articles')
-      .select('topic')
-      .neq('status', 'draft');
-
-    const publishedTopics = new Set(
-      (published || []).map(r => r.topic?.normalize('NFC').toLowerCase().trim()).filter(Boolean)
-    );
-
-    const freshTopics = topicList.filter(t =>
-      !publishedTopics.has(t.normalize('NFC').toLowerCase().trim())
-    );
-
-    if (freshTopics.length === 0) {
-      return { success: false, message: 'All generated topics have been published before' };
-    }
-
-    // Update auto_seo_config topic_pool with new topics
-    const { data: config } = await supabase
-      .from('auto_seo_config')
-      .select('topic_pool')
-      .eq('id', 1)
-      .single();
-
-    const existingPool: string[] = config?.topic_pool || [];
-    const merged = [...new Set([...freshTopics, ...existingPool])];
-
-    await supabase.from('auto_seo_config').upsert({
-      id: 1,
-      topic_pool: merged,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' });
-
-    return {
-      success: true,
-      message: `Đã cập nhật ${topicList.length} chủ đề mới vào Topic Pool`,
-      topics: topicList,
-    };
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, message: `Research error: ${errorMsg}` };
+    logger.info('[AutoSEO] Published', { topic, slug: published.slug });
+    return { success: true, message: `Published "${article.title}"` };
+  } catch (err: any) {
+    logger.error('[AutoSEO] Failed', err);
+    return { success: false, message: err.message };
   }
 }

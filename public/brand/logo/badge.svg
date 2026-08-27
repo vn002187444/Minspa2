@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Min badge">
+<rect width="256" height="256" rx="32" fill="white"/>
+<circle cx="128" cy="128" r="96" fill="none" stroke="#EADDCD" stroke-width="1.5"/>
+<circle cx="128" cy="128" r="88" fill="none" stroke="#3A2E2B" stroke-width="1"/>
+<circle cx="128" cy="96" r="36" fill="#C08063"/>
+<text x="128" y="108" text-anchor="middle" font-family="Playfair Display, serif" font-size="36" font-weight="700" fill="white">M</text>
+<text x="128" y="148" text-anchor="middle" font-family="Playfair Display, serif" font-size="14" font-weight="600" letter-spacing="3" fill="#3A2E2B">MIN</text>
+<text x="128" y="162" text-anchor="middle" font-family="Inter, sans-serif" font-size="7" letter-spacing="3.5" fill="#8D6E53">NAIL &amp; HAIR</text>
+<text x="128" y="182" text-anchor="middle" font-family="Inter, sans-serif" font-size="6" letter-spacing="2" fill="#B49678">★ EST. 2024 ★</text>
+</svg>

@@ -36,6 +36,17 @@
 | **Slice 4 HIGH** — 34 `console.error` → `logger.error` in 13 server action files | All server actions now use Sentry-integrated logger | 13 files |
 | **Slice 5 MEDIUM** — insertNotification returns `{ success, error }`, getCustomerByPhone logs errors, getStaffData checks 7 queries | Error propagation improved | 3 files |
 
+### 🟢 Giai đoạn 8: Brand & Campaign (05/2026)
+- [x] Brand tokens + guide (`docs/brand/tokens.json`, `BRAND_GUIDE.md`) — 12 seasonal themes sync `globals.css`
+- [x] Logo 3 variants SVG (monogram/wordmark/badge) — `public/brand/logo/`
+- [x] Icons custom 3 SVG (nail/herbal/massage) — `public/icons/custom/`
+- [x] CIP 5 mockups HTML in-ready — `public/cip/`
+- [x] Nút kích hoạt chiến dịch — `CampaignActivationButton.tsx` + `TabCampaign.tsx` → `/admin?tab=CAMPAIGN` (`min_campaign_active`)
+- [x] Pre-gen banners 8 files (hero 1920x600 + FB 820x312 ×4 mùa) — `public/campaign/banners/`
+- [x] Social 3 IG 1080x1080 — `public/campaign/social/`
+- [x] Slides deck 8 slides 1280x720 — `public/campaign/slides/deck.html`
+- [x] Unaccent FTS prod — `public.immutable_unaccent` + 3 GIN indexes đã apply
+
 ---
 
 ## Phase 1: Security — Auth & Hardening (P0 — 1 session per file)
