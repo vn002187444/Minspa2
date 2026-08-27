@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="#8D6E53" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Massage stone">
+<style>@keyframes sparkPulse{0%{stroke-dasharray:0 100;opacity:.9}50%{stroke-dasharray:60 40;opacity:1}100%{stroke-dasharray:0 100;opacity:.9}} .spark{stroke-dasharray:0 100;animation:sparkPulse 1.8s ease-in-out infinite} @media(prefers-reduced-motion:reduce){.spark{animation:none}}</style>
 <ellipse cx="24" cy="30" rx="16" ry="10" fill="#EADDCD"/>
-<ellipse cx="24" cy="28" rx="14" ry="8" fill="none"/>
+<ellipse cx="24" cy="28" rx="14" ry="8" fill="none" class="spark"/>
 <path d="M18 22 Q24 16 30 22" />
-<path d="M20 26 Q24 23 28 26"/>
+<path d="M20 26 Q24 23 28 26" class="spark" style="animation-delay:.4s"/>
 </svg>

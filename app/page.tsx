@@ -154,8 +154,9 @@ export default async function Home() {
            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 4k:gap-6 pt-2">
               <Link
                 href="/booking"
-                className="inline-flex items-center gap-2 bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-8 4k:px-10 4k:py-4 py-3.5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all shadow-lg hover:shadow-xl active:scale-95 hover-magnetic"
+                className="relative overflow-hidden inline-flex items-center gap-2 bg-[#5C4033] hover:bg-[#3A2E2B] text-white px-8 4k:px-10 4k:py-4 py-3.5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all shadow-lg hover:shadow-xl active:scale-95 hover-magnetic"
               >
+                <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-shimmer opacity-70" />
                 <Calendar className="w-4 h-4 4k:w-5 4k:h-5"  aria-hidden="true" />
                 Đặt lịch ngay
                 <ArrowRight className="w-4 h-4 4k:w-5 4k:h-5"  aria-hidden="true" />

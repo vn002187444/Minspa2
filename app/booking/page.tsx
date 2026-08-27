@@ -97,12 +97,22 @@ export default function BookingPage() {
   const [activeCategory, setActiveCategory] = useState<string>('Tất cả');
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [isCampaign, setIsCampaign] = useState(false);
 
   useEffect(() => {
     startTransition(() => {
       setMounted(true);
       setSelectedDate(format(new Date(), 'yyyy-MM-dd'));
     });
+    const checkCampaign = () => {
+      setIsCampaign(localStorage.getItem('min_campaign_active') === '1' || document.documentElement.getAttribute('data-campaign') === 'active');
+    };
+    checkCampaign();
+    window.addEventListener('storage', checkCampaign);
+    window.addEventListener('min:campaign' as any, checkCampaign);
+    const obs = new MutationObserver(checkCampaign);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-campaign'] });
+    return () => { window.removeEventListener('storage', checkCampaign); window.removeEventListener('min:campaign' as any, checkCampaign); obs.disconnect(); };
   }, []);
 
   useEffect(() => {
@@ -401,8 +411,8 @@ export default function BookingPage() {
         { name: "Trang chủ", url: breadcrumbOrigin },
         { name: "Đặt lịch", url: `${breadcrumbOrigin}/booking` },
       ]} />
-    <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-2 sm:p-4 lg:py-12 font-sans text-[#3A2E2B]">
-       <div className="max-w-xl lg:max-w-6xl xxl:max-w-7xl w-full bg-white rounded-3xl shadow-xl overflow-hidden min-h-[300px] md:min-h-[520px] flex flex-col border border-[#EADDCD] transition-all duration-300">
+     <div className="min-h-screen bg-[#FAF6F0] flex flex-col items-center justify-center p-2 sm:p-4 lg:py-12 font-sans text-[#3A2E2B]">
+        <div className={`max-w-xl lg:max-w-6xl xxl:max-w-7xl w-full rounded-3xl shadow-xl overflow-hidden min-h-[300px] md:min-h-[520px] flex flex-col border transition-all duration-300 ${isCampaign ? 'bg-white/80 backdrop-blur-xl border-white/50 shadow-2xl' : 'bg-white border-[#EADDCD]'}`}>
         
         {/* Header Steps */}
         <div className="bg-[#5C4033] p-5 sm:p-6 text-[#FAF6F0] shrink-0 relative overflow-hidden border-b border-[#EADDCD]">
