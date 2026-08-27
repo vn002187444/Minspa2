@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runAutoSeo, runKeywordResearch } from '@/lib/auto-seo';
+import { runAutoSeo } from '@/lib/auto-seo';
 import { getSession } from '@/utils/auth';
 
 async function isAuthorized(req: NextRequest): Promise<boolean> {
@@ -27,21 +27,14 @@ async function handleRequest(req: NextRequest) {
   const isForce = url.searchParams.get('force') === '1';
 
   if (isResearch) {
-    const result = await runKeywordResearch();
-    return NextResponse.json({
-      success: result.success,
-      message: result.message,
-      topics: result.topics,
-    });
+    return NextResponse.json({ success: false, message: 'research deprecated — use auto-seo refill' }, { status: 410 });
   }
 
-  const result = await runAutoSeo(isForce);
+  const result = await runAutoSeo();
 
   return NextResponse.json({
     success: result.success,
     message: result.message,
-    slug: result.slug,
-    title: result.title,
   });
 }
 
