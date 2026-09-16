@@ -19,6 +19,18 @@
   "nav.mobile.about": "📖 Giới Thiệu",
   "nav.mobile.faq": "❓ Hỏi Đáp",
 
+  "hero.badge": "NÂNG NIU VẺ ĐẸP TỰ NHIÊN",
+  "hero.title": "Min Nail & Gội Đầu Dưỡng Sinh",
+  "hero.subtitle": "\"Nơi sắc đẹp bắt đầu từ những phút giây an yên\"",
+  "hero.description": "Chào mừng bạn đến với <strong>không gian spa sang trọng và ấm cúng</strong> tại Chung cư Lavita Charm. Chúng tôi kiến tạo những liệu trình thư giãn sâu kết hợp chăm sóc làm đẹp chu đáo nhất cho đôi tay, mái tóc và làn da của bạn.",
+  "hero.ctaBooking": "Đặt lịch ngay",
+  "hero.ctaServices": "Xem dịch vụ",
+  "hero.addressLabel": "Địa chỉ",
+  "hero.addressValue": "TM14 Lavita Charm, Thủ Đức",
+  "hero.hotlineLabel": "Hotline đặt lịch",
+  "hero.hoursLabel": "Giờ mở cửa",
+  "hero.hoursValue": "09:00 - 20:30 (Mỗi ngày)",
+
   "booking.title": "Đặt Lịch Hẹn",
   "booking.phone": "Số Điện Thoại",
   "booking.name": "Họ và Tên",

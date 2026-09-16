@@ -19,6 +19,18 @@
   "nav.mobile.about": "📖 About Us",
   "nav.mobile.faq": "❓ FAQ",
 
+  "hero.badge": "CELEBRATING NATURAL BEAUTY",
+  "hero.title": "Min Nail & Herbal Head Spa",
+  "hero.subtitle": "\"Where beauty begins with moments of peace\"",
+  "hero.description": "Welcome to our <strong>cozy, upscale spa</strong> at Lavita Charm Residence. We craft deeply relaxing rituals that pamper your hands, hair and skin.",
+  "hero.ctaBooking": "Book Now",
+  "hero.ctaServices": "View Services",
+  "hero.addressLabel": "Address",
+  "hero.addressValue": "TM14 Lavita Charm, Thu Duc",
+  "hero.hotlineLabel": "Booking Hotline",
+  "hero.hoursLabel": "Opening Hours",
+  "hero.hoursValue": "09:00 - 20:30 (Daily)",
+
   "booking.title": "Book Appointment",
   "booking.phone": "Phone Number",
   "booking.name": "Full Name",

@@ -24,13 +24,9 @@ export default function LanguageSwitcher() {
     setCurrentLang(lang)
     setOpen(false)
 
-    const setCookie = (c: string) => { document.cookie = c; }
-    setCookie(`${COOKIE_NAME}=${lang}; path=/; SameSite=Lax; max-age=${365 * 24 * 60 * 60}`)
-    const host = window.location.hostname
-    if (host !== 'localhost') {
-      const domain = `.${host.split('.').slice(-2).join('.')}`
-      setCookie(`${COOKIE_NAME}=${lang}; path=/; domain=${domain}; SameSite=Lax; max-age=${365 * 24 * 60 * 60}`)
-    }
+    // Server reads `locale` cookie in app/layout.tsx:105 — set path=/ only.
+    // Do NOT set domain for vercel.app / public suffix (browser rejects .vercel.app).
+    document.cookie = `${COOKIE_NAME}=${lang}; path=/; SameSite=Lax; max-age=${365 * 24 * 60 * 60}`
     window.location.reload()
   }
 

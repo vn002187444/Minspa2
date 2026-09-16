@@ -7,31 +7,40 @@ import LanguageSwitcher from '@/lib/i18n/LanguageSwitcher';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import NotificationBell from '@/components/NotificationBell';
+import { COOKIE_NAME, DEFAULT_LOCALE, type Dictionary } from '@/lib/i18n/config';
+import viDict from '@/lib/i18n/dictionaries/vi.json';
+import enDict from '@/lib/i18n/dictionaries/en.json';
 
-const NAV_ITEMS = [
-  { id: 'Deal-Chan-Dong', label: 'Góc Deal', href: '#category-Deal-Chan-Dong' },
-  { id: 'Goi-duong-sinh', label: 'Gội Dưỡng Sinh', href: '#category-Goi-duong-sinh' },
-  { id: 'Cha-Got-Chan', label: 'Chà Gót Chân', href: '#category-Cha-Got-Chan' },
-  { id: 'Massage', label: 'Massage Body', href: '#category-Massage' },
-  { id: 'Cham-Soc-Trang-Tri-Mong', label: 'Chăm Sóc & Trang Trí Móng', href: '#category-Cham-Soc-Trang-Tri-Mong' },
-  { id: 'about', label: 'Giới Thiệu', href: '/about' },
-  { id: 'faq', label: 'Hỏi Đáp', href: '/faq' },
-];
+const DICTS: Record<string, Dictionary> = { vi: viDict as Dictionary, en: enDict as Dictionary };
 
-const MOBILE_NAV_ITEMS = [
-  { id: 'Deal-Chan-Dong', label: '🔥 Hot Deal', href: '#category-Deal-Chan-Dong' },
-  { id: 'Goi-duong-sinh', label: '💆 Gội Dưỡng Sinh', href: '#category-Goi-duong-sinh' },
-  { id: 'Massage', label: '💪 Massage', href: '#category-Massage' },
-  { id: 'Cham-Soc-Trang-Tri-Mong', label: '💅 Làm Móng', href: '#category-Cham-Soc-Trang-Tri-Mong' },
-  { id: 'Cha-Got-Chan', label: '👣 Chà Gót', href: '#category-Cha-Got-Chan' },
-  { id: 'goi-vip', label: '🎁 Combo VIP', href: '#services' },
-  { id: 'reviews', label: '⭐ Đánh Giá', href: '#reviews' },
-  { id: 'about', label: '📖 Giới Thiệu', href: '/about' },
-  { id: 'faq', label: '❓ Hỏi Đáp', href: '/faq' },
-];
+function getNavItems(t: (k: string) => string) {
+  return [
+    { id: 'Deal-Chan-Dong', label: t('nav.deal'), href: '#category-Deal-Chan-Dong' },
+    { id: 'Goi-duong-sinh', label: t('nav.hairWash'), href: '#category-Goi-duong-sinh' },
+    { id: 'Cha-Got-Chan', label: t('nav.footScrub'), href: '#category-Cha-Got-Chan' },
+    { id: 'Massage', label: t('nav.massage'), href: '#category-Massage' },
+    { id: 'Cham-Soc-Trang-Tri-Mong', label: t('nav.nail'), href: '#category-Cham-Soc-Trang-Tri-Mong' },
+    { id: 'about', label: t('nav.about'), href: '/about' },
+    { id: 'faq', label: t('nav.faq'), href: '/faq' },
+  ];
+}
+function getMobileNavItems(t: (k: string) => string) {
+  return [
+    { id: 'Deal-Chan-Dong', label: t('nav.mobile.deal'), href: '#category-Deal-Chan-Dong' },
+    { id: 'Goi-duong-sinh', label: t('nav.mobile.hairWash'), href: '#category-Goi-duong-sinh' },
+    { id: 'Massage', label: t('nav.mobile.massage'), href: '#category-Massage' },
+    { id: 'Cham-Soc-Trang-Tri-Mong', label: t('nav.mobile.nail'), href: '#category-Cham-Soc-Trang-Tri-Mong' },
+    { id: 'Cha-Got-Chan', label: t('nav.mobile.footScrub'), href: '#category-Cha-Got-Chan' },
+    { id: 'goi-vip', label: t('nav.mobile.vipCombo'), href: '#services' },
+    { id: 'reviews', label: t('nav.mobile.reviews'), href: '#reviews' },
+    { id: 'about', label: t('nav.mobile.about'), href: '/about' },
+    { id: 'faq', label: t('nav.mobile.faq'), href: '/faq' },
+  ];
+}
 
+const NAV_IDS = ['Deal-Chan-Dong', 'Goi-duong-sinh', 'Cha-Got-Chan', 'Massage', 'Cham-Soc-Trang-Tri-Mong', 'about', 'faq'];
 const MOBILE_OBSERVE_IDS = [
-  ...NAV_ITEMS.map(i => ({ id: `category-${i.id}`, key: i.id })),
+  ...NAV_IDS.slice(0, 5).map(id => ({ id: `category-${id}`, key: id })),
   { id: 'reviews', key: 'reviews' },
   { id: 'faq', key: 'faq' },
 ];
@@ -45,6 +54,15 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
   const [showMobileCategories, setShowMobileCategories] = useState(true);
   const lastScrollY = useRef(0);
+  const [locale, setLocale] = useState(DEFAULT_LOCALE);
+  useEffect(() => {
+    const m = document.cookie.match(new RegExp(`(^| )${COOKIE_NAME}=([^;]+)`));
+    if (m && DICTS[m[2]]) setLocale(m[2]);
+  }, []);
+  const dict = DICTS[locale] || DICTS[DEFAULT_LOCALE];
+  const t = (k: string) => dict[k] || DICTS[DEFAULT_LOCALE][k] || k;
+  const NAV_ITEMS = getNavItems(t);
+  const MOBILE_NAV_ITEMS = getMobileNavItems(t);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -187,13 +205,13 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
             href="/booking" 
             className="text-[10px] md:text-xs font-bold tracking-widest text-[#FFF] bg-[#8D6E53] hover:bg-[#3A2E2B] px-3 md:px-5 py-2 md:py-3 rounded-full transition-all flex items-center gap-1 md:gap-2 shadow-md hover:shadow-lg uppercase"
           >
-            Booking             <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F5EBE0]" aria-hidden="true" />
+            {t('nav.booking')}             <ArrowRight className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#F5EBE0]" aria-hidden="true" />
           </Link>
           <Link 
             href="/login" 
             className="hidden sm:inline-flex text-xs font-semibold text-[#5C4033] hover:text-[#3A2E2B] bg-[#EADDCD]/50 hover:bg-[#EADDCD] px-3 py-2.5 md:px-3.5 md:py-3 rounded-full transition-all"
           >
-            Nhân Viên
+            {t('nav.staff')}
           </Link>
         </div>
       </div>

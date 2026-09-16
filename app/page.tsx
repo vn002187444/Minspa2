@@ -18,6 +18,9 @@ const BottomNavigation = dynamic(() => import('@/components/BottomNavigation'));
 import { getBannerSettings } from './admin/actions';
 import { getCachedSeoSettings, getCachedServices, getCachedTreatmentPackages, getCachedBlogPosts } from '@/lib/cache';
 import ServiceSchema from '@/components/ServiceSchema';
+import { cookies } from 'next/headers';
+import { getDictionary } from '@/lib/i18n/get-dictionary';
+import { COOKIE_NAME, DEFAULT_LOCALE, LANGUAGES } from '@/lib/i18n/config';
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => (
@@ -51,7 +54,12 @@ function slugify(text: string) {
 }
 
 export default async function Home() {
-  
+  const cookieStore = await cookies();
+  const rawLocale = cookieStore.get(COOKIE_NAME)?.value;
+  const locale = rawLocale && LANGUAGES[rawLocale] ? rawLocale : DEFAULT_LOCALE;
+  const dict = await getDictionary(locale);
+  const t = (k: string) => dict[k] || k;
+
   // Parallel fetch using caches to eliminate TTFB bottleneck
   const [bannerSettings, seoRow, services, treatmentPackages] = await Promise.all([
     getBannerSettings(),
@@ -130,15 +138,15 @@ export default async function Home() {
 
         <div className="max-w-4xl xxl:max-w-5xl 4k:max-w-6xl mx-auto text-center space-y-8 4k:space-y-12 animate-slideUp">
           <div className="inline-flex items-center gap-2 px-4 py-2.5 4k:px-6 4k:py-2 bg-[rgb(var(--color-bg-warm))] theme-text rounded-full text-xs 4k:text-sm font-bold ring-1 theme-border tracking-widest uppercase min-h-[44px]">
-            <Sparkles className="w-3.5 h-3.5 4k:w-5 4k:h-5 theme-text-secondary animate-pulse"  aria-hidden="true" /> NÂNG NIU VẺ ĐẸP TỰ NHIÊN
+            <Sparkles className="w-3.5 h-3.5 4k:w-5 4k:h-5 theme-text-secondary animate-pulse"  aria-hidden="true" /> {t('hero.badge')}
           </div>
 
           <div className="space-y-4 4k:space-y-6">
             <h1 className="text-4xl md:text-5xl lg:text-6xl 4k:text-8xl font-display font-medium text-[#3A2E2B] tracking-tight leading-tight">
-              Min Nail & Gội Đầu Dưỡng Sinh
+              {t('hero.title')}
             </h1>
             <p className="text-[#8D6E53] max-w-2xl xxl:max-w-3xl 4k:max-w-4xl mx-auto font-display italic text-lg md:text-xl 4k:text-3xl">
-              &quot;Nơi sắc đẹp bắt đầu từ những phút giây an yên&quot;
+              {t('hero.subtitle')}
             </p>
           </div>
 
@@ -146,9 +154,7 @@ export default async function Home() {
             <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 4k:w-3 4k:h-3 rounded-full bg-[#8D6E53]"></div>
           </div>
 
-          <p className="text-gray-600 max-w-2xl xxl:max-w-3xl 4k:max-w-4xl mx-auto text-sm md:text-base 4k:text-lg leading-relaxed">
-             Chào mừng bạn đến với <strong>không gian spa sang trọng và ấm cúng</strong> tại Chung cư Lavita Charm. Chúng tôi kiến tạo những liệu trình thư giãn sâu kết hợp chăm sóc làm đẹp chu đáo nhất cho đôi tay, mái tóc và làn da của bạn.
-           </p>
+          <p className="text-gray-600 max-w-2xl xxl:max-w-3xl 4k:max-w-4xl mx-auto text-sm md:text-base 4k:text-lg leading-relaxed" dangerouslySetInnerHTML={{ __html: t('hero.description') }} />
 
            {/* Primary CTA */}
            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 4k:gap-6 pt-2">
@@ -158,14 +164,14 @@ export default async function Home() {
               >
                 <span aria-hidden="true" className="pointer-events-none absolute inset-0 animate-shimmer opacity-70" />
                 <Calendar className="w-4 h-4 4k:w-5 4k:h-5"  aria-hidden="true" />
-                Đặt lịch ngay
+                {t('hero.ctaBooking')}
                 <ArrowRight className="w-4 h-4 4k:w-5 4k:h-5"  aria-hidden="true" />
               </Link>
               <Link
                 href="#services"
                 className="inline-flex items-center gap-2 border-2 border-[#EADDCD] hover:border-[#8D6E53] text-[#5C4033] px-8 4k:px-10 4k:py-4 py-3.5 rounded-full font-bold text-sm 4k:text-base tracking-wider uppercase transition-all active:scale-95 hover-magnetic"
              >
-               Xem dịch vụ
+               {t('hero.ctaServices')}
              </Link>
            </div>
 
@@ -176,8 +182,8 @@ export default async function Home() {
                 <MapPin className="w-5 h-5 text-[#8D6E53]"  aria-hidden="true" />
               </div>
               <div className="text-left">
-                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Địa chỉ</p>
-               <p className="text-xs font-semibold text-[#3A2E2B] line-clamp-1">TM14 Lavita Charm, Thủ Đức</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">{t('hero.addressLabel')}</p>
+               <p className="text-xs font-semibold text-[#3A2E2B] line-clamp-1">{t('hero.addressValue')}</p>
               </div>
             </div>
             
@@ -186,7 +192,7 @@ export default async function Home() {
                 <Phone className="w-5 h-5 text-[#8D6E53]"  aria-hidden="true" />
               </div>
               <div className="text-left">
-                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Hotline đặt lịch</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">{t('hero.hotlineLabel')}</p>
                 <p className="text-xs font-semibold text-[#3A2E2B]">{hotline}</p>
               </div>
             </a>
@@ -196,8 +202,8 @@ export default async function Home() {
                 <Clock className="w-5 h-5 text-[#8D6E53]"  aria-hidden="true" />
               </div>
               <div className="text-left">
-                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">Giờ mở cửa</p>
-                <p className="text-xs font-semibold text-[#3A2E2B]">09:00 - 20:30 (Mỗi ngày)</p>
+                <p className="text-xs uppercase tracking-wider text-gray-500 font-bold">{t('hero.hoursLabel')}</p>
+                <p className="text-xs font-semibold text-[#3A2E2B]">{t('hero.hoursValue')}</p>
               </div>
             </div>
           </div>
