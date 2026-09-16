@@ -162,40 +162,64 @@ export default async function BlogListPage({ searchParams }: { searchParams: Pro
           </div>
         )}
 
-        {/* Pagination Controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 pb-8">
-            {page > 1 && (
-              <Link
-                href={`/blog?page=${page - 1}`}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
-              >
-                <ChevronLeft className="w-4 h-4" aria-hidden="true" /> Trước
-              </Link>
-            )}
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <Link
-                key={p}
-                href={`/blog?page=${p}`}
-                className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all ${
-                  p === page
-                    ? 'bg-[#8D6E53] text-white shadow-md'
-                    : 'bg-white border border-[#EADDCD] text-stone-600 hover:bg-stone-50'
-                }`}
-              >
-                {p}
-              </Link>
-            ))}
-            {page < totalPages && (
-              <Link
-                href={`/blog?page=${page + 1}`}
-                className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
-              >
-                Sau <ChevronRight className="w-4 h-4" aria-hidden="true" />
-              </Link>
-            )}
-          </div>
-        )}
+        {/* Pagination Controls — windowed to avoid overflow when totalPages ~81 (483 posts /6) */}
+        {totalPages > 1 && (() => {
+          const pages: (number | '…')[] = [];
+          if (totalPages <= 7) {
+            for (let i = 1; i <= totalPages; i++) pages.push(i);
+          } else if (page <= 4) {
+            pages.push(1, 2, 3, 4, 5, '…', totalPages);
+          } else if (page >= totalPages - 3) {
+            pages.push(1, '…', totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+          } else {
+            pages.push(1, '…', page - 1, page, page + 1, '…', totalPages);
+          }
+          return (
+            <div className="flex flex-wrap items-center justify-center gap-2 pb-8 max-w-full px-2">
+              {page > 1 ? (
+                <Link
+                  href={`/blog?page=${page - 1}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
+                >
+                  <ChevronLeft className="w-4 h-4" aria-hidden="true" /> Trước
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-100 border border-stone-200 rounded-full text-xs font-bold text-stone-400 cursor-not-allowed"> <ChevronLeft className="w-4 h-4" aria-hidden="true" /> Trước</span>
+              )}
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
+                {pages.map((p, idx) =>
+                  p === '…' ? (
+                    <span key={`ellipsis-${idx}`} className="w-9 h-9 flex items-center justify-center text-stone-400 text-xs">…</span>
+                  ) : (
+                    <Link
+                      key={p}
+                      href={`/blog?page=${p}`}
+                      aria-current={p === page ? 'page' : undefined}
+                      className={`w-9 h-9 flex items-center justify-center rounded-full text-xs font-bold transition-all ${
+                        p === page
+                          ? 'bg-[#8D6E53] text-white shadow-md'
+                          : 'bg-white border border-[#EADDCD] text-stone-600 hover:bg-stone-50'
+                      }`}
+                    >
+                      {p}
+                    </Link>
+                  )
+                )}
+              </div>
+              {page < totalPages ? (
+                <Link
+                  href={`/blog?page=${page + 1}`}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-white border border-[#EADDCD] rounded-full text-xs font-bold text-[#8D6E53] hover:bg-[#8D6E53] hover:text-white transition-all shadow-sm"
+                >
+                  Sau <ChevronRight className="w-4 h-4" aria-hidden="true" />
+                </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-stone-100 border border-stone-200 rounded-full text-xs font-bold text-stone-400 cursor-not-allowed">Sau <ChevronRight className="w-4 h-4" aria-hidden="true" /></span>
+              )}
+              <span className="w-full text-center text-[10px] text-stone-400 font-mono mt-1">Trang {page} / {totalPages} · {totalPages * 6 >= 483 ? '483' : totalPages * 6}+ bài</span>
+            </div>
+          );
+        })()}
       </main>
       <BottomNavigation />
     </div>
