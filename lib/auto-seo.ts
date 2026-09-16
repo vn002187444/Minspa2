@@ -193,7 +193,7 @@ export async function publishToBlog(
         imageAlt = result.imageAlts?.[0] || opts.topic.substring(0, 100);
       }
     } catch (e) {
-      logger.warn('[AutoSEO] searchImages failed, fallback', e as Error);
+      logger.warn('[AutoSEO] searchImages failed, fallback', { error: e instanceof Error ? e.message : String(e) });
     }
   }
   if (!imageUrl) {
