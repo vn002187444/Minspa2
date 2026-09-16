@@ -173,16 +173,26 @@ export async function publishToBlog(supabase: any, title: string, content: strin
     .replace(/^-|-$/g, '')
     .substring(0, 200) || 'bai-viet-seo-' + Date.now();
 
+  const now = new Date().toISOString();
+
   const { data: existing } = await supabase
     .from('blogs')
-    .select('id')
+    .select('id, published, published_at')
     .eq('slug', slug)
     .maybeSingle();
 
   if (existing) {
+    const updates: Record<string, unknown> = { title, summary, content, updated_at: now };
+    // Ensure re-publish: if previously draft, mark as published
+    if (!existing.published) {
+      updates.published = true;
+      updates.published_at = now;
+    } else if (!existing.published_at) {
+      updates.published_at = now;
+    }
     const { error } = await supabase
       .from('blogs')
-      .update({ title, summary, content })
+      .update(updates)
       .eq('id', existing.id);
     if (error) { logger.error('AutoSEO update blog failed', error); return null; }
     return { slug };
@@ -194,7 +204,10 @@ export async function publishToBlog(supabase: any, title: string, content: strin
     summary,
     content,
     image_url: 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-    created_at: new Date().toISOString(),
+    published: true,
+    published_at: now,
+    updated_at: now,
+    created_at: now,
   });
 
   if (error) { logger.error('AutoSEO publish blog failed', error); return null; }
@@ -245,6 +258,15 @@ export async function runAutoSeo(): Promise<{ success: boolean; message: string 
 
     const published = await publishToBlog(supabase, article.title, article.content, article.summary);
     if (!published) return { success: false, message: 'Publish to blog failed' };
+
+    // Revalidate public pages so new post appears immediately (ISR 60s + cache 3600s)
+    try {
+      const { revalidatePath } = await import('next/cache');
+      revalidatePath('/blog');
+      revalidatePath(`/blog/${published.slug}`);
+      revalidatePath('/sitemap.xml');
+      revalidatePath('/');
+    } catch {}
 
     await saveArticleRecord(supabase, {
       topic,
