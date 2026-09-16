@@ -2,6 +2,7 @@ import { createClient } from '@/utils/supabase/server';
 import { callGemini } from '@/lib/ai/gemini';
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/notify';
+import { searchImages } from '@/lib/image-search';
 
 const ARTICLE_SYSTEM = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
@@ -163,7 +164,13 @@ Thương hiệu: Min Nail & Hair`;
   }
 }
 
-export async function publishToBlog(supabase: any, title: string, content: string, summary: string): Promise<{ slug: string } | null> {
+export async function publishToBlog(
+  supabase: any,
+  title: string,
+  content: string,
+  summary: string,
+  opts?: { imageUrl?: string; imageAlt?: string; topic?: string }
+): Promise<{ slug: string } | null> {
   const slug = title
     .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -175,6 +182,27 @@ export async function publishToBlog(supabase: any, title: string, content: strin
 
   const now = new Date().toISOString();
 
+  // Resolve image: explicit opts > topic-based search > fallback
+  let imageUrl = opts?.imageUrl;
+  let imageAlt = opts?.imageAlt;
+  if (!imageUrl && opts?.topic) {
+    try {
+      const result = await searchImages(opts.topic, 1);
+      if (result?.images?.[0]) {
+        imageUrl = result.images[0];
+        imageAlt = result.imageAlts?.[0] || opts.topic.substring(0, 100);
+      }
+    } catch (e) {
+      logger.warn('[AutoSEO] searchImages failed, fallback', e as Error);
+    }
+  }
+  if (!imageUrl) {
+    imageUrl = 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop';
+  }
+  if (!imageAlt) {
+    imageAlt = title.substring(0, 100);
+  }
+
   const { data: existing } = await supabase
     .from('blogs')
     .select('id, published, published_at')
@@ -182,7 +210,7 @@ export async function publishToBlog(supabase: any, title: string, content: strin
     .maybeSingle();
 
   if (existing) {
-    const updates: Record<string, unknown> = { title, summary, content, updated_at: now };
+    const updates: Record<string, unknown> = { title, summary, content, image_url: imageUrl, image_alt: imageAlt, updated_at: now };
     // Ensure re-publish: if previously draft, mark as published
     if (!existing.published) {
       updates.published = true;
@@ -203,7 +231,8 @@ export async function publishToBlog(supabase: any, title: string, content: strin
     slug,
     summary,
     content,
-    image_url: 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
+    image_url: imageUrl,
+    image_alt: imageAlt,
     published: true,
     published_at: now,
     updated_at: now,
@@ -256,7 +285,7 @@ export async function runAutoSeo(): Promise<{ success: boolean; message: string 
     const article = await generateArticle(topic, keywords);
     if (!article) return { success: false, message: 'Article generation returned empty' };
 
-    const published = await publishToBlog(supabase, article.title, article.content, article.summary);
+    const published = await publishToBlog(supabase, article.title, article.content, article.summary, { topic });
     if (!published) return { success: false, message: 'Publish to blog failed' };
 
     // Revalidate public pages so new post appears immediately (ISR 60s + cache 3600s)
