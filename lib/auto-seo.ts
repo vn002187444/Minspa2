@@ -68,7 +68,7 @@ async function refillTopicPoolIfNeeded(supabase: any): Promise<void> {
   try {
     const result = await callGemini({
       systemInstruction: TOPIC_POOL_SYSTEM,
-      prompt: `Tạo 10 chủ đề SEO mới cho spa nail/hair gội dưỡng sinh tại Thủ Đức/Lavita Charm. Tránh trùng với: ${Array.from(recentSet).slice(0, 20).join(' | ') || 'khôn[...]}`,
+      prompt: `Tạo 10 chủ đề SEO mới cho spa nail/hair gội dưỡng sinh tại Thủ Đức/Lavita Charm. Tránh trùng với: ${Array.from(recentSet).slice(0, 20).join(' | ') || 'không có'}`,
       jsonSchema: TOPIC_POOL_SCHEMA,
       useCache: false,
     });
