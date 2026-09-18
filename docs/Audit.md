@@ -247,6 +247,42 @@ Ghi nhận tất cả các phát hiện từ audit codebase. Mỗi mục audit =
 - **Chưa có critical/high** — an toàn để deploy
 - Khuyến nghị: thêm CI step `npm audit --audit-level=moderate`, monitor upstream releases, mask `.env*` trong logs
 
+## [2026-09-18] Audit: i18n Full 9 Locales + Services GEO/AEO Enrichment (Deploy 1 gộp)
+
+### Phạm vi
+- `supabase/migrations/20250919000001_add_services_image_alt.sql` — thêm image_alt
+- `lib/image-alt.ts`, `lib/service-enricher.ts`, `lib/image-search.ts`, `lib/auto-seo.ts`, `lib/cache.ts`
+- `app/admin/actions/services.ts`, `app/blog/actions.ts`, `app/page.tsx:389`, `app/dich-vu/[slug]/page.tsx`
+- `proxy.ts` — locale prefix rewrite + domain 308
+- `app/layout.tsx` — alternates.languages + x-locale
+- `app/sitemap.ts` — hreflang 9 locales + services
+- `public/robots.txt`, `vercel.json`
+
+### Phát hiện
+| # | Vấn đề | File | Mức độ | Chi tiết |
+|---|--------|------|--------|----------|
+| 1 | Services thiếu `image_alt` + `image_url` rỗng + `description` ngắn -> SEO/GEO/AEO kém | `services` table, `app/page.tsx:389` | 🔴 | `alt=""` cứng, thiếu GEO, nhiều service chưa có hình/mô tả |
+| 2 | 9 locales chỉ lưu cookie, không có URL riêng -> hreflang same-URL bị ignore | `lib/i18n/config.ts`, `app/layout.tsx` | 🔴 | Google không phân biệt locale, Helpful content site-wide risk |
+| 3 | Domain lệch `min-nail-hair.vercel.app` vs `minhair.vercel.app` vs `minnailhair.vn` | `public/robots.txt:10`, `lib/env.ts:55`, `lib/auto-seo.ts:259` | 🟡 | Duplicate canonical |
+| 4 | Sitemap thiếu services, không có hreflang | `app/sitemap.ts` | 🟡 | Orphan service URLs, thiếu xhtml:link |
+| 5 | Dịch vụ `dich-vu/[slug]` thiếu HowTo/speakable cho AEO | `app/dich-vu/[slug]/page.tsx` | 🟢 | AI không trích dẫn quy trình |
+
+### Đã fix
+| # | Fix | File |
+|---|-----|------|
+| 1 | Thêm cột `image_alt`, helper GEO, pipeline enrich ảnh/mô tả, backfill script | `lib/image-alt.ts`, `lib/service-enricher.ts`, `app/admin/actions/services.ts`, `scripts/backfill-services.ts` |
+| 2 | Proxy locale rewrite `/{locale}/*` + cookie/header, layout hreflang 9 + x-default | `proxy.ts`, `app/layout.tsx` |
+| 3 | Thống nhất domain `minhair.vercel.app`, redirect 308 + robots sitemap | `public/robots.txt`, `vercel.json`, `lib/auto-seo.ts:260` |
+| 4 | Sitemap withHreflang + services slugify | `app/sitemap.ts` |
+| 5 | HowTo 5 bước chà gót / 3 bước gội + speakable | `app/dich-vu/[slug]/page.tsx` |
+
+### Kết luận
+- Deploy 1 gộp hoàn tất — Build compile 114s pass, còn chờ static generation (cần env Supabase cho workers).
+- Chạy `npx tsx scripts/backfill-services.ts` sau migration để hoàn thiện dữ liệu cũ.
+- Plan chi tiết: `docs/plans/2026-09-18-i18n-geo-aeo.md`
+
+---
+
 <!-- Template:
 ## [YYYY-MM-DD] Audit: [Chủ đề]
 

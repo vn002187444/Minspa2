@@ -165,8 +165,9 @@ export default function AdminSeoArticlesPage() {
       || 'Bài viết SEO';
     const suggestedSlug = suggestedTitle
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase().trim().replace(/[đĐ]/g, 'd')
-      .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
+      .replace(/[đĐ]/g, 'd')
+      .toLowerCase().trim()
+      .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
     const customSlug = window.prompt('Nhập slug (đường dẫn) cho bài viết:', suggestedSlug);
     if (!customSlug) return;
     setPublishingBlogId(article.id);

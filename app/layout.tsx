@@ -36,12 +36,17 @@ export const viewport: Viewport = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = getBaseUrl();
+  const languages: Record<string, string> = {};
+  for (const loc of Object.keys(LANGUAGES)) {
+    languages[loc] = `${baseUrl}/${loc}`;
+  }
+  languages['x-default'] = `${baseUrl}/vi`;
   const defaultMeta: Metadata = {
     metadataBase: new URL(baseUrl),
     title: "Min Nail & Hair - Salon Booking",
     description: "Ứng dụng đặt lịch Gội dưỡng sinh & Nail chuyên nghiệp tại Thủ Đức",
     manifest: "/manifest.json",
-    alternates: { canonical: baseUrl },
+    alternates: { canonical: baseUrl, languages },
     icons: { apple: { url: "/icons/icon-192.png", sizes: "192x192" } },
     openGraph: {
       type: "website",
@@ -102,8 +107,12 @@ export default async function RootLayout({
 }>) {
   const baseUrl = getBaseUrl();
   const cookieStore = await cookies();
-  const locale = cookieStore.get(COOKIE_NAME)?.value;
-  const lang = locale && LANGUAGES[locale] ? locale : DEFAULT_LOCALE;
+  const { headers } = await import("next/headers");
+  const headerList = await headers();
+  const headerLocale = headerList.get("x-locale");
+  const cookieLocale = cookieStore.get(COOKIE_NAME)?.value;
+  const rawLocale = headerLocale || cookieLocale;
+  const lang = rawLocale && LANGUAGES[rawLocale] ? rawLocale : DEFAULT_LOCALE;
 
   let aggregateRating = null;
   let reviewList: { author: string; text: string; rating: number }[] = [];
@@ -176,7 +185,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{
             __html: JSON.stringify({
               "@context": "https://schema.org",
-              "@type": "LocalBusiness",
+              "@type": "BeautySalon",
               "@id": `${baseUrl}/#local-business`,
               "name": "Min Nail & Hair",
               "image": `${baseUrl}/icons/icon-512.png`,
@@ -233,7 +242,7 @@ export default async function RootLayout({
                     })),
                   }
                 : {}),
-            })
+            }).replace(/</g, '\\u003c')
           }}
         />
         <WebSiteSchema baseUrl={baseUrl} />

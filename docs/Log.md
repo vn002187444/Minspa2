@@ -776,3 +776,82 @@ Fix S3 image browser trống, Google Translate crash + banner, mobile UI audit, 
 6. **Touch targets**: Luôn dùng `min-h-[44px]` cho interactive elements (WCAG 2.5.5)
 7. **Lighthouse automation**: Script `scripts/debug/lighthouse-audit.mjs` có thể chạy local hoặc CI
 8. **Safe area insets**: `env(safe-area-inset-*)` on body + bottom nav + drawer cho notch devices
+
+---
+
+## Session — 2026-09-18 (Deploy 1 gộp PR1+PR2 — Full 9 Locales + GEO/AEO)
+
+### 🎯 Mục tiêu
+Gộp PR1 (i18n full 9 subdirectories + domain canonical) và PR2 (services.image_alt pipeline) thành 1 deploy, đồng thời bổ sung pipeline auto hoàn thiện dịch vụ thiếu hình/nội dung để tốt cho SEO/GEO/AEO.
+
+### ✅ Đã làm
+
+#### DB & Helpers
+- Migration `supabase/migrations/20250919000001_add_services_image_alt.sql` — thêm `services.image_alt TEXT`, index null, backfill GEO suffix.
+- `lib/image-alt.ts` — `generateServiceImageAlt`, `ensureGeoAlt`, `translateAltToVietnamese` (Gemini cached, song ngữ + Việt hoá).
+- `lib/service-enricher.ts` — `enrichServiceImage` (searchImages song ngữ), `enrichServiceDescription` (Gemini 120-180 ký tự chứa Lavita Charm), `isServiceImageMissing`, `isServiceDescriptionIncomplete`.
+- `lib/cache.ts` — `getCachedServices` select thêm `image_alt`.
+
+#### Pipeline Alt & Service Enrichment
+- `lib/image-search.ts` — `enrichAlts()` dịch EN->VI + enforce GEO cho mọi nguồn (Unsplash/Pexels/fallback).
+- `lib/auto-seo.ts` — `ensureGeoAlt` cho blog image_alt, fix `notifyAdmin` URL `minhair.vercel.app`.
+- `app/admin/actions/services.ts` + `app/admin/actions/_shared.ts` — `ServiceInput.image_alt`, `saveService()` auto tìm ảnh nếu rỗng + auto sinh mô tả nếu <30 ký tự + alt GEO.
+- `app/blog/actions.ts` — `enforcedAlt` bắt buộc GEO cho mọi blog insert/update.
+- `scripts/backfill-services.ts` — script 1 lần backfill alt/img/desc cho services cũ.
+- `app/page.tsx:389` — `alt=""` -> `alt={image_alt || "${name} - ${category} tại ... Lavita Charm"}`
+- Fix `es-toolkit` 1.39.3 để hết lỗi recharts build.
+
+#### i18n Full 9 Subdirectories
+- `lib/i18n/config.ts` đã có 9 LANGUAGES giữ nguyên.
+- `proxy.ts` — thêm locale prefix rewrite (`/{locale}/*` -> `/*` + set cookie `locale` + header `x-locale`), domain canonical redirect 308 (`min-nail-hair`/`minnailhair.vn` -> `minhair.vercel.app`), auth path normalize với locale.
+- `app/layout.tsx` — `generateMetadata.alternates.languages` 9 + `x-default` (`/vi`), đọc `x-locale` header ưu tiên.
+- `app/sitemap.ts` — `withHreflang()` sinh `<xhtml:link>` 9 locales cho routes/blogs/services, thêm services (slugify) vào sitemap, `revalidate=43200`.
+
+#### GEO/AEO
+- `app/dich-vu/[slug]/page.tsx` — thêm `image_alt` select, `HowTo` (5 bước chà gót / 3 bước gội dưỡng sinh) + `speakable`, domain `minhair.vercel.app`.
+
+#### Domain & Robots
+- `public/robots.txt` — Sitemap `minhair.vercel.app/sitemap.xml`
+- `vercel.json` — redirects 308 cho 2 host cũ + `X-Robots-Tag: noindex` cho `*.vercel.app`
+
+#### Docs đồng bộ
+- `docs/plans/2026-09-18-i18n-geo-aeo.md` — plan chi tiết gộp PR1+PR2
+- `docs/Log.md` — entry này
+- `docs/Audit.md` — entry 2026-09-18
+- `docs/UPGRADE_PLAN.md` — Phase 7 gộp
+
+### 📁 Files tạo mới
+- `supabase/migrations/20250919000001_add_services_image_alt.sql`
+- `lib/image-alt.ts`, `lib/service-enricher.ts`, `scripts/backfill-services.ts`
+- `docs/plans/2026-09-18-i18n-geo-aeo.md`
+
+### 📁 Files đã sửa
+- `lib/image-search.ts`, `lib/auto-seo.ts`, `lib/cache.ts`, `app/blog/actions.ts`
+- `app/admin/actions/services.ts`, `app/admin/actions/_shared.ts`, `app/page.tsx`
+- `app/dich-vu/[slug]/page.tsx`, `app/layout.tsx`, `app/sitemap.ts`
+- `proxy.ts`, `public/robots.txt`, `vercel.json`, `package.json` (es-toolkit)
+
+### ⚠️ Lưu ý khi làm dịch vụ thiếu hình/nội dung
+- Mọi `saveService()` thiếu `image_url` sẽ tự tìm ảnh qua `searchImages(topic)` (Unsplash/Pexels) + alt song ngữ GEO.
+- Thiếu `description` (<30 ký tự) sẽ tự sinh via Gemini (cache) + fallback template GEO.
+- Chạy `npx tsx scripts/backfill-services.ts` 1 lần sau migration để hoàn thiện services cũ — tốt cho SEO/GEO/AEO.
+
+---
+
+## Session — 2026-09-18 (bổ sung — AutoSEO H1/H2/H3 + backlink + PR3)
+
+### 🎯 Mục tiêu
+1. AutoSEO viết bài đủ H1/H2/H3, bố cục đẹp, prompt review website + tự backlink nội bộ
+2. Apply migration + backfill services thật
+3. Làm PR3 GEO/AEO polish còn lại
+
+### ✅ Đã làm
+- **AutoSEO:** `lib/auto-seo.ts:6` `ARTICLE_SYSTEM` thêm quy tắc H1/H2/H3 (>=3 H2, mỗi H2 1-2 H3), sapo + list/quote/bảng, review site (fetch 12 services + 8 blogs thật đưa vào prompt), backlink 2-3 link `/dich-vu/slug`/`/blog/slug` tự động + `ensureHeadingStructureAndBacklinks()` post-process.
+- **Migration:** `services.image_alt` đã tồn tại, chạy SQL fill 23 alt GEO; `npx tsx scripts/backfill-services.ts` fill 13 image_url + 19 description (Gemini 429 fallback template GEO) — giờ `withoutImg=0, withoutAlt=0, short=0, noGeoAlt=0`.
+- **PR3:** `components/ArticleSchema.tsx:26` thêm `inLanguage` + `speakable`, `proxy.ts:12` thêm `X-Robots-Tag: noindex` cho preview host, `vercel.json` chỉ giữ redirects 308.
+
+### 📁 Files đã sửa
+- `lib/auto-seo.ts`, `components/ArticleSchema.tsx`, `proxy.ts`, `vercel.json`, `scripts/backfill-services.ts`
+
+### 🔗 Đồng bộ plan
+- `docs/plans/2026-09-18-i18n-geo-aeo.md` cập nhật phần bổ sung

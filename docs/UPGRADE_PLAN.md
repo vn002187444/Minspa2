@@ -115,3 +115,21 @@
 | M.4 | Bottom nav quá nhiều item (6) trên màn hình 320px có thể bị tràn | 🟢 Thấp | Cần theo dõi |
 | M.5 | Admin drawer trên mobile dùng `w-4/5 max-w-[300px]` — OK | 🟢 | ✅ OK |
 | M.6 | Safe area insets (`env(safe-area-inset-*)`) đã dùng trên body, bottom nav, drawer | 🟢 | ✅ OK |
+
+## Phase 7 — Full 9 Locales + Services GEO/AEO (18/09/2026) — Deploy 1 gộp PR1+PR2
+
+| # | Task | Priority | File(s) | Status |
+|---|------|----------|---------|--------|
+| 7.1 | Migration `services.image_alt` + helper `lib/image-alt.ts` | 🔴 Cao | `supabase/migrations/...`, `lib/image-alt.ts` | ✅ Done |
+| 7.2 | Auto bổ sung `image_url`/`description` khi dịch vụ thiếu hình/nội dung (searchImages + Gemini) | 🔴 Cao | `lib/service-enricher.ts`, `app/admin/actions/services.ts` | ✅ Done |
+| 7.3 | Blog `image_alt` enforce GEO + alt song ngữ Việt hoá | 🟡 Trung | `lib/image-search.ts`, `lib/auto-seo.ts`, `app/blog/actions.ts` | ✅ Done |
+| 7.4 | Homepage `alt=""` -> GEO alt + HowTo/speakable cho `dich-vu` (AEO) | 🟡 Trung | `app/page.tsx`, `app/dich-vu/[slug]/page.tsx` | ✅ Done |
+| 7.5 | Proxy locale prefix rewrite `/{locale}/*` + domain 308 `minhair.vercel.app` | 🔴 Cao | `proxy.ts`, `vercel.json`, `public/robots.txt` | ✅ Done |
+| 7.6 | `alternates.languages` 9 + `x-default` + sitemap hreflang + services | 🔴 Cao | `app/layout.tsx`, `app/sitemap.ts` | ✅ Done |
+| 7.7 | Backfill services cũ `npx tsx scripts/backfill-services.ts` | 🟡 Trung | `scripts/backfill-services.ts` | Pending (chạy sau migration) |
+| 7.8 | Sync docs/plans | 🟢 Thấp | `docs/plans/2026-09-18-i18n-geo-aeo.md`, `docs/Log.md`, `docs/Audit.md` | ✅ Done |
+
+## Status (Updated 18/09/2026 — bổ sung)
+- Phase 7: **Done** — Migration applied + backfill `withoutImg=0 withoutAlt=0 short=0` ✅, Build compile 114s pass ✅
+- AutoSEO H1/H2/H3 + review site + backlink nội bộ: **Done** (`lib/auto-seo.ts`)
+- PR3 GEO/AEO (speakable, preview noindex): **Done** (`components/ArticleSchema.tsx`, `proxy.ts`)

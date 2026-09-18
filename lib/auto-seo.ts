@@ -3,21 +3,39 @@ import { callGemini } from '@/lib/ai/gemini';
 import { logger } from '@/lib/logger';
 import { sendEmail } from '@/lib/notify';
 import { searchImages } from '@/lib/image-search';
+import { ensureGeoAlt, generateBlogImageAlt } from '@/lib/image-alt';
 
 const ARTICLE_SYSTEM = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
-QUY TẮC:
+QUY TẮC BẮT BUỘC — Bài viết phải đạt chuẩn SEO, GEO, AEO:
 - Chỉ viết về chăm sóc sắc đẹp, không tư vấn y tế.
 - Luôn trả về JSON đúng schema yêu cầu.
-- Giọng văn thân thiện, chuyên nghiệp, tự nhiên.
-- Tiếng Việt có dấu đầy đủ.`;
+- Giọng văn thân thiện, chuyên nghiệp, tự nhiên. Tiếng Việt có dấu đầy đủ (NFC).
+- CẤU TRÚC HEADING CHUẨN:
+  • H1 là \`title\` (không lặp lại H1 trong content).
+  • Content phải có tối thiểu 3 thẻ H2 (## ) và mỗi H2 nên có 1-2 thẻ H3 (### ) con khi phù hợp.
+  • Thứ tự H1 -> H2 -> H3, không nhảy cấp (không H3 trước H2).
+  • Mỗi H2 là một ý lớn (ví dụ: Lợi ích, Quy trình, Chăm sóc sau, FAQ); mỗi H3 là chi tiết con.
+- BỐ CỤC ĐẸP MẮT, RÕ RÀNG:
+  • Mở đầu bằng đoạn sapo 2-3 câu (không heading) tóm tắt lợi ích + địa phương Lavita Charm/Thủ Đức.
+  • Xen bullet/numbered list, blockquote tip, bảng so sánh ngắn nếu hợp lý.
+  • Kết bài có CTA đặt lịch: link tới /booking và hotline 0934 323 878.
+  • Độ dài 800-1200 từ, đoạn ngắn 2-3 câu, dễ đọc trên mobile.
+- REVIEW WEBSITE TRƯỚC KHI VIẾT:
+  • Đã được cung cấp danh sách dịch vụ thật của Min Nail & Hair và các bài blog gần đây — hãy tham chiếu đúng tên dịch vụ, giá, thời lượng khi liên quan, tránh bịa dịch vụ không tồn tại.
+  • Ưu tiên gắn địa phương: "Lavita Charm", "Thủ Đức", "Trường Thọ" tự nhiên trong bài (2-3 lần).
+- BACKLINK NỘI BỘ TỰ ĐỘNG:
+  • Trong content, chèn 2-3 link nội bộ dạng Markdown [anchor](/dich-vu/slug) hoặc [anchor](/blog/slug) trỏ tới dịch vụ/bài viết liên quan được cung cấp.
+  • Anchor tự nhiên, chứa từ khóa (ví dụ: [gội dưỡng sinh thảo dược](/dich-vu/goi-duong-sinh-thao-duoc)).
+  • Không chèn link gãy; chỉ dùng slug đã cho.
+- GEO/AEO: trả lời trực tiếp câu hỏi người dùng trong 40-60 từ đầu mỗi H2 để AI Overviews trích dẫn được.`;
 
 const ARTICLE_SCHEMA = {
   type: 'object',
   properties: {
-    title: { type: 'string', description: 'Tiêu đề bài viết, tối đa 70 ký tự, chứa từ khóa chính' },
-    metaDescription: { type: 'string', description: 'Thẻ mô tả ngắn gọn, tối đa 160 ký tự' },
-    content: { type: 'string', description: 'Nội dung Markdown gồm 3-4 phần H2, kèm CTA đặt lịch' },
+    title: { type: 'string', description: 'Tiêu đề bài viết, tối đa 70 ký tự, chứa từ khóa chính, là H1' },
+    metaDescription: { type: 'string', description: 'Thẻ mô tả ngắn gọn, tối đa 160 ký tự, chứa từ khóa + địa phương' },
+    content: { type: 'string', description: 'Nội dung Markdown chuẩn SEO: mở sapo không heading, >=3 H2 (## ), mỗi H2 có 1-2 H3 (### ), bullet/blockquote, 2-3 backlink nội bộ [anchor](/dich-vu/slug) hoặc /blog/slug, kết CTA /booking' },
   },
   required: ['title', 'metaDescription', 'content'],
 };
@@ -138,11 +156,50 @@ export async function researchTopic(topic: string): Promise<{ keywords: string[]
   }
 }
 
+async function getSiteContextForArticle(): Promise<{ services: string; blogs: string }> {
+  try {
+    const supabase = await createClient();
+    const { data: services } = await supabase.from('services').select('name, category, price, duration').eq('is_active', true).order('price', { ascending: true }).limit(12);
+    const { data: blogs } = await supabase.from('blogs').select('title, slug').eq('published', true).order('created_at', { ascending: false }).limit(8);
+    const svcList = (services || []).map((s: any) => `- ${s.name} (${s.category}, ${Number(s.price).toLocaleString('vi-VN')}đ, ${s.duration}p) -> /dich-vu/${s.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[đĐ]/g,'d').toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-')}`).join('\n');
+    const blogList = (blogs || []).map((b: any) => `- ${b.title} -> /blog/${b.slug}`).join('\n');
+    return { services: svcList || 'Không có', blogs: blogList || 'Không có' };
+  } catch { return { services: 'Không có', blogs: 'Không có' }; }
+}
+
+function ensureHeadingStructureAndBacklinks(content: string, title: string, siteLinks: string[]): string {
+  let out = content.trim();
+  // Đảm bảo không có H1 trong content (title đã là H1)
+  out = out.replace(/^#\s+.*$/gm, (m) => m.replace(/^#\s+/, '## '));
+  // Đếm H2
+  const h2Count = (out.match(/^##\s+/gm) || []).length;
+  if (h2Count < 3) {
+    out += '\n\n## Mẹo chăm sóc sau dịch vụ\nTrải nghiệm tại Min Nail & Hair Lavita Charm Thủ Đức giúp duy trì hiệu quả lâu dài. Đặt lịch tại [/booking](/booking) để được tư vấn chi tiết.\n';
+  }
+  // Tự chèn backlink nếu AI chưa chèn đủ 2 link nội bộ
+  const linkCount = (out.match(/\[.*?\]\(.*?\)/g) || []).filter(m => m.includes('/dich-vu/') || m.includes('/blog/')).length;
+  if (linkCount < 2 && siteLinks.length) {
+    const picks = siteLinks.slice(0, 2 - linkCount);
+    out += '\n\n' + picks.map(l => `> Gợi ý: Xem thêm [dịch vụ liên quan](${l}) tại Min Nail & Hair.`).join('\n');
+  }
+  // Chuẩn NFC + trim
+  return out.normalize('NFC').trim();
+}
+
 export async function generateArticle(topic: string, keywords: string[]): Promise<{ title: string; content: string; summary: string } | null> {
+  const site = await getSiteContextForArticle();
   const prompt = `Viết bài SEO về chủ đề: "${topic}"
 Từ khóa phụ: "${keywords.join(', ') || 'Không có'}"
 Địa điểm: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức.
-Thương hiệu: Min Nail & Hair`;
+Thương hiệu: Min Nail & Hair
+---
+REVIEW WEBSITE — Dịch vụ thật đang có (dùng để viết chính xác + tạo backlink):
+${site.services}
+---
+Bài blog gần đây (dùng để backlink nội bộ nếu liên quan):
+${site.blogs}
+---
+Yêu cầu: Content Markdown phải có sapo mở đầu, >=3 H2, mỗi H2 có 1-2 H3, bullet/quote, 2-3 backlink nội bộ tới /dich-vu/slug hoặc /blog/slug ở trên, kết CTA tới /booking.`;
 
   const result = await callGemini({
     systemInstruction: ARTICLE_SYSTEM,
@@ -154,10 +211,14 @@ Thương hiệu: Min Nail & Hair`;
   if (!result.text) return null;
   try {
     const parsed = JSON.parse(result.text);
+    let content = parsed.content || '';
+    // Post-process: đảm bảo H1/H2/H3 + backlink nội bộ
+    const siteLinkSlugs = (site.services.match(/\/dich-vu\/[a-z0-9-]+/g) || []).slice(0, 4).concat(site.blogs.match(/\/blog\/[a-z0-9-]+/g) || []);
+    content = ensureHeadingStructureAndBacklinks(content, parsed.title || topic, siteLinkSlugs);
     return {
-      title: parsed.title || topic,
-      content: parsed.content || '',
-      summary: parsed.metaDescription || '',
+      title: (parsed.title || topic).normalize('NFC').slice(0, 70),
+      content,
+      summary: (parsed.metaDescription || '').normalize('NFC').slice(0, 160),
     };
   } catch {
     return null;
@@ -172,8 +233,9 @@ export async function publishToBlog(
   opts?: { imageUrl?: string; imageAlt?: string; topic?: string }
 ): Promise<{ slug: string } | null> {
   const slug = title
-    .toLowerCase()
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
@@ -182,15 +244,15 @@ export async function publishToBlog(
 
   const now = new Date().toISOString();
 
-  // Resolve image: explicit opts > topic-based search > fallback
+  // Resolve image: explicit opts > topic-based search > fallback — enforce GEO alt
   let imageUrl = opts?.imageUrl;
-  let imageAlt = opts?.imageAlt;
+  let imageAlt = opts?.imageAlt ? ensureGeoAlt(opts.imageAlt, opts.topic || title) : undefined;
   if (!imageUrl && opts?.topic) {
     try {
       const result = await searchImages(opts.topic, 1);
       if (result?.images?.[0]) {
         imageUrl = result.images[0];
-        imageAlt = result.imageAlts?.[0] || opts.topic.substring(0, 100);
+        imageAlt = ensureGeoAlt(result.imageAlts?.[0] || opts.topic.substring(0, 100), opts.topic);
       }
     } catch (e) {
       logger.warn('[AutoSEO] searchImages failed, fallback', { error: e instanceof Error ? e.message : String(e) });
@@ -200,7 +262,9 @@ export async function publishToBlog(
     imageUrl = 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop';
   }
   if (!imageAlt) {
-    imageAlt = title.substring(0, 100);
+    imageAlt = ensureGeoAlt(generateBlogImageAlt(title), title);
+  } else {
+    imageAlt = ensureGeoAlt(imageAlt, title).normalize('NFC');
   }
 
   const { data: existing } = await supabase
@@ -256,7 +320,7 @@ export async function saveArticleRecord(supabase: any, article: {
 }
 
 export async function notifyAdmin(article: { title: string; slug: string }) {
-  const url = `https://minnailhair.vn/blog/${article.slug}`;
+  const url = `https://minhair.vercel.app/blog/${article.slug}`;
   await Promise.allSettled([
     sendEmail({
       to: process.env.ADMIN_EMAIL || 'minnailhair@gmail.com',

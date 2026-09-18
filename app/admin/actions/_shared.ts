@@ -49,6 +49,7 @@ export interface ServiceInput {
   duration?: number;
   description?: string;
   image_url?: string;
+  image_alt?: string;
   is_active?: boolean;
   commission_percentage?: number;
   commission_amount?: number;

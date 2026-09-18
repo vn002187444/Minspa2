@@ -43,14 +43,16 @@ const GuaranteeBanner = dynamic(() => import('@/components/GuaranteeBanner'), { 
 // Helper to normalize strings into valid URL-safe IDs matching the Header ids
 function slugify(text: string) {
   return text
-    .normalize('NFD')                     // converts to unicode sequence
-    .replace(/[\u0300-\u036f]/g, '')     // removes accent diacritics
-    .replace(/đ/g, 'd')                  // handles lowercase Vietnamese d
-    .replace(/Đ/g, 'D')                  // handles uppercase Vietnamese D
+    .normalize('NFD')                     // bóc tách Unicode NFD
+    .replace(/[\u0300-\u036f]/g, '')     // xóa điểm mã dấu thanh
+    .replace(/[đĐ]/g, 'd')               // xử lý triệt để ký tự đ
+    .toLowerCase()
     .replace(/&/g, '')
-    .replace(/[^a-zA-Z0-9\s-]/g, '')     // retains only alphanumeric, spaces, and hyphens
+    .replace(/[^a-z0-9\s-]/g, '')        // retains only alphanumeric, spaces, and hyphens
     .trim()
-    .replace(/\s+/g, '-');               // replaces spaces with hyphens
+    .replace(/\s+/g, '-')                // replaces spaces with hyphens
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 export default async function Home() {
@@ -384,7 +386,7 @@ export default async function Home() {
                     >
                       {service.image_url && (
                           <div className="relative w-full h-36 md:h-48 overflow-hidden bg-gray-50">
-                          <Image src={service.image_url} alt="" fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover hover:scale-105 transition-transform duration-500" />
+                          <Image src={service.image_url} alt={service.image_alt || `${service.name} - ${service.category} tại Min Nail & Hair Lavita Charm Thủ Đức`} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover hover:scale-105 transition-transform duration-500" />
                         </div>
                       )}
                       <div className="p-6">

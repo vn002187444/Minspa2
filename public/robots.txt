@@ -7,4 +7,4 @@ Disallow: /staff
 Disallow: /api/
 Disallow: /login
 
-Sitemap: https://min-nail-hair.vercel.app/sitemap.xml
+Sitemap: https://minhair.vercel.app/sitemap.xml

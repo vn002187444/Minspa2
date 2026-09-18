@@ -12,20 +12,21 @@ function slugify(text: string) {
   return text
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/Đ/g, 'D')
+    .replace(/[đĐ]/g, 'd')
+    .toLowerCase()
     .replace(/&/g, '')
     .replace(/[^a-zA-Z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')
-    .toLowerCase();
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }
 
 async function getServiceBySlug(slug: string) {
   const supabase = await createAnonClient();
   const { data: services } = await supabase
     .from('services')
-    .select('id, name, category, price, duration, description, image_url, is_active')
+    .select('id, name, category, price, duration, description, image_url, image_alt, is_active')
     .eq('is_active', true);
   if (!services) return null;
   // try exact slug match first
@@ -58,7 +59,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const service = await getServiceBySlug(slug);
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://min-nail-hair.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
   if (!service) {
     return { title: 'Không tìm thấy dịch vụ | Min Nail & Hair' };
   }
@@ -88,7 +89,7 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
   const service = await getServiceBySlug(slug);
   if (!service) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://min-nail-hair.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
   const related = await getRelatedServices(service.category, service.id);
   const serviceUrl = `${baseUrl}/dich-vu/${slugify(service.name)}`;
 
@@ -150,16 +151,49 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
       {
         "@type": "Question",
         "name": "Đặt lịch như thế nào?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Đặt trực tuyến tại min-nail-hair.vercel.app/booking hoặc hotline 0934 323 878. Chọn ngày giờ và kỹ thuật viên yêu thích." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Đặt trực tuyến tại minhair.vercel.app/booking hoặc hotline 0934 323 878. Chọn ngày giờ và kỹ thuật viên yêu thích." }
       }
     ]
   };
 
+  // GEO/AEO: HowTo cho dịch vụ chà gót / gội dưỡng sinh — giúp AI trích dẫn quy trình
+  const isChaGot = /chà gót|gót chân/i.test(service.name + service.category);
+  const isGoi = /gội.*dưỡng sinh|dưỡng sinh/i.test(service.name + service.category);
+  const jsonLdHowTo = isChaGot ? {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": `Quy trình ${service.name} 5 bước tại Min Nail & Hair`,
+    "inLanguage": "vi-VN",
+    "totalTime": `PT${service.duration}M`,
+    "supply": [{ "@type": "HowToSupply", "name": "Thảo dược ngâm chân, kem dưỡng ẩm" }],
+    "step": [
+      { "@type": "HowToStep", "name": "Ngâm chân thảo dược ấm", "text": "Ngâm chân nước thảo dược ấm làm mềm da và thư giãn." },
+      { "@type": "HowToStep", "name": "Tẩy tế bào chết + massage", "text": "Tẩy tế bào chết gót kết hợp massage 5 phút tăng tuần hoàn." },
+      { "@type": "HowToStep", "name": "Ủ mềm gót", "text": "Ủ mềm vùng gót xơ cứng, sừng hoá bằng dưỡng chất chuyên sâu." },
+      { "@type": "HowToStep", "name": "Chà gót chuyên nghiệp", "text": "Chà gót bằng bàn chải chuyên nghiệp, làm mịn bề mặt." },
+      { "@type": "HowToStep", "name": "Thoa kem cấp ẩm", "text": "Thoa kem cấp ẩm sâu nuôi dưỡng gót hồng hào." },
+    ],
+    "speakable": { "@type": "SpeakableSpecification", "cssSelector": ["h1", ".prose"] }
+  } : isGoi ? {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": `Quy trình ${service.name} tại Min Nail & Hair`,
+    "inLanguage": "vi-VN",
+    "totalTime": `PT${service.duration}M`,
+    "step": [
+      { "@type": "HowToStep", "name": "Gội canh thảo dược 1", "text": "Gội sạch bằng canh thảo dược thiên nhiên." },
+      { "@type": "HowToStep", "name": "Gội canh thảo dược 2 + massage cổ vai gáy", "text": "Gội lần 2 kết hợp massage cổ vai gáy đả thông kinh lạc." },
+      { "@type": "HowToStep", "name": "Thải độc & rửa mặt", "text": "Thải độc da đầu và rửa mặt thư giãn." },
+    ],
+    "speakable": { "@type": "SpeakableSpecification", "cssSelector": ["h1", ".prose"] }
+  } : null;
+
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdService) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdService).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdBreadcrumb).replace(/</g, '\\u003c') }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq).replace(/</g, '\\u003c') }} />
+      {jsonLdHowTo && <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdHowTo).replace(/</g, '\\u003c') }} />}
 
       <div className="min-h-screen bg-[#FAF6F0] text-[#3A2E2B] font-sans pb-16">
         <header className="sticky top-0 z-50 bg-[#FAF6F0]/90 backdrop-blur-md border-b border-[#EADDCD] px-4 py-4">
@@ -187,7 +221,7 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
           <article className="bg-white rounded-3xl border border-[#EADDCD]/60 overflow-hidden shadow-sm">
             {service.image_url && (
               <div className="relative h-64 md:h-[420px] w-full bg-stone-100">
-                <Image src={service.image_url} alt={`${service.name} - ${service.category} tại Min Nail & Hair Thủ Đức`} fill className="object-cover" priority sizes="(max-width: 768px) 100vw, 800px" />
+                <Image src={service.image_url} alt={`${service.name} - ${service.category} tại Min Nail & Hair Thủ Đức`} fill className="object-cover" priority fetchPriority="high" sizes="(max-width: 768px) 100vw, 800px" />
               </div>
             )}
             <div className="p-6 md:p-8 space-y-6">

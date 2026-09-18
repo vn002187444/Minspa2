@@ -1,4 +1,5 @@
 import { getSuggestedImages } from './image-suggestions'
+import { ensureGeoAlt, translateAltToVietnamese } from './image-alt'
 
 const TIMEOUT_MS = 5000
 
@@ -55,12 +56,24 @@ function toUnsplashQuery(topic: string): string {
   return plain || 'beauty salon spa'
 }
 
+async function enrichAlts(alts: string[], topic: string): Promise<string[]> {
+  // Song ngữ + Việt hoá: dịch EN sang VI (cached) rồi enforce GEO
+  const enriched = await Promise.all(
+    alts.map(async (a) => {
+      const vi = await translateAltToVietnamese(a, topic)
+      return ensureGeoAlt(vi, topic)
+    })
+  )
+  return enriched
+}
+
 export async function searchImages(topic: string, count = 4): Promise<{ images: string[]; imageAlts: string[] }> {
   // Try English-mapped query on Unsplash first (better relevance than raw Vietnamese)
   const englishQuery = toUnsplashQuery(topic)
   const unsplashEn = await searchUnsplash(englishQuery)
   if (unsplashEn) {
-    return { images: unsplashEn.images.slice(0, count), imageAlts: unsplashEn.alts.slice(0, count) }
+    const alts = await enrichAlts(unsplashEn.alts.slice(0, count), topic)
+    return { images: unsplashEn.images.slice(0, count), imageAlts: alts }
   }
 
   // Fallback: raw topic (Unsplash does handle Vietnamese but less relevant)
@@ -68,14 +81,18 @@ export async function searchImages(topic: string, count = 4): Promise<{ images: 
   if (rawQuery !== englishQuery) {
     const unsplashRaw = await searchUnsplash(rawQuery)
     if (unsplashRaw) {
-      return { images: unsplashRaw.images.slice(0, count), imageAlts: unsplashRaw.alts.slice(0, count) }
+      const alts = await enrichAlts(unsplashRaw.alts.slice(0, count), topic)
+      return { images: unsplashRaw.images.slice(0, count), imageAlts: alts }
     }
   }
 
   const pexels = await searchPexels(englishQuery)
   if (pexels) {
-    return { images: pexels.images.slice(0, count), imageAlts: pexels.alts.slice(0, count) }
+    const alts = await enrichAlts(pexels.alts.slice(0, count), topic)
+    return { images: pexels.images.slice(0, count), imageAlts: alts }
   }
 
-  return getSuggestedImages(topic, count)
+  const fallback = getSuggestedImages(topic, count)
+  const alts = await enrichAlts(fallback.imageAlts.slice(0, count), topic)
+  return { images: fallback.images.slice(0, count), imageAlts: alts }
 }

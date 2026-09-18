@@ -241,6 +241,8 @@ export default async function BlogPostDetailPage({ params }: Props) {
                 fill
                 className="object-cover"
                 priority
+                fetchPriority="high"
+                sizes="(max-width: 768px) 100vw, 800px"
               />
             </div>
 

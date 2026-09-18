@@ -5,12 +5,14 @@ import {
   checkAdminOrManager, ServiceInput, PackageInput,
 } from "./_shared";
 import { logger } from "@/lib/logger";
+import { generateServiceImageAlt, ensureGeoAlt } from "@/lib/image-alt";
+import { enrichServiceImage, enrichServiceDescription, isServiceDescriptionIncomplete, isServiceImageMissing } from "@/lib/service-enricher";
 
 export async function getServices() {
   await checkAdminOrManager();
   const supabase = await createClient();
   try {
-    const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, commission_percentage, commission_amount, is_active').order('category', { ascending: true }).limit(200);
+    const { data, error } = await supabase.from('services').select('id, name, category, price, duration, description, image_url, image_alt, commission_percentage, commission_amount, is_active').order('category', { ascending: true }).limit(200);
     if (error) throw error;
     return data || [];
   } catch (e) {
@@ -25,7 +27,7 @@ export async function saveService(serviceData: ServiceInput) {
     throw new Error('Unauthorized');
   }
   const supabase = await createClient();
-  let imageUrl = serviceData.image_url;
+  let imageUrl = serviceData.image_url?.trim() || '';
   if (imageUrl && imageUrl.startsWith('data:')) {
     try {
       imageUrl = await uploadBase64ToStorage(imageUrl);
@@ -33,7 +35,30 @@ export async function saveService(serviceData: ServiceInput) {
       return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
     }
   }
-  const { id, ...updateData } = { ...serviceData, image_url: imageUrl };
+  // Auto bổ sung ảnh nếu dịch vụ chưa có hình (SEO/GEO) — tìm ảnh AI song ngữ
+  if (isServiceImageMissing(imageUrl)) {
+    const enriched = await enrichServiceImage(serviceData.name || 'Dịch vụ', serviceData.category);
+    if (enriched) {
+      imageUrl = enriched.image_url;
+      // nếu admin chưa nhập alt thì dùng luôn alt đã enrich
+      if (!serviceData.image_alt?.trim()) serviceData.image_alt = enriched.image_alt;
+    }
+  }
+  // GEO/AEO: auto-fill image_alt if missing, enforce NFC + geo
+  let imageAlt = serviceData.image_alt?.trim();
+  if (imageUrl && !imageAlt) {
+    imageAlt = generateServiceImageAlt(serviceData.name || 'Dịch vụ', serviceData.category);
+  } else if (imageAlt) {
+    imageAlt = ensureGeoAlt(imageAlt, serviceData.name || 'Dịch vụ').normalize('NFC');
+  }
+  // Auto bổ sung mô tả nếu thiếu/nội dung quá ngắn — tốt cho SEO + AEO
+  let description = serviceData.description?.trim() || '';
+  if (isServiceDescriptionIncomplete(description)) {
+    const genDesc = await enrichServiceDescription(serviceData.name || 'Dịch vụ', serviceData.category, serviceData.price, serviceData.duration);
+    if (genDesc) description = genDesc;
+  }
+
+  const { id, ...updateData } = { ...serviceData, image_url: imageUrl || serviceData.image_url, description, ...(imageAlt ? { image_alt: imageAlt } : {}) };
   if (serviceData.id) {
     const { data: oldService } = await supabase.from('services').select('price, name').eq('id', serviceData.id).single();
 

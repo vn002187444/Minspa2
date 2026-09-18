@@ -23,7 +23,8 @@ export default function SeoSavedArticles({ userRole }: { userRole: string }) {
   const toSlug = (text: string) =>
     text
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase().trim().replace(/[đĐ]/g, 'd')
+      .replace(/[đĐ]/g, 'd')
+      .toLowerCase().trim()
       .replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-');
 
   const showToast = (message: string) => {

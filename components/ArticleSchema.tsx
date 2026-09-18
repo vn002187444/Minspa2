@@ -27,6 +27,7 @@ export default function ArticleSchema({
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "@id": `${baseUrl || ''}#article`,
+    inLanguage: "vi-VN",
     headline: title,
     description,
     image,
@@ -48,6 +49,10 @@ export default function ArticleSchema({
       "@type": "WebPage",
       "@id": baseUrl || '',
     },
+    speakable: {
+      "@type": "SpeakableSpecification",
+      cssSelector: ["h1", "h2", ".prose p:first-of-type"],
+    },
   };
 
   if (keywords && keywords.length > 0) {
@@ -63,7 +68,7 @@ export default function ArticleSchema({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema).replace(/</g, '\\u003c') }}
     />
   );
 }

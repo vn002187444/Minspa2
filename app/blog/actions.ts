@@ -5,6 +5,7 @@ import { getSession } from "@/utils/auth";
 import { revalidatePath } from "next/cache";
 import { sanitizeHtml, stripHtml } from "@/lib/sanitize";
 import { normalizeNFC } from "@/lib/utils";
+import { ensureGeoAlt, generateBlogImageAlt } from "@/lib/image-alt";
 
 export async function getBlogPosts(page: number = 1, pageSize: number = 6, includeDrafts: boolean = false) {
   const supabase = await createClient();
@@ -82,6 +83,11 @@ export async function saveBlogPost(postData: {
   const now = new Date().toISOString();
   const normalized = normalizeNFC(postData) as typeof postData;
 
+  // Enforce GEO alt: not null, NFC, contains Lavita/Thủ Đức
+  const enforcedAlt = normalized.image_alt?.trim()
+    ? ensureGeoAlt(normalized.image_alt, normalized.title).normalize('NFC')
+    : ensureGeoAlt(generateBlogImageAlt(normalized.title), normalized.title).normalize('NFC');
+
   if (postData.id) {
     const updates: Record<string, unknown> = {
       title: normalized.title,
@@ -89,7 +95,7 @@ export async function saveBlogPost(postData: {
       summary: stripHtml(normalized.summary || ''),
       content: sanitizeHtml(normalized.content || ''),
       image_url: normalized.image_url,
-      image_alt: normalized.image_alt || '',
+      image_alt: enforcedAlt,
       keywords: normalized.keywords || '',
       updated_at: now,
     };
@@ -141,7 +147,7 @@ export async function saveBlogPost(postData: {
         summary: stripHtml(normalized.summary || ''),
         content: sanitizeHtml(normalized.content || ''),
         image_url: normalized.image_url || 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?w=800&auto=format&fit=crop',
-        image_alt: normalized.image_alt || '',
+        image_alt: enforcedAlt,
         keywords: normalized.keywords || '',
         published: isPublished,
         published_at: isPublished ? now : null,

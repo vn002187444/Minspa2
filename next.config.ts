@@ -16,6 +16,7 @@ const baseConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  trailingSlash: false,
   // output: 'standalone',
   poweredByHeader: false,
   compress: true,

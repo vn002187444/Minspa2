@@ -142,6 +142,7 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
                   height={48}
                   className="h-8 md:h-10 w-auto object-contain"
                   priority
+                  fetchPriority="high"
                 />
             </Link>
           ) : (

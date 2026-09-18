@@ -29,7 +29,7 @@ export async function getCachedServices() {
     const supabase = await createClient();
     const { data } = await supabase
       .from('services')
-      .select('id, name, category, price, duration, description, image_url, is_active')
+      .select('id, name, category, price, duration, description, image_url, image_alt, is_active')
       .eq('is_active', true)
       .order('price', { ascending: true });
     return data || [];

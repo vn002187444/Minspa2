@@ -91,18 +91,19 @@ export default function AdminBlogPage() {
       .replace(/<p><\/p>/g, '')
   }
 
-  // Helper to generate slug from title input
+  // Helper to generate slug from title input — chuẩn hóa tiếng Việt (NFD + đĐ)
   const slugify = (text: string) => {
     return text
       .toString()
-      .normalize('NFD') // splits accented characters into base and diacritics
-      .replace(/[\u0300-\u036f]/g, '') // removes diacritics
+      .normalize('NFD') // bóc tách Unicode NFD
+      .replace(/[\u0300-\u036f]/g, '') // xóa điểm mã dấu thanh
+      .replace(/[đĐ]/g, 'd') // xử lý triệt để ký tự đ
       .toLowerCase()
       .trim()
-      .replace(/[đĐ]/g, 'd')
       .replace(/[^a-z0-9\s-]/g, '') // keeps alphanumerics, spaces, hyphens
       .replace(/\s+/g, '-') // replaces spaces with hyphens
-      .replace(/-+/g, '-'); // removes duplicate hyphens
+      .replace(/-+/g, '-') // removes duplicate hyphens
+      .replace(/^-|-$/g, '');
   };
 
   const handleEditorSwitch = useCallback(() => {
