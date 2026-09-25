@@ -583,6 +583,26 @@ textarea:focus{outline: none;border-color: var(--color-primary)}
 .palette-row::-webkit-scrollbar{height:6px}
 .palette-row::-webkit-scrollbar-thumb{background: var(--color-border);border-radius:999px}
 .palette-row .palette-chip{scroll-snap-align:start;flex-shrink:0}
+/* SPA FIX 2026-09-25b: #palette (id) cũng phải hàng ngang — ảnh chụp vẫn dọc */
+#palette, .palette{
+ display:flex;flex-wrap:nowrap;gap:8px;justify-content:flex-start;align-items:center;
+ overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+ padding-bottom:6px;scroll-snap-type:x proximity;
+}
+#palette::-webkit-scrollbar, .palette::-webkit-scrollbar{height:6px}
+#palette::-webkit-scrollbar-thumb, .palette::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:999px}
+#palette .palette-chip, .palette .palette-chip, #palette .paletteBtn, .palette .paletteBtn{flex-shrink:0;scroll-snap-align:start}
+/* Edit icon panel: quickIcons/quickColors hàng ngang cuộn */
+#quickIcons, #quickColors, .quickIcons, #colorPicker, .color-picker{
+ display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overflow-y:hidden;
+ -webkit-overflow-scrolling:touch;padding-bottom:4px;
+}
+#customEditor{overflow-x:auto}
+@media(max-width:700px){
+ #palette, .palette{gap:6px}
+ .tools{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:6px}
+ .tools .btn{flex-shrink:0}
+}
 .palette-chip{
  padding: 6px 12px;border-radius: 999px;
  font-size: var(--fs-xs);font-weight: var(--fw-semibold);
