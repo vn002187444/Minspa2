@@ -3,23 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ultimate Water Sort Solver</title>
+<title>iOS Water Sort Solver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-
 /* ============================================================
    DESIGN TOKENS - Tối giản (chừa chỗ cho icon sau)
    Bỏ brand-color gradient, dùng màu cơ bản để dễ thêm icon mới
    ============================================================ */
 :root{
-  /* SPA TOKENS — đồng bộ Min Nail & Hair (#FAF6F0 / #8D6E53 / #5C4033) */
+  /* SPA TOKENS — Min Nail & Hair (#FAF6F0/#8D6E53/#5C4033) — bố cục iOS */
   --color-primary: #8D6E53;
   --color-primary-hover: #5C4033;
   --color-on-primary: #FFFFFF;
   --color-secondary: #8D6E53;
   --color-accent: #8D6E53;
 
-  /* Surfaces - SPA light (đồng bộ globals.css) */
+  /* Surfaces - SPA light */
   --color-bg-page: #FAF6F0;
   --color-bg: #FFFFFF;
   --color-bg-card: #FFFFFF;
@@ -71,7 +72,7 @@
  --duration-slow: 300ms;
 }
 
-/* Light mode — đã là default spa, giữ nguyên */
+/* Light mode — đã là spa default */
 @media (prefers-color-scheme: light) {
   :root{
    --color-bg-page: #FAF6F0;
@@ -83,11 +84,11 @@
    --color-fg-muted: #8D6E53;
    --color-border: #EADDCD;
    --color-border-strong: #D0C3B3;
-   --shadow-sm: 0 1px 3px rgba(58,46,43,0.06);
-   --shadow-md: 0 4px 12px rgba(58,46,43,0.08);
-   --shadow-inset: 0 1px 0 rgba(255,255,255,0.8) inset, 0 2px 8px rgba(58,46,43,0.04);
-  }
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.06);
+  --shadow-md: 0 4px 12px rgba(15,23,42,0.10);
+  --shadow-inset: 0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 8px rgba(15,23,42,0.06);
  }
+}
 
 /* ============================================================
    RESET & BASE
@@ -568,41 +569,19 @@ textarea:focus{outline: none;border-color: var(--color-primary)}
 .solution-list .move{display: inline-flex;margin: 2px}
 
 /* ============================================================
-    PALETTE — chip kéo thả (SPA FIX: hàng ngang cuộn, không wrap)
-    ============================================================ */
+   PALETTE — chip kéo thả
+   ============================================================ */
 .palette-row{
  display: flex;flex-wrap: nowrap;gap: 8px;
  justify-content: flex-start;margin-top: var(--space-3);
  align-items: center;
- overflow-x: auto; overflow-y: hidden;
- -webkit-overflow-scrolling: touch;
- scrollbar-width: thin;
- padding-bottom: 6px;
- scroll-snap-type: x proximity;
+ overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+ scrollbar-width:thin;padding-bottom:6px;scroll-snap-type:x proximity;
 }
 .palette-row::-webkit-scrollbar{height:6px}
-.palette-row::-webkit-scrollbar-thumb{background: var(--color-border);border-radius:999px}
-.palette-row .palette-chip{scroll-snap-align:start;flex-shrink:0}
-/* SPA FIX 2026-09-25b: #palette (id) cũng phải hàng ngang — ảnh chụp vẫn dọc */
-#palette, .palette{
- display:flex;flex-wrap:nowrap;gap:8px;justify-content:flex-start;align-items:center;
- overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
- padding-bottom:6px;scroll-snap-type:x proximity;
-}
-#palette::-webkit-scrollbar, .palette::-webkit-scrollbar{height:6px}
-#palette::-webkit-scrollbar-thumb, .palette::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:999px}
-#palette .palette-chip, .palette .palette-chip, #palette .paletteBtn, .palette .paletteBtn{flex-shrink:0;scroll-snap-align:start}
-/* Edit icon panel: quickIcons/quickColors hàng ngang cuộn */
-#quickIcons, #quickColors, .quickIcons, #colorPicker, .color-picker{
- display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overflow-y:hidden;
- -webkit-overflow-scrolling:touch;padding-bottom:4px;
-}
-#customEditor{overflow-x:auto}
-@media(max-width:700px){
- #palette, .palette{gap:6px}
- .tools{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;padding-bottom:6px}
- .tools .btn{flex-shrink:0}
-}
+.palette-row::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:999px}
+.palette-row .palette-chip{flex-shrink:0;scroll-snap-align:start}
+#palette{scroll-snap-type:x proximity}
 .palette-chip{
  padding: 6px 12px;border-radius: 999px;
  font-size: var(--fs-xs);font-weight: var(--fw-semibold);
@@ -828,1651 +807,1326 @@ textarea:focus{outline: none;border-color: var(--color-primary)}
  .modalGrid{grid-template-columns: repeat(4, 1fr)}
  .metric-row{grid-template-columns: 1fr 1fr}
 }
-
-.board { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center; padding: 12px; max-width: 720px; margin: 0 auto; }
-/* Mobile giữ 6 cột, co nhỏ tube */
-@media(max-width: 700px) {
-  .board { grid-template-columns: repeat(6, 1fr); gap: 7px; padding: 8px; }
-  .customEditor { grid-template-columns: 1fr; max-width: 100%; }
-}
-@media(max-width: 480px) {
-  .board { grid-template-columns: repeat(6, 1fr); gap: 4px; }
-}
-.tubeWrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-.tubeLabel { font-size: 11px; color: var(--color-fg-muted); font-weight: 600; }
-.prob { display: none; margin-top: 12px; background: var(--color-bg-card); border-radius: 12px; padding: 14px; border: 1px solid var(--color-border); }
-.prob.show { display: block; }
-.probRow { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13px; }
-.prob .bar { flex: 1; height: 16px; background: var(--color-bg-page); border-radius: 6px; overflow: hidden; }
-.prob .bar i { display: block; height: 100%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width .25s; }
-.learning-curve { display: flex; align-items: flex-end; gap: 3px; height: 60px; margin-top: 8px; background: var(--color-bg-page); border-radius: 8px; padding: 6px; border: 1px solid var(--color-border); }
-.learning-curve .bar { flex: 1; background: linear-gradient(180deg, var(--color-success), #16a34a); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; transition: height .3s; }
-.learning-curve .bar.fail { background: linear-gradient(180deg, var(--color-danger), #dc2626); }
-.learning-curve .bar.zero { background: var(--color-bg-muted); }
-.stats-grid { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-.stat-card { padding: 10px 12px; background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; min-width: 60px; }
-.stat-card .v { font-size: var(--fs-xl); font-weight: var(--fw-bold); font-family: var(--font-mono); color: var(--color-fg); }
-.stat-card .l { font-size: var(--fs-xs); color: var(--color-fg-muted); text-transform: uppercase; }
-.game-layout { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; padding: 8px; align-items: start; }
-.side { display: flex; flex-direction: column; gap: 6px; }
-.left-side { grid-column: 1; grid-row: 1/3; }
-.center { grid-column: 2; }
-.right-side { grid-column: 3; grid-row: 1/3; }
-@media(max-width: 700px) {
-  .game-layout { grid-template-columns: 1fr; grid-template-rows: auto auto auto; gap: 4px; }
-  .left-side, .right-side { flex-direction: row; max-width: none; min-width: 0; overflow-x: auto; }
-}
 </style>
 </head>
 <body>
-
 <div class="wrap">
-<div class="notice" id="jsNotice">🟢 JavaScript đang hoạt động — chạy hoàn toàn local, không cần API key.</div>
-<h1>Giải Đố Ống Nghiệm Nước Ép — v6</h1>
-<div class="sub">Smart Solver đa nhánh + import ảnh + icon từ ảnh + log học local. Không cần AI API key để giải.</div>
+<div class="hero">
+ <div class="hero-badge">iOS Puzzle Solver</div>
+ <h1 class="hero-title">Water Sort Solver</h1>
+ <p class="hero-sub">Solver thông minh với 3 chế độ theo tỉ lệ ô ẩn — tối ưu cho game iOS Water Sort với ống ẩn và màu linh hoạt</p>
+</div>
 
 <section class="panel">
-<h3>🎨 Palette màu + biểu tượng</h3>
-<div id="palette" class="palette"></div>
-<div class="tools" style="margin-top:9px">
-<button id="editPaletteBtn" class="btn btn-accent">✎ Sửa màu/icon đã chọn</button>
-<button id="newPaletteBtn" class="btn btn-success">＋ Tạo màu/icon</button>
-<button id="deletePaletteBtn" class="btn btn-danger">🗑 Xóa màu/icon đã chọn</button>
-<button id="eraseBtn" class="btn btn-ghost">❌ Xóa ô</button>
-</div>
-
-<div id="customEditor" class="customEditor" style="grid-template-columns:1fr auto auto;max-width:500px">
-<div>
- <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">Icon (emoji/hình)</div>
- <input id="customIcon" class="customIcon" maxlength="4" value="🍎" style="width:80px;text-align:center;font-size:22px">
- <div id="quickIcons" class="quickIcons" style="margin-top:6px"></div>
-</div>
-<div>
- <div style="font-size:12px;color:#94a3b8;margin-bottom:4px">Màu nền</div>
- <input id="customColor" type="color" value="#ff0000" style="width:50px;height:40px">
- <div id="quickColors" style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;max-width:120px"></div>
-</div>
-<div style="display:flex;flex-direction:column;gap:6px;justify-content:flex-end">
- <button id="applyPaletteBtn" class="btn btn-success" style="padding:8px 14px">💾 Lưu</button>
- <button id="cancelPaletteBtn" class="btn btn-accent" style="padding:8px 14px">Hủy</button>
-</div>
-</div>
-<div class="small center" style="margin-top:7px">Click palette → chọn; click slot → đặt. Có thể kéo palette vào slot.</div>
-</section>
-
-<div class="game-layout">
-<div class="side left-side">
-<button id="addTubeBtn" class="btn btn-primary">＋ Thêm Ống</button>
-<button id="removeTubeBtn" class="btn btn-danger">− Bớt Ống</button>
-<button id="undoBtn" class="btn" disabled>↶ Undo</button>
-<button id="clearBtn" class="btn btn-accent">Xóa Sạch</button>
-<button id="solveBtn" class="btn btn-warning" style="margin-top:8px">⚡ Giải Local</button>
-<button id="animateBtn" class="btn btn-success" style="margin-top:8px" disabled>▶ Xem Lời Giải</button>
-<button id="stopBtn" class="btn btn-danger" style="margin-top:8px; display:none">⏹ Dừng</button>
-</div>
-<div class="center">
-<section class="panel" id="imageImportPanel" style="display:none">
-<h3 class="center">🖼️ Phân tích mẫu từ hình ảnh</h3>
-<div class="small center">
-Ảnh được xử lý trong trình duyệt. Hệ thống tìm các lớp màu/icon, nhóm theo vị trí ống,
-nhận diện ô ? khi có thể, tạo icon hình ảnh và đưa kết quả vào bàn để bạn kiểm tra trước khi giải.
-</div>
-<input id="imageFile" type="file" accept="image/*" style="width:100%;margin-top:8px">
-<div id="imageStats" class="status" style="margin-top:8px"></div>
-<canvas id="imageCanvas" style="display:none;max-width:100%;margin-top:8px"></canvas>
-<div class="controls" style="margin-top:8px">
-<button id="analyzeImageBtn" class="btn btn-success" disabled>🔎 Phân tích ảnh</button>
-<button id="applyImageBtn" class="btn btn-warning" disabled>✅ Dùng mẫu này</button>
-<button id="cancelImageBtn" class="btn btn-accent">Đóng</button>
-</div>
-<div id="imageReview" style="margin-top:8px"></div>
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Nhập màu từng ống</h2>
+    <small>Gõ từng ký tự, hoặc kéo icon từ palette thả vào ô</small>
+   </div>
+  </div>
+ </div>
+ <div class="controls">
+  <button id="addTubeBtn" class="btn btn-success">+ Thêm ống</button>
+  <button id="removeTubeBtn" class="btn btn-danger">− Bớt ống</button>
+  <button id="clearAllBtn" class="btn btn-ghost">Xóa sạch</button>
+  <button id="importTextBtn" class="btn btn-ghost">Nhập JSON</button>
+  <button id="exportTextBtn" class="btn btn-ghost">Xuất JSON</button>
+ </div>
+ <div class="tube-editor" id="tubeEditor"></div>
+ <div class="palette-row" id="paletteRow"></div>
+ <p style="margin-top: var(--space-3);font-size: var(--fs-xs);color: var(--color-fg-muted);text-align: center">
+  Kéo thả chip từ palette vào ô trong ống · Click chip để chọn rồi click ô để sửa
+ </p>
 </section>
 
 <section class="panel">
-<h3 class="center">🧪 Bàn chơi</h3>
-<div class="small center">Tối đa 6 ống mỗi hàng trên mobile. Ống rỗng dùng làm nơi chứa tạm. Click ống nguồn → ống đích để thử nước đi.</div>
-<div id="board" class="board" style="margin-top:12px"></div>
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Bàn hiện tại & Solver</h2>
+    <small>Xem trực quan và chạy solver</small>
+   </div>
+  </div>
+ </div>
+ <div class="tube-display" id="tubeDisplay"></div>
+ <div class="controls" style="margin-top: var(--space-4)">
+  <button id="solveBtn" class="btn btn-accent btn-lg">⚡ Tìm nhiều phương án</button>
+  <button id="animateBtn" class="btn btn-primary" disabled>▶ Chạy phương án #1</button>
+  <button id="stopBtn" class="btn btn-danger" style="display:none">⏹ Dừng</button>
+  <button id="revealBtn" class="btn btn-ghost">🔓 Mở 1 ô ?</button>
+  <button id="checkpointSaveBtn" class="btn btn-ghost">💾 Lưu checkpoint</button>
+  <button id="checkpointLoadBtn" class="btn btn-ghost" disabled>↩ Khôi phục</button>
+ </div>
+ <div id="solverProgress" class="solver-progress">
+  <div class="solver-progress-head">
+   <span id="solverPhase">Đang chạy...</span>
+   <span id="solverStat" class="mono">expanded: 0 · ms: 0</span>
+  </div>
+  <div class="solver-bar"><i id="solverBar"></i></div>
+ </div>
+ <div id="checkpointBar" class="checkpoint-bar">
+  <div class="checkpoint-info" id="checkpointInfo">Chưa có checkpoint</div>
+  <div class="checkpoint-slots" id="checkpointSlots"></div>
+  <button id="checkpointClearBtn" class="btn btn-ghost btn-sm">🗑 Xoá hết</button>
+ </div>
+ <div id="status" class="status" style="margin-top: var(--space-3)">
+  <div class="status-icon" id="statusIcon">·</div>
+  <div class="status-content">Sẵn sàng. Nhập bàn rồi bấm Tìm nhiều phương án.</div>
+ </div>
 </section>
 
 <section class="panel">
-<h3 class="center">📊 Thống kê phiên làm việc</h3>
-<div class="small">Theo dõi số lần dùng gợi ý, tỉ lệ thành công solver, số nước đi trung bình. Learning curve = các lần giải gần đây (xanh=thành công, đỏ=thất bại).</div>
-<div class="stats-grid" id="statsGrid">
- <div class="stat-card"><div class="v" id="statHint">0</div><div class="l">Lần dùng gợi ý</div></div>
- <div class="stat-card success"><div class="v" id="statSolved">0</div><div class="l">Lần giải thành công</div></div>
- <div class="stat-card warn"><div class="v" id="statUserMoves">0</div><div class="l">Nước đi của bạn</div></div>
- <div class="stat-card"><div class="v" id="statBest">—</div><div class="l">Lời giải ngắn nhất</div></div>
- <div class="stat-card"><div class="v" id="statSolverRuns">0</div><div class="l">Số lần chạy solver</div></div>
- <div class="stat-card bad"><div class="v" id="statFailRate">0%</div><div class="l">Tỉ lệ thất bại</div></div>
-</div>
-<div class="learning-curve" id="learningCurve"></div>
-<div class="center" style="margin-top:8px"><button id="resetStatsBtn" class="btn btn-accent btn-sm">↺ Reset thống kê</button></div>
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Chế độ giải & Kết quả</h2>
+    <small>Theo % ô ẩn — solver tự chọn chiến thuật tối ưu</small>
+   </div>
+  </div>
+ </div>
+ <div id="strategyBox" class="strategy-mode">
+  <div class="mode-icon" id="strategyIcon">·</div>
+  <div style="flex: 1">
+   <div class="mode-label">CHẾ ĐỘ HIỆN TẠI</div>
+   <div class="mode-value" id="strategyValue">—</div>
+   <div style="font-size: var(--fs-xs);color: var(--color-fg-muted);margin-top: 4px" id="strategyDesc"></div>
+  </div>
+ </div>
+ <div class="metric-row" id="metricRow" style="display:none">
+  <div class="metric accent"><span class="metric-label">Phương án</span><span class="metric-value" id="mPlans">0</span></div>
+  <div class="metric success"><span class="metric-label">Bước tối ưu</span><span class="metric-value" id="mBestLen">0</span></div>
+  <div class="metric warn"><span class="metric-label">Thời gian</span><span class="metric-value" id="mTime">0ms</span></div>
+  <div class="metric"><span class="metric-label">Mở rộng</span><span class="metric-value" id="mExp">0</span></div>
+ </div>
+ <div id="candidates" style="margin-top: var(--space-3)"></div>
+ <div class="solution-list" id="solutionList" style="display:none"></div>
 </section>
 
 <section class="panel">
-<h3 class="center">📋 Nhật ký tương tác & học heuristic</h3>
-<div class="small">
-Log ghi lại chỉnh sửa mẫu, nước đi user, nước đi solver, undo, import ảnh, mở ô ? và kết quả.
-Dữ liệu nằm local trên máy. Solver dùng thống kê này để điều chỉnh nhẹ trọng số an toàn theo lịch sử thành công/thất bại.
-</div>
-<div id="logSummary" class="status" style="margin-top:8px"></div>
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Hướng dẫn nhanh</h2>
+    <small>Quy tắc chính</small>
+   </div>
+  </div>
+ </div>
+ <div style="font-size: var(--fs-sm);line-height: 1.75;color: var(--color-fg-muted)">
+  <p style="margin: 0 0 12px"><strong style="color: var(--color-fg)">Mã màu mặc định:</strong> G/R/B/Y/O/W/D — Green, Red, Blue, Yellow, Orange, White, Drop. Dấu <code style="background: var(--color-bg);padding: 2px 6px;border-radius: 4px">?</code> = ô ẩn. CAP mặc định 4. Có thể thêm icon mới trong palette.</p>
+  <p style="margin: 0 0 12px"><strong style="color: var(--color-fg)">Logic ưu tiên theo % ?:</strong></p>
+  <ul style="margin: 0 0 12px;padding-left: 20px">
+   <li><span style="color: var(--color-strategy-priority);font-weight: 700">&gt;60%</span> &mdash; ưu tiên lộ ô ẩn càng nhiều càng tốt mỗi move</li>
+   <li><span style="color: var(--color-strategy-balanced);font-weight: 700">20&ndash;60%</span> &mdash; giữ 1 ống rỗng dự phòng để tránh bí</li>
+   <li><span style="color: var(--color-strategy-predict);font-weight: 700">&lt;20%</span> &mdash; dự đoán xác suất ô ?, đưa phương án tối ưu</li>
+  </ul>
+  <p style="margin: 0"><strong style="color: var(--color-fg)">Tránh vòng lặp:</strong> solver tự phạt nặng các move A&rarr;B&rarr;A lặp lại (cycle detection 250 điểm).</p>
+ </div>
 </section>
 
 <section class="panel">
-<h3 class="center">❓ Cơ chế ô ?</h3>
-<div class="small">Solver <b>không dừng chỉ vì trên bàn còn ô ?</b>. Nó tiếp tục xử lý tất cả lớp đã biết ở phía trên. Chỉ khi không còn nước đi nào dùng được mà ô ? đang là lớp trên cùng (tức ? thật sự chặn đường), Solver mới <b>tạm dừng</b>. Người dùng mở/cập nhật màu ? → bấm ⚡ Giải Local → Solver tiếp tục từ trạng thái mới.</div>
-<div class="footer" style="margin-top:10px">
-<button id="revealBtn" class="btn btn-warning">🔓 Cập nhật ô ? đang mở</button>
-</div>
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Cấu hình bàn</h2>
+    <small>CAP, số ống, ví dụ — đặt ở cuối vì ít dùng</small>
+   </div>
+  </div>
+ </div>
+ <div class="controls">
+  <label class="field">CAP <input id="capInput" type="number" min="2" max="12" value="4"></label>
+  <label class="field">Số ống <input id="tubeCountInput" type="number" min="2" max="18" value="10"></label>
+  <button id="rebuildBtn" class="btn btn-ghost">Tạo lại bàn</button>
+  <button id="loadExampleBtn" class="btn btn-ghost">Frame 1 v2</button>
+  <button id="loadSimpleBtn" class="btn btn-ghost">4 ống đơn giản</button>
+ </div>
+ <div class="preset-row">
+  <span>Preset nhanh</span>
+  <button class="preset-chip" data-preset="10">10 ống</button>
+  <button class="preset-chip" data-preset="12">12 ống</button>
+  <button class="preset-chip" data-preset="14">14 ống</button>
+  <button class="preset-chip" data-preset="16">16 ống</button>
+  <button class="preset-chip" data-preset="18">18 ống</button>
+ </div>
 </section>
-
-<section class="panel secondary-panel" id="secondaryPanel">
-<h3>⚙ Công cụ phụ</h3>
-<div class="tabs">
-<button class="tab active" data-tab="solver">Solver</button>
-<button class="tab" data-tab="data">Dữ liệu</button>
-</div>
-<div class="tab-content" data-content="solver" style="display:block">
-<label>Solver:<select id="algo"><option value="astar">A* — nhanh</option><option value="bfs">IDA* — ngắn nhất</option></select></label>
-<label>Timeout <input id="timeout" type="number" min="100" step="100" value="12000" style="width:85px"> ms</label>
-<button id="checkpointSaveBtn" class="btn btn-success btn-sm">💾 Lưu checkpoint</button>
-<button id="checkpointLoadBtn" class="btn btn-accent btn-sm" disabled>↩ Khôi phục</button>
-<button id="checkpointClearBtn" class="btn btn-danger btn-sm">🗑 Xoá hết</button>
-<button id="probBtn" class="btn btn-accent btn-sm">🎲 Xác suất ô ?</button>
-<div id="checkpointBar" class="checkpoint-bar">
-<div class="checkpoint-info" id="checkpointInfo">Chưa có checkpoint</div>
-<div class="checkpoint-slots" id="checkpointSlots"></div>
-</div>
-<div id="smartSummary"></div>
-<div id="smartCandidates"></div>
-<div id="probBox" class="prob"></div>
-</div>
-
-<div class="tab-content" data-content="data" style="display:none">
-<div class="data-row">
-<button id="saveTemplateBtn" class="btn btn-success btn-sm">💾 Lưu mẫu hiện tại</button>
-<button id="loadTemplateBtn" class="btn btn-accent btn-sm">📂 Tải mẫu đã lưu</button>
-<button id="importJsonBtn" class="btn btn-accent btn-sm">📥 Nhập JSON</button>
-<button id="exportJsonBtn" class="btn btn-accent btn-sm">📤 Xuất JSON</button>
-</div>
-<div class="data-row">
-<button id="exportLogBtn" class="btn btn-accent btn-sm">📤 Log</button>
-<button id="clearLogBtn" class="btn btn-danger btn-sm">🗑 Xóa log</button>
-</div>
-<div class="preset-grid">
-<button class="preset-btn" data-n="6">6 ống</button>
-<button class="preset-btn" data-n="8">8 ống</button>
-<button class="preset-btn" data-n="10">10 ống</button>
-<button class="preset-btn" data-n="12">12 ống</button>
-<button class="preset-btn" data-n="14">14 ống</button>
-</div>
-</div>
-
-</section>
-
-</div>
-
-<div id="modal" class="modal">
-<div class="modalBox">
-<div id="modalGrid" class="modalGrid"></div>
-<div class="footer" style="margin-top:12px"><button id="modalClose" class="btn btn-accent">Đóng</button></div>
-</div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
-<button id="soundToggle" class="sound-toggle" title="Bật/tắt âm thanh">🔊</button>
-<button id="themeToggle" class="sound-toggle" title="Đổi theme" style="right:56px">🌙</button>
 
+<div class="modal" id="modal">
+ <div class="modalBox">
+  <div class="modal-head">
+   <h3 id="modalTitle">Chọn màu</h3>
+   <button class="modal-close" id="modalX">×</button>
+  </div>
+  <div id="modalGrid" class="modalGrid"></div>
+  <div class="controls" style="justify-content: flex-end;margin-top: var(--space-3)">
+   <button id="modalClear" class="btn btn-danger">Xóa ô</button>
+   <button id="modalClose" class="btn btn-ghost">Đóng</button>
+  </div>
+ </div>
+</div>
+
+<div class="modal" id="paletteModal">
+ <div class="modalBox" style="max-width: 520px">
+  <div class="modal-head">
+   <h3>Thêm icon / màu mới</h3>
+   <button class="modal-close" id="paletteModalX">×</button>
+  </div>
+  <div style="display: flex;flex-direction: column;gap: 12px">
+   <label class="field" style="font-size: var(--fs-base)">Ký tự viết tắt (1 chữ cái, viết hoa)
+    <input id="newColorId" type="text" maxlength="1" placeholder="VD: P" style="width: 80px;text-transform: uppercase">
+   </label>
+   <label class="field" style="font-size: var(--fs-base)">Tên hiển thị
+    <input id="newColorName" type="text" placeholder="VD: Purple">
+   </label>
+   <div>
+    <div class="field" style="font-size: var(--fs-sm);margin-bottom: 6px">Icon (chọn mẫu bên dưới hoặc nhập)</div>
+    <input id="newColorSymbol" type="text" maxlength="4" placeholder="VD: 🟣" style="width: 100%;padding: 8px;background: var(--color-bg);border: 1px solid var(--color-border-strong);border-radius: var(--radius-sm);color: var(--color-fg);font-size: 18px;text-align: center">
+    <div class="emoji-picker" id="emojiPicker"></div>
+   </div>
+   <div>
+    <div class="field" style="font-size: var(--fs-sm);margin-bottom: 6px">Màu nền (chọn mẫu bên dưới hoặc tự chọn)</div>
+    <div style="display: flex;gap: 8px;align-items: center;flex-wrap: wrap">
+     <input id="newColorBg" type="color" value="#a855f7" style="width: 50px;height: 36px;padding: 2px;border-radius: var(--radius-sm);border: 1px solid var(--color-border-strong)">
+     <div class="color-picker" id="colorPicker"></div>
+    </div>
+   </div>
+   <label class="field" style="font-size: var(--fs-sm)">
+    <input id="newColorTextDark" type="checkbox"> Chữ tối (nếu nền sáng)
+   </label>
+  </div>
+  <div class="controls" style="justify-content: flex-end;margin-top: var(--space-4)">
+   <button id="paletteModalCancel" class="btn btn-ghost">Huỷ</button>
+   <button id="paletteModalSave" class="btn btn-primary">Lưu icon</button>
+  </div>
+ </div>
+</div>
 
 <script>
-
-
 "use strict";
 
-const CAP=4;
-const DEFAULT_PALETTE=[
-{id:"red_plus",symbol:"➕",bgColor:"#ef4444",unknown:false},
-{id:"blue_square",symbol:"■",bgColor:"#3b82f6",unknown:false},
-{id:"green_leaf",symbol:"🍃",bgColor:"#22c55e",unknown:false},
-{id:"orange_circle",symbol:"●",bgColor:"#f97316",unknown:false},
-{id:"yellow_drop",symbol:"💧",bgColor:"#eab308",unknown:false},
-{id:"lime_minus",symbol:"➖",bgColor:"#84cc16",unknown:false},
-{id:"purple_tri",symbol:"▲",bgColor:"#a855f7",unknown:false},
-{id:"cyan_diamond",symbol:"◆",bgColor:"#06b6d4",unknown:false},
-{id:"pink_heart",symbol:"♥",bgColor:"#ec4899",unknown:false},
-{id:"star",symbol:"⭐",bgColor:"#fcd34d",unknown:false},
-{id:"unknown",symbol:"❓",bgColor:"#EADDCD",unknown:true}
+/* ============================================================
+   PALETTE — 7 màu iOS Water Sort + ? (unknown) + drop (brown)
+   Có thể mở rộng qua modal "Thêm icon mới", lưu localStorage
+   ============================================================ */
+const DEFAULT_PALETTE = [
+ { id: "G", name: "Green",  symbol: "💚", bg: "#22c55e" },
+ { id: "R", name: "Red",    symbol: "❤", bg: "#dc2626" },
+ { id: "B", name: "Blue",   symbol: "🟦", bg: "#3b82f6" },
+ { id: "Y", name: "Yellow", symbol: "💛", bg: "#eab308" },
+ { id: "O", name: "Orange", symbol: "🟧", bg: "#f97316" },
+ { id: "P", name: "Purple", symbol: "💜", bg: "#a855f7" },
+ { id: "I", name: "Pink",   symbol: "🩷", bg: "#ec4899" },
+ { id: "W", name: "White",  symbol: "⬜", bg: "#e2e8f0", textDark: true },
+ { id: "D", name: "Drop",   symbol: "💧", bg: "#a16207" },
+ { id: "Q", name: "Unknown",symbol: "?",  bg: "#475569" }
 ];
-const QUICK_ICONS=["🍎","🍓","🍋","🍉","🌸","🍄","🦋","💎","🔮","🧿","☀️","❄️","❤️","⭐","⚡","🔥","💧","☁️"];
+const UNK = "Q";
 
-let palette=clone(DEFAULT_PALETTE);
-let selectedId="red_plus";
-let tubes=[];
-let history=[];
-let savedTemplate=null;
-let lastSolution=null;
-let selectedTube=-1;
-let editingPaletteId=null;
-let revealTarget=null;
-let animating=false;
-let cancelled=false;
-
-const $=id=>document.getElementById(id)||document.createElement('div');
-function clone(x){return JSON.parse(JSON.stringify(x))}
-function getPalette(id){return palette.find(x=>x.id===id)}
-const LOG_KEY="waterSortInteractionLogV1";
-const LEARN_KEY="waterSortLearnedWeightsV1";
-const STATS_KEY="waterSortStatsV1";
-let interactionLog=[];
-let learnedWeights={safe:1,group:1,space:1,unlock:1,risk:1};
-let sessionStats={hintUsed:0,solverRuns:0,solverSolved:0,userMoves:0,totalMoves:0,bestSolution:null,startedAt:Date.now(),learningCurve:[]};
-
-/* ---------- A5: Integer state key encoding (A4 cache + heuristic fast path) ---------- */
-/*
-  Encode a state into a 32-bit int per tube to:
-   - speed up Set/Map membership tests vs string join
-   - make hash-stable across browsers (no string concat ordering bugs)
-  Layout per tube: 4 cells x 8 bits = 32 bits
-   bits[7:0]=cell0 (bottom), bits[15:8]=cell1, bits[23:16]=cell2, bits[31:24]=cell3 (top)
-  Palette id is mapped to 0..254 via paletteIdMap; 255 = empty slot. Tubes with <4 cells pad with 255.
-*/
-const paletteIdMap=new Map();
-const idCodeReverse=new Map();
-function rebuildPaletteCodeMap(){
- paletteIdMap.clear();idCodeReverse.clear();
- let n=0;
- for(const p of palette){
-  if(p.unknown)continue; // unknowns treated as distinct code below
-  paletteIdMap.set(p.id,n);idCodeReverse.set(n,p.id);n++;
- }
-}
-rebuildPaletteCodeMap();
-const CODE_EMPTY=255,CODE_UNKNOWN=254;
-function encodeTube(t){
- // t: array of palette ids (strings) length<=CAP; unknowns map to CODE_UNKNOWN
- let code=0;
- for(let i=0;i<CAP;i++){
-  const v=i<t.length?t[i]:null;
-  let c=CODE_EMPTY;
-  if(v==="unknown")c=CODE_UNKNOWN;
-  else if(v!=null){
-   let m=paletteIdMap.get(v);
-    if(m==null){
-     // SPA FIX: assert <254 để không tràn 8bit, đồng thời stable cho session
-     if(paletteIdMap.size >= 254) { console.warn('[WaterSort] palette overflow >253'); m=paletteIdMap.size % 254; }
-     else { m=paletteIdMap.size; paletteIdMap.set(v,m);idCodeReverse.set(m,v); }
-    }
-    c=m;
-  }
-  code|=(c&0xff)<<(i*8);
- }
- return code>>>0;
-}
-function encodeState(s){
- // small state: <256 tubes fits in a string key like "t1,t2,..." with delimiter that can't appear
- const codes=new Array(s.length);
- for(let i=0;i<s.length;i++)codes[i]=encodeTube(s[i]);
- return codes.join(",");
-}
-
-/* ---------- A4: Heuristic cache ---------- */
-const _hCache=new Map();
-const _H_CACHE_MAX=50000;
-function heuristicCached(s){
- const k=encodeState(s);
- const hit=_hCache.get(k);
- if(hit!==undefined)return hit;
- const v=heuristic(s);
- if(_hCache.size>_H_CACHE_MAX){
-  // simple FIFO eviction — drop oldest 25% to keep cache warm during long searches
-  const drop=Math.floor(_H_CACHE_MAX*0.25);
-  const it=_hCache.keys();
-  for(let i=0;i<drop;i++){const n=it.next();if(n.done)break;_hCache.delete(n.value)}
- }
- _hCache.set(k,v);
- return v;
-}
-function clearHeuristicCache(){_hCache.clear()}
-
-function statsLoad(){
+// Load custom palette từ localStorage (nếu có), merge với default
+const PALETTE_KEY = "wss_palette_v1";
+function loadCustomPalette(){
  try{
-  const s=JSON.parse(localStorage.getItem(STATS_KEY)||"null");
-  if(s&&typeof s==="object")sessionStats=Object.assign(sessionStats,s);
- }catch{}
+  const raw = localStorage.getItem(PALETTE_KEY);
+  if(!raw) return [];
+  const arr = JSON.parse(raw);
+  return Array.isArray(arr) ? arr : [];
+ } catch(e){ return []; }
 }
-function statsSave(){
- try{localStorage.setItem(STATS_KEY,JSON.stringify(sessionStats))}catch{}
+function saveCustomPalette(arr){
+ try{ localStorage.setItem(PALETTE_KEY, JSON.stringify(arr)); } catch(e){}
 }
-function statsReset(){
- sessionStats={hintUsed:0,solverRuns:0,solverSolved:0,userMoves:0,totalMoves:0,bestSolution:null,startedAt:Date.now(),learningCurve:[]};
- statsSave();
-}
+const CUSTOM_PALETTE = loadCustomPalette();
+const PALETTE = DEFAULT_PALETTE.concat(CUSTOM_PALETTE);
+const PALETTE_MAP = {};
+for (const p of PALETTE) PALETTE_MAP[p.id] = p;
 
-function loadLogs(){
- try{interactionLog=JSON.parse(localStorage.getItem(LOG_KEY)||"[]");}catch{interactionLog=[]}
- try{learnedWeights=Object.assign(learnedWeights,JSON.parse(localStorage.getItem(LEARN_KEY)||"{}"));}catch{}
-}
-function saveLogs(){
- try{
-  if(interactionLog.length>2000)interactionLog=interactionLog.slice(-2000);
-  localStorage.setItem(LOG_KEY,JSON.stringify(interactionLog));
-  localStorage.setItem(LEARN_KEY,JSON.stringify(learnedWeights));
- }catch{}
-}
-function logEvent(type,data={}){
- const row={ts:new Date().toISOString(),type,data,board:clone(tubes)};
- interactionLog.push(row);saveLogs();renderLogSummary();
-}
-function updateLearning(outcome,features={}){
- // Very small online update: successful user continuation reinforces a feature;
- // failure/undo weakens it. This is not a neural model; it is transparent local adaptation.
- const dir=outcome==="success"?0.015:outcome==="failure"?-0.02:0;
- if(!dir)return;
- for(const k of ["safe","group","space","unlock","risk"]){
-  if(Number.isFinite(features[k])) learnedWeights[k]=Math.max(0.35,Math.min(2.5,learnedWeights[k]+dir*features[k]));
- }
- saveLogs();
-}
-function renderLogSummary(){
- const e=$("logSummary");if(!e)return;
- const counts={};for(const x of interactionLog)counts[x.type]=(counts[x.type]||0)+1;
- e.innerHTML=`<b>${interactionLog.length}</b> sự kiện local · `+
-   Object.entries(counts).map(([k,v])=>`${k}: ${v}`).join(" · ")+
-   `<div class="logMini" style="margin-top:6px">${interactionLog.slice(-12).reverse().map(x=>
-    `${x.ts.slice(11,19)} ${x.type} ${x.data?.from!=null?x.data.from+"→"+x.data.to:""}`
-   ).join("<br>")}</div>`;
-}
-
-const STATUS_PREFIX={ok:"✓",warn:"⚠",bad:"✗","":"·"};
-function setStatus(t,c=""){const e=$("status");if(e){e.className="status "+(c||"");const prefix=STATUS_PREFIX[c||""]||STATUS_PREFIX[""];e.innerHTML='<div class="status-icon">'+prefix+'</div><div class="status-content">'+t+"</div>"}}
-function saveHistory(){history.push(clone(tubes));if(history.length>100)history.shift();updateUndo()}
-function updateUndo(){$("undoBtn").disabled=history.length===0}
-function topValue(t){
- // SPA FIX: sparse-aware — tìm ô trên cùng != null
- for(let i=t.length-1;i>=0;i--) if(t[i]) return t[i];
- return null;
-}
-function topRun(t){
- const c=topValue(t); if(!c) return 0;
- let n=0;
- for(let i=t.length-1;i>=0;i--){
-  if(!t[i]) continue; // gap không tính, dừng khi gặp null giữa?
-  if(t[i]!==c) break;
-  n++;
-  // nếu gặp gap null trước đó thì dừng
-  if(i>0 && !t[i-1]) break;
- }
- // đếm liên tiếp từ đỉnh xuống, bỏ qua null chèn
- let cnt=0;
- for(let i=t.length-1;i>=0;i--){
-  if(t[i]==null) continue;
-  if(t[i]===c) cnt++; else break;
-  // dừng khi gặp null xen giữa màu khác
- }
- return cnt;
-}
-function isComplete(t){
- const clean=t.filter(Boolean);
- return clean.length===CAP&&clean.every(x=>x!=="unknown"&&x===clean[0]);
-}
-function isSolved(s){return s.every(t=>{const c=t.filter(Boolean);return c.length===0||isComplete(t);})}
-function hasTopUnknown(s){return s.some(t=>topValue(t)==="unknown")}
-function isBlockedByUnknown(s){
-  if(isSolved(s)) return false;
-  const moves=legalMoves(s);
-  return moves.length===0 && hasTopUnknown(s);
-}
-function isKnownProgressState(s){
-  // We deliberately do NOT stop merely because a ? exists somewhere.
-  // Known top layers must be moved first. We stop only when no known move
-  // remains and a ? is the blocker that the user must reveal.
-  return isBlockedByUnknown(s);
-}
-function validMove(s,from,to){
- if(from===to||from<0||to<0||from>=s.length||to>=s.length)return false;
- const a=s[from],b=s[to];
- const aClean=a.filter(Boolean), bClean=b.filter(Boolean);
- if(!aClean.length||isComplete(a)||isComplete(b)||bClean.length>=CAP)return false;
- const c=topValue(a);if(c==="unknown")return false;
- if(bClean.length&&topValue(b)!==c)return false;
+function addToCustomPalette(p){
+ // Không cho trùng id
+ if(PALETTE_MAP[p.id]) return false;
+ CUSTOM_PALETTE.push(p);
+ PALETTE.push(p);
+ PALETTE_MAP[p.id] = p;
+ saveCustomPalette(CUSTOM_PALETTE);
  return true;
 }
-function applyMove(s,from,to){
- const n=clone(s);
- // SPA FIX: normalize sparse -> dense trước khi move (compact gaps)
- let a=n[from].filter(Boolean), b=n[to].filter(Boolean);
- const count=Math.min(topRun(a),CAP-b.length);
- for(let i=0;i<count;i++) b.push(a.pop());
- n[from]=a; n[to]=b;
+function removeFromCustomPalette(id){
+ const idx = CUSTOM_PALETTE.findIndex(p => p.id === id);
+ if(idx < 0) return false;
+ CUSTOM_PALETTE.splice(idx, 1);
+ const i2 = PALETTE.findIndex(p => p.id === id);
+ if(i2 >= 0) PALETTE.splice(i2, 1);
+ delete PALETTE_MAP[id];
+ saveCustomPalette(CUSTOM_PALETTE);
+ return true;
+}
+
+let state = {
+ CAP: 4,
+ tubes: [[], [], [], [], [], [], [], [], [], []], // 10 ống mặc định
+ selectedTube: -1,
+ selectedCell: -1,
+ selectedColor: "G",
+ history: [],
+ candidates: [],     // kết quả từ solver
+ lastSolution: null, // path nước đi
+ isAnimating: false,
+ cancelled: false,        // dùng để dừng solver/animation giữa chừng
+ checkpoints: [],    // [{tubes, CAP, ts, label}, ...] tối đa 5 slot
+ activeCheckpoint: -1
+};
+
+// Load checkpoints từ localStorage khi khởi động
+state.checkpoints = loadCheckpoints();
+
+const $ = id => document.getElementById(id);
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function getColor(id){return PALETTE_MAP[id] || null}
+function topValue(t){return t.length ? t[t.length-1] : null}
+function topRun(t){
+ if(!t.length) return 0;
+ const c = topValue(t); let n = 0;
+ for(let i = t.length-1; i >= 0 && t[i] === c; i--) n++;
+ return n;
+}
+function isComplete(t){return t.length === state.CAP && t.every(x => x === t[0] && x !== UNK)}
+function isSolved(s){return s.every(t => t.length === 0 || isComplete(t))}
+function hasUnknown(s){return s.some(t => t.includes(UNK))}
+
+/* ============================================================
+   VALID MOVES
+   ============================================================ */
+function validMove(s, from, to){
+ if(from === to || from < 0 || to < 0 || from >= s.length || to >= s.length) return false;
+ const a = s[from], b = s[to];
+ if(!a.length || isComplete(a) || isComplete(b) || b.length >= state.CAP) return false;
+ const c = topValue(a);
+ if(c === UNK) return false; // can't move unknown
+ if(b.length && topValue(b) !== c) return false;
+ return true;
+}
+
+// Variant: allow moving from ? by treating ? as a "wildcard" — solver will try each candidate
+function validMoveAssumeUnknown(s, from, to, assumeMap){
+ if(from === to || from < 0 || to < 0 || from >= s.length || to >= s.length) return false;
+ const a = s[from], b = s[to];
+ if(!a.length || isComplete(a) || isComplete(b) || b.length >= state.CAP) return false;
+ const c = topValue(a);
+ if(c === UNK){
+  // Need assumeMap to tell us what this ? is
+  if(!assumeMap) return false;
+  const assumed = assumeMap[from + "_" + (a.length-1)];
+  if(!assumed) return false;
+  if(b.length && topValue(b) !== assumed) return false;
+  return true;
+ }
+ if(b.length && topValue(b) !== c) return false;
+ return true;
+}
+function applyMove(s, from, to){
+ const n = clone(s);
+ const a = n[from], b = n[to];
+ const count = Math.min(topRun(a), state.CAP - b.length);
+ for(let i = 0; i < count; i++) b.push(a.pop());
  return n;
 }
 function legalMoves(s){
- const out=[];
- for(let i=0;i<s.length;i++){
-  if(!s[i].filter(Boolean).length||isComplete(s[i]))continue;
-  for(let j=0;j<s.length;j++)if(validMove(s,i,j))out.push({from:i,to:j});
+ const out = [];
+ for(let i = 0; i < s.length; i++){
+  if(!s[i].length || isComplete(s[i])) continue;
+  for(let j = 0; j < s.length; j++) if(validMove(s, i, j)) out.push({from:i, to:j});
  }
  return out;
 }
-function moveScore(s,m){
- const a=s[m.from],b=s[m.to],c=topValue(a);let v=0;
- if(b.length===0)v+=1;
- if(b.length&&topValue(b)===c)v-=4;
- if(a.length===topRun(a))v-=2;
- if(b.length+topRun(a)===CAP)v-=3;
- return v;
+
+/* ============================================================
+   STRATEGY DETECTION (theo % ?)
+   ============================================================ */
+function detectStrategy(s){
+ const total = s.reduce((n, t) => n + t.length, 0);
+ const unk = s.reduce((n, t) => n + t.filter(x => x === UNK).length, 0);
+ const ratio = total ? unk / total : 0;
+ let mode = "predict", desc = "";
+ if(ratio > 0.6){
+  mode = "priority";
+  desc = "Ô ẩn > 60%: ưu tiên giải ô ẩn càng nhiều càng tốt. Mỗi nước đi phải expose ít nhất 1 ô ẩn.";
+ } else if(ratio >= 0.2){
+  mode = "balanced";
+  desc = "Ô ẩn 20-60%: luôn giữ 1 ống rỗng dự phòng để tránh bí. Gom 1 màu/ống, tránh di chuyển 1 lớp qua lại.";
+ } else {
+  mode = "predict";
+  desc = "Ô ẩn < 20%: dự đoán màu ô ẩn qua suy luận (loại trừ màu đã đủ + không trùng lớp trên) rồi tìm lời giải.";
+ }
+ return { mode, ratio, unk, total, desc };
 }
 
-/*
-  IMPORTANT:
-  v5 used a symmetry hash that sorted tubes but still returned original
-  tube indexes. This can merge two different tube-number states and make
-  the returned solution invalid. v6 deliberately keeps tube order in key.
-  v12 (A5) replaces the string key with a 32-bit-per-tube integer encoding
-   - much faster Map/Set operations
-   - no concatenation overhead
-   - hash-stable across browsers
-*/
-function stateKey(s){return encodeState(s)}
-
-/* ---------- A1: Heuristic nâng cấp (weighted + linear conflict) ----------
-   Base = (a) "wrong-color on top" count  +  (b) empty-extra-tube penalty
-   Admissible linear conflict:
-     For each pair of tubes A,B that contain the same non-zero color, if cell[i] of A
-     and cell[j] of B (j>i) are both that color and one is in the wrong vertical
-     order relative to the other, add 2 moves (must swap). This is admissible
-     because at least 2 extra moves are needed beyond the base.
-   Weighted by how spread out a color is across many tubes.
-*/
-function colorSpread(s){
- // returns count of distinct tubes that hold each color (palette id, ignore unknown)
- const m=new Map();
- for(const t of s)for(const c of t){
-  if(c==="unknown")continue;
-  if(!m.has(c))m.set(c,new Set());
-  m.get(c).add(t);
+/* ============================================================
+   HEURISTIC - matching màu để đánh giá state
+   ============================================================ */
+function colorCount(s){
+ const c = {};
+ for(const t of s) for(const x of t){
+  if(x === UNK) continue;
+  c[x] = (c[x] || 0) + 1;
  }
- const out=new Map();
- for(const [c,set] of m)out.set(c,set.size);
- return out;
+ return c;
+}
+function expectedCount(s){
+ // Tổng ô trừ ô ẩn chia cho 7 màu = max per color (ước lượng)
+ const total = s.reduce((n, t) => n + t.length, 0);
+ const unk = s.reduce((n, t) => n + t.filter(x => x === UNK).length, 0);
+ const known = total - unk;
+ const c = colorCount(s);
+ const distinctKnown = Object.keys(c).length;
+ if(!distinctKnown) return 0;
+ return Math.ceil((known + unk) / Math.max(distinctKnown, 1));
+}
+function isOverLimit(s, color){
+ const max = expectedCount(s);
+ const c = colorCount(s);
+ return (c[color] || 0) > max;
 }
 function heuristic(s){
- let h=0;
- // (1) Empty-extra penalty: 1 per non-complete/empty tube that is not a complete color
- let nonEmpty=0;
+ let h = 0;
+ // Wrong-color stacks
  for(const t of s){
-  if(t.length===0)continue;
-  nonEmpty++;
+  if(t.length <= 1) continue;
+  for(let i = 1; i < t.length; i++) if(t[i] !== t[i-1]) h++;
  }
- // (2) Wrong-color stacking inside each tube
+ // Linear conflict (pairs of tubes with same color inverted)
+ const spread = {};
+ for(const t of s) for(let i = 0; i < t.length; i++){
+  const c = t[i];
+  if(c === UNK) continue;
+  if(!spread[c]) spread[c] = [];
+  spread[c].push(i);
+ }
+ for(const c in spread){
+  if(spread[c].length < 2) continue;
+  let conflicts = 0;
+  for(let i = 0; i < spread[c].length; i++)
+   for(let j = 0; j < spread[c].length; j++)
+    if(i !== j && spread[c][i] > spread[c][j]) conflicts++;
+  h += Math.min(conflicts, 4);
+ }
+ // Empty tubes count as cost
+ const empty = s.filter(t => t.length === 0).length;
+ h += empty * 0.5;
+ // Incomplete tubes with one slot left
  for(const t of s){
-  if(t.length<=1)continue;
-  for(let i=1;i<t.length;i++)if(t[i]!==t[i-1])h++;
- }
- // (3) Linear conflict: pairs of tubes where a color appears in 2+ tubes
- //     and is in inverted order
- const spread=colorSpread(s);
- for(const c of spread.keys()){
-  if(spread.get(c)<2)continue;
-  // collect top positions for color c in each tube (lowest i = bottom)
-  const positions=[];
-  for(let ti=0;ti<s.length;ti++){
-   const t=s[ti];
-   for(let i=0;i<t.length;i++)if(t[i]===c)positions.push({ti,i});
+  if(t.length === state.CAP - 1 && t.length > 0){
+   const run = topRun(t);
+   if(run === t.length) h -= 2; // bonus: can complete
   }
-  if(positions.length<2)continue;
-  // count pairs (a,b) where a.ti!=b.ti and a.i>b.i (i.e. c is deeper in tube A than tube B)
-  let conflicts=0;
-  for(let i=0;i<positions.length;i++){
-   for(let j=0;j<positions.length;j++){
-    if(i===j)continue;
-    if(positions[i].ti===positions[j].ti)continue;
-    if(positions[i].i>positions[j].i)conflicts++;
-   }
-  }
-  // each conflict requires at least 2 moves, but we only credit 1 to stay admissible w.r.t. base
-  h+=Math.min(conflicts,4);
  }
- // (4) Empty tube count contribution (every empty tube = +1 in worst case)
- const emptyTubes=s.filter(t=>t.length===0).length;
- h+=emptyTubes*0.5;
  return h;
 }
 
-/* ---------- A2: IDA* (Iterative Deepening A*) ----------
-   Memory-friendly alternative to A*: O(depth) RAM, finds optimal solution.
-   Replaces BFS-mode for shortest-path requirement.
-   Uses threshold-based DFS with iterative threshold increase: f = g + h.
-*/
-function idaStar(start, deadline) {
- var path = [];
- var threshold = heuristic(start);
- var nodes = 0;
- while (true) {
-  if (performance.now() > deadline) return { type: "timeout", expanded: nodes };
-  var minNext = Infinity;
-  var aborted = false;
-  var dfs = function (s, g) {
-   if (performance.now() > deadline) { aborted = true; return "timeout"; }
-   nodes++;
-   var f = g + heuristic(s);
-   if (f > threshold) { if (f < minNext) minNext = f; return "bound"; }
-   if (isSolved(s)) return "solved";
-   if (isKnownProgressState(s)) return "blocked";
-   var moves = legalMoves(s).sort(function (a, b) { return moveScore(s, a) - moveScore(s, b); });
-   for (var mi = 0; mi < moves.length; mi++) {
-    var m = moves[mi];
-    var last = path.length ? path[path.length - 1] : null;
-    if (last && last.from === m.to && last.to === m.from) continue;
-    var ns = applyMove(s, m.from, m.to);
-    path.push(m);
-    var r = dfs(ns, g + 1);
-    if (r === "solved") return "solved";
-    if (r === "timeout") return "timeout";
-    path.pop();
+/* ============================================================
+   LOOP DETECTION - phạt nặng A→B→A lặp
+   ============================================================ */
+function detectLoopInPath(path){
+ if(path.length < 4) return false;
+ const last4 = path.slice(-4);
+ // Pattern: a→b, b→a, a→b, b→a
+ if(last4[0].from === last4[2].from && last4[0].to === last4[1].from &&
+    last4[1].to === last4[2].from && last4[2].to === last4[3].from &&
+    last4[3].to === last4[0].from) return true;
+ // 2-cycle repeated
+ if(last4[0].from === last4[2].to && last4[0].to === last4[2].from &&
+    last4[1].from === last4[3].to && last4[1].to === last4[3].from) return true;
+ return false;
+}
+function isCycleMove(path, m){
+ // Check if m would immediately undo last move
+ if(!path.length) return false;
+ const last = path[path.length-1];
+ if(last.from === m.to && last.to === m.from) return true;
+ return false;
+}
+
+/* ============================================================
+   UNKNOWN REVEAL - dự đoán màu ô ?
+   ============================================================ */
+function predictUnknowns(s){
+ // Mỗi ô ? có thể là 1 màu chưa đủ (mỗi màu có tối đa expectedCount ô)
+ const max = expectedCount(s);
+ const c = colorCount(s);
+ const candidates = [];
+ const knownColors = Object.keys(c);
+ for(const p of PALETTE){
+  if(p.id === UNK) continue;
+  if((c[p.id] || 0) >= max) continue; // màu đã đủ
+  candidates.push(p.id);
+ }
+ // For each ? position, return ordered candidates
+ return candidates;
+}
+
+/* ============================================================
+   MULTI-PLAN SOLVER
+   Tìm nhiều phương án khác nhau, đánh giá theo strategy + chống loop
+   ============================================================ */
+function stateKey(s){return s.map(t => t.join(",")).join("|")}
+
+function solveMultiplePlans(start, opts){
+ const maxDepth = opts.maxDepth || 50;
+ const maxTime = opts.maxTime || 8000;
+ const maxPlans = opts.maxPlans || 5;
+ const strategy = opts.strategy || detectStrategy(start).mode;
+ const deadline = Date.now() + maxTime;
+ const seen = new Set([stateKey(start)]);
+ const plans = [];
+
+ const initialFrontier = [{s: clone(start), path: [], g: 0, h: heuristic(start)}];
+ initialFrontier[0].f = initialFrontier[0].g + initialFrontier[0].h;
+ let frontier = initialFrontier;
+ let expanded = 0;
+ let lastReport = Date.now();
+
+ /* ============================================================
+    MOVE RANKING - 3 STRATEGIES theo % ô ẩn
+    ============================================================ */
+ function rankMoves(node){
+  const moves = legalMoves(node.s);
+  const strat = detectStrategy(node.s);
+
+  const scored = moves.map(m => {
+   const ns = applyMove(node.s, m.from, m.to);
+   const fromBefore = node.s[m.from];
+   const toBefore = node.s[m.to];
+   const topC = topValue(fromBefore);
+   const runA = topRun(fromBefore);
+   let score = 0;
+
+   /* === UNIVERSAL: luôn tốt === */
+   if(isComplete(ns[m.to])) score += 120; // complete tube = rất tốt
+   if(runA >= 2) score += 8; // move cả 1 lớp cùng màu = hiệu quả
+   if(topC && isOverLimit(ns, topC)) score -= 80; // over-limit = chuyển sai
+
+   /* === CYCLE / LOOP PENALTY (áp dụng mọi strategy) === */
+   if(isCycleMove(node.path, m)) score -= 250; // A→B rồi B→A ngay = thua
+   if(detectLoopInPath(node.path.concat(m))) score -= 100;
+
+   /* === STRATEGY-SPECIFIC === */
+   if(strat.mode === "priority"){
+    // >60% ẩn: MỖI MOVE PHẢI LỘ Ô ? 
+    // Logic: chỉ nhận move mà SAU move có ít nhất 1 ? được reveal (lộ)
+    // Reveal = top trước là non-? và top sau là ? (đã lộ)
+    let exposed = 0;
+    if(m.from !== m.to){
+     const fromAfter = ns[m.from];
+     const fromBeforeArr = fromBefore;
+     if(fromBeforeArr.length > 0 && fromBeforeArr[fromBeforeArr.length-1] !== UNK){
+      // we just took off a known color. Does that expose a ? below?
+      if(fromAfter.length > 0 && topValue(fromAfter) === UNK) exposed++;
+     }
+     // also: moved-to exposes ? if we placed under a ? stack? No, that's only adds to top.
+     // also: tube was UNK-only and now empty (rare)
+    }
+    if(exposed === 0) score -= 60; // KHÔNG lộ ô ? = move lãng phí
+    if(exposed >= 1) score += 80;
+    if(exposed >= 2) score += 150; // bonus nếu lộ 2+ ?
+    // Bỏ qua ưu tiên "move to empty" vì lúc này ? quan trọng hơn
+    if(toBefore.length === 0) score += 5;
+   } else if(strat.mode === "balanced"){
+    // 20-60% ẩn: GIỮ 1 ỐNG RỖNG DỰ PHÒNG
+    // Rất quan trọng: không dùng hết empty tube
+    const emptyBefore = node.s.filter(t => t.length === 0).length;
+    const emptyAfter = ns.filter(t => t.length === 0).length;
+    if(emptyBefore === 1 && toBefore.length === 0 && emptyAfter === 0){
+     // vừa dùng ống rỗng cuối cùng → dễ bí đường
+     score -= 200;
+    }
+    if(emptyAfter === 0 && strat.unk > 0.3) score -= 100; // >30% ẩn mà hết rỗng = rất nguy hiểm
+    // Hoàn thành 1 màu đầu tiên là tốt (strategy: complete 1 color then move on)
+    if(isComplete(ns[m.to])) score += 80; // tăng thêm vì mỗi màu hoàn thành = workspace mới
+    // Empty buffer được khuyến khích dùng có mục đích
+    if(toBefore.length === 0) score += 20;
+   } else {
+    // <20% ẩn: DỰ ĐOÁN XÁC SUẤT + GIẢI NHANH
+    // Ở đây coi như puzzle có thể suy ra màu ? qua logic (màu còn lại chưa đủ + không trùng lớp trên)
+    // Nên ta chấp nhận ? như màu linh hoạt, dùng full heuristic
+    // Hoàn thành ống = rất tốt
+    if(isComplete(ns[m.to])) score += 150;
+    // Gom màu về 1 ống
+    if(runA >= 2) score += 15;
+    // Move to empty = OK
+    if(toBefore.length === 0) score += 30;
+    // Hạn chế di chuyển 1 lớp giữa 2 ống (giảm nhiễu)
+    if(runA === 1 && toBefore.length > 0) score -= 5;
    }
-   return "bound";
-  };
-  path = [];
-  var result = dfs(start, 0);
-  if (result === "solved") return { type: "solved", path: path.slice(), expanded: nodes };
-  if (result === "timeout" || aborted) return { type: "timeout", expanded: nodes };
-  if (result === "blocked") return { type: "blocked_unknown", path: path.slice(), expanded: nodes };
-  if (minNext === Infinity) return { type: "none", expanded: nodes };
+
+   return { m, ns, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored;
+ }
+
+ // Beam search
+ let bestPlan = null;
+ for(let d = 0; d < maxDepth; d++){
+  if(state.cancelled){ state.cancelled = false; break; }
+  if(Date.now() > deadline) break;
+  if(Date.now() - lastReport > 200){
+   setSolverProgress("Đang tìm phương án (depth " + d + ")", expanded, plans.length, Date.now() - (deadline - maxTime));
+   lastReport = Date.now();
+  }
+  const next = [];
+  for(const node of frontier){
+   if(isSolved(node.s)){
+    if(!bestPlan || node.path.length < bestPlan.path.length){
+     bestPlan = {path: node.path, score: node.g, finalState: node.s, exposedUnknowns: countExposedUnknowns(start, node.s)};
+     plans.unshift(bestPlan);
+    } else {
+     const alt = {path: node.path, score: node.g, finalState: node.s, exposedUnknowns: countExposedUnknowns(start, node.s)};
+     if(plans.length < maxPlans) plans.push(alt);
+    }
+    continue;
+   }
+   if(bestPlan && node.path.length >= bestPlan.path.length) continue;
+
+   const moves = rankMoves(node);
+   for(const scored of moves){
+    if(isCycleMove(node.path, scored.m)) continue;
+    const k = stateKey(scored.ns);
+    if(seen.has(k)) continue;
+    seen.add(k);
+    expanded++;
+    const newNode = {
+     s: scored.ns,
+     path: node.path.concat(scored.m),
+     g: node.g + 1,
+     h: heuristic(scored.ns),
+     lastScore: scored.score
+    };
+    newNode.f = newNode.g + newNode.h;
+    next.push(newNode);
+   }
+  }
+  next.sort((a, b) => a.f - b.f);
+  // Adaptive beam width: more for fully-known states, less for high-? to prune hard
+  const beamWidth = strategy === "predict" ? 150 : strategy === "balanced" ? 80 : 40;
+  frontier = next.slice(0, beamWidth);
+  if(!frontier.length) break;
+  if(plans.length >= maxPlans) break;
+ }
+
+ /* ============================================================
+    FALLBACK - IDA* nếu beam search không tìm được
+    Dùng cho "predict" mode vì puzzle gần như fully known
+    ============================================================ */
+ if(plans.length === 0 && strategy === "predict"){
+  const idastarResult = idaStar(start, deadline);
+  if(idastarResult.type === "solved"){
+   plans.push({path: idastarResult.path, score: idastarResult.path.length, finalState: idastarResult.finalState, exposedUnknowns: 0});
+  }
+ }
+
+ /* ============================================================
+    FALLBACK - REVEAL SUGGESTION (khi ? block hoàn toàn)
+    Mỗi ? có thể là 1 trong các màu "chưa đủ". Thử từng assumption.
+    ============================================================ */
+ if(plans.length === 0){
+  // ALWAYS suggest peek if no plans and there are ?
+  const hasUnk = start.some(t => t.includes(UNK));
+  const legalNow = legalMoves(start);
+  if(hasUnk && legalNow.length === 0){
+   // No moves possible, must peek first
+   const targetIdx = findTopUnknownIndex(start);
+   if(targetIdx >= 0){
+    plans.push({
+     path: [{from: targetIdx.ti, to: targetIdx.ti, _reveal_suggest: true}],
+     score: 0,
+     finalState: start,
+     exposedUnknowns: 0,
+     _suggestion: "🔒 " + legalNow.length + " move khả dĩ. Mở ô ? ở Ống " + (targetIdx.ti+1) + " lớp " + (targetIdx.li+1) + " trước."
+    });
+   }
+  } else if(hasUnk && (strategy === "priority" || strategy === "balanced")){
+   // Has moves but solver stuck: try assume top ?
+   const assumedResult = solveWithAssumedUnknowns(start, deadline, maxPlans);
+   for(const p of assumedResult.plans){
+    plans.push(p);
+    if(plans.length >= maxPlans) break;
+   }
+   if(plans.length === 0){
+    // Still nothing - suggest peek
+    const targetIdx = findTopUnknownIndex(start);
+    if(targetIdx >= 0){
+     plans.push({
+      path: [{from: targetIdx.ti, to: targetIdx.ti, _reveal_suggest: true}],
+      score: 0,
+      finalState: start,
+      exposedUnknowns: 0,
+      _suggestion: "Solver không tìm được lời giải. Thử mở ô ? ở Ống " + (targetIdx.ti+1) + " lớp " + (targetIdx.li+1)
+     });
+    }
+   }
+  }
+ }
+
+ return { plans, expanded, best: bestPlan };
+}
+
+/* ============================================================
+   SOLVE WITH ASSUMED UNKNOWNS - thử từng khả năng màu cho ?
+   Dùng cho priority mode khi puzzle có nhiều ô ẩn
+   ============================================================ */
+function solveWithAssumedUnknowns(start, deadline, maxPlans){
+ const plans = [];
+ // Count distinct known colors
+ const c = colorCount(start);
+ const distinctColors = Object.keys(c);
+ // Total cells = sum of all positions
+ const totalCells = start.reduce((n, t) => n + t.length, 0);
+ const unkCount = start.reduce((n, t) => n + t.filter(x => x === UNK).length, 0);
+ // Distribute ? positions: fill with missing colors
+ // If a color has < ceil(totalCells / max(1, distinctColors+missing)) occurrences, treat as missing
+ // Simpler: assume ? are the colors NOT in c yet (or colors with < (CAP-1) occurrences)
+ // For this solver, we try 3 different "fill all ? with a single assumed color" + 1 "round-robin"
+
+ const triedFillStrategies = [];
+
+ // Strategy 1: all ? = same color (try top 3 missing colors)
+ const missing = [];
+ for(const p of PALETTE){
+  if(p.id === UNK) continue;
+  if(!c[p.id] || c[p.id] < state.CAP) missing.push(p.id);
+ }
+ for(const color of missing.slice(0, 3)){
+  // Only add if fillable: unkCount <= (CAP - c[color])
+  const need = state.CAP - (c[color] || 0);
+  if(unkCount <= need){
+   triedFillStrategies.push({type:"single", color: color});
+  }
+ }
+
+ // Strategy 2: round-robin fill (only if reasonable)
+ if(missing.length >= 2){
+  // Just try top 2 missing colors round-robin
+  const topMissing = missing.slice(0, Math.min(2, missing.length));
+  const totalNeed = topMissing.reduce((s, m) => s + (state.CAP - (c[m] || 0)), 0);
+  if(totalNeed >= unkCount){
+   triedFillStrategies.push({type:"roundrobin", colors: topMissing});
+  }
+ }
+
+ let best = null;
+ for(const strat of triedFillStrategies){
+  if(Date.now() > deadline) break;
+  // Build assumed state
+  const assumed = clone(start);
+  let colorIdx = 0;
+  for(let ti = 0; ti < assumed.length; ti++){
+   for(let li = 0; li < assumed[ti].length; li++){
+    if(assumed[ti][li] === UNK){
+     let pick;
+     if(strat.type === "single") pick = strat.color;
+     else pick = strat.colors[colorIdx % strat.colors.length];
+     assumed[ti][li] = pick;
+     colorIdx++;
+    }
+   }
+  }
+  // Check if assumed state is "consistent" (no over-limit)
+  const c2 = colorCount(assumed);
+  let over = false;
+  for(const k in c2){ if(c2[k] > state.CAP){ over = true; break; } }
+  if(over) continue;
+
+  // Run beam search
+  const subDeadline = Math.max(2000, deadline - Date.now() - 500);
+  const r = solveMultiplePlans(assumed, {
+   maxDepth: 30,
+   maxTime: Math.floor(subDeadline / triedFillStrategies.length),
+   maxPlans: 1,
+   strategy: "balanced"
+  });
+  if(r.best){
+   // Build plan: prefix with "reveal ?" moves
+   const revealMoves = [];
+   for(let ti = 0; ti < start.length; ti++){
+    for(let li = 0; li < start[ti].length; li++){
+     if(start[ti][li] === UNK){
+      revealMoves.push({from: ti, to: ti, _assume: assumed[ti][li]});
+     }
+    }
+   }
+   const fullPath = revealMoves.concat(r.best.path);
+   const alt = {
+    path: fullPath,
+    score: r.best.path.length + revealMoves.length,
+    finalState: r.best.finalState,
+    exposedUnknowns: countExposedUnknowns(start, r.best.finalState) + revealMoves.length,
+    _assumption: strat.type === "single" ? strat.color : strat.colors.join(",")
+   };
+   if(!best || alt.path.length < best.path.length) best = alt;
+  }
+ }
+ if(best){
+  plans.push(best);
+ }
+ return {plans};
+}
+
+function findTopUnknownIndex(s){
+ for(let ti = 0; ti < s.length; ti++){
+  const t = s[ti];
+  for(let li = t.length - 1; li >= 0; li--){
+   if(t[li] === UNK) return {ti, li};
+  }
+ }
+ return -1;
+}
+
+/* ============================================================
+   IDA* (Iterative Deepening A*) - memory-friendly exact solver
+   ============================================================ */
+function idaStar(start, deadline){
+ const path = [];
+ let threshold = heuristic(start);
+ let nodes = 0;
+ let minNext = Infinity;
+
+ function dfs(s, g){
+  if(Date.now() > deadline) return "timeout";
+  nodes++;
+  const f = g + heuristic(s);
+  if(f > threshold){ if(f < minNext) minNext = f; return "bound"; }
+  if(isSolved(s)) return "solved";
+  if(hasUnknown(s) && isBlockedByUnknownSafe(s)) return "blocked";
+  const moves = legalMoves(s).sort((a, b) => moveScore(s, a) - moveScore(s, b));
+  for(const m of moves){
+   const last = path[path.length - 1];
+   if(last && last.from === m.to && last.to === m.from) continue; // no A->B->A
+   const ns = applyMove(s, m.from, m.to);
+   path.push(m);
+   const r = dfs(ns, g + 1);
+   if(r === "solved") return "solved";
+   if(r === "timeout") return "timeout";
+   path.pop();
+  }
+  return "bound";
+ }
+
+ while(true){
+  if(Date.now() > deadline) return {type:"timeout", expanded:nodes, path:[], finalState:null};
+  minNext = Infinity;
+  const result = dfs(start, 0);
+  if(result === "solved"){
+   return {type:"solved", path: path.slice(), expanded:nodes, finalState: start};
+  }
+  if(result === "timeout") return {type:"timeout", expanded:nodes, path:[], finalState:null};
+  if(minNext === Infinity) return {type:"none", expanded:nodes, path:[], finalState:null};
   threshold = minNext;
  }
 }
 
-/* ---------- A3: Iterative beam expansion ----------
-   Wraps chooseVisiblePlan to try widening beam width if no solution found.
-   Returns the best result across attempts.
-*/
-function iterativeBeamSearch(start,maxDepthBase,baseBeam){
- const strategy=detectStrategyMode(start);
- const beamWidth=strategy==="predict"?150:strategy==="balanced"?80:40;
- const attempts=[beamWidth,beamWidth*2,beamWidth*4].filter(b=>b<=800);
- let bestResult=null;
- for(const beam of attempts){
-  const r=chooseVisiblePlan(start,maxDepthBase,beam);
-  if(r.type==="solved"||r.type==="blocked_unknown")return r;
-  if(!bestResult||(r.path&&r.path.length>bestResult.path.length))bestResult=r;
- }
- return bestResult;
+function isBlockedByUnknownSafe(s){
+ // Conservative: don't say blocked unless we're REALLY stuck
+ if(isSolved(s)) return false;
+ const moves = legalMoves(s);
+ if(moves.length > 0) return false;
+ // No legal moves at all = blocked
+ return true;
 }
 
-function detectStrategyMode(s){
- const total=s.reduce((n,t)=>n+t.length,0);
- const unk=s.reduce((n,t)=>n+t.filter(x=>x==="unknown").length,0);
- const ratio=total?unk/total:0;
- if(ratio>0.6)return"priority";
- if(ratio>=0.2)return"balanced";
- return"predict";
+function moveScore(s, m){
+ const a = s[m.from], b = s[m.to], c = topValue(a);
+ let v = 0;
+ if(b.length === 0) v += 2;
+ if(b.length && topValue(b) === c) v -= 3;
+ if(a.length === topRun(a)) v -= 2;
+ if(b.length + topRun(a) === state.CAP) v -= 4;
+ return v;
 }
 
-function solveWithAssumedUnknowns(start,deadline,maxPlans){
- const plans=[];
- const c={};
- for(const t of start)for(const id of t){if(id==="unknown")continue;c[id]=(c[id]||0)+1}
- const totalCells=start.reduce((n,t)=>n+t.length,0);
- const unkCount=start.reduce((n,t)=>n+t.filter(x=>x==="unknown").length,0);
- const missing=[];
- for(const p of palette){if(p.unknown)continue;if(!c[p.id]||c[p.id]<CAP)missing.push(p.id)}
- const triedFill=[];
- for(const color of missing.slice(0,3)){const need=CAP-(c[color]||0);if(unkCount<=need)triedFill.push({type:"single",color})}
- if(missing.length>=2){const topMissing=missing.slice(0,2);const totalNeed=topMissing.reduce((s,m)=>s+(CAP-(c[m]||0)),0);if(totalNeed>=unkCount)triedFill.push({type:"roundrobin",colors:topMissing})}
- let best=null;
- for(const strat of triedFill){
-  if(Date.now()>deadline)break;
-  const assumed=clone(start);let colorIdx=0;
-  for(let ti=0;ti<assumed.length;ti++)for(let li=0;li<assumed[ti].length;li++){if(assumed[ti][li]==="unknown"){let pick=strat.type==="single"?strat.color:strat.colors[colorIdx%strat.colors.length];assumed[ti][li]=pick;colorIdx++}}
-  const c2={};let over=false;
-  for(const t of assumed)for(const id of t){c2[id]=(c2[id]||0)+1;if(c2[id]>CAP){over=true;break}}
-  if(over)continue;
-  const subDeadline=Math.max(2000,deadline-Date.now()-500);
-  const r=iterativeBeamSearch(assumed,30,80);
-  if(r&&r.path&&r.path.length){
-   const revealMoves=[];
-   for(let ti=0;ti<start.length;ti++)for(let li=0;li<start[ti].length;li++){if(start[ti][li]==="unknown")revealMoves.push({from:ti,to:ti,_assume:assumed[ti][li]})}
-   const fullPath=revealMoves.concat(r.path);
-   const alt={path:fullPath,score:r.path.length+revealMoves.length,finalState:r.finalState,_assumption:strat.type==="single"?strat.color:strat.colors.join(",")};
-   if(!best||alt.path.length<best.path.length)best=alt;
-  }
-  if(best)plans.push(best);
- }
- return{plans};
-}
-
-function findTopUnknownIndex(s){
- for(let ti=0;ti<s.length;ti++){const t=s[ti];for(let li=t.length-1;li>=0;li--){if(t[li]==="unknown")return{ti,li}}}
- return-1;
-}
-
-class MinHeap{
- constructor(){this.a=[]}
- push(x){const a=this.a;let i=a.length;a.push(x);while(i){const p=(i-1)>>1;if(a[p].f<=x.f)break;a[i]=a[p];i=p}a[i]=x}
- pop(){const a=this.a;if(!a.length)return null;const root=a[0],last=a.pop();if(a.length){let i=0;while(true){const l=i*2+1;if(l>=a.length)break;const r=l+1,c=(r<a.length&&a[r].f<a[l].f)?r:l;if(a[c].f>=last.f)break;a[i]=a[c];i=c}a[i]=last}return root}
- get size(){return this.a.length}
-}
-function solveAStar(start,deadline){
- const heap=new MinHeap(),best=new Map([[stateKey(start),0]]);
- heap.push({s:clone(start),g:0,f:heuristicCached(start),path:[]});
- let expanded=0;
- while(heap.size){
-  if(performance.now()>deadline)return {type:"timeout",expanded};
-  const cur=heap.pop(),k=stateKey(cur.s);if(cur.g!==best.get(k))continue;
-  expanded++;
-  if(isSolved(cur.s))return {type:"solved",path:cur.path,expanded};
-  if(isKnownProgressState(cur.s))return {type:"blocked_unknown",path:cur.path,expanded};
-  const ms=legalMoves(cur.s).sort((a,b)=>moveScore(cur.s,a)-moveScore(cur.s,b));
-  for(const m of ms){
-   const ns=applyMove(cur.s,m.from,m.to),nk=stateKey(ns),ng=cur.g+1,old=best.get(nk);
-   if(old!==undefined&&old<=ng)continue;
-   best.set(nk,ng);heap.push({s:ns,g:ng,f:ng+heuristicCached(ns),path:cur.path.concat(m)});
-  }
-  if(best.size>250000)return {type:"memory",expanded};
- }
- return {type:"none",expanded};
-}
-function solveBFS(start,deadline){
- const q=[{s:clone(start),path:[]}],seen=new Set([stateKey(start)]);let head=0,expanded=0;
- while(head<q.length){
-  if(performance.now()>deadline)return {type:"timeout",expanded};
-  const cur=q[head++];expanded++;
-  if(isSolved(cur.s))return {type:"solved",path:cur.path,expanded};
-  if(isKnownProgressState(cur.s))return {type:"blocked_unknown",path:cur.path,expanded};
-  for(const m of legalMoves(cur.s)){
-   const ns=applyMove(cur.s,m.from,m.to),k=stateKey(ns);if(seen.has(k))continue;seen.add(k);q.push({s:ns,path:cur.path.concat(m)});
-  }
-  if(seen.size>300000)return {type:"memory",expanded};
- }
- return {type:"none",expanded};
-}
-
-function renderPalette(){
- const p=$("palette");p.innerHTML="";
- const e=document.createElement("button");e.className="palette-chip erase"+(selectedId==="erase"?" selected":"");e.textContent="❌";e.onclick=()=>{selectedId="erase";renderPalette()};
- const ew=document.createElement("div");ew.className="paletteItem";ew.appendChild(e);p.appendChild(ew);
-
- palette.forEach(item=>{
-  const wrap=document.createElement("div");wrap.className="paletteItem";
-  const b=document.createElement("button");b.className="palette-chip"+(selectedId===item.id?" selected":"");b.style.background=item.bgColor;
-  if(item.image){b.innerHTML='<img src="'+item.image+'" alt="" style="width:28px;height:28px;object-fit:cover;border-radius:5px">';}
-  else b.textContent=item.symbol;
-  b.title=item.id+(item.unknown?" (ẩn)":"");
-  b.draggable=true;b.ondragstart=ev=>ev.dataTransfer.setData("text/plain",item.id);b.onclick=()=>{selectedId=item.id;renderPalette()};
-  wrap.appendChild(b);
-  const ed=document.createElement("button");ed.className="paletteMini";ed.textContent="✎";ed.title="Sửa";ed.onclick=()=>startPaletteEdit(item.id);wrap.appendChild(ed);
-  p.appendChild(wrap);
- });
-}
-const QUICK_COLORS=["#ef4444","#f97316","#eab308","#22c55e","#10b981","#06b6d4","#3b82f6","#6366f1","#a855f7","#ec4899","#64748b","#ffffff"];
-function renderQuickIcons(){
-  const q=$("quickIcons");q.innerHTML="";
-  QUICK_ICONS.forEach(icon=>{const b=document.createElement("button");b.textContent=icon;b.title="Chọn icon "+icon;b.style.cssText="background:#334155;padding:4px 6px;font-size:16px;border-radius:6px";b.onclick=()=>{$("customIcon").value=icon};q.appendChild(b)});
-  const qc=$("quickColors");if(qc){qc.innerHTML="";QUICK_COLORS.forEach(c=>{const s=document.createElement("div");s.style.cssText="width:20px;height:20px;border-radius:50%;cursor:pointer;background:"+c+";border:2px solid transparent";s.title=c;s.onclick=()=>{$("customColor").value=c};qc.appendChild(s)})}
-}
-function renderBoard(){
- const el=$("board");el.innerHTML="";
- tubes.forEach((t,ti)=>{
-  const wrap=document.createElement("div");wrap.className="tubeWrap";
-  const label=document.createElement("div");label.className="tubeLabel";label.textContent="Ống "+(ti+1);
-  const tube=document.createElement("div");tube.className="tube-vis"+(selectedTube===ti?" selected":"")+(isComplete(t)?" locked":"");
-  tube.onclick=()=>handleTubeClick(ti);
-  tube.ondragover=e=>e.preventDefault();
-  tube.ondrop=e=>{e.preventDefault();const id=e.dataTransfer.getData("text/plain");if(id)setTubeTop(ti,id)};
-  for(let i=0;i<CAP;i++){
-   const slot=document.createElement("div");slot.className="cell";const id=t[i];
-   if(id){const obj=getPalette(id);if(obj){
-    slot.style.background=obj.bgColor;
-    if(obj.unknown)slot.textContent="?";
-    else if(obj.image)slot.innerHTML='<img src="'+obj.image+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:5px">';
-    else slot.textContent=obj.symbol;
-    if(obj.unknown)slot.classList.add("unknown");
-  }}
-   slot.onclick=e=>{e.stopPropagation();setSlot(ti,i)};
-   slot.ondragover=e=>e.preventDefault();
-   slot.ondrop=e=>{e.preventDefault();e.stopPropagation();const id=e.dataTransfer.getData("text/plain");if(id)setSlotValue(ti,i,id)};
-   tube.appendChild(slot);
-  }
-  if(isComplete(t)){const l=document.createElement("div");l.className="lock";l.textContent="✓";tube.appendChild(l)}
-  wrap.append(label,tube);el.appendChild(wrap);
- });
-}
-function renderAll(){renderPalette();renderBoard();updateUndo();renderSmartAnalysis()}
-function setSlotValue(ti,li,id){
- if(isComplete(tubes[ti]))return;
- saveHistory();
- // SPA FIX 2026-09-25: cho phép đặt tại ô chỉ định tùy ý (không bắt buộc từ dưới lên)
- // Giữ sparse array với null = ô trống, không filter để giữ vị trí chỉ định
- while(tubes[ti].length <= li) tubes[ti].push(null);
- tubes[ti][li]=id;
- if(tubes[ti].length > CAP) tubes[ti]=tubes[ti].slice(0,CAP);
- // Không tự compact — giữ gap để user thấy đúng ô đã đặt; solver sẽ normalize via filter(Boolean)
- selectedTube=-1;renderAll();
- checkNewUnknowns();
-}
-function setSlot(ti,li){
- if(selectedId==="erase"){
-  if(tubes[ti][li]){saveHistory();logEvent("erase_slot",{tube:ti,layer:li});tubes[ti][li]=null;renderAll()}
-  else if(tubes[ti].length>li){ // xóa cả gap
-    saveHistory();tubes[ti][li]=null;renderAll();
-  }
-  return}
- if(!selectedId)return;
- setSlotValue(ti,li,selectedId);
-}
-function setTubeTop(ti,id){
- if(isComplete(tubes[ti]))return;
- if(id==="erase"){if(tubes[ti].length){saveHistory();logEvent("erase_top",{tube:ti});tubes[ti].pop();renderAll()}return}
- if(tubes[ti].length>=CAP)return;
- saveHistory();logEvent("add_layer",{tube:ti,value:id});tubes[ti].push(id);renderAll();
-}
-function handleTubeClick(ti){
- if(selectedTube<0){if(tubes[ti].length)selectedTube=ti;renderBoard();return}
- if(selectedTube===ti){selectedTube=-1;renderBoard();return}
- if(validMove(tubes,selectedTube,ti)){
-  const from=selectedTube;
-  saveHistory();tubes=applyMove(tubes,selectedTube,ti);selectedTube=-1;
-  logEvent("user_move",{from,to:ti});
-  updateLearning("success",{safe:1,group:groupingGain(tubes,{from:Math.max(0,Math.min(from,tubes.length-1)),to:ti}),space:1});
-  renderAll();checkNewUnknowns();
- }else{selectedTube=ti;renderBoard()}
-}
-function undo(){
- if(!history.length)return;
- tubes=history.pop();selectedTube=-1;lastSolution=null;$("solution").innerHTML="";$("animateBtn").disabled=true;
- logEvent("undo");updateLearning("failure",{risk:1,safe:1});renderAll();setStatus("↶ Đã lùi lại một thao tác.");
-}
-function addTube(){saveHistory();tubes.push([]);selectedTube=-1;logEvent("add_tube");renderAll();setStatus("Đã thêm ống rỗng để chứa tạm.")}
-function removeTube(){
- if(tubes.length<=2)return setStatus("Cần giữ ít nhất 2 ống.","warn");
- if(tubes[tubes.length-1].length)return setStatus("Ống cuối phải rỗng mới xóa được.","warn");
- saveHistory();tubes.pop();logEvent("remove_tube");renderAll();
-}
-function clearAll(){saveHistory();tubes=tubes.map(()=>[]);selectedTube=-1;lastSolution=null;logEvent("clear_board");clearHeuristicCache();renderAll();setStatus("Đã xóa sạch bàn.")}
-function persistPalette(){
- try{
-  const data=JSON.stringify(palette);
-  localStorage.setItem("waterSortPaletteV10",data);
-  localStorage.setItem("waterSortPaletteV9",data);
-  localStorage.setItem("waterSortPalette",data);
- }catch{}
- logEvent("palette_saved",{count:palette.length});
-}
-function saveTemplate(){
- savedTemplate=clone(tubes);
- try{
-  localStorage.setItem("waterSortSavedTemplateV9",JSON.stringify(savedTemplate));
-  localStorage.setItem("waterSortPaletteV9",JSON.stringify(palette));
-  // Also keep the V8 keys so the user's previous saved state remains available.
-  localStorage.setItem("waterSortSavedTemplate",JSON.stringify(savedTemplate));
-  localStorage.setItem("waterSortPalette",JSON.stringify(palette));
- }catch{}
- setStatus("💾 Đã lưu mẫu + icon/màu vào bộ nhớ trình duyệt.","ok");logEvent("save_template",{tubes:tubes.length,palette:palette.length});
-}
-function loadTemplate(){
- const raw=localStorage.getItem("waterSortSavedTemplate");if(!raw)return setStatus("Chưa có mẫu đã lưu.","warn");
- try{savedTemplate=JSON.parse(raw);tubes=clone(savedTemplate);history=[];lastSolution=null;selectedTube=-1;renderAll();setStatus("📂 Đã tải mẫu đã lưu.","ok");logEvent("load_template")}catch{setStatus("Không đọc được mẫu đã lưu.","bad")}
-}
-function backToSaved(){
- if(!savedTemplate){const raw=localStorage.getItem("waterSortSavedTemplate");if(raw)try{savedTemplate=JSON.parse(raw)}catch{}}
- if(!savedTemplate)return setStatus("Chưa có mẫu lưu. Hãy bấm 'Lưu mẫu hiện tại' trước.","warn");
- history.push(clone(tubes));tubes=clone(savedTemplate);selectedTube=-1;lastSolution=null;renderAll();setStatus("↩ Đã quay lại mẫu ban đầu đã lưu.","ok");
-}
-function startPaletteEdit(id){
- const o=getPalette(id);if(!o)return;editingPaletteId=id;
- $("customIcon").value=o.symbol;$("customColor").value=o.bgColor;$("customEditor").classList.add("show");selectedId=id;renderPalette();
-}
-function applyPaletteEdit(){
- const icon=$("customIcon").value.trim()||"●",color=$("customColor").value;
- if(!editingPaletteId){
-  const id="custom_"+Date.now();palette.push({id,symbol:icon,bgColor:color,unknown:false});selectedId=id;
- }else{
-  const o=getPalette(editingPaletteId);if(o){o.symbol=icon;o.bgColor=color}
- }
- $("customEditor").classList.remove("show");editingPaletteId=null;persistPalette();
- rebuildPaletteCodeMap();clearHeuristicCache();renderAll();
- setStatus("💾 Đã lưu thay đổi icon/màu vào bộ nhớ trình duyệt.","ok");
-}
-function deleteSelectedPalette(){
- if(!selectedId||selectedId==="erase")return setStatus("Hãy chọn màu/icon cần xóa.","warn");
- const o=getPalette(selectedId);if(!o)return;
- if(!confirm("Xóa màu/icon "+o.symbol+"? Các ô đang dùng nó sẽ trở thành trống."))return;
- saveHistory();
- tubes=tubes.map(t=>t.filter(x=>x!==selectedId));
- palette=palette.filter(x=>x.id!==selectedId);
- persistPalette();
- selectedId=palette.length?palette[0].id:"erase";renderAll();setStatus("Đã xóa màu/icon đã chọn.","ok");
-}
-function newPalette(){editingPaletteId=null;$("customIcon").value="🍎";$("customColor").value="#ef4444";$("customEditor").classList.add("show")}
-
-
-function unknownStats(state){
- const counts={}, total=state.reduce((n,t)=>n+t.length,0);
- let unknown=0;
- state.forEach(t=>t.forEach(id=>{
-  if(id==="unknown")unknown++;
-  else if(id)counts[id]=(counts[id]||0)+1;
- }));
- const candidates=[];
- for(const p of palette){
-  if(p.unknown)continue;
-  const remain=Math.max(0,CAP-(counts[p.id]||0));
-  if(remain)candidates.push({id:p.id,remain});
- }
- const totalRemain=candidates.reduce((a,x)=>a+x.remain,0);
- return {total,unknown,ratio:total?unknown/total:0,candidates,totalRemain};
-}
-function countTopUnknowns(state){
- let n=0;state.forEach(t=>{if(t.length&&topValue(t)==="unknown")n++});return n;
-}
-function hiddenUnknownCount(state){
- return state.reduce((n,t)=>n+t.filter(x=>x==="unknown").length,0);
-}
-function safeLockedCount(state){
- return state.reduce((n,t)=>n+(isComplete(t)?1:0),0);
-}
-function availableMoves(state){return legalMoves(state).length}
-function stateProgress(state){
- return {
-   moves:availableMoves(state),
-   topUnknown:countTopUnknowns(state),
-   hiddenUnknown:hiddenUnknownCount(state),
-   locked:safeLockedCount(state),
-   empty:state.filter(t=>t.length===0).length,
-   heuristic:heuristic(state)
- };
-}
-function deadEndRisk(state){
- if(isSolved(state))return 0;
- const moves=availableMoves(state);
- if(moves===0){
-  // This is not a dead-end if the next step is simply to reveal a top ?.
-  if(countTopUnknowns(state)>0)return 0.15;
-  return 1;
- }
- return Math.max(0,1-Math.min(moves,12)/12);
-}
-function unlockGain(state,m){
- const before=stateProgress(state);
- const after=stateProgress(applyMove(state,m.from,m.to));
- return {
-   top:after.topUnknown-before.topUnknown,
-   hidden:before.hiddenUnknown-after.hiddenUnknown,
-   empty:after.empty-before.empty
- };
-}
-function groupingGain(state,m){
- const a=state[m.from],b=state[m.to],run=topRun(a),c=topValue(a);
- let g=0;
- if(b.length&&topValue(b)===c)g+=4;
- if(b.length+run===CAP)g+=5;
- if(a.length===run)g+=2;
- if(isComplete(applyMove(state,m.from,m.to)[m.to]))g+=5;
- return g;
-}
-function createsForcedMistake(state,m){
- const ns=applyMove(state,m.from,m.to);
- if(isComplete(ns[m.to]))return false;
- // A "forced mistake" here means the move leaves no usable route and no visible ? blocker.
- return availableMoves(ns)===0 && countTopUnknowns(ns)===0 && !isSolved(ns);
-}
-/* ============================================================
-   SOP 4-BƯỚC CHUẨN HÓA - Chiến lược vượt ải 6+
-   ============================================================ */
-
-/* Bước 1: Kiểm kê & Loại trừ (Inventory & Exclusion) */
-function inventoryExclusion(s){
- const counts={};
- let unknownCount=0;
- for(const t of s)for(const id of t){
-  if(id==="unknown"){unknownCount++;continue}
-  counts[id]=(counts[id]||0)+1
- }
- const totalCells=s.reduce((n,t)=>n+t.length,0);
- const knownCells=totalCells-unknownCount;
- // Mỗi màu có tối đa CAP ô
- const missing={};
- for(const p of palette){
-  if(p.unknown)continue;
-  const remain=Math.max(0,CAP-(counts[p.id]||0));
-  if(remain>0)missing[p.id]=remain
- }
- return {counts,unknownCount,totalCells,knownCells,missing};
-}
-
-/* Bước 4: Deadlock Filter - Kiểm tra A→B→A loop */
-function isCycleMove(path,m){
- if(!path.length)return false;
- const last=path[path.length-1];
- return last.from===m.to&&last.to===m.from;
-}
-function detectLoopInPath(path){
- if(path.length<4)return false;
- const last4=path.slice(-4);
- if(last4[0].from===last4[2].from&&last4[0].to===last4[2].to&&
-    last4[1].from===last4[3].from&&last4[1].to===last4[3].to)return true;
- return false;
-}
-
-/* Bước 3: Combo Detection - Chuỗi domino A→B→C nâng cao */
-function detectComboPotential(s,m){
- const ns=applyMove(s,m.from,m.to);
- let comboScore=0;
- const sourceAfter=ns[m.from];
- const destAfter=ns[m.to];
- 
- // Ưu tiên 1: Ống nguồn sau move có thể tiếp tục move khác?
- if(sourceAfter.length>0&&!isComplete(sourceAfter)){
-  const nextTop=topValue(sourceAfter);
-  for(let i=0;i<ns.length;i++){
-   if(i===m.from)continue;
-   if(isComplete(ns[i]))continue;
-   if(ns[i].length>0&&topValue(ns[i])===nextTop&&ns[i].length<CAP){
-    comboScore+=15;
+function countExposedUnknowns(start, final){
+ // Count ? cells that were turned into known colors (assumed via reveal)
+ let n = 0;
+ for(let i = 0; i < start.length; i++){
+  const s = start[i], f = final[i];
+  // If tube got shorter and lost a ? layer (and we still see it solved), it was revealed
+  // Simple heuristic: count ? cells in start that are not ? in final
+  for(let j = 0; j < s.length; j++){
+   if(s[j] === UNK){
+    if(j < f.length && f[j] !== UNK) n++;
+    else if(j >= f.length) n++; // moved out, was revealed
    }
   }
- }
- 
- // Ưu tiên 2: Ống đích sau move có thể tiếp tục nhận thêm?
- if(destAfter.length>0&&!isComplete(destAfter)){
-  const destTop=topValue(destAfter);
-  for(let i=0;i<ns.length;i++){
-   if(i===m.to)continue;
-   if(ns[i].length===0||isComplete(ns[i]))continue;
-   if(topValue(ns[i])===destTop&&topRun(ns[i])>1){
-    comboScore+=10;
-   }
-  }
- }
- 
- // Ưu tiên 3: Chuỗi domino A→B→C (dọn sạch 1 ống nguồn)
- // Nếu move này giải phóng hoàn toàn ống nguồn → rất tốt
- if(sourceAfter.length===0&&s[m.from].length>0){
-  comboScore+=40; // Tạo ống rỗng mới
- }
- 
- // Bonus: Move giải phóng ô ? bị che
- if(s[m.from].length>1){
-  const belowTop=s[m.from][s[m.from].length-2];
-  if(belowTop==="unknown"&&topValue(s[m.from])!=="unknown"){
-   comboScore+=35; // Lật ô ?
-  }
- }
- 
- return comboScore;
-}
-
-/* Kiểm tra move có tạo ống rỗng mới hoặc khóa ống */
-function createsEmptyOrLocked(s,m){
- const ns=applyMove(s,m.from,m.to);
- if(ns[m.from].length===0&&s[m.from].length>0)return true; // Tạo rỗng
- if(isComplete(ns[m.to]))return true; // Khóa ống
- return false;
-}
-
-/* Kiểm tra move có chia lẻ màu vào ống rỗng không (TRÁNH) */
-function isSplittingIntoEmpty(s,m){
- if(s[m.to].length!==0)return false; // Không phải ống rỗng
- const runFrom=topRun(s[m.from]);
- const fromLen=s[m.from].length;
- // Nếu move 1-2 ô từ ống có nhiều hơn 2 ô khác màu bên dưới
- if(runFrom<fromLen&&runFrom<CAP-1)return true;
- return false;
-}
-
-/* Bước 2 & 3 & 4: Move Score nâng cao theo SOP - Ải 7 */
-function safeMoveScore(state,m){
- const stats=unknownStats(state);
- const ns=applyMove(state,m.from,m.to);
- const ub=unlockGain(state,m);
- const group=groupingGain(state,m);
- const afterMoves=availableMoves(ns);
- const risk=deadEndRisk(ns);
- const strat=detectStrategyMode(state);
- let score=0;
-
- const emptyBefore=state.filter(t=>t.length===0).length;
- const emptyAfter=ns.filter(t=>t.length===0).length;
-
- /* === BƯỚC 1: Kiểm kê & Loại trừ === */
- // Ưu tiên tối đa hoàn thành ống (khóa ống = tạo ống rỗng mới)
- if(isComplete(ns[m.to]))score+=150;
- // Gom cụm trùng màu càng nhiều càng tốt
- score+=group*15;
-
- /* === BƯỚC 2: Chiến lược theo % ẩn === */
- if(strat==="priority"){
-  // >60% ẩn: Ưu tiên lật ô ?
-  score+=ub.top*100;
-  score+=ub.hidden*15;
-  if(ub.top===0&&ub.hidden===0)score-=50; // Phạt nặng move không lộ ?
-  if(afterMoves<2)score-=20;
- }else if(strat==="balanced"){
-  // 20-60% ẩn: Giữ 1 ống rỗng dự phòng
-  if(emptyBefore===1&&emptyAfter===0)score-=300; // Phạt cực nặng dùng hết rỗng
-  if(emptyAfter===0&&stats.ratio>0.3)score-=150;
-  score+=group*30;
-  score+=ub.top*20;
- }else{
-  // <20% ẩn: Dự đoán + dọn bàn
-  score+=group*40;
-  score+=ub.top*10;
-  if(afterMoves>=3)score+=8;
- }
-
- /* === BƯỚC 3: Combo Chain (Domino) === */
- score+=detectComboPotential(state,m);
-
- /* === BƯỚC 4: Deadlock Filter - NGHIÊM NGẶT === */
- // Phạt cực nặng A→B→A (250 → 500)
- if(isCycleMove(state._path||[],m))score-=500;
- // Phạt tạo loop 4 bước
- if(detectLoopInPath((state._path||[]).concat(m)))score-=200;
- // Phạt dead-end
- score-=risk*50;
- if(createsForcedMistake(state,m))score-=100;
-
- /* === BẢO VỆ ỐNG RỖNG (Phao cứu sinh) - NGHIÊM NGẶT === */
- // KHÔNG chia lẻ màu vào ống rỗng (TRÁNH TỐI ĐA)
- if(isSplittingIntoEmpty(state,m)){
-  // Chỉ cho phép nếu hoàn thành ngay bộ 4 ô
-  if(!isComplete(ns[m.to]))score-=400;
- }
- 
- // Phạt đổ đơn lẻ (1 ô) vào ống rỗng nếu không giải phóng
- if(state[m.to].length===0&&topRun(state[m.from])===1&&state[m.from].length>1){
-  score-=200;
- }
-
- // Ưu tiên move giải phóng ống (dọn sạch ống nguồn → tạo rỗng mới)
- if(ns[m.from].length===0&&state[m.from].length>0)score+=50;
-
- // Ưu tiên move dọn icon đè lên ô ? (lật ô ? mà không mất rỗng)
- if(state[m.from].length>1&&topValue(state[m.from])!=="unknown"){
-  const belowSource=state[m.from][state[m.from].length-2];
-  if(belowSource==="unknown")score+=40;
- }
-
- /* === KIỂM TRA AN TOÀN SAU MOVE === */
- // Đảm bảo sau move luôn còn ít nhất 1 ống rỗng HOẶC tạo ống khóa
- if(emptyAfter===0&&!isComplete(ns[m.to])&&emptyBefore===0){
-  score-=150; // Không còn rỗng và không tạo rỗng mới = nguy hiểm
- }
-
- // Bonus: Move vừa tạo rỗng vừa khóa ống
- if(ns[m.from].length===0&&isComplete(ns[m.to]))score+=80;
-
- return {score,group,risk,afterMoves,unlock:ub};
-}
-
-function rankSmartMoves(state,limit=8,path=[]){
- const ranked=legalMoves(state).map(m=>({...safeMoveScore(Object.assign({},state,{_path:path}),m),m}));
- ranked.sort((a,b)=>b.score-a.score);
- return ranked.slice(0,limit);
-}
-
-function chooseVisiblePlan(state, maxDepth=18, beamWidth=80){
- /*
-  Beam search nâng cao với SOP 4 bước:
-  - Kiểm kê & loại trừ
-  - Chiến lược theo % ẩn
-  - Combo chain (domino)
-  - Deadlock filter (A→B→A)
- */
- const start=clone(state);
- let frontier=[{s:start,path:[],value:0}];
- const seen=new Map([[stateKey(start),0]]);
- let bestBlocked=null,bestPartial=null;
-
- for(let depth=0;depth<maxDepth;depth++){
-  const next=[];
-  for(const node of frontier){
-   if(isSolved(node.s))return {type:"solved",path:node.path,state:node.s,depth};
-   // Truyền path để kiểm tra cycle
-   const moves=rankSmartMoves(node.s,Math.max(10,beamWidth),node.path);
-   if(moves.length===0){
-     if(countTopUnknowns(node.s)>0){
-       if(!bestBlocked || node.path.length<bestBlocked.path.length ||
-          stateProgress(node.s).heuristic<stateProgress(bestBlocked.s).heuristic){
-         bestBlocked=node;
-       }
-     }
-     continue;
-   }
-   for(const x of moves){
-     // Bước 4: Skip cycle moves
-     if(isCycleMove(node.path,x.m))continue;
-     if(detectLoopInPath(node.path.concat(x.m)))continue;
-     const ns=applyMove(node.s,x.m.from,x.m.to);
-     const k=stateKey(ns);
-     if(seen.has(k) && seen.get(k)<=node.path.length+1)continue;
-     seen.set(k,node.path.length+1);
-     const sp=stateProgress(ns);
-     const val =
-       -sp.heuristic*3 +
-       sp.locked*8 +
-       sp.empty*1.5 +
-       (sp.topUnknown*-12) +
-       sp.moves*1.5 +
-       x.score;
-     next.push({s:ns,path:node.path.concat(x.m),value:val});
-     if(!bestPartial || val>bestPartial.value)bestPartial={s:ns,path:node.path.concat(x.m),value:val};
-    }
-  next.sort((a,b)=>b.value-a.value);
-  frontier=next.slice(0,beamWidth);
-  if(!frontier.length)break;
- }
-
- if(bestBlocked){
-  return {type:"blocked_unknown",path:bestBlocked.path,state:bestBlocked.s,depth:bestBlocked.path.length};
- }
- if(bestPartial){
-  return {type:"partial",path:bestPartial.path,state:bestPartial.s,depth:bestPartial.path.length};
- }
-  return {type:"none",path:[],state:start,depth:0};
- }
-}
-
-function renderSmartAnalysis(){
- const state=tubes.map(t=>t.filter(Boolean));
- const summary=$("smartSummary"),cards=$("smartCandidates");
- if(!state.length){summary.innerHTML="";cards.innerHTML="";return}
- const stats=unknownStats(state);
- const mode=stats.unknown===0
-  ?"Không còn ô ? — ưu tiên hoàn thành an toàn."
-  :stats.ratio>0.5
-  ?"Ô ? > 50% — ưu tiên mở/gỡ nhiều ô ? nhất."
-  :"Ô ? ≤ 50% — ưu tiên quota, loại trừ, gom màu và giữ nhiều đường đi.";
- summary.innerHTML=`<div class="small"><b>🧠 Smart Solver:</b> ${mode} Ô ? ${stats.unknown}/${stats.total} (${(stats.ratio*100).toFixed(1)}%). Giữ nhiều nhánh ứng viên để tránh kẹt.</div>`;
- cards.innerHTML="";
- rankSmartMoves(state,6).forEach((x,i)=>{
-   const d=document.createElement("div");d.className="smartCard"+(i===0?" best":"");
-   d.innerHTML=`<b>${i===0?"⭐ Đề xuất cao nhất":"Phương án "+(i+1)}</b>: Ống ${x.m.from+1} → Ống ${x.m.to+1}
-   <div class="smartMeta">Điểm ${x.score.toFixed(2)} · sau đó còn ${x.afterMoves} nước · rủi ro bí ${(x.risk*100).toFixed(0)}% · gỡ ? ${x.unlock.top>=0?"+":""}${x.unlock.top}</div>`;
-   cards.appendChild(d);
- });
-}
-
-function probabilityForUnknown(){
- const state=tubes.map(t=>t.filter(Boolean));
- const stats=unknownStats(state);
- if(!stats.unknown){$("probBox").classList.remove("show");renderSmartAnalysis();return}
- const box=$("probBox");box.classList.add("show");
- let target=null;
- for(let ti=0;ti<state.length;ti++){
-   if(state[ti].length&&topValue(state[ti])==="unknown"){target={ti,li:state[ti].length-1};break}
- }
- let html="<b>🎲 Xác suất + loại trừ</b><div class='small'>Đây là thứ hạng ứng viên, không phải màu chắc chắn. Màu đã đủ 4 hoặc trùng trực tiếp với lớp phía trên bị loại.</div>";
- if(target){
-   const above=target.li<state[target.ti].length-1?state[target.ti][target.li+1]:null;
-   const weighted=stats.candidates.map(x=>{
-     let w=x.remain;
-     if(above===x.id)w=0;
-     const tmp=clone(state);tmp[target.ti][target.li]=x.id;
-     const moves=legalMoves(tmp).length;
-     if(moves===0&&!isSolved(tmp))w*=0.05;
-     else if(moves>2)w*=1.15;
-     return {id:x.id,w};
-   }).filter(x=>x.w>0);
-   const sum=weighted.reduce((a,x)=>a+x.w,0)||1;
-   weighted.sort((a,b)=>b.w-a.w).forEach(x=>{
-     const pct=x.w/sum*100,p=getPalette(x.id);
-     html+=`<div class='probRow'><span>${p.symbol}</span><div class='bar'><i style='width:${pct.toFixed(1)}%'></i></div><span>${pct.toFixed(1)}%</span></div>`;
-   });
- }else{
-   html+="<div class='small'>Chưa có ô ? ở trên cùng. Solver vẫn tiếp tục giải các lớp đã biết.</div>";
- }
- box.innerHTML=html;renderSmartAnalysis();
-}
-function checkNewUnknowns(){
-  for(let ti=0;ti<tubes.length;ti++){
-   const t=tubes[ti];
-   if(t.length&&t[t.length-1]==="unknown"){
-    revealTarget={ti,li:t.length-1};
-    $("revealBtn").disabled=false;
-    setStatus("⏸ Solver gặp ô ? ở Ống "+(ti+1)+" và tạm dừng. Hãy cập nhật màu thật của ô ? rồi bấm Giải lại / Solver sẽ tính tiếp.","warn");
-    return true;
-   }
-  }
-  revealTarget=null;
-  return false;
-}
-// Allow solver to bypass checkNewUnknowns when in auto mode
-const _origCheckNewUnknowns=checkNewUnknowns;
-checkNewUnknowns=function(){
-  if(cancelled)return false;
-  return _origCheckNewUnknowns();
-}
-function openReveal(){
- if(!revealTarget){
-  for(let ti=0;ti<tubes.length;ti++){const t=tubes[ti];if(t.length&&t[t.length-1]==="unknown"){revealTarget={ti,li:t.length-1};break}}
- }
- if(!revealTarget)return setStatus("Không có ô ? nào đang ở trên cùng.","warn");
- $("modalTitle").textContent="🔓 Chọn màu thật của ô ? (Ống "+(revealTarget.ti+1)+")";
- const grid=$("modalGrid");grid.innerHTML="";
- palette.filter(p=>!p.unknown).forEach(p=>{
-  const b=document.createElement("button");b.style.background=p.bgColor;b.textContent=p.symbol;b.title=p.id;
-  b.onclick=()=>{saveHistory();const rt=clone(revealTarget);tubes[revealTarget.ti][revealTarget.li]=p.id;logEvent("reveal_unknown",{tube:rt.ti,layer:rt.li,value:p.id});revealTarget=null;$("modal").classList.remove("show");renderAll();setStatus("✅ Đã cập nhật màu thật của ô ?. Bấm ⚡ Giải Local để Solver tính tiếp từ trạng thái mới.","ok");};
-  grid.appendChild(b);
- });
- $("modal").classList.add("show");
- probabilityForUnknown();
-}
-
-let importedImage=null;
-let importedAnalysis=null;
-
-/* ---- Checkpoint system ---- */
-const CHECKPOINT_KEY="waterSortCheckpointsV12";
-const MAX_CHECKPOINTS=5;
-let checkpoints=[],activeCheckpoint=-1;
-function loadCheckpoints(){try{const r=localStorage.getItem(CHECKPOINT_KEY);if(!r)return[];const a=JSON.parse(r);return Array.isArray(a)?a:[]}catch{return[]}}
-function persistCheckpoints(){try{localStorage.setItem(CHECKPOINT_KEY,JSON.stringify(checkpoints))}catch{}}
-function saveCheckpoint(label){if(checkpoints.length<MAX_CHECKPOINTS){checkpoints.push({tubes:clone(tubes),ts:Date.now(),label:label||("Màn "+(checkpoints.length+1))});activeCheckpoint=checkpoints.length-1}else{if(!confirm("Đã đủ "+MAX_CHECKPOINTS+" checkpoint. Thay thế cũ nhất?"))return;checkpoints.shift();checkpoints.push({tubes:clone(tubes),ts:Date.now(),label:label||("Màn "+MAX_CHECKPOINTS)});activeCheckpoint=checkpoints.length-1}persistCheckpoints();renderCheckpointBar();toast("💾 Đã lưu checkpoint","ok")}
-function loadCheckpoint(idx){const cp=checkpoints[idx];if(!cp)return;tubes=clone(cp.tubes);activeCheckpoint=idx;selectedTube=-1;lastSolution=null;renderAll();toast("↩ Đã khôi phục checkpoint "+(idx+1),"ok")}
-function deleteCheckpoint(idx){checkpoints.splice(idx,1);if(activeCheckpoint===idx)activeCheckpoint=-1;else if(activeCheckpoint>idx)activeCheckpoint--;persistCheckpoints();renderCheckpointBar()}
-function clearAllCheckpoints(){if(!checkpoints.length)return;if(!confirm("Xoá tất cả "+checkpoints.length+" checkpoint?"))return;checkpoints=[];activeCheckpoint=-1;persistCheckpoints();renderCheckpointBar();toast("Đã xoá hết checkpoint","ok")}
-function renderCheckpointBar(){const bar=$("checkpointBar");if(!checkpoints.length){bar.classList.remove("show");$("checkpointLoadBtn").disabled=true;return}bar.classList.add("show");$("checkpointLoadBtn").disabled=false;const info=$("checkpointInfo");const active=checkpoints[activeCheckpoint];if(active){const dt=new Date(active.ts);const t=dt.getHours().toString().padStart(2,"0")+":"+dt.getMinutes().toString().padStart(2,"0");info.innerHTML="📌 <b>"+active.label+"</b> · "+t+" · "+active.tubes.length+" ống"}else{info.innerHTML="Có "+checkpoints.length+" checkpoint"}const slots=$("checkpointSlots");slots.innerHTML="";checkpoints.forEach((cp,i)=>{const b=document.createElement("button");b.className="checkpoint-slot"+(cp.tubes.length>0?" filled":"")+(i===activeCheckpoint?" active":"");b.textContent=(i+1);b.title=cp.label+" — click để khôi phục, double-click để xoá";b.onclick=()=>loadCheckpoint(i);b.ondblclick=e=>{e.preventDefault();if(confirm("Xoá checkpoint "+(i+1)+"?"))deleteCheckpoint(i)};slots.appendChild(b)})}
-
-/* ---- setRunning(bool): toggle Stop button + disable action buttons ---- */
-function setRunning(running){const stopBtn=$("stopBtn");if(running){stopBtn.style.display="inline-flex";$("solveBtn").disabled=true;$("animateBtn").disabled=true;$("checkpointSaveBtn").disabled=true}else{stopBtn.style.display="none";$("solveBtn").disabled=false;$("animateBtn").disabled=!lastSolution;$("checkpointSaveBtn").disabled=false}}
-
-function openImageImport(){
- $("imageImportPanel").style.display="block";
- $("imageFile").value="";
- $("imageStats").textContent="Chọn ảnh chụp màn chơi.";
- $("imageReview").innerHTML="";
- $("analyzeImageBtn").disabled=true;
- $("applyImageBtn").disabled=true;
- logEvent("open_image_import");
-}
-function rgbToHsv(r,g,b){
- r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;
- let h=0;if(d){if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;h*=60;if(h<0)h+=360}
- return {h,s:mx?d/mx:0,v:mx};
-}
-function quantColor(r,g,b){
- return [Math.round(r/24)*24,Math.round(g/24)*24,Math.round(b/24)*24];
-}
-function colorDistance(a,b){return Math.sqrt((a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2)}
-function componentCrop(ctx,x,y,w,h){
- const pad=3, sx=Math.max(0,x-pad),sy=Math.max(0,y-pad),sw=Math.min(ctx.canvas.width-sx,w+2*pad),sh=Math.min(ctx.canvas.height-sy,h+2*pad);
- const c=document.createElement("canvas");c.width=48;c.height=48;const cctx=c.getContext("2d");
- cctx.drawImage(ctx.canvas,sx,sy,sw,sh,0,0,48,48);
- return c.toDataURL("image/jpeg",0.72);
-}
-function connectedComponents(mask,w,h){
- const seen=new Uint8Array(w*h),out=[];
- for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-  const i=y*w+x;if(!mask[i]||seen[i])continue;
-  const q=[i];seen[i]=1;let minx=x,maxx=x,miny=y,maxy=y,n=0;
-  for(let qh=0;qh<q.length;qh++){
-   const p=q[qh],px=p%w,py=(p/w)|0;n++;
-   if(px<minx)minx=px;if(px>maxx)maxx=px;if(py<miny)miny=py;if(py>maxy)maxy=py;
-   const ns=[p-1,p+1,p-w,p+w];
-   for(const z of ns){
-    if(z<0||z>=w*h||seen[z]||!mask[z])continue;
-    const zx=z%w,zy=(z/w)|0;
-    if(Math.abs(zx-px)+Math.abs(zy-py)!==1)continue;
-    seen[z]=1;q.push(z);
-   }
-  }
-  if(n>=18 && maxx-minx>=4 && maxy-miny>=4 && maxx-minx<=w*.18 && maxy-miny<=h*.22)
-    out.push({x:minx,y:miny,w:maxx-minx+1,h:maxy-miny+1,n});
- }
- return out;
-}
-function mergeTubeColumns(comps,w){
- const xs=[...comps].sort((a,b)=>a.cx-b.cx),groups=[];
- const tol=Math.max(12,w*.045);
- for(const c of xs){
-  let g=groups.find(g=>Math.abs(g.cx-c.cx)<tol);
-  if(!g){g={cx:c.cx,items:[]};groups.push(g)}
-  g.items.push(c);g.cx=g.items.reduce((a,x)=>a+x.cx,0)/g.items.length;
- }
- return groups.sort((a,b)=>a.cx-b.cx);
-}
-function iconForComponent(ctx,c){
- return componentCrop(ctx,c.x,c.y,c.w,c.h);
-}
-function nearestPaletteColor(rgb,clusters){
- let best=null,bd=1e9;
- for(const c of clusters){const d=colorDistance(rgb,c.rgb);if(d<bd){bd=d;best=c}}
- return {best,dist:bd};
-}
-function buildImagePalette(components,ctx){
- const clusters=[];
- for(const c of components){
-  const px=ctx.getImageData(c.x+Math.floor(c.w/2),c.y+Math.floor(c.h/2),1,1).data;
-  const rgb=quantColor(px[0],px[1],px[2]);
-  let best=clusters.find(k=>colorDistance(k.rgb,rgb)<58);
-  if(!best){best={rgb,count:0,icon:c.image};clusters.push(best)}
-  best.count++;
-  if(!best.icon)best.icon=iconForComponent(ctx,c);
- }
- clusters.sort((a,b)=>b.count-a.count);
- return clusters;
-}
-async function ensureTesseract(){
- if(window.Tesseract)return true;
- try{
-  await new Promise((resolve,reject)=>{
-   const sc=document.createElement("script");
-   sc.src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
-   sc.onload=resolve;sc.onerror=reject;document.head.appendChild(sc);
-  });
-  return !!window.Tesseract;
- }catch{return false}
-}
-async function ocrQuestionMarks(canvas,components,groups){
- const ok=await ensureTesseract();
- if(!ok)return [];
- const minX=Math.max(0,Math.floor(Math.min(...components.map(c=>c.x))-20));
- const minY=Math.max(0,Math.floor(Math.min(...components.map(c=>c.y))-30));
- const maxX=Math.min(canvas.width,Math.ceil(Math.max(...components.map(c=>c.x+c.w))+20));
- const maxY=Math.min(canvas.height,Math.ceil(Math.max(...components.map(c=>c.y+c.h))+30));
- const crop=document.createElement("canvas");crop.width=maxX-minX;crop.height=maxY-minY;
- crop.getContext("2d").drawImage(canvas,minX,minY,crop.width,crop.height,0,0,crop.width,crop.height);
- try{
-  const res=await Tesseract.recognize(crop.toDataURL("image/png"),"eng",{tesseract:{psm:11}});
-  const words=(res.data?.words||[]).filter(w=>/[?]/.test(w.text||"") && Number(w.confidence||0)>=35);
-  return words.map(w=>({x:minX+w.bbox.x0,y:minY+w.bbox.y0,w:w.bbox.x1-w.bbox.x0,h:w.bbox.y1-w.bbox.y0}));
- }catch{return []}
-}
-function assignOCRUnknowns(state,questionBoxes,groups){
- if(!questionBoxes.length)return 0;
- let n=0;
- for(const q of questionBoxes){
-  const cx=q.x+q.w/2,cy=q.y+q.h/2;
-  let g=null,gd=1e9;
-  groups.forEach(x=>{const d=Math.abs(x.cx-cx);if(d<gd){gd=d;g=x}});
-  if(!g)continue;
-  const targetTube=groups.indexOf(g);
-  let nearest=-1,nd=1e9;
-  g.items.forEach((cell,idx)=>{const d=Math.abs(cell.cy-cy);if(d<nd){nd=d;nearest=idx}});
-  if(nearest<0)continue;
-  state[targetTube][Math.min(CAP-1,nearest)]="unknown";
-  n++;
  }
  return n;
 }
-function estimateTotalTubes(occupiedCenters){
- if(!occupiedCenters.length)return 0;
- const xs=[...occupiedCenters].sort((a,b)=>a-b);
- if(xs.length===1)return 1;
- const gaps=[];for(let i=1;i<xs.length;i++)gaps.push(xs[i]-xs[i-1]);
- const positive=gaps.filter(x=>x>5).sort((a,b)=>a-b);
- const spacing=positive[Math.floor(positive.length/2)]||0;
- if(!spacing)return xs.length;
- let total=xs.length;
- for(let i=1;i<xs.length;i++)total+=Math.max(0,Math.round((xs[i]-xs[i-1])/spacing)-1);
- return Math.max(total,xs.length);
-}
-async function analyzeImportedImage(){
- if(!importedImage)return;
- const img=importedImage;
- const maxW=900,scale=Math.min(1,maxW/img.naturalWidth);
- const c=$("imageCanvas");c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);
- const ctx=c.getContext("2d",{willReadFrequently:true});ctx.drawImage(img,0,0,c.width,c.height);
- const data=ctx.getImageData(0,0,c.width,c.height),mask=new Uint8Array(c.width*c.height);
- for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++){
-  const i=(y*c.width+x)*4,h=rgbToHsv(data.data[i],data.data[i+1],data.data[i+2]);
-  // Saturated colored blocks are the most reliable visual primitive in Water Sort screenshots.
-  mask[y*c.width+x]=(h.s>.28&&h.v>.22&&h.v<.98)?1:0;
- }
- let comps=connectedComponents(mask,c.width,c.height);
- comps=comps.map(q=>{
-  const cx=q.x+q.w/2,cy=q.y+q.h/2;
-  return {...q,cx,cy};
- });
- // Ignore UI decorations by requiring repeated cell-like components.
- const byY=comps.filter(x=>x.w< c.width*.2 && x.h<c.height*.25);
- const groups=mergeTubeColumns(byY,c.width);
- const useful=groups.filter(g=>g.items.length>=1);
- const clusters=buildImagePalette(byY,ctx);
- const importedPalette=[],clusterId=new Map();
- clusters.forEach((cl,idx)=>{
-  const id="img_"+Date.now()+"_"+idx;
-  clusterId.set(cl,id);
-  importedPalette.push({
-   id,symbol:"🖼️",bgColor:`rgb(${cl.rgb[0]},${cl.rgb[1]},${cl.rgb[2]})`,
-   unknown:false,image:cl.icon
-  });
- });
- const state=[];
- for(const g of useful){
-  const cells=g.items.slice().sort((a,b)=>b.cy-a.cy).slice(0,CAP);
-  const tube=[];
-  for(const cell of cells){
-   const px=ctx.getImageData(Math.floor(cell.cx),Math.floor(cell.cy),1,1).data;
-   const rgb=quantColor(px[0],px[1],px[2]);
-   let best=clusters[0],bd=1e9;
-   clusters.forEach(cl=>{const d=colorDistance(rgb,cl.rgb);if(d<bd){bd=d;best=cl}});
-   tube.push(clusterId.get(best));
-  }
-  state.push(tube);
- }
- // Best-effort empty-tube estimate: use regular spacing between occupied tube centers.
- let emptyEstimate=0;
- if(useful.length>=2){
-  const spacings=[];for(let i=1;i<useful.length;i++)spacings.push(useful[i].cx-useful[i-1].cx);
-  const med=[...spacings].sort((a,b)=>a-b)[Math.floor(spacings.length/2)]||0;
-  if(med>0){
-   for(let i=1;i<useful.length;i++)emptyEstimate+=Math.max(0,Math.round((useful[i].cx-useful[i-1].cx)/med)-1);
-  }
- }
- const questionBoxes=await ocrQuestionMarks(c,byY,useful);
- const unknownCount=assignOCRUnknowns(state,questionBoxes,useful);
- const totalEstimated=estimateTotalTubes(useful.map(g=>g.cx));
- const emptyEstimated=Math.max(0,totalEstimated-state.length);
- importedAnalysis={state,palette:importedPalette,occupiedTubes:state.length,totalEstimated,emptyEstimate:emptyEstimated,
-   unknownCount,components:byY.length,questionBoxes,canvasW:c.width,canvasH:c.height};
- $("imageStats").textContent=
-   `Phát hiện khoảng ${totalEstimated} ống · ${state.length} ống có lớp màu · ${emptyEstimated} ống rỗng · ${unknownCount} ô ? · ${byY.length} lớp màu.`+
-   `\nIcon được tạo từ ảnh. Nếu OCR không bắt được ?, bạn có thể sửa trực tiếp trên bàn sau khi nhập.`;
- renderImageReview();
- $("applyImageBtn").disabled=!state.length;
- logEvent("image_analyzed",{occupiedTubes:state.length,totalEstimated,emptyEstimate:emptyEstimated,unknownCount,components:byY.length});
-}
-function renderImageReview(){
- const r=$("imageReview");r.innerHTML="";
- if(!importedAnalysis)return;
- importedAnalysis.state.forEach((t,i)=>{
-  const d=document.createElement("div");d.className="imgTube";d.innerHTML=`<b>Ống ${i+1}</b><div class="imgCells"></div>`;
-  const cells=d.querySelector(".imgCells");
-  t.forEach(id=>{
-   const p=importedAnalysis.palette.find(x=>x.id===id),q=document.createElement("div");q.className="imgCell";
-   if(p?.image){const im=document.createElement("img");im.src=p.image;q.appendChild(im)}else q.textContent="🖼️";
-   cells.appendChild(q);
-  });r.appendChild(d);
- });
-}
-function applyImportedImage(){
- if(!importedAnalysis)return;
- saveHistory();
- const existingIds=new Set(palette.map(x=>x.id));
- importedAnalysis.palette.forEach(p=>{if(!existingIds.has(p.id))palette.push(p)});
-  tubes=clone(importedAnalysis.state);
- // Add best-effort empty tubes; user can remove/add if screenshot geometry was ambiguous.
- for(let i=0;i<importedAnalysis.emptyEstimate;i++)tubes.push([]);
- selectedTube=-1;lastSolution=null;
- rebuildPaletteCodeMap();clearHeuristicCache();
- persistPalette();renderAll();logEvent("image_import_applied",{tubes:tubes.length,occupied:importedAnalysis.occupiedTubes});
- $("imageImportPanel").style.display="none";
- setStatus("🖼️ Đã tạo mẫu từ ảnh. Hãy kiểm tra nhanh các ống/icon rồi bấm ⚡ Giải Local.","ok");
-}
-function exportLogs(){
- const blob=new Blob([JSON.stringify({version:1,exportedAt:new Date().toISOString(),learnedWeights,events:interactionLog},null,2)],{type:"application/json"});
- const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="water-sort-interaction-log.json";a.click();
- setTimeout(()=>URL.revokeObjectURL(a.href),1000);logEvent("export_log");
-}
-function clearLogs(){
- if(!confirm("Xóa toàn bộ log tương tác và trọng số học local?"))return;
- interactionLog=[];learnedWeights={safe:1,group:1,space:1,unlock:1,risk:1};saveLogs();renderLogSummary();
-}
-
-async function solveLocal(recalc=false){
-  if(animating)return;
-  if(cancelled){cancelled=false;return}
-  logEvent("solver_start",{recalc,algorithm:$("algo").value});
-  const clean=tubes.map(t=>t.filter(Boolean));
-  const counts={};
-  for(const t of clean)for(const id of t)if(id!=="unknown")counts[id]=(counts[id]||0)+1;
-  const invalid=Object.entries(counts).filter(([id,n])=>n>CAP);
-  if(invalid.length){
-   setStatus("Không hợp lệ: "+invalid.map(([id])=>getPalette(id)?.symbol||id).join(", ")+" xuất hiện hơn 4 lần.","bad");
-   return;
-  }
-  if(isSolved(clean)){
-   lastSolution=[];$("animateBtn").disabled=true;$("solution").innerHTML="Bàn đã hoàn thành.";
-   setStatus("🎉 Bàn đã hoàn thành.","ok");renderSmartAnalysis();return;
-  }
-  renderSmartAnalysis();
-  setStatus((recalc?"🔁 Đã cập nhật trạng thái. ":"")+"🧠 Smart Solver đang tìm nhiều phương án…");
-  await new Promise(r=>setTimeout(r,25));
-  const deadline=performance.now()+Math.max(100,Number($("timeout").value)||12000);
-  sessionStats.solverRuns++;
-
- // Phase 1: multi-branch local planning over visible/known moves.
- // A3: try widening beam if first attempt fails
- const plan=iterativeBeamSearch(clean,20,100);
-
- if(plan.type==="solved"){
-  lastSolution=plan.path;showSolution(plan.path);$("animateBtn").disabled=false;
-  setStatus("🎉 Tìm thấy chuỗi hoàn chỉnh: "+plan.path.length+" bước.\nSmart Solver đã xét nhiều nhánh và giữ phương án an toàn nhất.","ok");
-  renderSmartAnalysis();return;
- }
-
- if(plan.type==="blocked_unknown"){
-  lastSolution=plan.path;showSolution(plan.path);$("animateBtn").disabled=false;
-  const idx=plan.state.findIndex(t=>t.length&&topValue(t)==="unknown");
-  if(idx>=0)revealTarget={ti:idx,li:plan.state[idx].length-1};
-  probabilityForUnknown();
-  setStatus("⏸ Đã giải tối đa các lớp nhìn thấy trước khi bị chặn bởi ô ?.\nĐã chọn nhánh có khả năng tiếp tục tốt nhất. Hãy mở ? đang ở trên cùng, cập nhật màu thật rồi bấm ⚡ Giải Local.","warn");
-  return;
- }
-
- // Phase 2: if beam search did not finish within planning horizon,
- // return the best safe prefix rather than falsely reporting "no solution".
- if(plan.type==="partial" && plan.path.length){
-  lastSolution=plan.path;showSolution(plan.path);$("animateBtn").disabled=false;
-  setStatus("🧭 Chưa cần mở ? ngay. Smart Solver tìm được một chuỗi an toàn "+plan.path.length+
-    " bước để tiếp tục gom màu/mở không gian.\nHãy chạy chuỗi này rồi Giải Local lại để tính tiếp.","warn");
-  renderSmartAnalysis();return;
- }
-
- // Phase 3: fall back to exact search over the current known state, respecting deadline.
- //   - "astar" → weighted A* (fast)
- //   - "bfs"   → IDA* (memory-friendly, finds shortest path) — A2
- const algoChoice=$("algo").value;
- const result=algoChoice==="bfs"?idaStar(clean,deadline):solveAStar(clean,deadline);
- if(result.type==="solved"){
-  lastSolution=result.path;showSolution(result.path);$("animateBtn").disabled=false;
-  setStatus("✅ Exact search tìm thấy lời giải "+result.path.length+" bước. Duyệt "+result.expanded.toLocaleString()+" trạng thái.","ok");
- }else if(result.type==="blocked_unknown"){
-  lastSolution=result.path;showSolution(result.path);$("animateBtn").disabled=false;
-  const idx=result.path.length?result.state.findIndex(t=>t.length&&topValue(t)==="unknown"):-1;
-  if(idx>=0)revealTarget={ti:idx,li:result.state[idx].length-1};
-  probabilityForUnknown();
-  setStatus("⏸ Exact search đã tới điểm chặn do ?. Mở ô ? rồi tính tiếp.","warn");
- }else if(result.type==="timeout"){
-  setStatus("⏱ Hết thời gian. Smart Solver không coi đây là 'không có lời giải'.\nHãy chạy chuỗi đề xuất hoặc tăng timeout.","warn");
- }else if(result.type==="memory"){
-  setStatus("⚠ Không gian tìm kiếm lớn. Smart Solver sẽ tiếp tục theo nhiều nhánh thay vì báo sai rằng bài không giải được.","warn");
- }else{
-  const ranked=rankSmartMoves(clean,3);
-  if(ranked.length){
-    showSolution(ranked.map(x=>x.m));
-    $("animateBtn").disabled=false;
-    lastSolution=ranked.map(x=>x.m);
-    setStatus("🧠 Không tìm thấy lời giải đầy đủ trong search hiện tại, nhưng vẫn có các nước đi an toàn để tiếp tục. Không tự đoán màu ?.","warn");
-  }else{
-    setStatus("⏸ Không còn nước đi màu đã biết. Kiểm tra ô ? đang ở trên cùng và mở nó.","warn");
-  }
- }
- renderSmartAnalysis();
-}
-
-function showSolution(path){
- const e=$("solution");e.innerHTML="";
- if(!path)return;
- if(!path.length){e.textContent="Bàn đã giải xong.";return}
- path.forEach((m,i)=>{const d=document.createElement("div");d.className="move";d.textContent=(i+1)+". Ống "+(m.from+1)+" → Ống "+(m.to+1);e.appendChild(d)})
-}
-async function animateSolution(){
-  if(!lastSolution||animating)return;animating=true;cancelled=false;setRunning(true);
-  for(let i=0;i<lastSolution.length;i++){
-   if(cancelled){cancelled=false;toast("⏹ Đã dừng tại bước "+(i+1)+"/"+lastSolution.length,"warn");break}
-   const m=lastSolution[i];
-   if(!validMove(tubes,m.from,m.to)){
-    if(tubes[m.from] && topValue(tubes[m.from])==="unknown"){
-     revealTarget={ti:m.from,li:tubes[m.from].length-1};
-     setStatus("⏸ Lời giải đã tới ô ? ở Ống "+(m.from+1)+". Cập nhật màu thật rồi bấm Giải Local.","warn");
-    }else{
-     setStatus("⚠ Lời giải không còn phù hợp với trạng thái hiện tại. Hãy giải lại.","bad");
-    }
-    animating=false;setRunning(false);return
-   }
-   selectedTube=m.from;renderBoard();
-   await new Promise(r=>{let w=0;const t=setInterval(()=>{if(cancelled||w>=300){clearInterval(t);r()}w+=100},100)});
-   if(cancelled){cancelled=false;toast("⏹ Đã dừng tại bước "+(i+1)+"/"+lastSolution.length,"warn");break}
-   tubes=applyMove(tubes,m.from,m.to);selectedTube=m.to;renderBoard();
-   await new Promise(r=>{let w=0;const t=setInterval(()=>{if(cancelled||w>=450){clearInterval(t);r()}w+=100},100)});
-  }
-  selectedTube=-1;renderAll();setStatus("🎉 Đã chạy xong lời giải.","ok");animating=false;setRunning(false);
- }
-
-if($('addTubeBtn')) $('addTubeBtn').onclick=addTube;
-if($('removeTubeBtn')) $('removeTubeBtn').onclick=removeTube;
-if($('undoBtn')) $('undoBtn').onclick=undo;
-if($('clearBtn')) $('clearBtn').onclick=clearAll;
-if($('solveBtn')) $('solveBtn').onclick=()=>{cancelled=false;setRunning(true);solveLocal(false)};
-if($('animateBtn')) $('animateBtn').onclick=()=>{cancelled=false;setRunning(true);animateSolution()};
-if($('stopBtn')) $('stopBtn').onclick=()=>{cancelled=true;toast("⏹ Đang dừng...","warn")};
-if($('checkpointSaveBtn')) $('checkpointSaveBtn').onclick=()=>{const l=prompt("Tên checkpoint (để trống = tự đặt):","");if(l!==null)saveCheckpoint(l.trim()||undefined)};
-if($('checkpointLoadBtn')) $('checkpointLoadBtn').onclick=()=>{if(activeCheckpoint>=0)loadCheckpoint(activeCheckpoint);else if(checkpoints.length>0)loadCheckpoint(checkpoints.length-1);else toast("Chưa có checkpoint","warn")};
-if($('checkpointClearBtn')) $('checkpointClearBtn').onclick=clearAllCheckpoints;
-if($('probBtn')) $('probBtn').onclick=probabilityForUnknown;
-if($('revealBtn')) $('revealBtn').onclick=openReveal;
-if($('editPaletteBtn')) $('editPaletteBtn').onclick=()=>startPaletteEdit(selectedId==="erase"?null:selectedId);
-if($('newPaletteBtn')) $('newPaletteBtn').onclick=newPalette;
-if($('deletePaletteBtn')) $('deletePaletteBtn').onclick=deleteSelectedPalette;
-if($('applyPaletteBtn')) $('applyPaletteBtn').onclick=applyPaletteEdit;
-if($('cancelPaletteBtn')) $('cancelPaletteBtn').onclick=()=>{$("customEditor").classList.remove("show");editingPaletteId=null};
-
-if($('imageImportBtn')) $('imageImportBtn').onclick=openImageImport;
-if($('cancelImageBtn')) $('cancelImageBtn').onclick=()=>{$("imageImportPanel").style.display="none"};
-if($('imageFile')) $('imageFile').onchange=e=>{
- const f=e.target.files?.[0];if(!f)return;
- const img=new Image();img.onload=()=>{importedImage=img;$("analyzeImageBtn").disabled=false;$("imageStats").textContent=`Đã nạp ${f.name}. Bấm 🔎 Phân tích ảnh.`;logEvent("image_selected",{name:f.name,size:f.size})};
- img.src=URL.createObjectURL(f);
-};
-if($('analyzeImageBtn')) $('analyzeImageBtn').onclick=analyzeImportedImage;
-if($('applyImageBtn')) $('applyImageBtn').onclick=applyImportedImage;
-if($('exportLogBtn')) $('exportLogBtn').onclick=exportLogs;
-if($('clearLogBtn')) $('clearLogBtn').onclick=clearLogs;
-
-if($('saveTemplateBtn')) $('saveTemplateBtn').onclick=saveTemplate;
-if($('loadTemplateBtn')) $('loadTemplateBtn').onclick=loadTemplate;
-if($('importJsonBtn')) $('importJsonBtn').onclick=()=>{const t=prompt("Nhập JSON tubes (VD: [[\"red_plus\",\"blue_square\"],[\"green_leaf\"],[]]):");if(!t)return;try{const a=JSON.parse(t);if(Array.isArray(a)){tubes=a;selectedTube=-1;lastSolution=null;renderAll();toast("Đã nhập "+a.length+" ống","ok")}}catch(e){toast("JSON lỗi: "+e.message,"bad")}};
-if($('exportJsonBtn')) $('exportJsonBtn').onclick=()=>{const j=JSON.stringify(tubes);prompt("Sao chép JSON tubes:",j)};
-document.querySelectorAll(".preset-btn").forEach(b=>{b.onclick=()=>{const n=parseInt(b.dataset.n);tubes=[];for(let i=0;i<n;i++)tubes.push([]);selectedTube=-1;lastSolution=null;renderAll();toast("Đã tạo bàn "+n+" ống","ok")}});
-if($('modalClose')) $('modalClose').onclick=()=>$("modal").classList.remove("show");
-if($('modal')) $('modal').onclick=e=>{if(e.target===$("modal"))$("modal").classList.remove("show")};
-document.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();undo()}});
 
 /* ============================================================
-   v12 BUNDLE L — UI logic (B1-B7 + C1-C3)
+   UI RENDERING
    ============================================================ */
+function renderEditor(){
+ const ed = $("tubeEditor");
+ ed.innerHTML = "";
+ state.tubes.forEach((t, ti) => {
+  const wrap = document.createElement("div");
+  wrap.className = "tube-input";
+  const lbl = document.createElement("div");
+  lbl.className = "label";
+  lbl.textContent = "Ống " + (ti+1);
+  wrap.appendChild(lbl);
+  const input = document.createElement("input");
+  input.value = t.join("").replace(/Q/g, "?");
+  input.title = "G/R/B/Y/O/W/D/? từ dưới lên (bottom → top)";
+  input.maxLength = state.CAP;
+  input.dataset.idx = ti;
+  input.onchange = e => {
+   const v = e.target.value.toUpperCase().split("").map(c => {
+    if(c === "?") return UNK;
+    if(PALETTE_MAP[c]) return c;
+    return null;
+   }).filter(x => x);
+   // pad with empty
+   while(v.length < state.CAP) v.push(null);
+   state.tubes[ti] = v.slice(0, state.CAP);
+   saveHistory();
+   renderAll();
+  };
+  input.onclick = e => { state.selectedTube = ti; renderEditor(); };
+  if(state.selectedTube === ti){
+   input.style.borderColor = "#facc15";
+   input.style.boxShadow = "0 0 8px #facc15";
+  }
+  wrap.appendChild(input);
+  ed.appendChild(wrap);
+ });
+}
 
-/* ---- C1: Toast notifications ---- */
-function toast(msg, kind) {
+function renderPaletteRow(){
+ const row = $("paletteRow");
+ row.innerHTML = "";
+ for(const p of PALETTE){
+  const chip = document.createElement("button");
+  chip.className = "palette-chip" + (state.selectedColor === p.id ? " active" : "");
+  chip.style.background = p.bg;
+  if(p.textDark) chip.style.color = "#0f172a";
+  chip.textContent = p.symbol + " " + p.id;
+  chip.draggable = true;
+  chip.dataset.color = p.id;
+  chip.title = p.name + " — kéo thả vào ô, hoặc click để chọn";
+  chip.onclick = () => { state.selectedColor = p.id; renderPaletteRow(); };
+  chip.ondragstart = e => {
+   e.dataTransfer.setData("text/plain", p.id);
+   e.dataTransfer.effectAllowed = "copy";
+   chip.classList.add("dragging");
+  };
+  chip.ondragend = () => chip.classList.remove("dragging");
+  // Right-click để xoá icon custom
+  chip.oncontextmenu = e => {
+   e.preventDefault();
+   if(CUSTOM_PALETTE.find(x => x.id === p.id)){
+    if(confirm("Xoá icon '" + p.id + "' khỏi palette?")){
+     removeFromCustomPalette(p.id);
+     renderPaletteRow();
+     renderDisplay();
+     toast("Đã xoá icon " + p.id, "ok");
+    }
+   }
+  };
+  row.appendChild(chip);
+ }
+ // Nút + Thêm icon mới
+ const addBtn = document.createElement("button");
+ addBtn.className = "palette-chip add-new";
+ addBtn.textContent = "+ Thêm icon mới";
+ addBtn.title = "Thêm icon/màu mới vào palette (lưu localStorage)";
+ addBtn.onclick = openPaletteModal;
+ row.appendChild(addBtn);
+}
+
+/* Danh sách emoji mẫu cho picker */
+/* Danh sách emoji mẫu cho picker — sắp theo mức độ phù hợp game Water Sort
+   Hàng 1: biến thể từ video 2 (font iOS, game gốc)
+   Hàng 2: hình học cơ bản (vuông/tròn/tam giác)
+   Hàng 3: biến thể màu (đậm/nhạt, trái tim, kim cương)
+   Hàng 4: emoji tự nhiên (cây, hoa, động vật, trái cây) */
+const EMOJI_SAMPLES = [
+ // === Hàng 1: từ video 2 (mặc định game dùng) ===
+ "🟦","🟢","🟡","🟧","🟥","🟪","🟫","🟤",
+ // === Hàng 2: biến thể hình học cơ bản ===
+ "🔴","🔵","🟠","🟡","🟢","🟣","⚫","⚪",
+ "🔶","🔷","🔸","🔹","🔺","🔻","💠","🔘",
+ // === Hàng 3: trái tim / kim cương / giọt nước ===
+ "💚","❤","💛","💜","🧡","💙","🖤","🤍",
+ "💎","💧","💧","🔥","⭐","🌟","✨","⚡",
+ // === Hàng 4: chữ cái / ký tự đơn giản (nếu user thích) ===
+ "●","■","▲","◆","○","□","△","◇",
+ // === Hàng 5: emoji tự nhiên (nếu user muốn theme khác) ===
+ "🌸","🌺","🌻","🌹","🍀","🌿","🌙","☀",
+ "🍎","🍊","🍋","🍉","🍇","🍓","🐱","🐶",
+ // === Hàng cuối: ô ẩn / đặc biệt ===
+ "?","❓","❔"," ","○","◯"
+];
+const COLOR_SAMPLES = [
+ "#ef4444","#f97316","#eab308","#22c55e","#10b981","#14b8a6",
+ "#06b6d4","#0ea5e9","#3b82f6","#6366f1","#8b5cf6","#a855f7",
+ "#d946ef","#ec4899","#f43f5e","#64748b","#94a3b8","#475569",
+ "#0f172a","#ffffff","#fbbf24","#84cc16","#fde047","#fef3c7"
+];
+
+function renderEmojiPicker(){
+ const picker = $("emojiPicker");
+ if(!picker) return;
+ picker.innerHTML = "";
+ // Section header
+ const header = document.createElement("div");
+ header.style.cssText = "grid-column: 1 / -1;font-size: 10px;color: var(--color-fg-muted);text-transform: uppercase;letter-spacing: 0.06em;font-weight: 600;padding: 2px 4px;";
+ header.textContent = "Từ video gốc (game Water Sort iOS)";
+ picker.appendChild(header);
+ for(const e of EMOJI_SAMPLES){
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = e;
+  b.title = "Chọn " + e;
+  b.onclick = () => {
+   $("newColorSymbol").value = e;
+   picker.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+   b.classList.add("active");
+  };
+  picker.appendChild(b);
+ }
+}
+
+function renderColorPicker(){
+ const picker = $("colorPicker");
+ if(!picker) return;
+ picker.innerHTML = "";
+ for(const c of COLOR_SAMPLES){
+  const sw = document.createElement("button");
+  sw.type = "button";
+  sw.className = "color-swatch";
+  sw.style.background = c;
+  sw.title = c;
+  sw.onclick = () => {
+   $("newColorBg").value = c;
+   // Đánh dấu active
+   picker.querySelectorAll(".color-swatch").forEach(x => x.classList.remove("active"));
+   sw.classList.add("active");
+   // Auto check textDark nếu nền sáng
+   const rgb = hexToRgb(c);
+   if(rgb){
+    const lum = 0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b;
+    $("newColorTextDark").checked = lum > 160;
+   }
+  };
+  picker.appendChild(sw);
+ }
+}
+
+function hexToRgb(hex){
+ const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+ if(!m) return null;
+ return {r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16)};
+}
+
+function openPaletteModal(){
+ $("newColorId").value = "";
+ $("newColorName").value = "";
+ $("newColorSymbol").value = "";
+ $("newColorBg").value = "#a855f7";
+ $("newColorTextDark").checked = false;
+ renderEmojiPicker();
+ renderColorPicker();
+ $("paletteModal").classList.add("show");
+ setTimeout(() => $("newColorId").focus(), 50);
+}
+
+function savePaletteModal(){
+ const id = ($("newColorId").value || "").trim().toUpperCase();
+ const name = ($("newColorName").value || "").trim();
+ const symbol = ($("newColorSymbol").value || "").trim() || id;
+ const bg = $("newColorBg").value;
+ const textDark = $("newColorTextDark").checked;
+ if(!id || !/^[A-Z]$/.test(id)){
+  toast("Ký tự viết tắt phải là 1 chữ cái A-Z", "bad");
+  return;
+ }
+ if(PALETTE_MAP[id]){
+  toast("Ký tự " + id + " đã tồn tại trong palette", "bad");
+  return;
+ }
+ if(!name){
+  toast("Vui lòng nhập tên hiển thị", "bad");
+  return;
+ }
+ // Cảnh báo nếu symbol trống hoặc chỉ có space
+ if(!symbol.trim() || symbol.trim() === "?"){
+  if(!confirm("Icon trống/không rõ. Dùng ký tự viết tắt '" + id + "' làm icon tạm?")){
+   return;
+  }
+ }
+ addToCustomPalette({id, name, symbol, bg, textDark});
+ $("paletteModal").classList.remove("show");
+ renderPaletteRow();
+ renderDisplay();
+ toast("Đã thêm icon " + id + " (" + name + ")", "ok");
+}
+
+/* Plan 3: helper trộn màu hex (lighten/darken cho gradient cell) */
+function mixHex(color, mixWith, ratio){
+ const c = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+ const w = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(mixWith);
+ if(!c || !w) return color;
+ const r = Math.round(parseInt(c[1],16) * (1-ratio) + parseInt(w[1],16) * ratio);
+ const g = Math.round(parseInt(c[2],16) * (1-ratio) + parseInt(w[2],16) * ratio);
+ const b = Math.round(parseInt(c[3],16) * (1-ratio) + parseInt(w[3],16) * ratio);
+ return "#" + [r,g,b].map(x => x.toString(16).padStart(2,"0")).join("");
+}
+
+function renderDisplay(){
+ const disp = $("tubeDisplay");
+ disp.innerHTML = "";
+ state.tubes.forEach((t, ti) => {
+  const wrap = document.createElement("div");
+  wrap.style.textAlign = "center";
+  const lbl = document.createElement("div");
+  lbl.className = "tube-vis-label";
+  lbl.textContent = "Ống " + (ti+1);
+  wrap.appendChild(lbl);
+  const tube = document.createElement("div");
+  tube.className = "tube-vis" + (isComplete(t) ? " locked" : "") + (t.length === 0 ? " empty" : "") + (state.selectedTube === ti ? " selected" : "");
+  tube.onclick = () => { state.selectedTube = ti; renderDisplay(); };
+  for(let i = 0; i < state.CAP; i++){
+   const cell = document.createElement("div");
+   cell.className = "cell";
+   const id = t[i];
+   if(id){
+    const p = getColor(id);
+    if(p){
+     // Plan 3: gradient 3 tông cho cell (light/base/dark)
+     cell.style.setProperty("--cell-color", p.bg);
+     cell.style.setProperty("--cell-color-light", mixHex(p.bg, "#ffffff", 0.18));
+     cell.style.setProperty("--cell-color-dark", mixHex(p.bg, "#000000", 0.20));
+     cell.style.background = p.bg;
+     if(p.textDark) cell.style.color = "#0f172a";
+     if(id === UNK){
+      cell.classList.add("unknown");
+      cell.textContent = "?";
+     } else {
+      cell.textContent = p.symbol;
+     }
+    }
+   }
+   cell.onclick = e => { e.stopPropagation(); onCellClick(ti, i); };
+   // Drag & drop handlers cho cell — cho phép thả palette vào
+   cell.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; cell.classList.add("drag-over"); };
+   cell.ondragleave = () => cell.classList.remove("drag-over");
+   cell.ondrop = e => {
+    e.preventDefault();
+    cell.classList.remove("drag-over");
+    const colorId = e.dataTransfer.getData("text/plain");
+    if(!colorId || !PALETTE_MAP[colorId]) return;
+    setCellColor(ti, i, colorId);
+   };
+   tube.appendChild(cell);
+  }
+  if(isComplete(t)){
+   const lock = document.createElement("div");
+   lock.style.textAlign = "center";
+   lock.style.color = "#34d399";
+   lock.style.fontSize = "11px";
+   lock.textContent = "✓";
+   wrap.appendChild(lock);
+  }
+  wrap.appendChild(tube);
+  disp.appendChild(wrap);
+ });
+}
+
+function onCellClick(ti, li){
+ // Click thường: nếu đã chọn màu thì set luôn, mở modal khi chưa chọn
+ if(state.selectedColor && PALETTE_MAP[state.selectedColor]){
+  setCellColor(ti, li, state.selectedColor);
+ } else {
+  showColorModal(ti, li);
+ }
+}
+
+function setCellColor(ti, li, colorId){
+ if(!PALETTE_MAP[colorId]) return;
+ saveHistory();
+ const t = state.tubes[ti];
+ // Nếu li >= t.length thì mở rộng, nếu trong range thì set
+ while(t.length <= li) t.push(null);
+ t[li] = colorId;
+ // Nếu t[li+1] là null và t.length > li+1, giữ nguyên
+ renderAll();
+}
+
+function showColorModal(ti, li){
+ const t = state.tubes[ti];
+ if(li >= t.length){
+  $("modalTitle").textContent = "Chọn màu cho Ống " + (ti+1) + " lớp " + (li+1);
+ } else {
+  $("modalTitle").textContent = "Sửa Ống " + (ti+1) + " lớp " + (li+1) + " (hiện: " + (getColor(t[li])?.symbol || "?") + ")";
+ }
+ const grid = $("modalGrid");
+ grid.innerHTML = "";
+ for(const p of PALETTE){
+  const b = document.createElement("button");
+  b.style.background = p.bg;
+  if(p.textDark) b.style.color = "#0f172a";
+  b.textContent = p.symbol;
+  b.title = p.name;
+  b.onclick = () => {
+   saveHistory();
+   while(state.tubes[ti].length <= li) state.tubes[ti].push(null);
+   state.tubes[ti][li] = p.id;
+   $("modal").classList.remove("show");
+   renderAll();
+   toast("Đã đặt " + p.symbol + " vào Ống " + (ti+1) + " lớp " + (li+1), "ok");
+  };
+  grid.appendChild(b);
+ }
+ // Nút + Thêm icon mới
+ const addBtn = document.createElement("button");
+ addBtn.style.background = "var(--color-bg-muted)";
+ addBtn.style.color = "var(--color-fg)";
+ addBtn.textContent = "+";
+ addBtn.title = "Thêm icon / màu mới";
+ addBtn.onclick = () => {
+  $("modal").classList.remove("show");
+  openPaletteModal();
+ };
+ grid.appendChild(addBtn);
+ $("modalClear").onclick = () => {
+  saveHistory();
+  if(li < state.tubes[ti].length){
+   state.tubes[ti].splice(li, 1);
+  }
+  $("modal").classList.remove("show");
+  renderAll();
+  toast("Đã xóa lớp " + (li+1), "warn");
+ };
+ $("modal").classList.add("show");
+ state.modalTube = ti;
+ state.modalCell = li;
+}
+
+function renderStrategy(s){
+ const strat = detectStrategy(s);
+ const box = $("strategyBox");
+ box.className = "strategy-mode " + strat.mode;
+ let label = "", iconChar = "";
+ if(strat.mode === "priority"){
+  label = "ƯU TIÊN GIẢI Ô ẨN";
+  iconChar = "!";
+ } else if(strat.mode === "balanced"){
+  label = "CÂN BẰNG + DỰ PHÒNG";
+  iconChar = "=";
+ } else {
+  label = "DỰ ĐOÁN XÁC SUẤT";
+  iconChar = "π";
+ }
+ $("strategyIcon").textContent = iconChar;
+ $("strategyValue").textContent = label + " · " + strat.unk + "/" + strat.total + " ô ẩn (" + (strat.ratio * 100).toFixed(0) + "%)";
+ $("strategyDesc").textContent = strat.desc;
+ return strat;
+}
+
+function renderCandidates(plans){
+ const box = $("candidates");
+ const list = $("solutionList");
+ box.innerHTML = "";
+ if(!plans || !plans.length){
+  list.style.display = "none";
+  $("metricRow").style.display = "none";
+  box.innerHTML = '<p style="color: var(--color-fg-muted);text-align: center;padding: var(--space-4) 0;font-size: var(--fs-sm)">Chưa có phương án. Bấm "Tìm nhiều phương án" để chạy solver.</p>';
+  return;
+ }
+ // Chỉ hiển thị phương án tốt nhất (1 plan duy nhất)
+ const best = plans[0];
+ const moves = best.path;
+ const score = best.exposedUnknowns || 0;
+ $("metricRow").style.display = "grid";
+ list.style.display = "block";
+ $("mPlans").textContent = "1";
+ $("mBestLen").textContent = moves.length;
+
+ const c = document.createElement("div");
+ c.className = "candidate best";
+ c.innerHTML =
+  '<div class="candidate-head">' +
+   '<div class="candidate-title">⭐ Phương án tốt nhất</div>' +
+   '<div class="candidate-badge">' + moves.length + ' bước</div>' +
+  '</div>' +
+  '<div class="candidate-meta">' +
+   '<span>✓ ' + score + ' ô ẩn lộ</span>' +
+   (best._assumption ? '<span>· Giả định: ' + best._assumption + '</span>' : '') +
+  '</div>' +
+  '<div style="font-family: var(--font-mono);font-size: var(--fs-xs);color: var(--color-fg-muted);margin-top: 6px">' +
+   moves.slice(0, 8).map(m => "Ống " + (m.from+1) + " → " + (m.to+1)).join(" · ") + (moves.length > 8 ? " · …" : "") +
+  '</div>' +
+  '<div class="candidate-bar"><i style="width:' + Math.min(100, (1 - (moves.length / 50)) * 100) + '%"></i></div>' +
+  '<div class="controls" style="margin-top: 10px">' +
+   '<button data-idx="0" class="btn btn-primary btn-sm">▶ Chạy phương án này</button>' +
+  '</div>';
+ c.querySelector("button").onclick = () => animatePlan(best);
+ box.appendChild(c);
+}
+
+function renderSolutionPath(path){
+ const list = $("solutionList");
+ list.innerHTML = "";
+ if(!path || !path.length){
+  list.style.display = "none";
+  return;
+ }
+ list.style.display = "block";
+ path.forEach((m, i) => {
+  const el = document.createElement("div");
+  el.className = "move";
+  el.innerHTML = '<span class="from">Ống ' + (m.from+1) + '</span><span class="arrow">→</span><span class="to">Ống ' + (m.to+1) + '</span>';
+  el.dataset.step = i;
+  list.appendChild(el);
+ });
+}
+
+function setSolverProgress(phase, expanded, plans, ms){
+ const bar = $("solverProgress");
+ if(phase === null){ bar.classList.remove("show"); return; }
+ bar.classList.add("show");
+ $("solverPhase").textContent = phase;
+ $("solverStat").textContent = "expanded: " + expanded.toLocaleString() + " · plans: " + plans + " · " + ms + "ms";
+ let pct = 0;
+ if(phase.indexOf("xong") >= 0 || phase.indexOf("✓") >= 0) pct = 100;
+ else if(ms > 0) pct = Math.min(95, Math.round((ms / 8000) * 100));
+ $("solverBar").style.width = pct + "%";
+}
+
+/* ============================================================
+   STATUS BAR — dùng text icon
+   ============================================================ */
+const STATUS_PREFIX = {
+ ok: "✓",
+ warn: "⚠",
+ bad: "✗",
+ "": "·"
+};
+
+function setStatus(kind, msg){
+ const el = $("status");
+ el.className = "status " + (kind || "");
+ el.innerHTML = '<div class="status-icon show">' + (STATUS_PREFIX[kind || ""] || STATUS_PREFIX[""]) + '</div><div class="status-content">' + msg + '</div>';
+}
+
+/* ============================================================
+   TOAST — dùng text prefix
+   ============================================================ */
+function toast(msg, kind){
  const c = $("toastContainer");
  const el = document.createElement("div");
  el.className = "toast " + (kind || "");
  const prefix = STATUS_PREFIX[kind || ""] || "";
- el.innerHTML = '<span class="toast-prefix">' + (prefix ? prefix + " " : "") + "</span><span>" + msg + "</span>";
+ el.innerHTML = '<span class="toast-prefix">' + (prefix ? prefix + " " : "") + '</span><span>' + msg + '</span>';
  c.appendChild(el);
  requestAnimationFrame(() => el.classList.add("show"));
  setTimeout(() => {
@@ -2480,358 +2134,449 @@ function toast(msg, kind) {
   setTimeout(() => el.remove(), 300);
  }, kind === "bad" ? 4500 : 2800);
 }
-/* Override setStatus to also show toast for important messages */
-const _origSetStatus = setStatus;
-let _statusLastKind = "";
-function setStatusV12(t, c) {
- _origSetStatus(t, c);
- const bs=document.getElementById("board-status");if(bs)bs.textContent=String(t).split("\n")[0];
- if (c === "ok" || c === "warn" || c === "bad") {
-  const msg = String(t).split("\n")[0];
-  if (msg && msg !== _statusLastKind) {
-   _statusLastKind = msg;
-   toast(msg, c);
-  }
- }
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+function saveHistory(){
+ state.history.push({tubes: clone(state.tubes), CAP: state.CAP});
+ if(state.history.length > 100) state.history.shift();
+}
+function undo(){
+ if(!state.history.length) return toast("Không có gì để undo", "warn");
+ const last = state.history.pop();
+ state.tubes = last.tubes;
+ state.CAP = last.CAP;
+ $("capInput").value = state.CAP;
+ renderAll();
+ toast("↶ Đã undo", "ok");
 }
 
-/* ---- B5: WebAudio sound effects ---- */
-let audioCtx = null;
-let soundOn = localStorage.getItem("waterSortSound") !== "off";
-function getAudio() {
- if (!audioCtx) {
-  try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; }
- }
- return audioCtx;
-}
-function beep(freq, dur, type) {
- if (!soundOn) return;
- const ctx = getAudio(); if (!ctx) return;
- const o = ctx.createOscillator();
- const g = ctx.createGain();
- o.type = type || "sine";
- o.frequency.value = freq;
- g.gain.setValueAtTime(0.0001, ctx.currentTime);
- g.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.01);
- g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
- o.connect(g); g.connect(ctx.destination);
- o.start(); o.stop(ctx.currentTime + dur);
-}
-const sfx = {
- click: () => beep(420, 0.06, "sine"),
- move: () => { beep(380, 0.05, "sine"); setTimeout(() => beep(540, 0.07, "sine"), 50); },
- good: () => { beep(523, 0.08, "triangle"); setTimeout(() => beep(659, 0.08, "triangle"), 80); setTimeout(() => beep(784, 0.12, "triangle"), 160); },
- fail: () => beep(220, 0.18, "sawtooth"),
- hint: () => { beep(700, 0.04, "sine"); setTimeout(() => beep(900, 0.04, "sine"), 40); }
-};
-if($('soundToggle')) $('soundToggle').onclick= () => {
- soundOn = !soundOn;
- $("soundToggle").textContent = soundOn ? "🔊" : "🔇";
- $("soundToggle").classList.toggle("off", !soundOn);
- localStorage.setItem("waterSortSound", soundOn ? "on" : "off");
- if (soundOn) sfx.click();
-};
-$("soundToggle").textContent = soundOn ? "🔊" : "🔇";
-$("soundToggle").classList.toggle("off", !soundOn);
+/* ============================================================
+   CHECKPOINT SYSTEM
+   Lưu state hiện tại vào slot, khôi phục khi bí
+   ============================================================ */
+const CHECKPOINT_KEY = "wss_checkpoints_v1";
+const MAX_CHECKPOINTS = 5;
 
-/* ---- B6: Light/dark theme ---- */
-let currentTheme = localStorage.getItem("waterSortTheme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-function applyTheme(t) {
- currentTheme = t;
- document.documentElement.setAttribute("data-theme", t);
- $("themeToggle").textContent = t === "light" ? "☀️" : "🌙";
- localStorage.setItem("waterSortTheme", t);
+function loadCheckpoints(){
+ try{
+  const raw = localStorage.getItem(CHECKPOINT_KEY);
+  if(!raw) return [];
+  const arr = JSON.parse(raw);
+  return Array.isArray(arr) ? arr : [];
+ } catch(e){ return []; }
 }
-applyTheme(currentTheme);
-if($('themeToggle')) $('themeToggle').onclick= () => { applyTheme(currentTheme === "light" ? "dark" : "light"); sfx.click(); };
+function persistCheckpoints(){
+ try{ localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(state.checkpoints)); } catch(e){}
+}
 
-/* ---- B2/B3: Hint highlight + next-move preview ---- */
-let _activeHints = [];
-function clearHints() {
- _activeHints.forEach(h => h.classList && h.classList.remove("hint-target", "hint-best", "hint-blocked"));
- _activeHints = [];
- document.querySelectorAll(".next-dot").forEach(d => d.remove());
-}
-function showHints(state) {
- clearHints();
- const tubes = document.querySelectorAll(".tube");
- if (selectedTube < 0) return;
- const ranked = rankSmartMoves(state, 3);
- const bestMove = ranked.length ? ranked[0].m : null;
- const validTargets = legalMoves(state).filter(m => m.from === selectedTube).map(m => m.to);
- tubes.forEach((t, i) => {
-  if (i === selectedTube) return;
-  if (validTargets.includes(i)) {
-   t.classList.add("hint-target");
-   _activeHints.push(t);
-  } else {
-   t.classList.add("hint-blocked");
-   _activeHints.push(t);
-  }
- });
- if (bestMove) {
-  const src = tubes[bestMove.from], dst = tubes[bestMove.to];
-  if (src) { src.classList.add("hint-best"); _activeHints.push(src); }
-  if (dst) { dst.classList.add("hint-best"); _activeHints.push(dst); }
-  if (dst) {
-   const dot = document.createElement("div");
-   dot.className = "next-dot";
-   dot.textContent = "★";
-   dot.title = "Nước đi tốt nhất (★): " + (bestMove.from + 1) + "→" + (bestMove.to + 1);
-   dst.appendChild(dot);
-  }
- }
-}
-if($('hintBtn')) $('hintBtn').onclick= () => {
- sessionStats.hintUsed++;
- statsSave();
- renderStats();
- const state = tubes.map(t => t.filter(Boolean));
- if (selectedTube < 0) {
-  const ranked = rankSmartMoves(state, 1);
-  if (!ranked.length) return setStatus("Không có nước đi khả dụng.", "warn");
-  selectedTube = ranked[0].m.from;
-  renderBoard();
-  showHints(state);
-  sfx.hint();
-  setStatus("💡 Gợi ý: chọn Ống " + (selectedTube + 1) + " làm nguồn.", "ok");
+function saveCheckpoint(label){
+ // Tìm slot trống đầu tiên, nếu hết thì thay slot cuối
+ if(state.checkpoints.length < MAX_CHECKPOINTS){
+  state.checkpoints.push({
+   tubes: clone(state.tubes),
+   CAP: state.CAP,
+   ts: Date.now(),
+   label: label || ("Màn " + (state.checkpoints.length + 1))
+  });
+  state.activeCheckpoint = state.checkpoints.length - 1;
  } else {
-  const ranked = rankSmartMoves(state, 1);
-  if (ranked.length && ranked[0].m.from === selectedTube) {
-   const target = ranked[0].m.to;
-   tubes = applyMove(tubes, selectedTube, target);
-   selectedTube = -1;
-   logEvent("hint_move", { from: ranked[0].m.from, to: target });
-   updateLearning("success", { safe: 1, group: 2, space: 1 });
-   clearHints();
-   renderAll();
-   sfx.move();
-   setStatus("✨ Đã thực hiện nước đi gợi ý: Ống " + (ranked[0].m.from + 1) + " → Ống " + (target + 1), "ok");
-  } else {
-   showHints(state);
-   sfx.hint();
-  }
+  // Đã đầy → hỏi user có muốn thay slot cuối không
+  if(!confirm("Đã đủ " + MAX_CHECKPOINTS + " checkpoint. Thay thế checkpoint cũ nhất?")) return;
+  state.checkpoints.shift();
+  state.checkpoints.push({
+   tubes: clone(state.tubes),
+   CAP: state.CAP,
+   ts: Date.now(),
+   label: label || ("Màn " + MAX_CHECKPOINTS)
+  });
+  state.activeCheckpoint = state.checkpoints.length - 1;
  }
-};
+ persistCheckpoints();
+ renderCheckpointBar();
+ toast("💾 Đã lưu checkpoint " + state.activeCheckpoint, "ok");
+}
 
-/* ---- B1: Liquid animation on user move ---- */
-const _origApplyMove = applyMove;
-applyMove = function (s, from, to) {
- const r = _origApplyMove(s, from, to);
- // animate the source tube's top slots
- try {
-  const src = document.querySelectorAll(".tube")[from];
-  if (src) {
-   const slots = src.querySelectorAll(".slot");
-   const c = topValue(s[from]);
-   let count = 0;
-   for (let i = s[from].length - 1; i >= 0 && s[from][i] === c; i--) count++;
-   for (let i = s[from].length; i < s[from].length + count; i++) {
-    if (slots[i]) {
-     slots[i].classList.add("lift");
-     setTimeout(() => slots[i] && slots[i].classList.add("drop"), 250);
-     setTimeout(() => slots[i] && slots[i].classList.remove("lift", "drop"), 650);
-    }
-   }
-  }
- } catch (e) { /* ignore animation errors */ }
- return r;
-};
+function loadCheckpoint(idx){
+ const cp = state.checkpoints[idx];
+ if(!cp) return;
+ state.tubes = clone(cp.tubes);
+ state.CAP = cp.CAP;
+ state.activeCheckpoint = idx;
+ $("capInput").value = state.CAP;
+ renderAll();
+ toast("↩ Đã khôi phục checkpoint " + (idx + 1), "ok");
+}
 
-/* ---- B7: Mobile swipe gestures (B1 integration) ---- */
-let _swipeStartX = 0, _swipeStartY = 0, _swipeActive = false;
-document.addEventListener("touchstart", e => {
- if (e.touches.length !== 1) return;
- const t = e.touches[0];
- _swipeStartX = t.clientX; _swipeStartY = t.clientY; _swipeActive = true;
-}, { passive: true });
-document.addEventListener("touchend", e => {
- if (!_swipeActive) return;
- _swipeActive = false;
- const t = e.changedTouches[0];
- const dx = t.clientX - _swipeStartX, dy = t.clientY - _swipeStartY;
- const absDx = Math.abs(dx), absDy = Math.abs(dy);
- if (Math.max(absDx, absDy) < 60) return;
- if (absDx > absDy && dx > 80) {
-  // swipe right = undo
-  undo();
-  toast("↶ Hoàn tác", "ok");
- } else if (absDx > absDy && dx < -80) {
-  // swipe left = redo (replay lastSolution step)
-  if (lastSolution && lastSolution.length) {
-   animateSolution();
-  } else {
-   addTube();
-   toast("＋ Đã thêm ống rỗng", "ok");
-  }
- } else if (absDy > 60 && dy < -80) {
-  // swipe up = add empty tube
-  addTube();
-  toast("＋ Đã thêm ống rỗng", "ok");
+function deleteCheckpoint(idx){
+ state.checkpoints.splice(idx, 1);
+ if(state.activeCheckpoint === idx) state.activeCheckpoint = -1;
+ else if(state.activeCheckpoint > idx) state.activeCheckpoint--;
+ persistCheckpoints();
+ renderCheckpointBar();
+}
+
+function clearAllCheckpoints(){
+ if(!state.checkpoints.length) return;
+ if(!confirm("Xoá tất cả " + state.checkpoints.length + " checkpoint?")) return;
+ state.checkpoints = [];
+ state.activeCheckpoint = -1;
+ persistCheckpoints();
+ renderCheckpointBar();
+ toast("Đã xoá hết checkpoint", "ok");
+}
+
+function renderCheckpointBar(){
+ const bar = $("checkpointBar");
+ if(!bar) return;
+ if(!state.checkpoints.length){
+  bar.classList.remove("show");
+  $("checkpointLoadBtn").disabled = true;
+  return;
  }
-}, { passive: true });
-
-/* ---- C2: Tube drag-to-reorder (desktop) ---- */
-let _dragTubeIdx = -1;
-const _origRenderBoard = renderBoard;
-renderBoard = function () {
- _origRenderBoard();
- const tubes = document.querySelectorAll(".tube");
- tubes.forEach((t, i) => {
-  t.draggable = true;
-  t.ondragstart = e => {
-   _dragTubeIdx = i;
-   t.classList.add("dragging");
-   e.dataTransfer.effectAllowed = "move";
-  };
-  t.ondragend = () => { _dragTubeIdx = -1; t.classList.remove("dragging"); document.querySelectorAll(".tube").forEach(x => x.classList.remove("drag-over")); };
-  t.ondragover = e => { e.preventDefault(); t.classList.add("drag-over"); };
-  t.ondragleave = () => t.classList.remove("drag-over");
-  t.ondrop = e => {
-   e.preventDefault();
-   t.classList.remove("drag-over");
-   if (_dragTubeIdx < 0 || _dragTubeIdx === i) return;
-   saveHistory();
-   const moved = tubes[_dragTubeIdx];
-   tubes.splice(_dragTubeIdx, 1);
-   tubes.splice(i, 0, moved);
-   logEvent("reorder_tubes", { from: _dragTubeIdx, to: i });
-   clearHeuristicCache();
-   renderAll();
-   toast("↔ Đã sắp xếp lại ống", "ok");
-  };
- });
-};
-
-/* ---- B4: Solver progress bar (driven by solver hooks) ---- */
-function setSolverProgress(phase, expanded, bestSize, ms) {
- const bar = $("solverProgress");
- if (!bar) return;
  bar.classList.add("show");
- $("solverPhase").textContent = phase;
- $("solverStat").textContent = "expanded: " + expanded.toLocaleString() + " · best: " + bestSize.toLocaleString() + " · " + ms + "ms";
- let pct = 0;
- if (phase.indexOf("hoàn") >= 0 || phase.indexOf("✓") >= 0) pct = 100;
- else if (ms > 0) pct = Math.min(95, Math.round((ms / Math.max(100, Number($("timeout").value) || 12000)) * 100));
- $("solverBar").style.width = pct + "%";
-}
-function hideSolverProgress() {
- $("solverProgress").classList.remove("show");
+ $("checkpointLoadBtn").disabled = false;
+
+ // Render info
+ const info = $("checkpointInfo");
+ const active = state.checkpoints[state.activeCheckpoint];
+ if(active){
+  const dt = new Date(active.ts);
+  const timeStr = dt.getHours().toString().padStart(2,"0") + ":" + dt.getMinutes().toString().padStart(2,"0");
+  info.innerHTML = "📌 <b>" + escapeHtml(active.label) + "</b> · " + timeStr + " · " + active.tubes.length + " ống × CAP=" + active.CAP;
+ } else {
+  info.innerHTML = "Có " + state.checkpoints.length + " checkpoint";
+ }
+
+ // Render slots
+ const slots = $("checkpointSlots");
+ slots.innerHTML = "";
+ state.checkpoints.forEach((cp, i) => {
+  const b = document.createElement("button");
+  b.className = "checkpoint-slot" + (cp.tubes.length > 0 ? " filled" : "") + (i === state.activeCheckpoint ? " active" : "");
+  b.textContent = (i + 1);
+  b.title = cp.label + " — click để khôi phục, double-click để xoá";
+  b.onclick = () => loadCheckpoint(i);
+  b.ondblclick = (e) => { e.preventDefault(); if(confirm("Xoá checkpoint " + (i+1) + "?")) deleteCheckpoint(i); };
+  slots.appendChild(b);
+ });
 }
 
-/* ---- C3: Stats panel rendering ---- */
-function renderStats() {
- const el=id=>$(id);const s=sessionStats;
- if(el("statHint"))el("statHint").textContent=s.hintUsed;
- if(el("statSolved"))el("statSolved").textContent=s.solverSolved;
- if(el("statUserMoves"))el("statUserMoves").textContent=s.userMoves;
- if(el("statSolverRuns"))el("statSolverRuns").textContent=s.solverRuns;
- if(el("statBest"))el("statBest").textContent=s.bestSolution!=null?s.bestSolution:"—";
- const total=s.solverRuns,fail=total-s.solverSolved;
- if(el("statFailRate"))el("statFailRate").textContent=total?Math.round((fail/total)*100)+"%":"0%";
- const curve=el("learningCurve");
- if(curve){
-  curve.innerHTML = "";
-  const last = sessionStats.learningCurve.slice(-20);
-  if (!last.length) {
-   curve.innerHTML = '<div class="small center" style="margin:auto;color:#94a3b8">Chưa có dữ liệu — hãy giải vài ván.</div>';
+function escapeHtml(s){
+ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]);
+}
+
+/* ============================================================
+   RUNNING STATE — bật/tắt nút Stop khi solver/animation đang chạy
+   ============================================================ */
+function setRunning(running){
+ const stopBtn = $("stopBtn");
+ if(running){
+  stopBtn.classList.add("show");
+  $("solveBtn").disabled = true;
+  $("animateBtn").disabled = true;
+ } else {
+  stopBtn.classList.remove("show");
+  $("solveBtn").disabled = false;
+  $("animateBtn").disabled = !state.lastSolution;
+ }
+}
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+async function animatePlan(plan){
+ if(state.isAnimating) return;
+ if(!plan || !plan.path.length) return;
+ state.isAnimating = true;
+ state.cancelled = false;
+ setRunning(true);
+ // Reset highlights
+ document.querySelectorAll("#solutionList .move").forEach(el => el.classList.remove("current"));
+ for(let i = 0; i < plan.path.length; i++){
+  // Check cancel mỗi bước (sau khi sleep 200ms)
+  if(state.cancelled){
+   state.cancelled = false;
+   toast("⏹ Đã dừng tại bước " + (i+1) + "/" + plan.path.length, "warn");
+   break;
+  }
+  const m = plan.path[i];
+  if(!validMove(state.tubes, m.from, m.to)){
+   toast("Nước đi " + (i+1) + " không hợp lệ nữa (state đã đổi)", "bad");
+   break;
+  }
+  saveHistory();
+  state.tubes = applyMove(state.tubes, m.from, m.to);
+  renderDisplay();
+  // Highlight current step
+  const stepEl = document.querySelector('#solutionList .move[data-step="' + i + '"]');
+  if(stepEl) stepEl.classList.add("current");
+  // Wait 600ms nhưng check cancel mỗi 100ms
+  await new Promise(r => {
+   let waited = 0;
+   const tick = setInterval(() => {
+    if(state.cancelled || waited >= 600){
+     clearInterval(tick);
+     r();
+    }
+    waited += 100;
+   }, 100);
+  });
+  if(stepEl) stepEl.classList.remove("current");
+  if(state.cancelled){
+   state.cancelled = false;
+   toast("⏹ Đã dừng tại bước " + (i+1) + "/" + plan.path.length, "warn");
+   break;
+  }
+ }
+ state.isAnimating = false;
+ setRunning(false);
+ setStatus("ok", "Đã chạy " + state.tubes.length + " ống. Có thể chạy lại hoặc khôi phục checkpoint.");
+ renderAll();
+}
+
+/* ============================================================
+   MAIN: run solver
+   ============================================================ */
+function runSolver(){
+ const clean = state.tubes.map(t => t.filter(x => x != null));
+ state.tubes = clean;
+ if(isSolved(clean)){ toast("Bàn đã giải xong!", "ok"); return; }
+ if(!clean.some(t => t.length)){
+  toast("Bàn rỗng, không cần giải", "warn"); return;
+ }
+ // Validate: kiểm tra màu nào vượt CAP không
+ const cc = colorCount(clean);
+ const overColors = Object.keys(cc).filter(k => cc[k] > state.CAP);
+ if(overColors.length > 0){
+  const list = overColors.map(k => k + "=" + cc[k]).join(", ");
+  setStatus("bad", "Bàn không hợp lệ: màu " + list + " vượt CAP=" + state.CAP + ". Mỗi màu chỉ xuất hiện tối đa " + state.CAP + " lần. Hãy sửa lại bàn trước khi giải.");
+  toast("Bàn không hợp lệ: " + overColors.length + " màu vượt CAP", "bad");
+  return;
+ }
+ // Validate: tổng ô có chia hết cho CAP không
+ const total = clean.reduce((n, t) => n + t.length, 0);
+ if(total % state.CAP !== 0){
+  setStatus("bad", "Bàn không hợp lệ: tổng " + total + " ô không chia hết cho CAP=" + state.CAP + " (cần bội số của " + state.CAP + ").");
+  toast("Tổng ô không chia hết cho CAP", "bad");
+  return;
+ }
+ const strat = renderStrategy(clean);
+ setSolverProgress("Đang khởi động", 0, 0, 0);
+ const t0 = Date.now();
+ try {
+  const r = solveMultiplePlans(clean, {
+   maxDepth: 60,
+   maxTime: 8000,
+   maxPlans: 1,
+   strategy: strat.mode
+  });
+  setSolverProgress(null);
+  setRunning(false);
+  const elapsed = Date.now() - t0;
+  $("mTime").textContent = elapsed + "ms";
+  $("mExp").textContent = r.expanded.toLocaleString();
+  if(!r.plans.length){
+   setStatus("bad", "Không tìm được lời giải trong " + elapsed + "ms. Thử mở thêm ô ?, tăng timeout, hoặc bỏ bớt ? bằng cách đoán.");
+   toast("Không tìm được lời giải", "bad");
+   state.lastSolution = null;
+   $("animateBtn").disabled = true;
+   renderCandidates([]);
    return;
   }
-  const maxV = Math.max(1, ...last.map(x => x.moves || 1));
-  last.forEach(entry => {
-   const b = document.createElement("div");
-   b.className = "bar " + (entry.solved ? "" : "fail");
-   if (entry.moves == null) b.classList.add("zero");
-   b.style.height = (entry.moves ? Math.max(8, (entry.moves / maxV) * 100) : 8) + "%";
-   b.title = (entry.solved ? "✓ " : "✗ ") + (entry.moves || 0) + " bước · " + (entry.algo || "?") + " · " + (entry.ms || 0) + "ms";
-   curve.appendChild(b);
-  });
- }
-}
-if($('resetStatsBtn')) $('resetStatsBtn').onclick= () => {
- if (!confirm("Reset toàn bộ thống kê?")) return;
- statsReset();
- renderStats();
- toast("↺ Đã reset thống kê", "ok");
-};
-
-/* ---- Hook into user move (sound + stats) ---- */
-const _origHandleTubeClick = handleTubeClick;
-handleTubeClick = function (ti) {
- if (typeof animating !== "undefined" && animating) return; // block clicks while solver is running
- const before = _origHandleTubeClick(ti);
- if (validMove && selectedTube < 0 && ti >= 0 && tubes[ti] && tubes[ti].length) {
-  // source just got selected, show hints
-  setTimeout(() => { try { showHints(tubes.map(t => t.filter(Boolean))); } catch (e) {} }, 50);
- } else {
-  clearHints();
-  if (lastSolution || sessionStats.userMoves) sfx.move();
- }
- sessionStats.userMoves++;
- statsSave();
- renderStats();
-};
-
-/* ---- Hook into solver completion (stats + sound) ---- */
-const _origSolveLocal = solveLocal;
-solveLocal = async function (recalc) {
- sessionStats.solverRuns++;
- statsSave();
- renderStats();
- const startMs = performance.now();
- const result = await _origSolveLocal(recalc);
- const ms = Math.round(performance.now() - startMs);
- hideSolverProgress();
- if (result && result.solved) {
-  sfx.good();
-  sessionStats.solverSolved++;
-  if (sessionStats.bestSolution == null || result.path.length < sessionStats.bestSolution) {
-   sessionStats.bestSolution = result.path.length;
+  state.candidates = r.plans;
+  state.lastSolution = r.plans[0].path;
+  $("animateBtn").disabled = false;
+  const firstPlan = r.plans[0];
+  if(firstPlan._suggestion){
+   setStatus("warn", firstPlan._suggestion);
+   toast(firstPlan._suggestion, "warn");
+   $("animateBtn").disabled = true;
+  } else {
+   setStatus("ok", "Tìm thấy " + r.plans.length + " phương án trong " + elapsed + "ms. Mỗi phương án có " + r.plans[0].path.length + "–" + r.plans[r.plans.length-1].path.length + " bước.");
+   toast("Tìm thấy " + r.plans.length + " phương án!", "ok");
   }
-  sessionStats.learningCurve.push({ solved: true, moves: result.path.length, algo: $("algo").value, ms: ms });
-  toast("🎉 Tìm thấy lời giải " + result.path.length + " bước (" + ms + "ms)", "ok");
- } else if (result && result.partial) {
-  sfx.hint();
-  sessionStats.learningCurve.push({ solved: false, moves: result.path.length || 0, algo: $("algo").value, ms: ms });
-  toast("🧭 Tìm được " + (result.path?.length || 0) + " bước an toàn", "warn");
- } else {
-  sfx.fail();
-  sessionStats.learningCurve.push({ solved: false, moves: 0, algo: $("algo").value, ms: ms });
-  toast("⚠ Không tìm được lời giải trong thời gian cho phép", "bad");
+  renderCandidates(r.plans);
+  renderSolutionPath(r.plans[0].path);
+ } catch(e){
+  setSolverProgress(null);
+  setStatus("bad", "Lỗi: " + e.message);
+  toast("Lỗi solver: " + e.message, "bad");
  }
- if (sessionStats.learningCurve.length > 50) sessionStats.learningCurve = sessionStats.learningCurve.slice(-50);
- statsSave();
- renderStats();
- return result;
-};
-/* Patch solveLocal to return richer result */
-const _innerSolveLocal = solveLocal;
-async function solveLocalPatched(recalc) {
- const r = await _innerSolveLocal(recalc);
- return { solved: r && (r.type === "solved" || r.path), path: r && r.path || [] };
 }
 
-/* ---- B2: clear hints on Escape / board click outside tube ---- */
+/* ============================================================
+   REVEAL (peek 1 ?)
+   ============================================================ */
+function revealOneUnknown(){
+ // Find first ? (top of any tube) and use probability-based guess
+ const clean = state.tubes.map(t => t.filter(x => x != null));
+ let target = null;
+ for(let ti = 0; ti < clean.length; ti++){
+  const t = clean[ti];
+  if(t.length && topValue(t) === UNK){
+   target = {ti, li: t.length - 1};
+   break;
+  }
+ }
+ if(!target) { toast("Không còn ô ?", "warn"); return; }
+ // Predict candidates
+ const cands = predictUnknowns(clean);
+ if(!cands.length) { toast("Không đoán được màu (đã đủ?)", "bad"); return; }
+ // Use the first (most common missing color)
+ saveHistory();
+ const color = cands[0];
+ const p = getColor(color);
+ clean[target.ti][target.li] = color;
+ state.tubes = clean;
+ renderAll();
+ renderStrategy(clean);
+ toast("Peek Ống " + (target.ti+1) + " lớp " + (target.li+1) + " → " + p.symbol, "ok");
+ // Auto re-solve
+ setTimeout(() => runSolver(), 300);
+}
+
+/* ============================================================
+   RENDER ALL
+   ============================================================ */
+function renderAll(){
+ renderEditor();
+ renderPaletteRow();
+ renderDisplay();
+ renderStrategy(state.tubes);
+ if(state.lastSolution) renderSolutionPath(state.lastSolution);
+ renderCheckpointBar();
+}
+
+/* ============================================================
+   EXAMPLE LOADER
+   ============================================================ */
+function loadExample(){
+ console.log("[loadExample] running");
+ // Video 2 frame 0 (màn 3) — 8 ống chứa + 2 rỗng = 10 ống
+ // Hàng trên 5 ống, hàng dưới 3 ống (1 chứa + 2 rỗng)
+ // Đọc từ dưới lên (bottom → top)
+ state.CAP = 4;
+ state.tubes = [
+  ["G","G","G","B"],          // T1 hàng trên cột 1
+  ["G","R","Y","R"],          // T2 hàng trên cột 2
+  ["W","D","G","G"],          // T3 hàng trên cột 3
+  ["G","R","Y","Y"],          // T4 hàng trên cột 4
+  ["G","O","W","B"],          // T5 hàng trên cột 5
+  ["W","Y","R","B"],          // T6 hàng dưới cột 1
+  [],                          // T7 hàng dưới cột 2 (rỗng)
+  [],                          // T8 hàng dưới cột 3 (rỗng)
+  [],                          // T9 (rỗng)
+  []                           // T10 (rỗng)
+ ];
+ $("capInput").value = 4;
+ $("tubeCountInput").value = 10;
+ renderAll();
+ // Tự động lưu checkpoint khi load example
+ saveCheckpoint("Mẫu frame 0 v2");
+ toast("Đã nạp mẫu frame 0 video 2 (màn 3)", "ok");
+ console.log("[loadExample] done, tubes:", state.tubes.length);
+}
+
+function loadSimpleExample(){
+ // Simple 4-tube 2-color puzzle (solvable)
+ state.CAP = 4;
+ state.tubes = [
+  ["O","B","O","B"],
+  ["B","O","B","O"],
+  [],
+  []
+ ];
+ $("capInput").value = 4;
+ $("tubeCountInput").value = 4;
+ renderAll();
+ toast("Đã nạp puzzle 4 ống đơn giản (2 màu)", "ok");
+}
+
+/* ============================================================
+   EVENT HANDLERS
+   ============================================================ */
+function rebuildTubes(){
+ const n = parseInt($("tubeCountInput").value) || 10;
+ const cap = parseInt($("capInput").value) || 4;
+ state.CAP = cap;
+ state.tubes = [];
+ for(let i = 0; i < n; i++) state.tubes.push([]);
+ $("capInput").value = cap;
+ renderAll();
+}
+
+$("rebuildBtn").onclick = rebuildTubes;
+$("loadExampleBtn").onclick = loadExample;
+$("loadSimpleBtn").onclick = loadSimpleExample;
+document.querySelectorAll("[data-preset]").forEach(b => {
+ b.onclick = () => {
+  const n = parseInt(b.dataset.preset);
+  $("tubeCountInput").value = n;
+  rebuildTubes();
+  toast("Đã tạo bàn " + n + " ống", "ok");
+ };
+});
+$("addTubeBtn").onclick = () => { saveHistory(); state.tubes.push([]); renderAll(); };
+$("removeTubeBtn").onclick = () => { saveHistory(); if(state.tubes.length > 2) state.tubes.pop(); else toast("Cần ít nhất 2 ống","warn"); renderAll(); };
+$("clearAllBtn").onclick = () => { saveHistory(); state.tubes = state.tubes.map(() => []); renderAll(); };
+$("solveBtn").onclick = () => { state.cancelled = false; setRunning(true); runSolver(); };
+$("animateBtn").onclick = () => { if(state.lastSolution) animatePlan({path: state.lastSolution}); };
+$("stopBtn").onclick = () => {
+ state.cancelled = true;
+ toast("⏹ Đang dừng...", "warn");
+};
+$("revealBtn").onclick = revealOneUnknown;
+$("checkpointSaveBtn").onclick = () => {
+ const label = prompt("Tên checkpoint (để trống = tự đặt):", "");
+ if(label === null) return;
+ saveCheckpoint(label.trim() || undefined);
+};
+$("checkpointLoadBtn").onclick = () => {
+ if(state.activeCheckpoint >= 0){
+  loadCheckpoint(state.activeCheckpoint);
+ } else if(state.checkpoints.length > 0){
+  // Load slot mới nhất
+  loadCheckpoint(state.checkpoints.length - 1);
+ } else {
+  toast("Chưa có checkpoint. Bấm 💾 Lưu trước.", "warn");
+ }
+};
+$("checkpointClearBtn").onclick = clearAllCheckpoints;
+$("importTextBtn").onclick = () => {
+ const text = prompt("Nhập JSON tubes (VD: [[\"G\",\"D\",\"G\",\"B\"],[\"R\",\"Y\",\"R\",\"B\"],[]]):");
+ if(!text) return;
+ try {
+  const arr = JSON.parse(text);
+  if(Array.isArray(arr)){ state.tubes = arr; renderAll(); toast("Đã nạp " + arr.length + " ống", "ok"); }
+ } catch(e){ toast("JSON lỗi: " + e.message, "bad"); }
+};
+$("exportTextBtn").onclick = () => {
+ const json = JSON.stringify(state.tubes, null, 2);
+ prompt("Sao chép JSON tubes:", json);
+};
+$("modalClose").onclick = () => $("modal").classList.remove("show");
+$("modalX").onclick = () => $("modal").classList.remove("show");
+$("modal").onclick = e => { if(e.target === $("modal")) $("modal").classList.remove("show"); };
+$("paletteModalX").onclick = () => $("paletteModal").classList.remove("show");
+$("paletteModalCancel").onclick = () => $("paletteModal").classList.remove("show");
+$("paletteModalSave").onclick = savePaletteModal;
+$("paletteModal").onclick = e => { if(e.target === $("paletteModal")) $("paletteModal").classList.remove("show"); };
+
 document.addEventListener("keydown", e => {
- if (e.key === "Escape") { clearHints(); $("modal").classList.remove("show"); }
+ if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z"){ e.preventDefault(); undo(); }
+ if(e.key === "Escape"){
+  $("modal").classList.remove("show");
+  $("paletteModal").classList.remove("show");
+ }
+ if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); runSolver(); }
 });
 
-/* ---- Init: load stats, render UI ---- */
-statsLoad();
-renderStats();
-applyTheme(currentTheme);
-$("soundToggle").textContent = soundOn ? "🔊" : "🔇";
-$("soundToggle").classList.toggle("off", !soundOn);
-
-// Load checkpoints
-checkpoints=loadCheckpoints();
-renderCheckpointBar();
-
-loadLogs();renderLogSummary();renderQuickIcons();
-const stored=localStorage.getItem("waterSortSavedTemplateV9")||localStorage.getItem("waterSortSavedTemplate");
-if(stored)try{savedTemplate=JSON.parse(stored)}catch{}
-
-
+/* ============================================================
+   INIT
+   ============================================================ */
+loadExample();
 </script>
 </body>
 </html>
