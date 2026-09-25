@@ -27,10 +27,20 @@ async function handleRequest(req: NextRequest) {
   const isForce = url.searchParams.get('force') === '1';
 
   if (isResearch) {
-    return NextResponse.json({ success: false, message: 'research deprecated — use auto-seo refill' }, { status: 410 });
+    try {
+      const { createServiceClient } = await import('@/utils/supabase/server')
+      const supabase = await createServiceClient()
+      const { refillTopicPoolIfNeeded } = await import('@/lib/auto-seo')
+      await refillTopicPoolIfNeeded(supabase)
+      const { data } = await supabase.from('auto_seo_config').select('topic_pool').eq('id',1).single()
+      const count = Array.isArray(data?.topic_pool) ? data.topic_pool.length : 0
+      return NextResponse.json({ success: true, message: `Đã làm mới topic pool (${count} chủ đề)` })
+    } catch (e:any) {
+      return NextResponse.json({ success: false, message: e?.message || 'Refill failed' }, { status: 500 })
+    }
   }
 
-  const result = await runAutoSeo();
+  const result = await runAutoSeo({ force: isForce });
 
   return NextResponse.json({
     success: result.success,

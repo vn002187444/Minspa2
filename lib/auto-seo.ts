@@ -89,7 +89,7 @@ const DEFAULT_FALLBACK_TOPICS = [
   'gội dưỡng sinh cho dân văn phòng',
 ];
 
-async function refillTopicPoolIfNeeded(supabase: any): Promise<void> {
+export async function refillTopicPoolIfNeeded(supabase: any): Promise<void> {
   const { data: config } = await supabase.from('auto_seo_config').select('topic_pool').eq('id', 1).single();
   const pool: string[] = config?.topic_pool || [];
   if (pool.length >= 5) return;
@@ -414,12 +414,37 @@ export async function notifyAdmin(article: { title: string; slug: string }) {
   ]);
 }
 
-export async function runAutoSeo(): Promise<{ success: boolean; message: string }> {
+function isScheduledNow(config: any): boolean {
+  // Kiểm tra schedule_days + schedule_hour (giờ VN UTC+7) — vercel cron 04:00 UTC = 11:00 VN, pg_cron hourly sẽ skip nếu không đúng giờ
+  try {
+    const days: string[] = Array.isArray(config.schedule_days) ? config.schedule_days : (config.schedule_day ? [config.schedule_day] : ['THU'])
+    const hour: number = typeof config.schedule_hour === 'number' ? config.schedule_hour : 12
+    // VN time
+    const now = new Date()
+    const vn = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }))
+    const dayMap = ['SUN','MON','TUE','WED','THU','FRI','SAT']
+    const today = dayMap[vn.getDay()]
+    const curHour = vn.getHours()
+    // Cho phép lệch 1 giờ để tránh miss do cron drift (ví dụ vercel 04:00 UTC ~11:00 VN)
+    if (!days.includes(today)) return false
+    if (Math.abs(curHour - hour) > 1 && curHour !== hour) {
+      // Nếu schedule_hour = 11, nhưng cron chạy 04:00 UTC (11 VN) thì pass; nếu hourly cron chạy giờ khác thì skip
+      // Chỉ cho phép đúng giờ đã cấu hình
+      return false
+    }
+    return true
+  } catch { return true }
+}
+
+export async function runAutoSeo(opts?: { force?: boolean }): Promise<{ success: boolean; message: string }> {
   const supabase = await createClient();
 
   try {
     const { data: config } = await supabase.from('auto_seo_config').select('*').eq('id', 1).single();
     if (!config?.enabled) return { success: false, message: 'Auto SEO is disabled' };
+    if (!opts?.force && !isScheduledNow(config)) {
+      return { success: false, message: `Not scheduled now (days=${(config.schedule_days||[]).join(',')} hour=${config.schedule_hour})` };
+    }
 
     // ensure pool is refilled before picking (weekly safeguard + handles "hết tiêu đề" incident)
     await refillTopicPoolIfNeeded(supabase);

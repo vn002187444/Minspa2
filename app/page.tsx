@@ -21,6 +21,26 @@ import ServiceSchema from '@/components/ServiceSchema';
 import { cookies } from 'next/headers';
 import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { COOKIE_NAME, DEFAULT_LOCALE, LANGUAGES } from '@/lib/i18n/config';
+import type { Metadata } from 'next';
+import { getBaseUrl } from '@/lib/env';
+
+export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl = getBaseUrl();
+  return {
+    title: 'Min Nail & Hair - Salon làm đẹp tại Thủ Đức | Lavita Charm',
+    description: 'Gội đầu dưỡng sinh thảo dược, nail nghệ thuật, massage body chuyên nghiệp tại Min Nail & Hair Lavita Charm Thủ Đức. Đặt online giảm 5%. Hotline 0934 323 878.',
+    alternates: { canonical: baseUrl },
+    openGraph: {
+      title: 'Min Nail & Hair - Salon làm đẹp tại Thủ Đức',
+      description: 'Gội dưỡng sinh, nail, massage body tại Lavita Charm Thủ Đức.',
+      url: baseUrl,
+      siteName: 'Min Nail & Hair',
+      locale: 'vi_VN',
+      type: 'website',
+      images: [{ url: `${baseUrl}/og-default.svg`, width: 1200, height: 630, alt: 'Min Nail & Hair' }],
+    },
+  };
+}
 
 const MasterSchedule = dynamic(() => import('@/components/MasterSchedule'), {
   loading: () => (
