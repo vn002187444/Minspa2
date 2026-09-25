@@ -950,9 +950,7 @@ Dữ liệu nằm local trên máy. Solver dùng thống kê này để điều 
 <h3>⚙ Công cụ phụ</h3>
 <div class="tabs">
 <button class="tab active" data-tab="solver">Solver</button>
-<button class="tab" data-tab="palette">Màu/Icon</button>
 <button class="tab" data-tab="data">Dữ liệu</button>
-<button class="tab" data-tab="presets">Presets</button>
 </div>
 <div class="tab-content" data-content="solver" style="display:block">
 <label>Solver:<select id="algo"><option value="astar">A* — nhanh</option><option value="bfs">IDA* — ngắn nhất</option></select></label>
@@ -969,25 +967,7 @@ Dữ liệu nằm local trên máy. Solver dùng thống kê này để điều 
 <div id="smartCandidates"></div>
 <div id="probBox" class="prob"></div>
 </div>
-<div class="tab-content" data-content="palette" style="display:none">
-<div id="palette" class="palette"></div>
-<div class="palette-tools">
-<button id="editPaletteBtn" class="btn btn-accent btn-sm">✎ Sửa</button>
-<button id="newPaletteBtn" class="btn btn-success btn-sm">＋ Tạo mới</button>
-<button id="deletePaletteBtn" class="btn btn-danger btn-sm">🗑 Xóa</button>
-<button id="eraseBtn" class="dark small">❌ Xóa ô</button>
-</div>
-<div id="customEditor" class="customEditor">
-<div><label>Icon</label><input id="customIcon" maxlength="4" value="🍎" class="customIcon"></div>
-<div><label>Màu</label><input id="customColor" type="color" value="#ff0000" class="customColor"></div>
-<div class="quick-icons-wrap" id="quickIcons"></div>
-<div class="quick-colors-wrap" id="quickColors"></div>
-<div class="editor-actions">
-<button id="applyPaletteBtn" class="btn btn-success btn-sm">💾 Lưu</button>
-<button id="cancelPaletteBtn" class="btn btn-accent btn-sm">Hủy</button>
-</div>
-</div>
-</div>
+
 <div class="tab-content" data-content="data" style="display:none">
 <div class="data-row">
 <button id="saveTemplateBtn" class="btn btn-success btn-sm">💾 Lưu mẫu hiện tại</button>
@@ -1007,47 +987,9 @@ Dữ liệu nằm local trên máy. Solver dùng thống kê này để điều 
 <button class="preset-btn" data-n="14">14 ống</button>
 </div>
 </div>
-<div class="tab-content" data-content="presets" style="display:none">
-<div id="imageImportPanel" style="display:none">
-<h4>🖼️ Phân tích mẫu từ hình ảnh</h4>
-<input id="imageFile" type="file" accept="image/*" style="width:100%;margin-top:8px">
-<div id="imageStats" class="status" style="margin-top:8px"></div>
-<canvas id="imageCanvas" style="display:none;max-width:100%;margin-top:8px"></canvas>
-<div class="controls" style="margin-top:8px">
-<button id="analyzeImageBtn" class="btn btn-success" disabled>🔎 Phân tích ảnh</button>
-<button id="applyImageBtn" class="btn btn-warning" disabled>✅ Dùng mẫu này</button>
-<button id="cancelImageBtn" class="btn btn-accent">Đóng</button>
-</div>
-<div id="imageReview" style="margin-top:8px"></div>
-</div>
-</div>
+
 </section>
 
-<div class="stats-bar">
-<div class="stat"><b id="statHint">0</b><span>Gợi ý</span></div>
-<div class="stat"><b id="statSolved">0</b><span>Đã giải</span></div>
-<div class="stat"><b id="statUserMoves">0</b><span>Nước đi</span></div>
-<div class="stat"><b id="statBest">—</b><span>Ngắn nhất</span></div>
-<div class="stat"><b id="statSolverRuns">0</b><span>Lần chạy</span></div>
-<div class="stat"><b id="statFailRate">0%</b><span>Tỷ lệ</span></div>
-</div>
-<div class="learning-curve" id="learningCurve"></div>
-<div class="center" style="margin-top:8px"><button id="resetStatsBtn" class="btn btn-accent btn-sm">↺ Reset thống kê</button></div>
-</section>
-
-<section class="panel">
-<h3 class="center">📋 Nhật ký tương tác & học heuristic</h3>
-<div class="small">Log ghi lại chỉnh sửa mẫu, nước đi user, nước đi solver, undo, import ảnh, mở ô ? và kết quả. Dữ liệu nằm local trên máy.</div>
-<div id="logSummary" class="status" style="margin-top:8px"></div>
-</section>
-
-<section class="panel">
-<h3 class="center">❓ Cơ chế ô ?</h3>
-<div class="small">Solver <b>không dừng chỉ vì trên bàn còn ô ?</b>. Nó tiếp tục xử lý tất cả lớp đã biết ở phía trên. Chỉ khi không còn nước đi nào dùng được mà ô ? đang là lớp trên cùng (tức ? thật sự chặn đường), Solver mới <b>tạm dừng</b>. Người dùng mở/cập nhật màu ? → bấm ⚡ Giải Local → Solver tiếp tục từ trạng thái mới.</div>
-<div class="footer" style="margin-top:10px">
-<button id="revealBtn" class="btn btn-warning">🔓 Cập nhật ô ? đang mở</button>
-</div>
-</section>
 </div>
 
 <div id="modal" class="modal">
@@ -1225,15 +1167,36 @@ const STATUS_PREFIX={ok:"✓",warn:"⚠",bad:"✗","":"·"};
 function setStatus(t,c=""){const e=$("status");if(e){e.className="status "+(c||"");const prefix=STATUS_PREFIX[c||""]||STATUS_PREFIX[""];e.innerHTML='<div class="status-icon">'+prefix+'</div><div class="status-content">'+t+"</div>"}}
 function saveHistory(){history.push(clone(tubes));if(history.length>100)history.shift();updateUndo()}
 function updateUndo(){$("undoBtn").disabled=history.length===0}
-function topValue(t){return t.length?t[t.length-1]:null}
-function topRun(t){
- if(!t.length)return 0;const c=topValue(t);let n=0;
- for(let i=t.length-1;i>=0&&t[i]===c;i--)n++;
- return n;
+function topValue(t){
+ // SPA FIX: sparse-aware — tìm ô trên cùng != null
+ for(let i=t.length-1;i>=0;i--) if(t[i]) return t[i];
+ return null;
 }
-function isComplete(t){return t.length===CAP&&t.every(x=>x&&x!=="unknown"&&x===t[0])}
-function isSolved(s){return s.every(t=>t.length===0||isComplete(t))}
-function hasTopUnknown(s){return s.some(t=>t.length&&topValue(t)==="unknown")}
+function topRun(t){
+ const c=topValue(t); if(!c) return 0;
+ let n=0;
+ for(let i=t.length-1;i>=0;i--){
+  if(!t[i]) continue; // gap không tính, dừng khi gặp null giữa?
+  if(t[i]!==c) break;
+  n++;
+  // nếu gặp gap null trước đó thì dừng
+  if(i>0 && !t[i-1]) break;
+ }
+ // đếm liên tiếp từ đỉnh xuống, bỏ qua null chèn
+ let cnt=0;
+ for(let i=t.length-1;i>=0;i--){
+  if(t[i]==null) continue;
+  if(t[i]===c) cnt++; else break;
+  // dừng khi gặp null xen giữa màu khác
+ }
+ return cnt;
+}
+function isComplete(t){
+ const clean=t.filter(Boolean);
+ return clean.length===CAP&&clean.every(x=>x!=="unknown"&&x===clean[0]);
+}
+function isSolved(s){return s.every(t=>{const c=t.filter(Boolean);return c.length===0||isComplete(t);})}
+function hasTopUnknown(s){return s.some(t=>topValue(t)==="unknown")}
 function isBlockedByUnknown(s){
   if(isSolved(s)) return false;
   const moves=legalMoves(s);
@@ -1248,20 +1211,25 @@ function isKnownProgressState(s){
 function validMove(s,from,to){
  if(from===to||from<0||to<0||from>=s.length||to>=s.length)return false;
  const a=s[from],b=s[to];
- if(!a.length||isComplete(a)||isComplete(b)||b.length===CAP)return false;
+ const aClean=a.filter(Boolean), bClean=b.filter(Boolean);
+ if(!aClean.length||isComplete(a)||isComplete(b)||bClean.length>=CAP)return false;
  const c=topValue(a);if(c==="unknown")return false;
- if(b.length&&topValue(b)!==c)return false;
+ if(bClean.length&&topValue(b)!==c)return false;
  return true;
 }
 function applyMove(s,from,to){
- const n=clone(s),a=n[from],b=n[to],count=Math.min(topRun(a),CAP-b.length);
- for(let i=0;i<count;i++)b.push(a.pop());
+ const n=clone(s);
+ // SPA FIX: normalize sparse -> dense trước khi move (compact gaps)
+ let a=n[from].filter(Boolean), b=n[to].filter(Boolean);
+ const count=Math.min(topRun(a),CAP-b.length);
+ for(let i=0;i<count;i++) b.push(a.pop());
+ n[from]=a; n[to]=b;
  return n;
 }
 function legalMoves(s){
  const out=[];
  for(let i=0;i<s.length;i++){
-  if(!s[i].length||isComplete(s[i]))continue;
+  if(!s[i].filter(Boolean).length||isComplete(s[i]))continue;
   for(let j=0;j<s.length;j++)if(validMove(s,i,j))out.push({from:i,to:j});
  }
  return out;
@@ -1554,18 +1522,22 @@ function renderAll(){renderPalette();renderBoard();updateUndo();renderSmartAnaly
 function setSlotValue(ti,li,id){
  if(isComplete(tubes[ti]))return;
  saveHistory();
- // SPA FIX 2026-09-25: gán trực tiếp theo index, không push null + filter gây lệch vị trí
+ // SPA FIX 2026-09-25: cho phép đặt tại ô chỉ định tùy ý (không bắt buộc từ dưới lên)
+ // Giữ sparse array với null = ô trống, không filter để giữ vị trí chỉ định
  while(tubes[ti].length <= li) tubes[ti].push(null);
  tubes[ti][li]=id;
- // loại bỏ null rỗng nhưng giữ vị trí: compact chỉ khi bottom thiếu
- tubes[ti]=tubes[ti].filter(x=>x!==null);
- // đảm bảo không vượt CAP và không để lỗ hổng giữa
  if(tubes[ti].length > CAP) tubes[ti]=tubes[ti].slice(0,CAP);
+ // Không tự compact — giữ gap để user thấy đúng ô đã đặt; solver sẽ normalize via filter(Boolean)
  selectedTube=-1;renderAll();
  checkNewUnknowns();
 }
 function setSlot(ti,li){
- if(selectedId==="erase"){if(tubes[ti][li]){saveHistory();logEvent("erase_slot",{tube:ti,layer:li});tubes[ti].splice(li,1);renderAll()}return}
+ if(selectedId==="erase"){
+  if(tubes[ti][li]){saveHistory();logEvent("erase_slot",{tube:ti,layer:li});tubes[ti][li]=null;renderAll()}
+  else if(tubes[ti].length>li){ // xóa cả gap
+    saveHistory();tubes[ti][li]=null;renderAll();
+  }
+  return}
  if(!selectedId)return;
  setSlotValue(ti,li,selectedId);
 }
