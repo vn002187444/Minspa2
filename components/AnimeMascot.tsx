@@ -123,14 +123,15 @@ export default function AnimeMascot() {
       >
         <Image
           src={src}
-          alt="Mascot"
-          width={0}
-          height={0}
-          sizes="220px"
+          alt="Mascot trang trí"
+          width={160}
+          height={220}
+          sizes="160px"
           className="max-h-[220px] w-auto h-auto animate-float pointer-events-none select-none"
           draggable={false}
-          unoptimized
-          priority
+          loading="lazy"
+          decoding="async"
+          fetchPriority="low"
         />
       </motion.div>
     </div>

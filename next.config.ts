@@ -13,6 +13,9 @@ const baseConfig: NextConfig = {
       bodySizeLimit: '10mb',
     },
   },
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -24,7 +27,7 @@ const baseConfig: NextConfig = {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [480, 768, 1024, 1280, 1600],
     imageSizes: [48, 80, 120, 192, 256],
-    minimumCacheTTL: 86400,
+    minimumCacheTTL: 2592000,
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'images.pexels.com' },

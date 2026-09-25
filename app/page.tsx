@@ -652,6 +652,18 @@ export default async function Home() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/about" className="inline-flex items-center gap-1.5 text-xs text-gray-300 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                    <span className="w-1 h-1 rounded-full bg-amber-500" />
+                    Giới thiệu Min Nail & Hair
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/faq" className="inline-flex items-center gap-1.5 text-xs text-gray-300 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
+                    <span className="w-1 h-1 rounded-full bg-amber-500" />
+                    Câu hỏi thường gặp
+                  </Link>
+                </li>
+                <li>
                   <Link href="/#services" className="inline-flex items-center gap-1.5 text-xs text-gray-300 hover:text-amber-300 py-1.5 hover:pl-1 transition-all">
                     <span className="w-1 h-1 rounded-full bg-amber-500" />
                     Bảng giá &amp; Dịch vụ spa

@@ -12,13 +12,16 @@ import { getBaseUrl } from '@/lib/env';
 
 export const revalidate = 60; // Revalidate every minute
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ page?: string }> }): Promise<Metadata> {
+  const { page: pageStr } = await searchParams;
+  const pageNum = parseInt(pageStr || '1', 10);
   const baseUrl = getBaseUrl();
+  const canonical = pageNum > 1 ? `${baseUrl}/blog?page=${pageNum}` : `${baseUrl}/blog`;
   return {
-    title: 'Cẩm nang Làm đẹp - Min Nail & Hair',
+    title: pageNum > 1 ? `Cẩm nang Làm đẹp - Trang ${pageNum} - Min Nail & Hair` : 'Cẩm nang Làm đẹp - Min Nail & Hair',
     description: 'Khám phá các bài viết về chăm sóc tóc, móng, massage body tại Min Nail & Hair. Bí quyết làm đẹp cho phái nữ.',
     keywords: 'gội đầu, nail, hair, massage, spa, làm đẹp, bí quyết làm đẹp, chăm sóc tóc, chăm sóc móng, thư giãn',
-    alternates: { canonical: `${baseUrl}/blog` },
+    alternates: { canonical },
     robots: { index: true, follow: true },
     openGraph: {
       title: 'Cẩm nang Làm đẹp - Min Nail & Hair',

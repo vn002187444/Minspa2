@@ -18,7 +18,8 @@ import { getSeoSettings } from "@/lib/seo";
 import { createClient } from "@/utils/supabase/server";
 import { testimonials } from "@/lib/testimonials";
 
-import AnimeMascot from "@/components/AnimeMascot";
+import dynamic from "next/dynamic";
+const AnimeMascot = dynamic(() => import("@/components/AnimeMascot"), { ssr: false, loading: () => null });
 
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
