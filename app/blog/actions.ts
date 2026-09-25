@@ -83,6 +83,23 @@ export async function saveBlogPost(postData: {
   const now = new Date().toISOString();
   const normalized = normalizeNFC(postData) as typeof postData;
 
+  // Validation heading: content phải có ít nhất 1 H2 (## ) — đồng bộ Auto SEO/kho (H1 là title)
+  const rawContent = String(normalized.content || '');
+  const isHtml = /<[a-z][\s\S]*>/i.test(rawContent);
+  const h2Count = isHtml
+    ? (rawContent.match(/<h2\b/gi) || []).length
+    : (rawContent.match(/^##\s+/gm) || []).length;
+  if (h2Count < 1) {
+    throw new Error('Nội dung thiếu H2 (## Tiêu đề). Vui lòng thêm ít nhất 1-3 H2 thuần text, mỗi H2/H3 cách nhau 1 dòng trống. H1 là tiêu đề bài viết, không dùng # trong nội dung.');
+  }
+  // Cấm H1 trong content (dù là markdown # hay <h1>)
+  if (!isHtml && /^#\s+/m.test(rawContent) && !/^##\s+/m.test(rawContent)) {
+    throw new Error('Cấm dùng "# " (H1) trong nội dung — H1 đã là tiêu đề. Chỉ dùng ## H2 và ### H3 thuần text.');
+  }
+  if (isHtml && /<h1\b/i.test(rawContent)) {
+    throw new Error('Cấm dùng <h1> trong nội dung — H1 đã là tiêu đề. Chỉ dùng <h2>/<h3>.');
+  }
+
   // Enforce GEO alt: not null, NFC, contains Lavita/Thủ Đức
   const enforcedAlt = normalized.image_alt?.trim()
     ? ensureGeoAlt(normalized.image_alt, normalized.title).normalize('NFC')

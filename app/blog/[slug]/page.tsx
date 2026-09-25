@@ -33,56 +33,130 @@ function inlineMarkdown(text: string): string {
   return t;
 }
 
+function stripHeadingBold(text: string): string {
+  // headings render đã bold via prose-h2/h3; bỏ ** bọc ngoài nếu AI thêm vào (ví dụ: ## **Tiêu đề:**)
+  return text.replace(/^\s*\*\*(.*?)\*\*\s*:?\s*$/, '$1').replace(/^\s*\*\*(.*?)\*\*\s*$/, '$1').trim();
+}
+
 function markdownToHtml(text: string): string {
   let html = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   // Escape HTML special chars (must be before markdown processing)
   html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // Insert blank lines before block elements that lack them:
-  //   inline headers (### or ## mid-paragraph), blockquotes, HRs
+  // Chuẩn hoá heading dính liền đoạn văn: "câu. ## Tiêu đề" -> "\n\n## Tiêu đề"
+  // và "câu. ### Tiêu đề" -> "\n\n### Tiêu đề" (bao gồm trường hợp thiếu space sau #)
   html = html
-    .replace(/([^\n])### /g, '$1\n\n### ')
-    .replace(/([^\n])## /g, '$1\n\n## ')
-    .replace(/([^\n])---+/g, '$1\n\n---')
-    .replace(/([^\n])> /g, '$1\n\n> ');
-  const blocks = html.split(/\n{2,}/);
-  return blocks
-    .map((block) => {
-      const t = block.trim();
-      if (!t) return '';
-      // Horizontal rule
-      if (/^---+\s*$/.test(t)) return '<hr/>';
-      // Blockquote
-      if (t.startsWith('> ')) {
-        const lines = t
-          .split('\n')
-          .map((l) => l.replace(/^>\s?/, ''))
-          .join('<br/>');
-        return `<blockquote><p>${lines}</p></blockquote>`;
+    .replace(/([^\n])\s*###\s+/g, '$1\n\n### ')
+    .replace(/([^\n])\s*##\s+/g, '$1\n\n## ')
+    .replace(/([^\n])\s*---+\s*/g, '$1\n\n---\n\n')
+    .replace(/([^\n])\s*>\s/g, '$1\n\n> ');
+  // Tách theo dòng để không nuốt H3/paragraph vào H2 khi thiếu blank line
+  const lines = html.split('\n');
+  const out: string[] = [];
+  let paraLines: string[] = [];
+  let listItems: string[] = [];
+  let listType: 'ul' | 'ol' | null = null;
+  let bqLines: string[] = [];
+
+  const flushPara = () => {
+    if (paraLines.length) {
+      const joined = paraLines.join(' ').trim();
+      if (joined) out.push(`<p>${inlineMarkdown(joined)}</p>`);
+      paraLines = [];
+    }
+  };
+  const flushList = () => {
+    if (listItems.length && listType) {
+      const tag = listType;
+      const items = listItems.map((l) => `<li>${inlineMarkdown(l)}</li>`).join('');
+      out.push(`<${tag}>${items}</${tag}>`);
+      listItems = [];
+      listType = null;
+    }
+  };
+  const flushBq = () => {
+    if (bqLines.length) {
+      const inner = bqLines.join('<br/>');
+      out.push(`<blockquote><p>${inlineMarkdown(inner)}</p></blockquote>`);
+      bqLines = [];
+    }
+  };
+
+  for (const raw of lines) {
+    const t = raw.trim();
+    if (!t) {
+      flushPara();
+      flushList();
+      flushBq();
+      continue;
+    }
+    if (/^---+\s*$/.test(t)) {
+      flushPara(); flushList(); flushBq();
+      out.push('<hr/>');
+      continue;
+    }
+    if (t.startsWith('> ')) {
+      flushPara(); flushList();
+      bqLines.push(t.replace(/^>\s?/, '').trim());
+      continue;
+    }
+    if (t.startsWith('>')) {
+      flushPara(); flushList();
+      bqLines.push(t.replace(/^>\s?/, '').trim());
+      continue;
+    }
+    // headings - must be at line start after trim
+    if (t.startsWith('### ')) {
+      flushPara(); flushList(); flushBq();
+      const inner = stripHeadingBold(t.replace(/^###\s+/, ''));
+      out.push(`<h3>${inlineMarkdown(inner)}</h3>`);
+      continue;
+    }
+    if (t.startsWith('## ')) {
+      flushPara(); flushList(); flushBq();
+      const inner = stripHeadingBold(t.replace(/^##\s+/, ''));
+      out.push(`<h2>${inlineMarkdown(inner)}</h2>`);
+      continue;
+    }
+    // fallback: line starts with single # (AI lỡ dùng H1) -> treat as H2
+    if (t.startsWith('# ')) {
+      flushPara(); flushList(); flushBq();
+      const inner = stripHeadingBold(t.replace(/^#\s+/, ''));
+      out.push(`<h2>${inlineMarkdown(inner)}</h2>`);
+      continue;
+    }
+    if (/^[\*\-]\s/.test(t)) {
+      flushPara(); flushBq();
+      if (listType !== 'ul') { flushList(); listType = 'ul'; }
+      listItems.push(t.replace(/^[\*\-]\s+/, '').trim());
+      continue;
+    }
+    if (/^\d+\.\s/.test(t)) {
+      flushPara(); flushBq();
+      if (listType !== 'ol') { flushList(); listType = 'ol'; }
+      listItems.push(t.replace(/^\d+\.\s+/, '').trim());
+      continue;
+    }
+    // raw inline ## without newline already normalized above, but safety: strip stray ## at line start inside para
+    if (t.includes('## ') || t.includes('### ')) {
+      // already handled via newline insert, but if still stuck, split
+      flushPara();
+      const parts = t.split(/(?=##\s|###\s)/);
+      for (const part of parts) {
+        const pt = part.trim();
+        if (pt.startsWith('### ')) out.push(`<h3>${inlineMarkdown(stripHeadingBold(pt.replace(/^###\s+/, '')))}</h3>`);
+        else if (pt.startsWith('## ')) out.push(`<h2>${inlineMarkdown(stripHeadingBold(pt.replace(/^##\s+/, '')))}</h2>`);
+        else if (pt) paraLines.push(pt);
       }
-      // Unordered list
-      if (/^[\*\-]\s/.test(t)) {
-        const items = t
-          .split('\n')
-          .map((l) => `<li>${inlineMarkdown(l.replace(/^[\*\-]\s+/, ''))}</li>`)
-          .join('');
-        return `<ul>${items}</ul>`;
-      }
-      // Ordered list
-      if (/^\d+\.\s/.test(t)) {
-        const items = t
-          .split('\n')
-          .map((l) => `<li>${inlineMarkdown(l.replace(/^\d+\.\s+/, ''))}</li>`)
-          .join('');
-        return `<ol>${items}</ol>`;
-      }
-      // Headings
-      if (t.startsWith('## ')) return `<h2>${inlineMarkdown(t.replace(/^##\s+/, ''))}</h2>`;
-      if (t.startsWith('### ')) return `<h3>${inlineMarkdown(t.replace(/^###\s+/, ''))}</h3>`;
-      // Regular paragraph
-      return `<p>${inlineMarkdown(t)}</p>`;
-    })
-    .filter(Boolean)
-    .join('\n');
+      flushPara();
+      continue;
+    }
+    // normal text -> accumulate as paragraph
+    if (bqLines.length) flushBq();
+    if (listItems.length) flushList();
+    paraLines.push(t);
+  }
+  flushPara(); flushList(); flushBq();
+  return out.filter(Boolean).join('\n');
 }
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';

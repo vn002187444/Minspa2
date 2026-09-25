@@ -173,6 +173,32 @@ export async function deleteSeoArticle(id: string) {
   }
 }
 
+function normalizeSeoContentForPublish(raw: string): string {
+  let out = raw.replace(/\r/g, '').trim().normalize('NFC');
+  out = out.replace(/([^\n])\s*##\s+/g, '$1\n\n## ');
+  out = out.replace(/([^\n])\s*###\s+/g, '$1\n\n### ');
+  out = out.replace(/^#\s+(.*)$/gm, '## $1');
+  out = out.replace(/^##\s*\*\*(.*?)\*\*\s*$/gm, '## $1');
+  out = out.replace(/^###\s*\*\*(.*?)\*\*\s*$/gm, '### $1');
+  out = out.replace(/^##\s*\*\*(.*?)\*\*:?\s*$/gm, '## $1');
+  out = out.replace(/^###\s*\*\*(.*?)\*\*:?\s*$/gm, '### $1');
+  // đảm bảo >=3 H2, không H3 trước H2
+  const h2Count = (out.match(/^##\s+/gm) || []).length;
+  if (/^###\s/m.test(out) && !/^##\s/m.test(out.split(/^###\s/m)[0])) {
+    out = out.replace(/^###\s+/m, '## ');
+  }
+  if (h2Count < 3) {
+    const need = 3 - h2Count;
+    const fb = ['## Mẹo chăm sóc sau dịch vụ tại Lavita Charm','## Câu hỏi thường gặp','## Tại sao chọn Min Nail & Hair Thủ Đức'];
+    for (let i=0;i<need;i++) out += `\n\n${fb[i%fb.length]}\nTrải nghiệm tại Min Nail & Hair Lavita Charm Thủ Đức giúp duy trì hiệu quả lâu dài. Đặt lịch tại [đặt lịch ngay](/booking) để được tư vấn.\n`;
+  }
+  if ((out.match(/Lavita Charm|Thủ Đức|Trường Thọ/g)||[]).length < 2) {
+    out += '\n\n> Tip: Dịch vụ có tại Min Nail & Hair — Chung cư Lavita Charm, Trường Thọ, Thủ Đức. Hotline 0934 323 878.\n';
+  }
+  if (!out.includes('/booking')) out += '\n\n## Đặt lịch ngay hôm nay\nĐừng bỏ lỡ ưu đãi — [đặt lịch ngay](/booking) hoặc gọi 0934 323 878.';
+  return out.normalize('NFC').trim();
+}
+
 export async function publishSeoArticleToBlog(
   articleText: string,
   imageUrl: string,
@@ -183,14 +209,16 @@ export async function publishSeoArticleToBlog(
     throw new Error('Unauthorized');
   }
 
+  // Chuẩn hoá content trước khi trích title/summary/slug (đồng bộ Auto SEO)
+  const normalizedArticle = normalizeSeoContentForPublish(articleText);
+
   const title = options?.title
-    || (articleText.match(/^#\s+(.+)/m)?.[1]?.trim())
-    || articleText.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
-    || articleText.split('\n')[0].replace(/^#+\s*/, '').trim().substring(0, 100)
+    || normalizedArticle.split('\n').find(l => l.trim().startsWith('## '))?.replace(/^##\s+/, '').replace(/\*\*/g,'').trim()
+    || normalizedArticle.split('\n')[0].replace(/^#+\s*/, '').replace(/\*\*/g,'').trim().substring(0, 100)
     || 'Bài viết SEO';
 
-  const firstParagraph = articleText.replace(/^#\s+.+\n*/m, '').match(/^(.+?)(?:\n\n|$)/m);
-  const summary = firstParagraph ? firstParagraph[1].replace(/\*\*/g, '').trim().substring(0, 300) : title;
+  const firstParagraph = normalizedArticle.replace(/^##\s+.+\n*/m, '').match(/^(.+?)(?:\n\n|$)/m);
+  const summary = firstParagraph ? firstParagraph[1].replace(/\*\*/g, '').trim().substring(0, 160) : title.slice(0,160);
 
   const slugify = (text: string) => text
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -223,7 +251,7 @@ export async function publishSeoArticleToBlog(
   const now = new Date().toISOString();
   const ncTitle = normalizeNFC(title);
   const ncSummary = normalizeNFC(summary);
-  const ncContent = normalizeNFC(articleText);
+  const ncContent = normalizeNFC(normalizedArticle);
   const ncKeywords = normalizeNFC(options?.keywords || '');
   const ncImageAlt = normalizeNFC(options?.image_alt || ncTitle.substring(0, 100));
   const { error } = await supabase.from('blogs').insert({

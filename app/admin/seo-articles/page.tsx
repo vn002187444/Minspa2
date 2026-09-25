@@ -159,8 +159,8 @@ export default function AdminSeoArticlesPage() {
   };
 
   const handlePublishToBlog = async (article: any) => {
-    const suggestedTitle = article.article.match(/^#\s+(.+)/m)?.[1]?.trim()
-      || article.article.split('\n').find((l: string) => l.trim().startsWith('## '))?.replace(/^##\s+/, '').trim()
+    const suggestedTitle = article.article.split('\n').find((l: string) => l.trim().startsWith('## '))?.replace(/^##\s+/, '').replace(/\*\*/g,'').trim()
+      || article.article.split('\n').find((l: string) => l.trim().startsWith('### '))?.replace(/^###\s+/, '').replace(/\*\*/g,'').trim()
       || article.topic
       || 'Bài viết SEO';
     const suggestedSlug = suggestedTitle
@@ -299,9 +299,20 @@ export default function AdminSeoArticlesPage() {
 
               <div className="space-y-1.5">
                 <label className="block font-black text-stone-700 tracking-wide uppercase">Nội dung (Markdown) <span className="text-rose-500">*</span></label>
+                <p className="text-[10px] text-stone-500 font-medium">H1 là Chủ đề/Tiêu đề ở trên. Trong nội dung chỉ dùng <code className="bg-stone-100 px-1 rounded">## H2 thuần text</code> và <code className="bg-stone-100 px-1 rounded">### H3 thuần text</code> (không **, không #). Mỗi heading/đoạn cách nhau 1 dòng trống.</p>
                 <textarea value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder={`# Tiêu đề bài viết\n\nNội dung...\n\n## Tiêu đề phụ\n- Mục 1\n- Mục 2`}
+                  placeholder={`Đoạn sapo mở đầu 2-3 câu tóm tắt lợi ích + Lavita Charm/Thủ Đức (không heading)...
+
+## Tiêu đề H2 đầu tiên
+Nội dung đoạn...
+
+### Tiêu đề H3 con
+Nội dung chi tiết...
+
+## Tiêu đề H2 thứ hai
+- Mục 1
+- Mục 2`}
                   rows={16}
                   required
                   className="w-full bg-[#FAF6F0] border-2 border-[#EADDCD] rounded-3xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-[#8D6E53]/50 text-stone-900 font-medium text-sm leading-relaxed font-mono"
@@ -343,9 +354,9 @@ export default function AdminSeoArticlesPage() {
             </div>
             <div className="text-[11px] text-stone-600 font-medium space-y-3 leading-relaxed">
               <p>Viết nội dung bằng Markdown để dễ dàng xuất bản lên Blog.</p>
-              <p>Sử dụng <code className="bg-stone-100 px-1 rounded"># Tiêu đề</code> cho H1, <code className="bg-stone-100 px-1 rounded">## Tiêu đề</code> cho H2.</p>
-              <p>Thêm từ khóa chính vào tiêu đề và rải đều trong nội dung.</p>
-              <p>Sau khi lưu, bạn có thể đăng bài viết lên Blog bằng nút <strong>Đăng Blog</strong> ở danh sách bên dưới.</p>
+              <p>H1 là <strong>Chủ đề</strong> ở trên. Trong nội dung chỉ dùng <code className="bg-stone-100 px-1 rounded">## H2 thuần text</code> và <code className="bg-stone-100 px-1 rounded">### H3 thuần text</code> (không bọc **, không dùng #).</p>
+              <p>Mỗi heading/paragraph/list cách nhau 1 dòng trống. Rải 2-3 backlink nội bộ <code className="bg-stone-100 px-1 rounded">[anchor](/dich-vu/slug)</code> và nhắc Lavita Charm/Thủ Đức 2-3 lần.</p>
+              <p>Sau khi lưu, bấm <strong>Đăng Blog</strong> — hệ thống tự chuẩn hoá H2/H3, backlink và CTA /booking trước khi đăng.</p>
             </div>
           </div>
         </div>

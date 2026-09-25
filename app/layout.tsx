@@ -48,6 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
     manifest: "/manifest.json",
     alternates: { canonical: baseUrl, languages },
     icons: { apple: { url: "/icons/icon-192.png", sizes: "192x192" } },
+    verification: { google: "5-bbSHXym4o0TiGGyyXltU9Wr3B9SqPa4gqeeTREh-o" },
     openGraph: {
       type: "website",
       locale: "vi_VN",

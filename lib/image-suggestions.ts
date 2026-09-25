@@ -53,6 +53,8 @@ const FACIAL: ImageEntry[] = [
   { url: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=800&auto=format&fit=crop', alt: 'Chăm sóc da mặt công nghệ cao tại Thủ Đức' },
   { url: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=800&auto=format&fit=crop', alt: 'Massage mặt thư giãn và trẻ hóa làn da' },
   { url: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?w=800&auto=format&fit=crop', alt: 'Dưỡng da collagen cho da săn chắc đàn hồi' },
+  { url: 'https://images.unsplash.com/photo-1552693673-1bf958298935?w=800&auto=format&fit=crop', alt: 'Chăm sóc da mặt thảo dược tại Min Spa Thủ Đức' },
+  { url: 'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=800&auto=format&fit=crop', alt: 'Liệu trình facial trẻ hóa tại Lavita Charm' },
 ]
 
 const MAKEUP: ImageEntry[] = [
@@ -69,6 +71,8 @@ const GENERAL: ImageEntry[] = [
   { url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop', alt: 'Dịch vụ làm đẹp toàn diện tại Min Nail & Hair' },
   { url: 'https://images.unsplash.com/photo-1600334089648-b0d9d3028eb2?w=800&auto=format&fit=crop', alt: 'Quy trình làm đẹp chuẩn salon chuyên nghiệp' },
   { url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=800&auto=format&fit=crop', alt: 'Sản phẩm chăm sóc sắc đẹp thiên nhiên' },
+  { url: 'https://images.unsplash.com/photo-1522335789208-94e3d8b9a5b6?w=800&auto=format&fit=crop', alt: 'Không gian làm đẹp thư giãn tại Lavita Charm' },
+  { url: 'https://images.unsplash.com/photo-1515688594390-b649af70d282?w=800&auto=format&fit=crop', alt: 'Dịch vụ chăm sóc sắc đẹp tổng hợp' },
 ]
 
 const TOPIC_CATEGORIES: [RegExp, ImageEntry[]][] = [
@@ -80,17 +84,49 @@ const TOPIC_CATEGORIES: [RegExp, ImageEntry[]][] = [
   [/trang điểm|makeup|make up|mỹ phẩm|son môi|cô dâu|dự tiệc/gi, MAKEUP],
 ]
 
+function normalizeId(url: string): string {
+  const m = url.match(/photo-[a-f0-9-]+/i)
+  if (m) return m[0].toLowerCase()
+  return url.split('?')[0].toLowerCase()
+}
+
 function shufflePick<T>(arr: T[], count: number): T[] {
   const shuffled = [...arr].sort(() => Math.random() - 0.5)
   return shuffled.slice(0, count)
 }
 
-export function getSuggestedImages(topic: string, count = 4): { images: string[]; imageAlts: string[] } {
+function filterByUsed(pool: ImageEntry[], used?: Set<string>): ImageEntry[] {
+  if (!used || used.size === 0) return pool
+  return pool.filter(e => {
+    const id = normalizeId(e.url)
+    const base = e.url.split('?')[0].toLowerCase()
+    return !used.has(id) && !used.has(base)
+  })
+}
+
+export function getSuggestedImages(topic: string, count = 4, used?: Set<string>): { images: string[]; imageAlts: string[] } {
   const lower = topic.toLowerCase()
 
   for (const [regex, pool] of TOPIC_CATEGORIES) {
     if (regex.test(lower)) {
-      const picked = shufflePick(pool, count)
+      let candidates = filterByUsed(pool, used)
+      // nếu lọc xong không đủ, bổ sung từ pool gốc đã dedup
+      if (candidates.length < count) {
+        const remaining = pool.filter(e => !candidates.includes(e))
+        const dedupedRemaining = remaining.filter(e => !candidates.some(c => normalizeId(c.url) === normalizeId(e.url)))
+        candidates = [...candidates, ...shufflePick(dedupedRemaining, count - candidates.length)]
+      }
+      if (candidates.length < count) {
+        // vẫn thiếu thì lấy từ GENERAL chưa dùng
+        const generalUnused = filterByUsed(GENERAL, used).filter(g => !candidates.some(c => normalizeId(c.url) === normalizeId(g.url)))
+        candidates = [...candidates, ...shufflePick(generalUnused, count - candidates.length)]
+      }
+      const picked = shufflePick(candidates, Math.min(count, candidates.length))
+      // nếu vẫn thiếu do pool nhỏ, cho phép lặp nhưng đã cố gắng tránh
+      if (picked.length < count) {
+        const extra = shufflePick(pool, count - picked.length)
+        picked.push(...extra)
+      }
       return {
         images: picked.map(e => e.url),
         imageAlts: picked.map(e => e.alt),
@@ -98,7 +134,12 @@ export function getSuggestedImages(topic: string, count = 4): { images: string[]
     }
   }
 
-  const picked = shufflePick(GENERAL, count)
+  let candidates = filterByUsed(GENERAL, used)
+  if (candidates.length < count) {
+    const remaining = GENERAL.filter(e => !candidates.includes(e))
+    candidates = [...candidates, ...shufflePick(remaining, count - candidates.length)]
+  }
+  const picked = shufflePick(candidates, Math.min(count, candidates.length))
   return {
     images: picked.map(e => e.url),
     imageAlts: picked.map(e => e.alt),

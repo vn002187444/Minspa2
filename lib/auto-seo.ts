@@ -8,34 +8,49 @@ import { ensureGeoAlt, generateBlogImageAlt } from '@/lib/image-alt';
 const ARTICLE_SYSTEM = `Bạn là chuyên gia Copywriter SEO hàng đầu trong ngành làm đẹp, Spa, Hair và Nail tại Việt Nam.
 
 QUY TẮC BẮT BUỘC — Bài viết phải đạt chuẩn SEO, GEO, AEO:
+
+1. NGÔN NGỮ & JSON:
 - Chỉ viết về chăm sóc sắc đẹp, không tư vấn y tế.
 - Luôn trả về JSON đúng schema yêu cầu.
-- Giọng văn thân thiện, chuyên nghiệp, tự nhiên. Tiếng Việt có dấu đầy đủ (NFC).
-- CẤU TRÚC HEADING CHUẨN:
-  • H1 là \`title\` (không lặp lại H1 trong content).
-  • Content phải có tối thiểu 3 thẻ H2 (## ) và mỗi H2 nên có 1-2 thẻ H3 (### ) con khi phù hợp.
-  • Thứ tự H1 -> H2 -> H3, không nhảy cấp (không H3 trước H2).
-  • Mỗi H2 là một ý lớn (ví dụ: Lợi ích, Quy trình, Chăm sóc sau, FAQ); mỗi H3 là chi tiết con.
-- BỐ CỤC ĐẸP MẮT, RÕ RÀNG:
-  • Mở đầu bằng đoạn sapo 2-3 câu (không heading) tóm tắt lợi ích + địa phương Lavita Charm/Thủ Đức.
-  • Xen bullet/numbered list, blockquote tip, bảng so sánh ngắn nếu hợp lý.
-  • Kết bài có CTA đặt lịch: link tới /booking và hotline 0934 323 878.
-  • Độ dài 800-1200 từ, đoạn ngắn 2-3 câu, dễ đọc trên mobile.
-- REVIEW WEBSITE TRƯỚC KHI VIẾT:
-  • Đã được cung cấp danh sách dịch vụ thật của Min Nail & Hair và các bài blog gần đây — hãy tham chiếu đúng tên dịch vụ, giá, thời lượng khi liên quan, tránh bịa dịch vụ không tồn tại.
-  • Ưu tiên gắn địa phương: "Lavita Charm", "Thủ Đức", "Trường Thọ" tự nhiên trong bài (2-3 lần).
-- BACKLINK NỘI BỘ TỰ ĐỘNG:
-  • Trong content, chèn 2-3 link nội bộ dạng Markdown [anchor](/dich-vu/slug) hoặc [anchor](/blog/slug) trỏ tới dịch vụ/bài viết liên quan được cung cấp.
-  • Anchor tự nhiên, chứa từ khóa (ví dụ: [gội dưỡng sinh thảo dược](/dich-vu/goi-duong-sinh-thao-duoc)).
-  • Không chèn link gãy; chỉ dùng slug đã cho.
-- GEO/AEO: trả lời trực tiếp câu hỏi người dùng trong 40-60 từ đầu mỗi H2 để AI Overviews trích dẫn được.`;
+- Tiếng Việt có dấu đầy đủ (NFC), giọng văn thân thiện, chuyên nghiệp, tự nhiên.
+
+2. CẤU TRÚC HEADING (TUYỆT ĐỐI TUÂN THỦ):
+- H1 là \`title\` (KHÔNG BAO GIỜ viết H1 trong content, cấm dùng "# ").
+- Content CHỈ dùng H2 (## ) và H3 (### ). Cấm H1, H4+.
+- Tiêu đề H2/H3 viết THUẦN TEXT, KHÔNG bọc **bold** (ví dụ đúng: "## Lợi ích nổi bật", sai: "## **Lợi ích nổi bật**").
+- Mỗi H2 và H3 phải nằm trên DÒNG RIÊNG, TRƯỚC và SAU đều có 1 dòng trống (\\n\\n).
+- Tối thiểu 3 H2, mỗi H2 nên có 1-2 H3 con khi phù hợp. Thứ tự H1 -> H2 -> H3, không nhảy cấp.
+- Mỗi đoạn (paragraph, heading, list, blockquote) cách nhau 1 dòng trống.
+
+3. BỐ CỤC AEO/GEO:
+- Mở đầu bằng sapo 2-3 câu (KHÔNG heading) tóm tắt lợi ích + địa phương Lavita Charm/Thủ Đức (2-3 lần rải tự nhiên).
+- 40-60 từ ĐẦU TIÊN của mỗi H2 phải trả lời TRỰC TIẾP câu hỏi người dùng (để Google AI Overviews trích dẫn). Dùng câu khẳng định ngắn gọn.
+- Mỗi H2 là một ý lớn (Lợi ích, Quy trình, Chăm sóc sau, FAQ); mỗi H3 là chi tiết con.
+- Xen bullet/numbered list, blockquote tip khi liệt kê 3+ mục. Đoạn ngắn 2-3 câu, dễ đọc mobile.
+- Độ dài 800-1200 từ.
+- Kết bài có CTA đặt lịch: link tới /booking và hotline 0934 323 878.
+
+4. E-E-A-T & REVIEW WEBSITE:
+- Đã cung cấp danh sách dịch vụ thật và bài blog gần đây — chỉ tham chiếu đúng tên dịch vụ, giá, thời lượng; không bịa dịch vụ.
+- Ưu tiên gắn địa phương "Lavita Charm", "Thủ Đức", "Trường Thọ" tự nhiên.
+
+5. BACKLINK NỘI BỘ (BẮT BUỘC):
+- Chèn 2-3 link nội bộ dạng Markdown [anchor text tự nhiên](/dich-vu/slug) hoặc [anchor](/blog/slug) trỏ tới slug ĐÃ CHO.
+- Anchor chứa từ khóa tự nhiên (ví dụ: [gội dưỡng sinh thảo dược](/dich-vu/goi-duong-sinh-thao-duoc)).
+- Rải đều: 1 link trong nửa đầu bài, 1 link nửa sau. Không dồn cuối bài.
+- Không chèn link gãy, không dùng URL tuyệt đối, chỉ dùng slug đã cho.
+
+6. ĐỊNH DẠNG MARKDOWN NGHIÊM NGẶT:
+- ĐÚNG: "## Tiêu đề H2" + dòng trống + "Nội dung..."
+- SAI: "câu. ## Tiêu đề" (dính liền), "## **Tiêu đề**" (bold trong heading), "# Tiêu đề" (H1 cấm).
+- List: "- Mục" mỗi mục 1 dòng, trước list có dòng trống.`;
 
 const ARTICLE_SCHEMA = {
   type: 'object',
   properties: {
-    title: { type: 'string', description: 'Tiêu đề bài viết, tối đa 70 ký tự, chứa từ khóa chính, là H1' },
-    metaDescription: { type: 'string', description: 'Thẻ mô tả ngắn gọn, tối đa 160 ký tự, chứa từ khóa + địa phương' },
-    content: { type: 'string', description: 'Nội dung Markdown chuẩn SEO: mở sapo không heading, >=3 H2 (## ), mỗi H2 có 1-2 H3 (### ), bullet/blockquote, 2-3 backlink nội bộ [anchor](/dich-vu/slug) hoặc /blog/slug, kết CTA /booking' },
+    title: { type: 'string', description: 'Tiêu đề H1, tối đa 70 ký tự, chứa từ khóa chính + địa phương Thủ Đức/Lavita Charm nếu hợp lý' },
+    metaDescription: { type: 'string', description: 'Thẻ mô tả 140-160 ký tự, chứa từ khóa chính + địa phương + CTA nhẹ' },
+    content: { type: 'string', description: 'Markdown NGHIÊM NGẶT: sapo 2-3 câu không heading; >=3 H2 (## Thuần text, không **), mỗi H2 có 1-2 H3 (### Thuần text); mỗi heading/list/paragraph cách nhau 1 dòng trống; cấm # (H1); 2-3 backlink [anchor](/dich-vu/slug) hoặc /blog/slug rải đều; kết CTA /booking + hotline 0934 323 878; 800-1200 từ' },
   },
   required: ['title', 'metaDescription', 'content'],
 };
@@ -168,38 +183,107 @@ async function getSiteContextForArticle(): Promise<{ services: string; blogs: st
 }
 
 function ensureHeadingStructureAndBacklinks(content: string, title: string, siteLinks: string[]): string {
-  let out = content.trim();
-  // Đảm bảo không có H1 trong content (title đã là H1)
-  out = out.replace(/^#\s+.*$/gm, (m) => m.replace(/^#\s+/, '## '));
-  // Đếm H2
+  let out = content.replace(/\r/g, '').trim().normalize('NFC');
+
+  // 1. Tách heading dính liền đoạn văn: "câu. ## Tiêu đề" -> "câu.\n\n## Tiêu đề"
+  out = out.replace(/([^\n])\s*##\s+/g, '$1\n\n## ');
+  out = out.replace(/([^\n])\s*###\s+/g, '$1\n\n### ');
+  // 2. Chuẩn hoá H1 -> H2 (title đã là H1, cấm H1 trong content)
+  out = out.replace(/^#\s+(.*)$/gm, '## $1');
+  // 3. Bỏ ** bold bọc ngoài heading (heading đã bold via prose-h2/h3)
+  out = out.replace(/^##\s*\*\*(.*?)\*\*\s*$/gm, '## $1');
+  out = out.replace(/^###\s*\*\*(.*?)\*\*\s*$/gm, '### $1');
+  out = out.replace(/^##\s*\*\*(.*?)\*\*:?\s*$/gm, '## $1');
+  out = out.replace(/^###\s*\*\*(.*?)\*\*:?\s*$/gm, '### $1');
+  // 4. Đảm bảo mỗi heading/list/paragraph có dòng trống ngăn cách (đã tách ở bước 1, cộng thêm chuẩn hoá list)
+  out = out.replace(/([^\n])\n([-*]\s)/g, '$1\n\n$2');
+  out = out.replace(/([^\n])\n(\d+\.\s)/g, '$1\n\n$2');
+  out = out.replace(/([^\n])\n(>\s)/g, '$1\n\n$2');
+
+  // 5. Đảm bảo >=3 H2, hierarchically correct (không H3 trước H2)
   const h2Count = (out.match(/^##\s+/gm) || []).length;
+  const hasH3BeforeH2 = /^###\s/m.test(out) && !/^##\s/m.test(out.split(/^###\s/m)[0]);
+  if (hasH3BeforeH2) {
+    out = out.replace(/^###\s+/m, '## ');
+  }
   if (h2Count < 3) {
-    out += '\n\n## Mẹo chăm sóc sau dịch vụ\nTrải nghiệm tại Min Nail & Hair Lavita Charm Thủ Đức giúp duy trì hiệu quả lâu dài. Đặt lịch tại [/booking](/booking) để được tư vấn chi tiết.\n';
+    const needed = 3 - h2Count;
+    const fallbacks = [
+      '## Mẹo chăm sóc sau dịch vụ tại Lavita Charm',
+      '## Câu hỏi thường gặp',
+      '## Tại sao chọn Min Nail & Hair Thủ Đức',
+    ];
+    for (let i = 0; i < needed; i++) {
+      out += `\n\n${fallbacks[i % fallbacks.length]}\nTrải nghiệm tại Min Nail & Hair Lavita Charm Thủ Đức giúp duy trì hiệu quả lâu dài. Đặt lịch tại [đặt lịch ngay](/booking) để được tư vấn chi tiết.\n`;
+    }
   }
-  // Tự chèn backlink nếu AI chưa chèn đủ 2 link nội bộ
-  const linkCount = (out.match(/\[.*?\]\(.*?\)/g) || []).filter(m => m.includes('/dich-vu/') || m.includes('/blog/')).length;
-  if (linkCount < 2 && siteLinks.length) {
-    const picks = siteLinks.slice(0, 2 - linkCount);
-    out += '\n\n' + picks.map(l => `> Gợi ý: Xem thêm [dịch vụ liên quan](${l}) tại Min Nail & Hair.`).join('\n');
+  // 6. GEO: đảm bảo có 2-3 lần nhắc Lavita Charm/Thủ Đức
+  const geoCount = (out.match(/Lavita Charm|Thủ Đức|Trường Thọ/g) || []).length;
+  if (geoCount < 2) {
+    out += '\n\n> Tip: Dịch vụ có tại Min Nail & Hair — Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức. Hotline 0934 323 878.\n';
   }
-  // Chuẩn NFC + trim
+  // 7. Backlink: đếm cả /dich-vu/, /blog/, /booking (CTA cũng tính nhưng ưu tiên dịch vụ/blog)
+  const allLinks = out.match(/\[.*?\]\(.*?\)/g) || [];
+  const internalCount = allLinks.filter(m => m.includes('/dich-vu/') || m.includes('/blog/')).length;
+  if (internalCount < 2 && siteLinks.length) {
+    const picks = siteLinks.slice(0, 2 - internalCount);
+    // Rải đều: chèn sau H2 đầu tiên và cuối bài thay vì dồn cuối
+    const firstH2Idx = out.indexOf('\n## ');
+    if (firstH2Idx !== -1 && picks.length) {
+      const before = out.slice(0, firstH2Idx);
+      const after = out.slice(firstH2Idx);
+      // chèn 1 link sau đoạn sapo/first H2 block
+      const nextBlockEnd = after.indexOf('\n\n');
+      if (nextBlockEnd !== -1) {
+        out = before + after.slice(0, nextBlockEnd) + `\n\n> Gợi ý: Xem thêm [dịch vụ liên quan](${picks[0]}) tại Min Nail & Hair.` + after.slice(nextBlockEnd);
+        if (picks[1]) out += `\n\n> Gợi ý: Khám phá thêm [bài viết liên quan](${picks[1]}) để hiểu rõ hơn.`;
+      } else {
+        out += '\n\n' + picks.map(l => `> Gợi ý: Xem thêm [dịch vụ liên quan](${l}) tại Min Nail & Hair.`).join('\n');
+      }
+    } else {
+      out += '\n\n' + picks.map(l => `> Gợi ý: Xem thêm [dịch vụ liên quan](${l}) tại Min Nail & Hair.`).join('\n');
+    }
+  }
+  // 8. Đảm bảo kết bài có CTA /booking
+  if (!out.includes('/booking')) {
+    out += '\n\n## Đặt lịch ngay hôm nay\nĐừng bỏ lỡ ưu đãi — [đặt lịch ngay](/booking) hoặc gọi hotline 0934 323 878 để giữ chỗ tại Min Nail & Hair Lavita Charm Thủ Đức.';
+  }
   return out.normalize('NFC').trim();
 }
 
 export async function generateArticle(topic: string, keywords: string[]): Promise<{ title: string; content: string; summary: string } | null> {
   const site = await getSiteContextForArticle();
   const prompt = `Viết bài SEO về chủ đề: "${topic}"
+Từ khóa chính: "${topic}"
 Từ khóa phụ: "${keywords.join(', ') || 'Không có'}"
 Địa điểm: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức.
-Thương hiệu: Min Nail & Hair
+Thương hiệu: Min Nail & Hair — Hotline 0934 323 878 — /booking
 ---
-REVIEW WEBSITE — Dịch vụ thật đang có (dùng để viết chính xác + tạo backlink):
+REVIEW WEBSITE — Dịch vụ thật đang có (BẮT BUỘC dùng slug chính xác để tạo backlink, không bịa):
 ${site.services}
 ---
-Bài blog gần đây (dùng để backlink nội bộ nếu liên quan):
+Bài blog gần đây (dùng để backlink nội bộ nếu liên quan, chỉ dùng slug đã cho):
 ${site.blogs}
 ---
-Yêu cầu: Content Markdown phải có sapo mở đầu, >=3 H2, mỗi H2 có 1-2 H3, bullet/quote, 2-3 backlink nội bộ tới /dich-vu/slug hoặc /blog/slug ở trên, kết CTA tới /booking.`;
+YÊU CẦU OUTPUT (TUÂN THỦ NGHIÊM NGẶT):
+- title: H1, <=70 ký tự, chứa từ khóa chính.
+- metaDescription: 140-160 ký tự, chứa từ khóa + địa phương + CTA.
+- content: Markdown CHUẨN:
+  • Dòng 1-3: sapo 2-3 câu (KHÔNG heading), tóm tắt lợi ích + Lavita Charm/Thủ Đức.
+  • Sau sapo là dòng trống, rồi "## H2 thuần text" (không **), dòng trống, 40-60 từ trả lời trực tiếp câu hỏi H2, rồi nội dung.
+  • Mỗi H2 (tối thiểu 3) có 1-2 H3 con (### thuần text). Mỗi heading/list/paragraph đều cách nhau 1 dòng trống.
+  • CẤM "# " (H1) trong content, CẤM "**" bọc heading.
+  • Rải 2-3 backlink [anchor tự nhiên](/dich-vu/slug) hoặc /blog/slug đã cho (1 link nửa đầu, 1 link nửa sau).
+  • Kết bài: CTA [đặt lịch ngay](/booking) + hotline.
+  • Ví dụ cấu trúc đúng:
+    Sapo đoạn mở...
+
+    ## Lợi ích nổi bật
+    Câu trả lời trực tiếp 40-60 từ...
+
+    ### Chi tiết 1
+    Nội dung...
+`;
 
   const result = await callGemini({
     systemInstruction: ARTICLE_SYSTEM,
