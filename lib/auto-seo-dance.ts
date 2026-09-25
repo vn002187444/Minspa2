@@ -158,11 +158,23 @@ Thương hiệu: Min Dance Studio — Lavita Charm, Đường số 1, Trường 
 Bài blog gần đây để backlink (nếu liên quan):
 ${blogCtx}
 Yêu cầu: sapo 2-3 câu không heading (có Lavita Charm/Thủ Đức), >=3 H2 thuần text, mỗi H2 1-2 H3, 2-3 link /blog/slug nếu liên quan, CTA /booking.`
+  const minStudioLinks = [
+    `${MINSTUDIO_BASE}/courses`,
+    `${MINSTUDIO_BASE}/rooms`,
+    `${MINSTUDIO_BASE}/hiphop`,
+    `${MINSTUDIO_BASE}/dance-kids`,
+    `${MINSTUDIO_BASE}/news`,
+  ]
+  const siteLinks = [...minStudioLinks, ...(blogs||[]).map((b:any)=>`/blog/${b.slug}`).slice(0,2)]
   const res=await callGemini({ systemInstruction: DANCE_SYSTEM, prompt, jsonSchema: DANCE_SCHEMA, useCache:true })
   if(!res.text) return null
   try{
     const p=JSON.parse(res.text)
-    let c=ensureDanceHeadings(p.content||'')
+    let c=ensureDanceHeadings(p.content||'', siteLinks)
+    // append keywords if returned
+    if (Array.isArray((p as any).keywords) && (p as any).keywords.length) {
+      c += `\n\n<!-- keywords: ${(p as any).keywords.join(', ')} -->`
+    }
     return { title:(p.title||topic).normalize('NFC').slice(0,70), content:c, summary:(p.metaDescription||'').normalize('NFC').slice(0,160) }
   }catch{return null}
 }

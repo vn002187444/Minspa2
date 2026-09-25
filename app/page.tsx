@@ -23,6 +23,8 @@ import { getDictionary } from '@/lib/i18n/get-dictionary';
 import { COOKIE_NAME, DEFAULT_LOCALE, LANGUAGES } from '@/lib/i18n/config';
 import type { Metadata } from 'next';
 import { getBaseUrl } from '@/lib/env';
+import { createClient } from '@/utils/supabase/server';
+import { testimonials } from '@/lib/testimonials';
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = getBaseUrl();
@@ -90,6 +92,31 @@ export default async function Home() {
     getCachedTreatmentPackages(),
   ]);
 
+  // Homepage: BeautySalon aggregateRating (1 rating duy nhất cho trang chủ)
+  const baseUrl = getBaseUrl();
+  let aggregateRating: any = null;
+  let reviewList: { author: string; text: string; rating: number }[] = [];
+  try {
+    const supabase = await createClient();
+    const { data: reviews } = await supabase.from("reviews").select("rating, comment");
+    if (reviews && reviews.length > 0) {
+      reviewList = reviews.map((r: any) => ({ author: "Khách hàng", text: r.comment || "", rating: r.rating }));
+    }
+  } catch {}
+  if (reviewList.length === 0) {
+    reviewList = testimonials.map((t) => ({ author: t.name, text: t.text, rating: t.rating }));
+  }
+  if (reviewList.length > 0) {
+    const total = reviewList.reduce((s: number, r) => s + r.rating, 0);
+    aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": (total / reviewList.length).toFixed(1),
+      "bestRating": "5",
+      "worstRating": "1",
+      "ratingCount": reviewList.length,
+    };
+  }
+
   let hotline = '0934 323 878';
   let facebookUrl = 'https://facebook.com/minnailhair';
   let zaloUrl = 'https://zalo.me/0934323878';
@@ -145,6 +172,38 @@ export default async function Home() {
         <>
           <ServiceSchema services={services} logoUrl={logoUrl} />
         </>
+      )}
+      {/* Homepage ONLY: BeautySalon with 1 aggregateRating — tránh lỗi nhiều xếp hạng trên /blog/* */}
+      {aggregateRating && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BeautySalon",
+              "@id": `${baseUrl}/#homepage-business`,
+              "name": "Min Nail & Hair",
+              "image": `${baseUrl}/icons/icon-512.png`,
+              "url": baseUrl,
+              "telephone": "+84934323878",
+              "address": {
+                "@type": "PostalAddress",
+                "streetAddress": "TM14 Chung cư Lavita Charm, Đường số 1",
+                "addressLocality": "Trường Thọ, Thủ Đức",
+                "addressRegion": "TP. Hồ Chí Minh",
+                "addressCountry": "VN"
+              },
+              "aggregateRating": aggregateRating,
+              "review": reviewList.slice(0,5).map((r: any, i: number) => ({
+                "@type": "Review",
+                "@id": `${baseUrl}/#homepage-review-${i+1}`,
+                "author": { "@type": "Person", "name": r.author },
+                "reviewBody": r.text,
+                "reviewRating": { "@type": "Rating", "ratingValue": r.rating, "bestRating": 5, "worstRating": 1 },
+              })),
+            }).replace(/</g, "\\u003c"),
+          }}
+        />
       )}
       {/* Premium Notification Topbar */}
       <AnnouncementBanner settings={bannerSettings} />

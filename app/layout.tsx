@@ -15,11 +15,8 @@ import { DEFAULT_LOCALE, LANGUAGES, COOKIE_NAME } from "@/lib/i18n/config";
 
 import { getBaseUrl } from "@/lib/env";
 import { getSeoSettings } from "@/lib/seo";
-import { createClient } from "@/utils/supabase/server";
-import { testimonials } from "@/lib/testimonials";
 
-import dynamic from "next/dynamic";
-const AnimeMascot = dynamic(() => import("@/components/AnimeMascot"), { ssr: false, loading: () => null });
+import AnimeMascot from "@/components/AnimeMascot";
 
 import { Toaster } from "sonner";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -116,38 +113,6 @@ export default async function RootLayout({
   const rawLocale = headerLocale || cookieLocale;
   const lang = rawLocale && LANGUAGES[rawLocale] ? rawLocale : DEFAULT_LOCALE;
 
-  let aggregateRating = null;
-  let reviewList: { author: string; text: string; rating: number }[] = [];
-  try {
-    const supabase = await createClient();
-    const { data: reviews } = await supabase
-      .from("reviews")
-      .select("rating, comment");
-    if (reviews && reviews.length > 0) {
-      reviewList = reviews.map((r) => ({
-        author: "Khách hàng",
-        text: r.comment || "",
-        rating: r.rating,
-      }));
-    }
-  } catch {}
-  if (reviewList.length === 0) {
-    reviewList = testimonials.map((t) => ({
-      author: t.name,
-      text: t.text,
-      rating: t.rating,
-    }));
-  }
-  if (reviewList.length > 0) {
-    const total = reviewList.reduce((s: number, r) => s + r.rating, 0);
-    aggregateRating = {
-      "@type": "AggregateRating",
-      "ratingValue": (total / reviewList.length).toFixed(1),
-      "bestRating": "5",
-      "worstRating": "1",
-      "ratingCount": reviewList.length,
-    };
-  }
   return (
     <html
       lang={lang}
@@ -182,71 +147,6 @@ export default async function RootLayout({
             </Script>
           </>
         )}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "BeautySalon",
-              "@id": `${baseUrl}/#local-business`,
-              "name": "Min Nail & Hair",
-              "image": `${baseUrl}/icons/icon-512.png`,
-              "logo": {
-                "@type": "ImageObject",
-                "url": `${baseUrl}/icons/icon-512.png`,
-              },
-              "url": baseUrl,
-              "telephone": "+84934323878",
-              "address": {
-                "@type": "PostalAddress",
-                "streetAddress": "TM14 Chung cư Lavita Charm, Đường số 1",
-                "addressLocality": "Trường Thọ, Thủ Đức",
-                "addressRegion": "TP. Hồ Chí Minh",
-                "addressCountry": "VN"
-              },
-              "geo": {
-                "@type": "GeoCoordinates",
-                "latitude": 10.849,
-                "longitude": 106.772
-              },
-              "openingHoursSpecification": [
-                {
-                  "@type": "OpeningHoursSpecification",
-                  "dayOfWeek": [
-                    "Monday",
-                    "Tuesday",
-                    "Wednesday",
-                    "Thursday",
-                    "Friday",
-                    "Saturday",
-                    "Sunday"
-                  ],
-                  "opens": "09:00",
-                  "closes": "20:30"
-                }
-              ],
-              "priceRange": "100000-1000000",
-              "sameAs": ["https://facebook.com/minnailhair"],
-              ...(aggregateRating ? { "aggregateRating": aggregateRating } : {}),
-              ...(reviewList.length > 0
-                ? {
-                    "review": reviewList.map((r, i) => ({
-                      "@type": "Review",
-                      "@id": `${baseUrl}/#review-${i + 1}`,
-                      "author": { "@type": "Person", "name": r.author },
-                      "reviewBody": r.text,
-                      "reviewRating": {
-                        "@type": "Rating",
-                        "ratingValue": r.rating,
-                        "bestRating": 5,
-                        "worstRating": 1,
-                      },
-                    })),
-                  }
-                : {}),
-            }).replace(/</g, '\\u003c')
-          }}
-        />
         <WebSiteSchema baseUrl={baseUrl} />
         <Analytics />
         <SpeedInsights />
