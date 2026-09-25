@@ -334,3 +334,58 @@ export async function getAutoSeoHistory() {
     return [];
   }
 }
+
+export async function getAutoDanceConfig() {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.from('auto_seo_dance_config').select('*').eq('id', 1).single();
+    return data || { enabled: true, schedule_days: ['MON','TUE','WED','THU','FRI','SAT','SUN'], schedule_hour: 12, topic_pool: [] };
+  } catch (e) {
+    logger.error('[Database] Failed to fetch auto dance config', e instanceof Error ? e : undefined);
+    return { enabled: true, schedule_days: ['MON','TUE','WED','THU','FRI','SAT','SUN'], schedule_hour: 12, topic_pool: [] };
+  }
+}
+
+export async function saveAutoDanceConfig(payload: {
+  enabled: boolean; schedule_days: string[]; schedule_hour: number; topic_pool: string[];
+}) {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { error } = await supabase.from('auto_seo_dance_config').upsert({
+      id: 1, ...payload, updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    return { success: true };
+  } catch (e: unknown) {
+    return { success: false, error: e instanceof Error ? e.message : 'Unknown error' };
+  }
+}
+
+export async function getAutoDanceHistory() {
+  await checkAdminOrManager();
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('seo_articles')
+      .select('id, created_at, topic, keywords, status, topic_source, blog_slug, published_at')
+      .eq('topic_source', 'auto_dance')
+      .order('created_at', { ascending: false })
+      .limit(50);
+    if (error) throw error;
+    return (data || []).map((a: any) => ({
+      id: a.id,
+      createdAt: a.created_at,
+      topic: a.topic,
+      keywords: a.keywords,
+      status: a.status,
+      topicSource: a.topic_source,
+      blogSlug: a.blog_slug,
+      publishedAt: a.published_at,
+    }));
+  } catch (e) {
+    logger.error('[Database] Failed to fetch auto dance history', e instanceof Error ? e : undefined);
+    return [];
+  }
+}

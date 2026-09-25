@@ -14,6 +14,7 @@ export {
   getSeoSettings, saveSeoSettings,
   getSeoArticles, getSeoArticleById, saveSeoArticle, deleteSeoArticle, publishSeoArticleToBlog,
   getAutoSeoConfig, saveAutoSeoConfig, getAutoSeoHistory,
+  getAutoDanceConfig, saveAutoDanceConfig, getAutoDanceHistory,
 } from "./seo";
 
 export {

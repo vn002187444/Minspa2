@@ -153,11 +153,14 @@ export async function generateDanceArticle(topic:string):Promise<{title:string;c
   const supabase=await createClient()
   const {data:blogs}=await supabase.from('blogs').select('title,slug').eq('published',true).order('created_at',{ascending:false}).limit(6)
   const blogCtx=(blogs||[]).map((b:any)=>`- ${b.title} -> /blog/${b.slug}`).join('\n')||'Không có'
+  const studioCtx = await fetchMinStudioContext()
   const prompt=`Viết bài SEO về: "${topic}"
 Thương hiệu: Min Dance Studio — Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức — Hotline 0934 323 878 — /booking
+Context MINSTUDIO.VN (đã review — bám sát để không bịa):
+${studioCtx.slice(0,2500)}
 Bài blog gần đây để backlink (nếu liên quan):
 ${blogCtx}
-Yêu cầu: sapo 2-3 câu không heading (có Lavita Charm/Thủ Đức), >=3 H2 thuần text, mỗi H2 1-2 H3, 2-3 link /blog/slug nếu liên quan, CTA /booking.`
+Yêu cầu: sapo 2-3 câu không heading (có Lavita Charm/Thủ Đức), >=3 H2 thuần text, mỗi H2 1-2 H3, 2-3 link minstudio.vn/courses|rooms|news + 1-2 link /blog/slug nếu liên quan, CTA /register minstudio.`
   const minStudioLinks = [
     `${MINSTUDIO_BASE}/courses`,
     `${MINSTUDIO_BASE}/rooms`,

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Globe } from "lucide-react";
 import TabAutoSEO from "./TabAutoSEO";
+import TabAutoDance from "./TabAutoDance";
 import SeoMetadataForm from "./SeoMetadataForm";
 import SeoAiWriter from "./SeoAiWriter";
 import SeoSavedArticles from "./SeoSavedArticles";
@@ -24,7 +25,7 @@ interface SeoData {
 
 export default function TabSEO({ data, userRole, onReload }: { data: SeoData | null; userRole: string; onReload: () => void }) {
   const router = useRouter();
-  const [subTab, setSubTab] = useState<"METADATA" | "AI_WRITER" | "SAVED_ARTICLES" | "BANNER" | "AUTO_SEO">("METADATA");
+  const [subTab, setSubTab] = useState<"METADATA" | "AI_WRITER" | "SAVED_ARTICLES" | "BANNER" | "AUTO_SEO" | "AUTO_DANCE">("METADATA");
 
   return (
     <div className="space-y-6">
@@ -82,6 +83,14 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
           >
             Auto SEO 🤖
           </button>
+          <button
+            onClick={() => setSubTab("AUTO_DANCE")}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              subTab === "AUTO_DANCE" ? "bg-white text-violet-600 shadow-sm" : "text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            Auto Dance 💃
+          </button>
         </div>
       </div>
 
@@ -107,6 +116,7 @@ export default function TabSEO({ data, userRole, onReload }: { data: SeoData | n
       {subTab === "AI_WRITER" && <SeoAiWriter />}
       {subTab === "SAVED_ARTICLES" && <SeoSavedArticles userRole={userRole} />}
       {subTab === "AUTO_SEO" && <TabAutoSEO />}
+      {subTab === "AUTO_DANCE" && <TabAutoDance />}
       {subTab === "BANNER" && <SeoBannerForm />}
     </div>
   );

@@ -208,7 +208,7 @@ export async function getSystemHealth() {
   }
 }
 
-export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_assign' | 'seo_publish') {
+export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_assign' | 'seo_publish' | 'dance_publish') {
   const session = await getSession();
   if (!session || session.user.role !== 'ADMIN') throw new Error('Unauthorized');
 
@@ -218,6 +218,7 @@ export async function triggerCronJob(jobName: 'reminders' | 'marketing' | 'auto_
     marketing: `${baseUrl}/api/cron/marketing`,
     auto_assign: `${baseUrl}/api/cron/auto-assign`,
     seo_publish: `${baseUrl}/api/cron/seo-publish`,
+    dance_publish: `${baseUrl}/api/cron/dance-publish`,
   };
 
   const headers: Record<string, string> = {};
