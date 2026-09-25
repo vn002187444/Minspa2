@@ -4,23 +4,29 @@ import { logger } from '@/lib/logger'
 import { searchImages } from '@/lib/image-search'
 import { ensureGeoAlt, generateBlogImageAlt } from '@/lib/image-alt'
 
+const MINSTUDIO_BASE = 'https://minstudio.vn'
+
 const DANCE_SYSTEM = `Bạn là chuyên gia Copywriter SEO cho Min Dance Studio (Lavita Charm, Thủ Đức, TP.HCM) — trung tâm khiêu vũ, nhảy hiện đại, Kpop, Zumba, múa đương đại.
+Nhiệm vụ: REVIEW website ${MINSTUDIO_BASE} (đã cung cấp danh mục khóa học, phòng tập, tin tức bên dưới), sinh bộ từ khóa SEO cho Minstudio.vn và viết bài hỗ trợ tăng view/độ phủ cho domain minstudio.vn.
 
 QUY TẮC BẮT BUỘC SEO/GEO/AEO:
 - Chỉ viết về khiêu vũ, nhảy, múa, fitness dance — không tư vấn y tế.
-- Trả về JSON đúng schema.
+- Trước khi viết, phải review site context Minstudio.vn được cung cấp (courses, rooms, news) để bám sát dịch vụ/thông tin có thật, không bịa.
+- Trả về JSON đúng schema, đồng thời ngầm sinh keywords cho Minstudio.vn (lồng vào title/meta/content).
 - Tiếng Việt có dấu (NFC), giọng trẻ trung, năng động, thân thiện.
 - H1 là title (cấm # trong content). Content chỉ ## H2 và ### H3 thuần text (không **), mỗi heading 1 dòng riêng + 1 dòng trống trước/sau.
 - Tối thiểu 3 H2, mỗi H2 1-2 H3, 800-1200 từ, sapo 2-3 câu không heading (có Lavita Charm/Thủ Đức 2-3 lần), 40-60 từ đầu mỗi H2 trả lời trực tiếp.
-- Rải 2-3 backlink nội bộ [anchor](/dich-vu/slug) hoặc /blog/slug (nếu có dịch vụ dance) và luôn có CTA /booking + hotline 0934 323 878.
-- GEO: nhắc "Min Dance Studio - Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức".`
+- BACKLINK BẮT BUỘC tới Minstudio.vn: rải 2-3 link dạng [anchor](${MINSTUDIO_BASE}/courses) / /rooms / /news/<slug> / /hiphop / /dance-kids v.v. đã cho, anchor tự nhiên chứa từ khóa dance. Có thể thêm 1 link nội bộ minhair /blog nếu liên quan.
+- Luôn có CTA tới Minstudio: [đặt lịch học thử](${MINSTUDIO_BASE}/register) hoặc /booking và hotline 0934 323 878.
+- GEO: nhắc "Min Dance Studio - Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức" và 3 cơ sở An Khánh/La Astoria/Lavita Charm.`
 
 const DANCE_SCHEMA = {
   type: 'object',
   properties: {
-    title: { type: 'string', description: 'Tiêu đề H1 <=70 ký tự, chứa từ khóa nhảy/dance + Thủ Đức/Lavita Charm' },
-    metaDescription: { type: 'string', description: 'Meta 140-160 ký tự, chứa từ khóa + địa phương + CTA' },
-    content: { type: 'string', description: 'Markdown chuẩn: sapo không heading, >=3 H2 thuần text, mỗi H2 1-2 H3, 2-3 backlink /dich-vu hoặc /blog, CTA /booking' },
+    title: { type: 'string', description: 'Tiêu đề H1 <=70 ký tự, chứa từ khóa nhảy/dance + Thủ Đức/Lavita Charm, tối ưu cho minstudio.vn' },
+    metaDescription: { type: 'string', description: 'Meta 140-160 ký tự, chứa từ khóa chính + địa phương + CTA về Min Dance Studio' },
+    content: { type: 'string', description: 'Markdown chuẩn: sapo không heading, >=3 H2 thuần text, mỗi H2 1-2 H3, 2-3 backlink https://minstudio.vn/... (courses/rooms/news) rải đều, CTA minstudio register/booking' },
+    keywords: { type: 'array', items: { type: 'string' }, description: '5-7 keywords SEO đã review & sinh cho minstudio.vn (VD: nhảy Kpop Thủ Đức, phòng tập Lavita Charm...)' },
   },
   required: ['title', 'metaDescription', 'content'],
 }
@@ -88,7 +94,39 @@ export async function pickDanceTopic(): Promise<string|null>{
   return candidates[Math.floor(Math.random()*candidates.length)]
 }
 
-function ensureDanceHeadings(content:string):string{
+async function fetchMinStudioContext(): Promise<string> {
+  const base = MINSTUDIO_BASE
+  const staticFallback = `=== MINSTUDIO.VN — THÔNG TIN CỐ ĐỊNH ===
+Thương hiệu: Min Dance Studio — Dance Your Way — 3 cơ sở: An Khánh (28 Nguyễn Quý Đức), La Astoria (383 Nguyễn Duy Trinh), Lavita Charm (Shophouse TM14, Lavita Charm, Trường Thọ, Thủ Đức)
+Hotline: 0934 323 878 — Email: admin@minstudio.vn
+Courses nổi bật: HIPHOP -> ${base}/hiphop, DANCE KIDS -> ${base}/dance-kids, DANCE BAR -> ${base}/dance-bar, TREND TIKTOK -> ${base}/trend-tiktok, MÚA CỔ TRANG -> ${base}/mua-co-trang, COVER DANCE -> ${base}/cover-dance, SEXY DANCE -> ${base}/sexy-dance
+Danh mục: Khóa học ${base}/courses, Phòng nhảy ${base}/rooms, Lịch ${base}/schedule, Giảng viên ${base}/teachers, Tin tức ${base}/news
+Tin mới: Dàn dựng nhảy đám cưới -> ${base}/dan-dung-tiet-muc-nhay-dam-cuoi-doc-dao-min-dance-studio, Strip Dance -> ${base}/giai-phong-ve-dep-tiem-an-qua-strip-dance, Biên đạo sự kiện -> ${base}/dich-vu-bien-dao-nhay-su-kien-thu-duc-min-dance-studio`
+
+  try {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 4000)
+    const [homeRes, courseRes] = await Promise.allSettled([
+      fetch(`${base}/sitemap.xml`, { signal: controller.signal, headers: { 'User-Agent': 'MinSEO-Bot' } }).then(r => r.ok ? r.text() : ''),
+      fetch(`${base}/courses`, { signal: controller.signal, headers: { 'User-Agent': 'MinSEO-Bot' } }).then(r => r.ok ? r.text() : ''),
+    ])
+    clearTimeout(timeout)
+    const parts: string[] = [staticFallback]
+    if (homeRes.status === 'fulfilled' && homeRes.value) {
+      const sitemapSnippet = homeRes.value.slice(0, 4000).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      if (sitemapSnippet) parts.push(`=== SITEMAP MINSTUDIO.VN (trích) ===\n${sitemapSnippet.slice(0, 1500)}`)
+    }
+    if (courseRes.status === 'fulfilled' && courseRes.value) {
+      const text = courseRes.value.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 2000)
+      if (text) parts.push(`=== COURSES PAGE TRÍCH ===\n${text.slice(0, 1200)}`)
+    }
+    return parts.join('\n\n')
+  } catch {
+    return staticFallback
+  }
+}
+
+function ensureDanceHeadings(content:string, siteLinks:string[]):string{
   let out=content.replace(/\r/g,'').trim().normalize('NFC')
   out=out.replace(/([^\n])\s*##\s+/g,'$1\n\n## ')
   out=out.replace(/([^\n])\s*###\s+/g,'$1\n\n### ')
@@ -96,9 +134,18 @@ function ensureDanceHeadings(content:string):string{
   out=out.replace(/^##\s*\*\*(.*?)\*\*\s*$/gm,'## $1')
   out=out.replace(/^###\s*\*\*(.*?)\*\*\s*$/gm,'### $1')
   const h2=(out.match(/^##\s+/gm)||[]).length
-  if(h2<3) out+=`\n\n## Tại sao chọn Min Dance Studio Lavita Charm\nTrải nghiệm không gian gương rộng, sàn gỗ, giáo viên tận tâm. [đặt lịch ngay](/booking) để giữ chỗ.\n`
-  if(!out.includes('/booking')) out+=`\n\n## Đặt lịch học thử miễn phí\n[đặt lịch ngay](/booking) hoặc gọi 0934 323 878 — Min Dance Studio, TM14 Lavita Charm, Trường Thọ, Thủ Đức.`
+  if(h2<3) out+=`\n\n## Tại sao chọn Min Dance Studio Lavita Charm\nTrải nghiệm không gian gương rộng, sàn gỗ, giáo viên tận tâm. [đặt lịch ngay](${MINSTUDIO_BASE}/register) để giữ chỗ.\n`
+  if(!out.includes('minstudio.vn')) {
+    const picks = siteLinks.slice(0,2)
+    if(picks.length) out += `\n\n> Gợi ý: Khám phá [khóa học tại Min Dance Studio](${picks[0]}) và [phòng tập](${MINSTUDIO_BASE}/rooms).\n`
+  }
+  if(!out.includes('/booking') && !out.includes('/register')) out+=`\n\n## Đặt lịch học thử miễn phí\n[đặt lịch ngay](${MINSTUDIO_BASE}/register) hoặc gọi 0934 323 878 — Min Dance Studio, TM14 Lavita Charm, Trường Thọ, Thủ Đức.`
   if((out.match(/Lavita Charm|Thủ Đức/g)||[]).length<2) out+=`\n\n> Min Dance Studio — Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức. Hotline 0934 323 878.\n`
+  // đảm bảo có backlink minstudio.vn rải đều
+  const hasMinStudioLink = /minstudio\.vn/.test(out)
+  if(!hasMinStudioLink && siteLinks.length){
+    out += `\n\n> Xem thêm tại Min Dance Studio: [Min Dance Studio](${MINSTUDIO_BASE}) — [Khóa học](${MINSTUDIO_BASE}/courses).\n`
+  }
   return out
 }
 
