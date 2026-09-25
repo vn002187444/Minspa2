@@ -20,6 +20,7 @@ function getNavItems(t: (k: string) => string) {
     { id: 'Cha-Got-Chan', label: t('nav.footScrub'), href: '#category-Cha-Got-Chan' },
     { id: 'Massage', label: t('nav.massage'), href: '#category-Massage' },
     { id: 'Cham-Soc-Trang-Tri-Mong', label: t('nav.nail'), href: '#category-Cham-Soc-Trang-Tri-Mong' },
+    { id: 'game', label: 'Game', href: '/game' },
     { id: 'about', label: t('nav.about'), href: '/about' },
     { id: 'faq', label: t('nav.faq'), href: '/faq' },
   ];
@@ -32,6 +33,7 @@ function getMobileNavItems(t: (k: string) => string) {
     { id: 'Cham-Soc-Trang-Tri-Mong', label: t('nav.mobile.nail'), href: '#category-Cham-Soc-Trang-Tri-Mong' },
     { id: 'Cha-Got-Chan', label: t('nav.mobile.footScrub'), href: '#category-Cha-Got-Chan' },
     { id: 'goi-vip', label: t('nav.mobile.vipCombo'), href: '#services' },
+    { id: 'game', label: 'Game', href: '/game' },
     { id: 'reviews', label: t('nav.mobile.reviews'), href: '#reviews' },
     { id: 'about', label: t('nav.mobile.about'), href: '/about' },
     { id: 'faq', label: t('nav.mobile.faq'), href: '/faq' },
