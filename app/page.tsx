@@ -553,36 +553,6 @@ export default async function Home() {
       </section>
       </ScrollReveal>
 
-      {/* Game Teaser — Water Sort */}
-      <section id="game" className="max-w-6xl xxl:max-w-[1600px] 4k:max-w-[1920px] mx-auto px-4 py-8">
-        <div className="bg-white rounded-3xl border border-[#EADDCD] shadow-sm overflow-hidden flex flex-col md:flex-row items-stretch">
-          <div className="flex-1 p-6 md:p-8 4k:p-10 flex flex-col justify-center gap-3">
-            <div className="inline-flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#8D6E53] bg-[#FAF6F0] border border-[#EADDCD] rounded-full px-3 py-1 w-fit">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Game giải đố
-            </div>
-            <h2 className="text-xl md:text-2xl font-display font-black text-[#3A2E2B] leading-tight">
-              Thư giãn khi chờ — Water Sort Ultimate
-            </h2>
-            <p className="text-sm text-gray-500 leading-relaxed max-w-xl">
-              Chơi ngay trên web, solver A*/IDA* chạy 100% local, hỗ trợ ô ẩn <span className="font-bold text-[#5C4033]">?</span> và import ảnh. Dwell-time tốt cho SEO!
-            </p>
-            <div className="flex flex-wrap gap-3 mt-1">
-              <Link href="/game" className="inline-flex items-center gap-2 bg-[#8D6E53] hover:bg-[#5C4033] text-white font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full shadow-md transition-all hover:scale-[1.02] active:scale-95">
-                Chơi ngay <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link href="/water-sort.html" target="_blank" rel="noopener" className="inline-flex items-center gap-2 bg-white border border-[#EADDCD] hover:border-[#8D6E53] text-[#5C4033] font-bold text-xs uppercase tracking-wider px-6 py-3 rounded-full">
-                Mở toàn màn hình <ArrowUpRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </div>
-          <Link href="/game" className="md:w-[320px] shrink-0 bg-gradient-to-br from-[#8D6E53] via-[#5C4033] to-[#3A2E2B] p-6 md:p-8 flex flex-col items-center justify-center text-center text-[#FAF6F0] gap-3 hover:brightness-110 transition-all">
-            <div className="w-16 h-16 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center text-2xl">🧪</div>
-            <div className="font-display font-bold text-lg leading-tight">6 ống/hàng<br />vuốt ngang palette</div>
-            <span className="text-[11px] font-bold uppercase tracking-widest bg-white text-[#5C4033] rounded-full px-4 py-2">Vào game →</span>
-          </Link>
-        </div>
-      </section>
-
       {/* Testimonials Carousel */}
       <TestimonialsCarousel />
 
@@ -825,8 +795,10 @@ export default async function Home() {
             <div>
               © 2026 Min Nail &amp; Hair Salon. Đã đăng ký bản quyền.
             </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-center">
               <Link href="/sitemap.xml" className="hover:text-gray-400 transition-colors">Sitemap</Link>
+              <span className="text-gray-700">|</span>
+              <a href="/water-sort.html" className="hover:text-gray-400 transition-colors opacity-40 hover:opacity-100 text-[11px]" title="Water Sort - Game giải đố thư giãn">Game</a>
               <span className="text-gray-700">|</span>
               <a href="#" className="hover:text-gray-400 transition-colors">Chính sách bảo mật</a>
             </div>

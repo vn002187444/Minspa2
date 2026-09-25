@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   Home, Sparkles, Calendar, BookOpen, User, HelpCircle,
   Clock, CalendarCheck, CheckCircle2, Package, BarChart,
-  ClipboardCheck, Menu, Gamepad2
+  ClipboardCheck, Menu
 } from 'lucide-react';
 
 interface BottomNavigationProps {
@@ -22,7 +22,7 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
   // Determine if we are on Homepage, Staff dashboard, or Admin dashboard
   const isStaff = pathname?.startsWith('/staff');
   const isAdmin = pathname?.startsWith('/admin');
-  const isHome = !isStaff && !isAdmin && (pathname === '/' || pathname?.startsWith('/blog') || pathname === '/booking' || pathname === '/about' || pathname === '/faq' || pathname === '/game' || pathname?.startsWith('/game'));
+  const isHome = !isStaff && !isAdmin && (pathname === '/' || pathname?.startsWith('/blog') || pathname === '/booking' || pathname === '/about' || pathname === '/faq');
 
   // Handle local tab transitions or external link navigation
   const handleAdminTabChange = (tabId: string) => {
@@ -117,10 +117,10 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
               pathname?.startsWith('/blog') || false
             )}
             {renderLinkItem(
-              <Gamepad2 className="w-5 h-5" aria-hidden="true" />,
-              'Game',
-              '/game',
-              pathname === '/game' || pathname?.startsWith('/game') || false
+              <HelpCircle className="w-5 h-5" aria-hidden="true" />,
+              'FAQ',
+              '/faq',
+              pathname === '/faq'
             )}
             {renderLinkItem(
               <User className="w-5 h-5" aria-hidden="true" />,
