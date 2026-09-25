@@ -568,13 +568,21 @@ textarea:focus{outline: none;border-color: var(--color-primary)}
 .solution-list .move{display: inline-flex;margin: 2px}
 
 /* ============================================================
-   PALETTE — chip kéo thả
-   ============================================================ */
+    PALETTE — chip kéo thả (SPA FIX: hàng ngang cuộn, không wrap)
+    ============================================================ */
 .palette-row{
- display: flex;flex-wrap: wrap;gap: 6px;
- justify-content: center;margin-top: var(--space-3);
+ display: flex;flex-wrap: nowrap;gap: 8px;
+ justify-content: flex-start;margin-top: var(--space-3);
  align-items: center;
+ overflow-x: auto; overflow-y: hidden;
+ -webkit-overflow-scrolling: touch;
+ scrollbar-width: thin;
+ padding-bottom: 6px;
+ scroll-snap-type: x proximity;
 }
+.palette-row::-webkit-scrollbar{height:6px}
+.palette-row::-webkit-scrollbar-thumb{background: var(--color-border);border-radius:999px}
+.palette-row .palette-chip{scroll-snap-align:start;flex-shrink:0}
 .palette-chip{
  padding: 6px 12px;border-radius: 999px;
  font-size: var(--fs-xs);font-weight: var(--fw-semibold);
@@ -801,11 +809,14 @@ textarea:focus{outline: none;border-color: var(--color-primary)}
  .metric-row{grid-template-columns: 1fr 1fr}
 }
 
-.board { display: grid; grid-template-columns: repeat(auto-fit, minmax(60px, 1fr)); gap: 10px; justify-content: center; padding: 12px; }
-/* Mobile: limit to max 6 tubes per row and optimize edit icon panel */
+.board { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; justify-content: center; padding: 12px; max-width: 720px; margin: 0 auto; }
+/* Mobile giữ 6 cột, co nhỏ tube */
 @media(max-width: 700px) {
-  .board { grid-template-columns: repeat(6, minmax(60px, 1fr)); }
+  .board { grid-template-columns: repeat(6, 1fr); gap: 7px; padding: 8px; }
   .customEditor { grid-template-columns: 1fr; max-width: 100%; }
+}
+@media(max-width: 480px) {
+  .board { grid-template-columns: repeat(6, 1fr); gap: 4px; }
 }
 .tubeWrap { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .tubeLabel { font-size: 11px; color: var(--color-fg-muted); font-weight: 600; }
