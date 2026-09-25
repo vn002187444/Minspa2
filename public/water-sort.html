@@ -260,12 +260,7 @@ textarea:focus{outline: none;border-color: var(--color-primary)}
    TUBE EDITOR & DISPLAY
    ============================================================ */
 .tube-editor{
- display: flex;flex-wrap: wrap;gap: 8px;
- padding: var(--space-3);
- background: var(--color-bg);
- border: 1px solid var(--color-border);
- border-radius: var(--radius-sm);
- justify-content: center;
+ display: none !important; /* SPA FIX: ẩn ký tự ống (GGGB/GRYR...) — chỉ dùng ống trực quan và palette */
 }
 .tube-input{
  background: var(--color-bg-elevated);
@@ -572,16 +567,23 @@ textarea:focus{outline: none;border-color: var(--color-primary)}
    PALETTE — chip kéo thả
    ============================================================ */
 .palette-row{
- display: flex;flex-wrap: nowrap;gap: 8px;
- justify-content: flex-start;margin-top: var(--space-3);
+ display: flex;flex-wrap: wrap;gap: 10px;
+ justify-content: center;margin-top: var(--space-3);
  align-items: center;
- overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
- scrollbar-width:thin;padding-bottom:6px;scroll-snap-type:x proximity;
+ max-width: 560px;margin-left:auto;margin-right:auto;
 }
-.palette-row::-webkit-scrollbar{height:6px}
-.palette-row::-webkit-scrollbar-thumb{background:var(--color-border);border-radius:999px}
-.palette-row .palette-chip{flex-shrink:0;scroll-snap-align:start}
-#palette{scroll-snap-type:x proximity}
+.palette-row .palette-chip{flex-shrink:0}
+/* 2 hàng + to hơn cho dễ thao tác */
+.palette-chip{
+ padding: 10px 18px !important;
+ font-size: 16px !important;
+ min-width: 52px; min-height: 38px;
+ justify-content:center;
+}
+#palette{scroll-snap-type:none}
+@media(max-width:480px){
+ .palette-chip{padding:9px 16px !important;font-size:15px !important;min-width:48px}
+}
 .palette-chip{
  padding: 6px 12px;border-radius: 999px;
  font-size: var(--fs-xs);font-weight: var(--fw-semibold);
