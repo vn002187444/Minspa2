@@ -20,6 +20,13 @@ const baseConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   trailingSlash: false,
+  // URL đẹp cho 2 tool Water Sort mới (file tĩnh trong public/, giữ bản cũ nguyên).
+  async rewrites() {
+    return [
+      { source: '/solver-ios', destination: '/water-sort-ios.html' },
+      { source: '/solver-ultimate', destination: '/water-sort-ultimate.html' },
+    ];
+  },
   // output: 'standalone',
   poweredByHeader: false,
   compress: true,
@@ -67,11 +74,11 @@ const baseConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
           },
           {
             key: 'Content-Security-Policy-Report-Only',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
           },
         ],
       },

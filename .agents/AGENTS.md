@@ -197,3 +197,14 @@ Sau mỗi bug fix hoặc phát hiện hành vi không rõ ràng:
 1. Áp dụng skill `train` (`.agents/skills/train/SKILL.md`)
 2. Cập nhật `minspa/SKILL.md` với bài học mới
 3. Nếu liên quan đến Supabase feature → cập nhật `SUPABASE_FEATURES.md`
+
+---
+
+## 11. Water Sort Tools — Root Là Source of Truth
+
+- File gốc (sửa ở đây): `water-sort-solver.js`, `water_sort_ios_solver.html`, `water_sort_ultimate.html` ở **root repo**
+- File deploy (serve qua web): `public/water-sort-ios.html`, `public/water-sort-ultimate.html`, `public/water-sort-solver.js`
+- **Quy tắc: sửa file ở root trước, rồi copy đè vào `public/`** (2 nơi sẽ lệch nếu quên). Verify bằng `Get-FileHash` cả 3 cặp phải khớp
+- URL đẹp qua `rewrites()` trong `next.config.ts`: `/solver-ios`, `/solver-ultimate`
+- `/game` link 2 tool mới; bản cũ `public/water-sort.html` giữ nguyên, không đụng
+- CSP `script-src` cần `https://cdn.jsdelivr.net` (Ultimate nạp Tesseract OCR ảnh)

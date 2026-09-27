@@ -119,9 +119,9 @@ export default function GamePage() {
           </div>
         </section>
 
-        {/* NÚT VÀO GAME CỠ LỚN */}
-        <section className="max-w-4xl mx-auto px-4 mt-6">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8D6E53] to-[#5C4033] p-8 md:p-12 text-center shadow-2xl border border-[#8D6E53]">
+        {/* NÚT VÀO GAME + SOLVER CỠ LỚN */}
+        <section className="max-w-4xl mx-auto px-4 mt-6 grid gap-4 md:grid-cols-2">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#8D6E53] to-[#5C4033] p-8 md:p-10 text-center shadow-2xl border border-[#8D6E53]">
             <div className="absolute -top-10 -right-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
             <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
             <div className="relative">
@@ -134,7 +134,7 @@ export default function GamePage() {
                 href="/water-sort.html"
                 target="_blank"
                 rel="noopener"
-                className="group inline-flex items-center justify-center gap-3 bg-white text-[#5C4033] font-black text-xl md:text-3xl px-12 md:px-16 py-5 md:py-7 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all uppercase tracking-wide animate-pulse hover:animate-none"
+                className="group inline-flex items-center justify-center gap-3 bg-white text-[#5C4033] font-black text-xl md:text-2xl px-10 md:px-12 py-5 md:py-6 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all uppercase tracking-wide animate-pulse hover:animate-none"
               >
                 <Gamepad2 className="w-8 h-8 md:w-10 md:h-10 group-hover:rotate-12 transition-transform" />
                 ▶ Vào Game Ngay
@@ -142,6 +142,40 @@ export default function GamePage() {
               <div className="mt-4">
                 <span className="inline-flex items-center gap-1.5 text-[#EADDCD] text-xs font-semibold">
                   Game mở toàn màn hình trong tab mới — chơi miễn phí, không cần tải app
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#334155] to-[#0F172A] p-8 md:p-10 text-center shadow-2xl border border-[#475569]">
+            <div className="absolute -top-10 -left-10 w-48 h-48 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-sky-400/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 rounded-full px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-sky-200 mb-4">
+                <Sparkles className="w-4 h-4" /> Solver Water Sort — Miễn phí
+              </div>
+              <h2 className="text-white font-display font-black text-2xl md:text-3xl mb-2">Kẹt màn? Solver lo</h2>
+              <p className="text-slate-300 text-sm mb-6">Nhập bàn cờ, tool tìm lời giải ngắn nhất + suy luận ô ẩn — chạy 100% trên máy bạn.</p>
+              <div className="flex flex-col gap-3">
+                <a
+                  href="/solver-ios"
+                  target="_blank"
+                  rel="noopener"
+                  className="group inline-flex items-center justify-center gap-2 bg-sky-400 text-[#0F172A] font-black text-lg px-8 py-4 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all uppercase tracking-wide"
+                >
+                  Solver iOS <ExternalLink className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </a>
+                <a
+                  href="/solver-ultimate"
+                  target="_blank"
+                  rel="noopener"
+                  className="group inline-flex items-center justify-center gap-2 bg-white/10 border border-white/25 text-white font-black text-lg px-8 py-4 rounded-full hover:bg-white/20 active:scale-95 transition-all uppercase tracking-wide"
+                >
+                  Solver Ultimate <ExternalLink className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </a>
+              </div>
+              <div className="mt-4">
+                <span className="inline-flex items-center gap-1.5 text-slate-400 text-xs font-semibold">
+                  Mở trong tab mới — không cần tải app
                 </span>
               </div>
             </div>
