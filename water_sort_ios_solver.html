@@ -1,0 +1,2704 @@
+﻿<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>iOS Water Sort Solver</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS - Tối giản (chừa chỗ cho icon sau)
+   Bỏ brand-color gradient, dùng màu cơ bản để dễ thêm icon mới
+   ============================================================ */
+:root{
+ /* Bảng màu cơ bản (không gradient, không glow) */
+ --color-primary: #475569;
+ --color-primary-hover: #334155;
+ --color-on-primary: #FFFFFF;
+ --color-secondary: #64748B;
+ --color-accent: #64748B;
+
+ /* Surfaces - Dark mode default (L0=body, L1=panel, L2=modal) */
+ --color-bg-page: #0F172A;        /* L0 - body (đậm nhất) */
+ --color-bg: #15202E;             /* L0 fallback */
+ --color-bg-card: #1E293B;        /* L1 - panel */
+ --color-bg-elevated: #243044;    /* L2 - modal/toast (sáng nhất) */
+ --color-bg-muted: #334155;
+ --color-fg: #E2E8F0;
+ --color-fg-muted: #94A3B8;
+ --color-border: #334155;
+ --color-border-strong: #475569;
+
+ /* Semantic (màu thông báo) */
+ --color-success: #22C55E;
+ --color-warning: #F59E0B;
+ --color-danger: #EF4444;
+ --color-info: #38BDF8;
+
+ /* Strategy accents (dùng cho 3 chế độ) */
+ --color-strategy-priority: #EF4444;
+ --color-strategy-balanced: #F59E0B;
+ --color-strategy-predict: #22C55E;
+
+ /* Spacing 8dp */
+ --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+ --space-5: 24px; --space-6: 32px; --space-7: 48px; --space-8: 64px;
+
+ /* Type */
+ --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+ --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+ --fs-xs: 11px; --fs-sm: 13px; --fs-base: 14px; --fs-md: 16px;
+ --fs-lg: 18px; --fs-xl: 22px; --fs-2xl: 28px; --fs-3xl: 36px;
+ --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600; --fw-bold: 700;
+
+ /* Radius */
+ --radius-sm: 6px; --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+
+ /* Shadow theo 3 level */
+ --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+ --shadow-md: 0 4px 12px rgba(0,0,0,0.16);
+ --shadow-lg: 0 20px 60px rgba(0,0,0,0.36);
+ --shadow-inset: 0 1px 0 rgba(255,255,255,0.04) inset, 0 2px 8px rgba(0,0,0,0.16);
+
+ /* Motion (giữ timing cho cảm giác mượt) */
+ --ease-out: ease-out;
+ --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+ --ease-in-quart: cubic-bezier(0.7, 0, 0.84, 0);
+ --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+ --duration-fast: 150ms;
+ --duration-base: 200ms;
+ --duration-slow: 300ms;
+}
+
+/* Light mode override */
+@media (prefers-color-scheme: light) {
+ :root{
+  --color-bg-page: #E2E8F0;
+  --color-bg: #F1F5F9;
+  --color-bg-elevated: #FFFFFF;
+  --color-bg-card: #FFFFFF;
+  --color-bg-muted: #E2E8F0;
+  --color-fg: #0F172A;
+  --color-fg-muted: #64748B;
+  --color-border: #CBD5E1;
+  --color-border-strong: #94A3B8;
+  --shadow-sm: 0 1px 3px rgba(15,23,42,0.06);
+  --shadow-md: 0 4px 12px rgba(15,23,42,0.10);
+  --shadow-inset: 0 1px 0 rgba(255,255,255,0.6) inset, 0 2px 8px rgba(15,23,42,0.06);
+ }
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+ margin:0;
+ background: var(--color-bg-page);
+ color: var(--color-fg);
+ font-family: var(--font-sans);
+ font-size: var(--fs-base);
+ line-height: 1.55;
+ -webkit-font-smoothing: antialiased;
+ min-height: 100vh;
+ padding: var(--space-4) var(--space-3);
+ background-image:
+  radial-gradient(ellipse at 20% 0%, rgba(56,189,248,0.06) 0px, transparent 50%),
+  radial-gradient(ellipse at 80% 100%, rgba(139,92,246,0.06) 0px, transparent 50%);
+ background-attachment: fixed;
+}
+h1,h2,h3,h4,h5{font-weight: var(--fw-bold);line-height: 1.2;margin:0}
+h1{font-size: var(--fs-3xl)}
+h3{font-size: var(--fs-lg)}
+h4{font-size: var(--fs-base);color: var(--color-fg-muted);font-weight: var(--fw-semibold);text-transform: uppercase;letter-spacing: 0.08em}
+code,pre,.mono{font-family: var(--font-mono)}
+button{font-family: inherit;cursor:pointer;border:0;background:none;color:inherit}
+button:disabled{cursor:not-allowed;opacity:0.45}
+input,select,textarea{font-family: inherit;font-size: inherit}
+:focus-visible{outline: 2px solid var(--color-primary);outline-offset: 2px;border-radius: var(--radius-sm)}
+@media (prefers-reduced-motion: reduce){
+ *,*::before,*::after{animation-duration: 0.01ms !important;transition-duration: 0.01ms !important}
+}
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.wrap{max-width: 1240px;margin: 0 auto;padding: 0 var(--space-3)}
+.hero{
+ text-align: center;
+ padding: var(--space-6) var(--space-4) var(--space-5);
+}
+.hero-badge{
+ display: inline-block;
+ background: var(--color-bg-muted);
+ color: var(--color-fg);
+ font-size: var(--fs-xs);
+ font-weight: var(--fw-semibold);
+ text-transform: uppercase;
+ letter-spacing: 0.12em;
+ padding: 5px 12px;
+ border-radius: 999px;
+ margin-bottom: var(--space-3);
+ border: 1px solid var(--color-border);
+}
+.hero-title{
+ font-size: clamp(28px, 5vw, var(--fs-3xl));
+ font-weight: var(--fw-bold);
+ color: var(--color-fg);
+ margin: 0 0 var(--space-2);
+}
+.hero-sub{
+ color: var(--color-fg-muted);
+ font-size: var(--fs-md);
+ max-width: 560px;margin: 0 auto;
+}
+
+.panel{
+ background: var(--color-bg-card);
+ border: 1px solid var(--color-border-strong);
+ border-radius: var(--radius-lg);
+ padding: var(--space-5);
+ margin-bottom: var(--space-4);
+ box-shadow: var(--shadow-inset);
+}
+.panel-header{
+ display: flex;align-items: center;justify-content: space-between;
+ margin-bottom: var(--space-4);gap: var(--space-3);flex-wrap: wrap;
+}
+.panel-title{display: flex;align-items: center;gap: 10px}
+/* Chừa chỗ cho icon — khi thêm icon, đặt vào .panel-title-icon */
+.panel-title-icon{
+ width: 32px;height: 32px;
+ display: none;align-items: center;justify-content: center;
+}
+.panel-title-icon.show{display: flex}
+.panel-title-icon svg{width: 18px;height: 18px}
+.panel-title h2{font-size: var(--fs-lg);font-weight: var(--fw-bold);margin: 0}
+.panel-title small{color: var(--color-fg-muted);font-size: var(--fs-xs);font-weight: var(--fw-regular);text-transform: none;letter-spacing: 0}
+
+.grid-2{display: grid;grid-template-columns: 1fr 1fr;gap: var(--space-4)}
+@media (max-width: 880px){.grid-2{grid-template-columns: 1fr}}
+
+/* ============================================================
+   BUTTONS — đơn giản, không gradient
+   ============================================================ */
+.btn{
+ display: inline-flex;align-items: center;gap: 6px;
+ font-weight: var(--fw-semibold);font-size: var(--fs-sm);
+ padding: 9px 16px;
+ border-radius: var(--radius-sm);
+ background: var(--color-bg-muted);
+ color: var(--color-fg);
+ transition: transform var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out), box-shadow 200ms var(--ease-out);
+ border: 1px solid var(--color-border);
+}
+.btn:hover:not(:disabled){
+ background: var(--color-border-strong);
+ transform: translateY(-1px);
+ box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.btn:active:not(:disabled){
+ transform: translateY(0) scale(0.98);
+ transition-duration: 80ms;
+}
+.btn svg{width: 16px;height: 16px;flex-shrink: 0}
+
+.btn-primary{background: var(--color-primary);color: var(--color-on-primary);border-color: var(--color-primary)}
+.btn-primary:hover:not(:disabled){background: var(--color-primary-hover)}
+
+.btn-accent{background: var(--color-secondary);color: white;border-color: var(--color-secondary)}
+.btn-accent:hover:not(:disabled){filter: brightness(1.1)}
+
+.btn-success{background: var(--color-success);color: white;border-color: var(--color-success)}
+.btn-success:hover:not(:disabled){filter: brightness(1.1)}
+
+.btn-danger{background: var(--color-danger);color: white;border-color: var(--color-danger)}
+.btn-danger:hover:not(:disabled){filter: brightness(1.1)}
+#stopBtn{display: none;animation: stopPulse 1.2s ease-in-out infinite}
+#stopBtn.show{display: inline-flex}
+@keyframes stopPulse{
+ 0%,100%{box-shadow: 0 0 0 0 rgba(239,68,68,0.5)}
+ 50%{box-shadow: 0 0 0 8px rgba(239,68,68,0)}
+}
+
+.btn-ghost{background: transparent;border-color: var(--color-border-strong)}
+.btn-ghost:hover:not(:disabled){background: var(--color-bg-muted)}
+
+.btn-sm{padding: 5px 10px;font-size: var(--fs-xs);border-radius: 4px}
+.btn-lg{padding: 12px 22px;font-size: var(--fs-md)}
+.btn-block{width: 100%;justify-content: center}
+
+/* ============================================================
+   CONTROLS & INPUTS
+   ============================================================ */
+.controls{display: flex;flex-wrap: wrap;gap: 8px;align-items: center;margin-top: var(--space-3)}
+.field{display: inline-flex;align-items: center;gap: 6px;font-size: var(--fs-sm);color: var(--color-fg-muted)}
+.field input[type=number],.field input[type=text]{
+ width: 70px;padding: 6px 8px;
+ background: var(--color-bg);
+ border: 1px solid var(--color-border-strong);
+ border-radius: var(--radius-sm);
+ color: var(--color-fg);font-family: var(--font-mono);font-size: var(--fs-sm);
+}
+.field input:focus{outline: none;border-color: var(--color-primary)}
+
+textarea{
+ font-family: var(--font-mono);font-size: var(--fs-sm);
+ width: 100%;min-height: 130px;padding: 10px;
+ background: var(--color-bg);
+ border: 1px solid var(--color-border-strong);
+ border-radius: var(--radius-sm);
+ color: var(--color-fg);
+ resize: vertical;
+}
+textarea:focus{outline: none;border-color: var(--color-primary)}
+
+/* ============================================================
+   TUBE EDITOR & DISPLAY
+   ============================================================ */
+.tube-editor{
+ display: flex;flex-wrap: wrap;gap: 8px;
+ padding: var(--space-3);
+ background: var(--color-bg);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ justify-content: center;
+}
+.tube-input{
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border-strong);
+ border-radius: var(--radius-sm);
+ padding: 6px 4px;
+ min-width: 80px;
+ text-align: center;
+}
+.tube-input:focus-within{border-color: var(--color-primary)}
+.tube-input .label{
+ font-size: var(--fs-xs);color: var(--color-fg-muted);
+ margin-bottom: 4px;font-weight: var(--fw-semibold);
+}
+.tube-input input{
+ width: 50px;text-align: center;font-size: var(--fs-xs);
+ padding: 4px;font-family: var(--font-mono);
+ background: var(--color-bg);border: 1px solid var(--color-border);
+ border-radius: 4px;color: var(--color-fg);
+ text-transform: uppercase;
+}
+
+.tube-display{
+ display: grid;
+ grid-template-columns: repeat(6, 1fr);
+ gap: var(--space-2);
+ padding: var(--space-5) 0;
+ background: linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.025) 50%, transparent 100%), var(--color-bg-page);
+ border-top: 1px solid var(--color-border);
+ border-bottom: 1px solid var(--color-border);
+ border-left: none;
+ border-right: none;
+ border-radius: 0;
+ justify-items: center;
+ max-height: 540px;overflow-y: auto;
+}
+
+.tube-vis{
+ width: 56px;
+ background: linear-gradient(180deg, var(--color-bg-elevated) 0%, rgba(15,23,42,0.6) 100%);
+ border: 2px solid var(--color-border-strong);
+ border-radius: 0 0 20px 20px;
+ padding: 4px;
+ display: flex;flex-direction: column-reverse;gap: 3px;
+ min-height: 156px;
+ position: relative;
+ box-shadow:
+  inset 0 4px 12px rgba(0,0,0,0.4),
+  inset 0 -2px 4px rgba(255,255,255,0.06),
+  0 1px 0 rgba(255,255,255,0.04);
+ transition: transform 200ms var(--ease-spring), box-shadow 200ms var(--ease-out), border-color 150ms var(--ease-out);
+}
+/* Vệt sáng dọc trái (giả ống thuỷ tinh) */
+.tube-vis::before{
+ content: "";
+ position: absolute;
+ left: 6px; right: 50%;
+ top: 4px; bottom: 4px;
+ background: linear-gradient(180deg, rgba(255,255,255,0.08), transparent 60%);
+ border-radius: 0 0 0 12px;
+ pointer-events: none;
+}
+.tube-vis.locked{border-color: var(--color-success)}
+.tube-vis.empty{border-style: dashed;border-color: var(--color-border-strong);opacity: 0.7}
+.tube-vis.selected{border-color: var(--color-accent); transform: translateY(-3px);}
+.tube-vis.hint-target{border-color: var(--color-warning)}
+.tube-vis.hint-best{border-color: var(--color-success)}
+.tube-vis.hint-blocked{opacity: 0.4;filter: grayscale(0.5)}
+.tube-vis-label{
+ font-size: var(--fs-xs);color: var(--color-fg-muted);
+ text-align: center;margin-bottom: 4px;
+ font-weight: var(--fw-semibold);
+}
+
+.cell{
+ height: 32px;border-radius: 7px;
+ display: flex;align-items: center;justify-content: center;
+ font-weight: var(--fw-bold);font-size: 15px;
+ color: white;text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+ cursor: pointer;position: relative;
+ background-image: linear-gradient(180deg, var(--cell-color-light, currentColor) 0%, var(--cell-color, currentColor) 60%, var(--cell-color-dark, rgba(0,0,0,0.15)) 100%);
+ box-shadow:
+  inset 0 1px 0 rgba(255,255,255,0.18),
+  inset 0 -2px 4px rgba(0,0,0,0.2),
+  0 1px 2px rgba(0,0,0,0.3);
+ transition: transform 180ms var(--ease-spring), box-shadow 180ms var(--ease-out);
+}
+.cell:hover{transform: scale(1.08); z-index: 1;}
+.cell.unknown{
+ background: var(--color-bg-muted) !important;
+ color: var(--color-fg);
+ border: 1.5px dashed var(--color-fg-muted);
+}
+.cell.lock-icon{background: var(--color-success);color: #000}
+.cell.with-img img{width: 100%;height: 100%;object-fit: cover;border-radius: 7px}
+
+/* ============================================================
+   STATUS BAR & METRICS
+   ============================================================ */
+.status{
+ background: var(--color-bg);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ padding: 12px 14px;
+ font-family: var(--font-mono);
+ font-size: var(--fs-sm);
+ white-space: pre-wrap;
+ min-height: 60px;
+ display: flex;align-items: center;gap: 10px;
+}
+.status.ok{border-color: var(--color-success)}
+.status.warn{border-color: var(--color-warning)}
+.status.bad{border-color: var(--color-danger)}
+.status-icon{width: 20px;height: 20px;flex-shrink: 0;display: none;align-items: center;justify-content: center;font-weight: bold;font-family: var(--font-mono)}
+.status-icon.show{display: flex}
+.status-content{flex: 1;line-height: 1.5}
+
+.strategy-mode{
+ padding: 10px 14px;
+ border-radius: var(--radius-sm);
+ border: 1.5px solid var(--color-border);
+ background: var(--color-bg);
+ display: flex;align-items: center;gap: 12px;
+}
+.strategy-mode .mode-icon{
+ width: 40px;height: 40px;border-radius: var(--radius-sm);
+ display: flex;align-items: center;justify-content: center;
+ font-size: 22px;font-weight: var(--fw-bold);
+ background: var(--color-bg-muted);
+ color: var(--color-fg);
+ flex-shrink: 0;
+}
+.strategy-mode .mode-label{
+ font-size: var(--fs-xs);color: var(--color-fg-muted);
+ text-transform: uppercase;letter-spacing: 0.08em;font-weight: var(--fw-semibold);
+}
+.strategy-mode .mode-value{font-size: var(--fs-md);font-weight: var(--fw-bold);margin-top: 2px}
+
+.strategy-mode.priority{border-color: var(--color-strategy-priority)}
+.strategy-mode.priority .mode-value{color: var(--color-strategy-priority)}
+
+.strategy-mode.balanced{border-color: var(--color-strategy-balanced)}
+.strategy-mode.balanced .mode-value{color: var(--color-strategy-balanced)}
+
+.strategy-mode.predict{border-color: var(--color-strategy-predict)}
+.strategy-mode.predict .mode-value{color: var(--color-strategy-predict)}
+
+.metric-row{display: grid;grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));gap: var(--space-3);margin-top: var(--space-3)}
+.metric{
+ padding: 10px 12px;
+ background: var(--color-bg);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ display: flex;flex-direction: column;gap: 2px;
+}
+.metric-label{font-size: var(--fs-xs);color: var(--color-fg-muted);text-transform: uppercase;letter-spacing: 0.06em;font-weight: var(--fw-semibold)}
+.metric-value{font-size: var(--fs-xl);font-weight: var(--fw-bold);font-family: var(--font-mono);color: var(--color-fg)}
+.metric.accent .metric-value{color: var(--color-primary)}
+.metric.warn .metric-value{color: var(--color-warning)}
+.metric.success .metric-value{color: var(--color-success)}
+
+/* ============================================================
+   SOLVER PROGRESS
+   ============================================================ */
+.solver-progress{
+ margin-top: var(--space-3);
+ padding: 12px 14px;
+ background: var(--color-bg);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ display: none;
+}
+.solver-progress.show{display: block}
+.solver-progress-head{
+ display: flex;justify-content: space-between;align-items: center;
+ margin-bottom: 8px;font-family: var(--font-mono);font-size: var(--fs-sm);
+}
+.solver-bar{
+ height: 8px;background: var(--color-bg-muted);
+ border-radius: 999px;overflow: hidden;margin-top: 6px;
+ position: relative;
+}
+.solver-bar i{
+ display: block;height: 100%;
+ background: var(--color-primary);
+ width: 0%;
+ transition: width var(--duration-base) var(--ease-out);
+ border-radius: 999px;
+}
+.solver-row{
+ display: flex;flex-wrap: wrap;gap: var(--space-4);
+ justify-content: space-between;margin-top: 8px;
+ font-family: var(--font-mono);font-size: var(--fs-xs);
+ color: var(--color-fg-muted);
+}
+
+/* ============================================================
+   CHECKPOINT BAR
+   ============================================================ */
+.checkpoint-bar{
+ margin-top: var(--space-3);
+ padding: 10px 14px;
+ background: var(--color-bg);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ display: none;
+ align-items: center;
+ gap: 10px;
+ flex-wrap: wrap;
+}
+.checkpoint-bar.show{display: flex}
+.checkpoint-info{
+ font-size: var(--fs-xs);color: var(--color-fg-muted);
+ font-family: var(--font-mono);
+ flex: 1;
+ min-width: 200px;
+}
+.checkpoint-info b{color: var(--color-fg);font-weight: var(--fw-semibold)}
+.checkpoint-slots{
+ display: flex;gap: 4px;
+}
+.checkpoint-slot{
+ padding: 4px 8px;
+ font-size: var(--fs-xs);
+ font-family: var(--font-mono);
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border-strong);
+ border-radius: 4px;
+ color: var(--color-fg-muted);
+ cursor: pointer;
+ min-width: 50px;
+ text-align: center;
+}
+.checkpoint-slot:hover{border-color: var(--color-primary);color: var(--color-fg)}
+.checkpoint-slot.filled{background: var(--color-bg-muted);color: var(--color-fg);border-color: var(--color-primary)}
+.checkpoint-slot.active{background: var(--color-primary);color: var(--color-on-primary);border-color: var(--color-primary)}
+
+/* ============================================================
+   CANDIDATES
+   ============================================================ */
+.candidate{
+ background: var(--color-bg);
+ border: 1.5px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ padding: 12px 14px;
+ margin: var(--space-2) 0;
+ cursor: pointer;
+ transition: border-color 200ms var(--ease-out), transform 200ms var(--ease-spring);
+}
+.candidate:hover{
+ border-color: var(--color-primary);
+ transform: translateY(-2px);
+}
+.candidate.best{border-color: var(--color-success)}
+.candidate-head{display: flex;justify-content: space-between;align-items: center;margin-bottom: 8px;gap: 12px}
+.candidate-title{font-weight: var(--fw-bold);font-size: var(--fs-md)}
+.candidate-badge{
+ font-size: var(--fs-xs);font-weight: var(--fw-semibold);
+ padding: 3px 10px;border-radius: 999px;
+ background: var(--color-bg-muted);color: var(--color-fg-muted);
+ text-transform: uppercase;letter-spacing: 0.06em;
+}
+.candidate.best .candidate-badge{background: var(--color-success);color: white}
+.candidate-meta{font-size: var(--fs-xs);color: var(--color-fg-muted);margin-top: 6px;display: flex;gap: 12px;flex-wrap: wrap}
+.candidate-meta span{display: inline-flex;align-items: center;gap: 4px}
+.candidate-bar{height: 6px;background: var(--color-bg-muted);border-radius: 999px;overflow: hidden;margin-top: 8px}
+.candidate-bar i{display: block;height: 100%;border-radius: 999px;background: var(--color-success);transition: width var(--duration-slow) var(--ease-out)}
+.candidate-bar i.warn{background: var(--color-warning)}
+.candidate-bar i.bad{background: var(--color-danger)}
+
+/* ============================================================
+   SOLUTION STEPS
+   ============================================================ */
+.move{
+ display: inline-flex;align-items: center;gap: 6px;
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border-strong);
+ border-radius: 999px;
+ padding: 5px 12px;
+ font-size: var(--fs-xs);
+ font-family: var(--font-mono);
+ font-weight: var(--fw-semibold);
+ margin: 3px 4px 3px 0;
+}
+.move .from{color: var(--color-warning);font-weight: var(--fw-bold)}
+.move .to{color: var(--color-success);font-weight: var(--fw-bold)}
+.move .arrow{color: var(--color-fg-muted);margin: 0 4px}
+.move.current{
+ background: var(--color-primary);color: var(--color-on-primary);
+ border-color: var(--color-primary);
+}
+.move.current .from,.move.current .to{color: white}
+
+.solution-list{
+ margin-top: var(--space-3);
+ max-height: 220px;overflow-y: auto;
+ background: var(--color-bg);
+ padding: 12px;border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+}
+.solution-list .move{display: inline-flex;margin: 2px}
+
+/* ============================================================
+   PALETTE — chip kéo thả
+   ============================================================ */
+.palette-row{
+ display: flex;flex-wrap: wrap;gap: 6px;
+ justify-content: center;margin-top: var(--space-3);
+ align-items: center;
+}
+.palette-chip{
+ padding: 6px 12px;border-radius: 999px;
+ font-size: var(--fs-xs);font-weight: var(--fw-semibold);
+ color: white;text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+ cursor: grab;border: 2px solid transparent;
+ user-select: none;
+ display: inline-flex;align-items: center;gap: 4px;
+ box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+ transition: transform 180ms var(--ease-spring), box-shadow 180ms var(--ease-out), background 150ms var(--ease-out);
+}
+.palette-chip:hover{
+ transform: translateY(-3px) scale(1.05);
+ box-shadow: 0 8px 20px rgba(0,0,0,0.32);
+}
+.palette-chip:active{
+ cursor: grabbing;
+ transform: translateY(0) scale(0.98);
+ transition-duration: 80ms;
+}
+.palette-chip.active{outline: 2px solid var(--color-accent);outline-offset: 2px}
+.palette-chip.dragging{
+ transform: scale(1.1) rotate(-3deg);
+ box-shadow: 0 12px 28px rgba(0,0,0,0.4);
+ opacity: 0.85;
+}
+.palette-chip.add-new{
+ background: var(--color-bg-muted) !important;
+ color: var(--color-fg);
+ border: 1.5px dashed var(--color-border-strong);
+ text-shadow: none;
+ cursor: pointer;
+ transition: all 180ms var(--ease-spring);
+}
+.palette-chip.add-new:hover{
+ border-color: var(--color-primary);
+ color: var(--color-primary);
+ transform: translateY(-2px);
+}
+
+/* Ô cell nhận drop */
+.cell.drag-over{
+ outline: 2px dashed var(--color-accent);
+ outline-offset: -2px;
+ background: var(--color-bg-muted) !important;
+}
+
+/* ============================================================
+   EMOJI & COLOR PICKER (trong modal Thêm icon)
+   ============================================================ */
+.emoji-picker{
+ display: grid;
+ grid-template-columns: repeat(10, 1fr);
+ gap: 4px;
+ margin-top: 8px;
+ padding: 8px;
+ background: var(--color-bg);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ max-height: 160px;
+ overflow-y: auto;
+}
+.emoji-picker button{
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border);
+ border-radius: var(--radius-sm);
+ padding: 4px;
+ font-size: 18px;
+ cursor: pointer;
+ line-height: 1;
+ transition: all var(--duration-fast) var(--ease-out);
+}
+.emoji-picker button:hover{
+ background: var(--color-bg-muted);
+ border-color: var(--color-primary);
+ transform: scale(1.1);
+}
+.emoji-picker button.active{
+ background: var(--color-primary);
+ color: var(--color-on-primary);
+ border-color: var(--color-primary);
+}
+
+.color-picker{
+ display: flex;flex-wrap: wrap;gap: 4px;
+ flex: 1;
+}
+.color-swatch{
+ width: 28px;height: 28px;
+ border-radius: 50%;
+ border: 2px solid transparent;
+ cursor: pointer;
+ transition: all var(--duration-fast) var(--ease-out);
+ position: relative;
+}
+.color-swatch:hover{transform: scale(1.15)}
+.color-swatch.active{
+ border-color: var(--color-fg);
+ box-shadow: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-primary);
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+.modal{
+ position: fixed;inset: 0;
+ background: rgba(15,23,42,0.65);
+ backdrop-filter: blur(8px) saturate(140%);
+ -webkit-backdrop-filter: blur(8px) saturate(140%);
+ display: none;align-items: center;justify-content: center;
+ padding: var(--space-4);z-index: 100;
+ animation: backdropIn 200ms var(--ease-out);
+}
+.modal.show{display: flex}
+.modalBox{
+ width: min(720px, 100%);
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border-strong);
+ border-radius: var(--radius-lg);
+ padding: var(--space-5);
+ box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+ max-height: 90vh;overflow-y: auto;
+ animation: modalIn 280ms var(--ease-out-expo);
+}
+@keyframes backdropIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:scale(0.94) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-head{display: flex;justify-content: space-between;align-items: center;margin-bottom: var(--space-4)}
+.modal-head h3{font-size: var(--fs-lg);font-weight: var(--fw-bold)}
+.modal-close{
+ width: 32px;height: 32px;border-radius: 50%;
+ display: flex;align-items: center;justify-content: center;
+ background: var(--color-bg-muted);color: var(--color-fg-muted);
+ border: 1px solid var(--color-border);
+ font-size: 18px;font-weight: bold;
+}
+.modal-close:hover{background: var(--color-danger);color: white}
+.modalGrid{display: grid;grid-template-columns: repeat(6, 1fr);gap: 8px;margin-top: var(--space-3)}
+.modalGrid button{
+ min-height: 48px;font-size: var(--fs-sm);font-weight: var(--fw-semibold);
+ border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   TOAST — đơn giản
+   ============================================================ */
+.toast-container{
+ position: fixed;bottom: 20px;left: 50%;transform: translateX(-50%);
+ z-index: 200;display: flex;flex-direction: column;gap: 6px;
+ align-items: center;pointer-events: none;
+ max-width: calc(100vw - 32px);
+}
+.toast{
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border-strong);
+ border-radius: 12px;
+ padding: 12px 20px;
+ font-size: 14px;font-weight: var(--fw-medium);
+ color: var(--color-fg);
+ box-shadow: 0 8px 24px rgba(0,0,0,0.32);
+ opacity: 0;transform: translateY(20px) scale(0.95);
+ transition: opacity var(--duration-base), transform var(--duration-base);
+ animation: toastIn 240ms var(--ease-spring) forwards;
+ max-width: 90vw;text-align: center;
+ pointer-events: auto;
+ display: inline-flex;align-items: center;gap: 8px;
+}
+.toast.show{opacity: 1;transform: translateY(0) scale(1)}
+.toast.ok{border-color: var(--color-success)}
+.toast.warn{border-color: var(--color-warning)}
+.toast.bad{border-color: var(--color-danger)}
+.toast-prefix{font-weight: var(--fw-bold);font-family: var(--font-mono);font-size: 16px;min-width: 18px}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+
+/* ============================================================
+   PRESET CHIPS
+   ============================================================ */
+.preset-row{display: flex;flex-wrap: wrap;gap: 8px;align-items: center;margin-top: var(--space-3)}
+.preset-row span{font-size: var(--fs-xs);color: var(--color-fg-muted);font-weight: var(--fw-semibold);text-transform: uppercase;letter-spacing: 0.06em}
+.preset-chip{
+ padding: 6px 14px;
+ background: var(--color-bg-elevated);
+ border: 1px solid var(--color-border-strong);
+ border-radius: 999px;
+ font-size: var(--fs-xs);font-weight: var(--fw-semibold);
+ color: var(--color-fg);
+}
+.preset-chip:hover{border-color: var(--color-primary);color: var(--color-primary)}
+.preset-chip.active{background: var(--color-primary);color: var(--color-on-primary);border-color: var(--color-primary)}
+
+/* ============================================================
+   DIVIDER
+   ============================================================ */
+.divider{
+ display: flex;align-items: center;gap: 12px;
+ color: var(--color-fg-muted);
+ font-size: var(--fs-xs);font-weight: var(--fw-semibold);
+ text-transform: uppercase;letter-spacing: 0.12em;
+ margin: var(--space-4) 0;
+}
+.divider::before,.divider::after{
+ content: "";flex: 1;height: 1px;
+ background: var(--color-border);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px){
+ body{padding: var(--space-2)}
+ .panel{padding: var(--space-4)}
+ .tube-display{grid-template-columns: repeat(4, 1fr);gap: 6px;padding: var(--space-3)}
+ .tube-vis{width: 48px;min-height: 132px}
+ .cell{height: 28px;font-size: 13px}
+ .hero{padding: var(--space-4) var(--space-2) var(--space-3)}
+ .hero-title{font-size: 26px}
+ .metric-row{grid-template-columns: repeat(2, 1fr)}
+ .controls{flex-direction: column;align-items: stretch}
+ .btn{justify-content: center}
+}
+@media (max-width: 480px){
+ .tube-display{grid-template-columns: repeat(3, 1fr)}
+ .tube-vis{width: 42px;min-height: 116px}
+ .cell{height: 24px;font-size: 11px}
+ .modalGrid{grid-template-columns: repeat(4, 1fr)}
+ .metric-row{grid-template-columns: 1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="hero">
+ <div class="hero-badge">iOS Puzzle Solver</div>
+ <h1 class="hero-title">Water Sort Solver</h1>
+ <p class="hero-sub">Solver thông minh với 3 chế độ theo tỉ lệ ô ẩn — tối ưu cho game iOS Water Sort với ống ẩn và màu linh hoạt</p>
+</div>
+
+<section class="panel">
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Nhập màu từng ống</h2>
+    <small>Gõ từng ký tự, hoặc kéo icon từ palette thả vào ô</small>
+   </div>
+  </div>
+ </div>
+ <div class="controls">
+  <button id="addTubeBtn" class="btn btn-success">+ Thêm ống</button>
+  <button id="removeTubeBtn" class="btn btn-danger">− Bớt ống</button>
+  <button id="clearAllBtn" class="btn btn-ghost">Xóa sạch</button>
+  <button id="importTextBtn" class="btn btn-ghost">Nhập JSON</button>
+  <button id="exportTextBtn" class="btn btn-ghost">Xuất JSON</button>
+ </div>
+ <div class="tube-editor" id="tubeEditor"></div>
+ <div class="palette-row" id="paletteRow"></div>
+ <p style="margin-top: var(--space-3);font-size: var(--fs-xs);color: var(--color-fg-muted);text-align: center">
+  Kéo thả chip từ palette vào ô trong ống · Click chip để chọn rồi click ô để sửa
+ </p>
+</section>
+
+<section class="panel">
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Bàn hiện tại & Solver</h2>
+    <small>Xem trực quan và chạy solver</small>
+   </div>
+  </div>
+ </div>
+ <div class="tube-display" id="tubeDisplay"></div>
+ <div class="controls" style="margin-top: var(--space-4)">
+  <button id="solveBtn" class="btn btn-accent btn-lg">⚡ Tìm nhiều phương án</button>
+  <button id="animateBtn" class="btn btn-primary" disabled>▶ Chạy phương án #1</button>
+  <button id="stopBtn" class="btn btn-danger" style="display:none">⏹ Dừng</button>
+   <button id="revealBtn" class="btn btn-ghost">🔓 Mở 1 ô ?</button>
+   <button id="deductBtn" class="btn btn-ghost">🧠 Suy luận ô ? (chứng minh)</button>
+  <button id="checkpointSaveBtn" class="btn btn-ghost">💾 Lưu checkpoint</button>
+  <button id="checkpointLoadBtn" class="btn btn-ghost" disabled>↩ Khôi phục</button>
+ </div>
+ <div id="solverProgress" class="solver-progress">
+  <div class="solver-progress-head">
+   <span id="solverPhase">Đang chạy...</span>
+   <span id="solverStat" class="mono">expanded: 0 · ms: 0</span>
+  </div>
+  <div class="solver-bar"><i id="solverBar"></i></div>
+ </div>
+ <div id="checkpointBar" class="checkpoint-bar">
+  <div class="checkpoint-info" id="checkpointInfo">Chưa có checkpoint</div>
+  <div class="checkpoint-slots" id="checkpointSlots"></div>
+  <button id="checkpointClearBtn" class="btn btn-ghost btn-sm">🗑 Xoá hết</button>
+ </div>
+  <div id="status" class="status" style="margin-top: var(--space-3)">
+   <div class="status-icon">·</div>
+   <div class="status-content">Sẵn sàng. Nhập bàn rồi bấm Tìm nhiều phương án.</div>
+  </div>
+</section>
+
+<section class="panel">
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Chế độ giải & Kết quả</h2>
+    <small>Theo % ô ẩn — solver tự chọn chiến thuật tối ưu</small>
+   </div>
+  </div>
+ </div>
+ <div id="strategyBox" class="strategy-mode">
+  <div class="mode-icon" id="strategyIcon">·</div>
+  <div style="flex: 1">
+   <div class="mode-label">CHẾ ĐỘ HIỆN TẠI</div>
+   <div class="mode-value" id="strategyValue">—</div>
+   <div style="font-size: var(--fs-xs);color: var(--color-fg-muted);margin-top: 4px" id="strategyDesc"></div>
+  </div>
+ </div>
+ <div class="metric-row" id="metricRow" style="display:none">
+  <div class="metric accent"><span class="metric-label">Phương án</span><span class="metric-value" id="mPlans">0</span></div>
+  <div class="metric success"><span class="metric-label">Bước tối ưu</span><span class="metric-value" id="mBestLen">0</span></div>
+  <div class="metric warn"><span class="metric-label">Thời gian</span><span class="metric-value" id="mTime">0ms</span></div>
+  <div class="metric"><span class="metric-label">Mở rộng</span><span class="metric-value" id="mExp">0</span></div>
+ </div>
+ <div id="candidates" style="margin-top: var(--space-3)"></div>
+ <div class="solution-list" id="solutionList" style="display:none"></div>
+</section>
+
+<section class="panel">
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Hướng dẫn nhanh</h2>
+    <small>Quy tắc chính</small>
+   </div>
+  </div>
+ </div>
+ <div style="font-size: var(--fs-sm);line-height: 1.75;color: var(--color-fg-muted)">
+  <p style="margin: 0 0 12px"><strong style="color: var(--color-fg)">Mã màu mặc định:</strong> G/R/B/Y/O/W/D — Green, Red, Blue, Yellow, Orange, White, Drop. Dấu <code style="background: var(--color-bg);padding: 2px 6px;border-radius: 4px">?</code> = ô ẩn. CAP mặc định 4. Có thể thêm icon mới trong palette.</p>
+  <p style="margin: 0 0 12px"><strong style="color: var(--color-fg)">Logic ưu tiên theo % ?:</strong></p>
+  <ul style="margin: 0 0 12px;padding-left: 20px">
+   <li><span style="color: var(--color-strategy-priority);font-weight: 700">&gt;60%</span> &mdash; ưu tiên lộ ô ẩn càng nhiều càng tốt mỗi move</li>
+   <li><span style="color: var(--color-strategy-balanced);font-weight: 700">20&ndash;60%</span> &mdash; giữ 1 ống rỗng dự phòng để tránh bí</li>
+   <li><span style="color: var(--color-strategy-predict);font-weight: 700">&lt;20%</span> &mdash; dự đoán xác suất ô ?, đưa phương án tối ưu</li>
+  </ul>
+  <p style="margin: 0"><strong style="color: var(--color-fg)">Tránh vòng lặp:</strong> solver tự phạt nặng các move A&rarr;B&rarr;A lặp lại (cycle detection 250 điểm).</p>
+ </div>
+</section>
+
+<section class="panel">
+ <div class="panel-header">
+  <div class="panel-title">
+   <div>
+    <h2>Cấu hình bàn</h2>
+    <small>CAP, số ống, ví dụ — đặt ở cuối vì ít dùng</small>
+   </div>
+  </div>
+ </div>
+ <div class="controls">
+  <label class="field">CAP <input id="capInput" type="number" min="2" max="12" value="4"></label>
+  <label class="field">Số ống <input id="tubeCountInput" type="number" min="2" max="18" value="10"></label>
+  <button id="rebuildBtn" class="btn btn-ghost">Tạo lại bàn</button>
+  <button id="loadExampleBtn" class="btn btn-ghost">Frame 1 v2</button>
+  <button id="loadSimpleBtn" class="btn btn-ghost">4 ống đơn giản</button>
+ </div>
+ <div class="preset-row">
+  <span>Preset nhanh</span>
+  <button class="preset-chip" data-preset="10">10 ống</button>
+  <button class="preset-chip" data-preset="12">12 ống</button>
+  <button class="preset-chip" data-preset="14">14 ống</button>
+  <button class="preset-chip" data-preset="16">16 ống</button>
+  <button class="preset-chip" data-preset="18">18 ống</button>
+ </div>
+</section>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="modal" id="modal">
+ <div class="modalBox">
+  <div class="modal-head">
+   <h3 id="modalTitle">Chọn màu</h3>
+   <button class="modal-close" id="modalX">×</button>
+  </div>
+  <div id="modalGrid" class="modalGrid"></div>
+  <div class="controls" style="justify-content: flex-end;margin-top: var(--space-3)">
+   <button id="modalClear" class="btn btn-danger">Xóa ô</button>
+   <button id="modalClose" class="btn btn-ghost">Đóng</button>
+  </div>
+ </div>
+</div>
+
+<div class="modal" id="paletteModal">
+ <div class="modalBox" style="max-width: 520px">
+  <div class="modal-head">
+   <h3>Thêm icon / màu mới</h3>
+   <button class="modal-close" id="paletteModalX">×</button>
+  </div>
+  <div style="display: flex;flex-direction: column;gap: 12px">
+   <label class="field" style="font-size: var(--fs-base)">Ký tự viết tắt (1 chữ cái, viết hoa)
+    <input id="newColorId" type="text" maxlength="1" placeholder="VD: P" style="width: 80px;text-transform: uppercase">
+   </label>
+   <label class="field" style="font-size: var(--fs-base)">Tên hiển thị
+    <input id="newColorName" type="text" placeholder="VD: Purple">
+   </label>
+   <div>
+    <div class="field" style="font-size: var(--fs-sm);margin-bottom: 6px">Icon (chọn mẫu bên dưới hoặc nhập)</div>
+    <input id="newColorSymbol" type="text" maxlength="4" placeholder="VD: 🟣" style="width: 100%;padding: 8px;background: var(--color-bg);border: 1px solid var(--color-border-strong);border-radius: var(--radius-sm);color: var(--color-fg);font-size: 18px;text-align: center">
+    <div class="emoji-picker" id="emojiPicker"></div>
+   </div>
+   <div>
+    <div class="field" style="font-size: var(--fs-sm);margin-bottom: 6px">Màu nền (chọn mẫu bên dưới hoặc tự chọn)</div>
+    <div style="display: flex;gap: 8px;align-items: center;flex-wrap: wrap">
+     <input id="newColorBg" type="color" value="#a855f7" style="width: 50px;height: 36px;padding: 2px;border-radius: var(--radius-sm);border: 1px solid var(--color-border-strong)">
+     <div class="color-picker" id="colorPicker"></div>
+    </div>
+   </div>
+   <label class="field" style="font-size: var(--fs-sm)">
+    <input id="newColorTextDark" type="checkbox"> Chữ tối (nếu nền sáng)
+   </label>
+  </div>
+  <div class="controls" style="justify-content: flex-end;margin-top: var(--space-4)">
+   <button id="paletteModalCancel" class="btn btn-ghost">Huỷ</button>
+   <button id="paletteModalSave" class="btn btn-primary">Lưu icon</button>
+  </div>
+ </div>
+</div>
+
+<!-- Lõi giải dùng chung: cùng file với water_sort_ultimate.html.
+     Nạp TRƯỚC script chính vì main script tạo Solver engine ngay ở top-level.
+     Nhờ vậy chỉ có MỘT bản heuristic/admissible trong toàn hệ thống. -->
+<script src="water-sort-solver.js"></script>
+
+<script>
+"use strict";
+
+/* ============================================================
+   PALETTE — 7 màu iOS Water Sort + ? (unknown) + drop (brown)
+   Có thể mở rộng qua modal "Thêm icon mới", lưu localStorage
+   ============================================================ */
+const DEFAULT_PALETTE = [
+ { id: "G", name: "Green",  symbol: "💚", bg: "#22c55e" },
+ { id: "R", name: "Red",    symbol: "❤", bg: "#dc2626" },
+ { id: "B", name: "Blue",   symbol: "🟦", bg: "#3b82f6" },
+ { id: "Y", name: "Yellow", symbol: "💛", bg: "#eab308" },
+ { id: "O", name: "Orange", symbol: "🟧", bg: "#f97316" },
+ { id: "P", name: "Purple", symbol: "💜", bg: "#a855f7" },
+ { id: "I", name: "Pink",   symbol: "🩷", bg: "#ec4899" },
+ { id: "W", name: "White",  symbol: "⬜", bg: "#e2e8f0", textDark: true },
+ { id: "D", name: "Drop",   symbol: "💧", bg: "#a16207" },
+ { id: "Q", name: "Unknown",symbol: "?",  bg: "#475569" }
+];
+const UNK = "Q";
+
+// Load custom palette từ localStorage (nếu có), merge với default
+const PALETTE_KEY = "wss_palette_v1";
+function loadCustomPalette(){
+ try{
+  const raw = localStorage.getItem(PALETTE_KEY);
+  if(!raw) return [];
+  const arr = JSON.parse(raw);
+  return Array.isArray(arr) ? arr : [];
+ } catch(e){ return []; }
+}
+function saveCustomPalette(arr){
+ try{ localStorage.setItem(PALETTE_KEY, JSON.stringify(arr)); } catch(e){}
+}
+const CUSTOM_PALETTE = loadCustomPalette();
+const PALETTE = DEFAULT_PALETTE.concat(CUSTOM_PALETTE);
+const PALETTE_MAP = {};
+for (const p of PALETTE) PALETTE_MAP[p.id] = p;
+
+function addToCustomPalette(p){
+ // Không cho trùng id
+ if(PALETTE_MAP[p.id]) return false;
+ CUSTOM_PALETTE.push(p);
+ PALETTE.push(p);
+ PALETTE_MAP[p.id] = p;
+ saveCustomPalette(CUSTOM_PALETTE);
+ return true;
+}
+function removeFromCustomPalette(id){
+ const idx = CUSTOM_PALETTE.findIndex(p => p.id === id);
+ if(idx < 0) return false;
+ CUSTOM_PALETTE.splice(idx, 1);
+ const i2 = PALETTE.findIndex(p => p.id === id);
+ if(i2 >= 0) PALETTE.splice(i2, 1);
+ delete PALETTE_MAP[id];
+ saveCustomPalette(CUSTOM_PALETTE);
+ return true;
+}
+
+let state = {
+ CAP: 4,
+ tubes: [[], [], [], [], [], [], [], [], [], []], // 10 ống mặc định
+ selectedTube: -1,
+ selectedCell: -1,
+ selectedColor: "G",
+ history: [],
+ candidates: [],     // kết quả từ solver
+ lastSolution: null, // path nước đi
+ isAnimating: false,
+ cancelled: false,        // dùng để dừng solver/animation giữa chừng
+ checkpoints: [],    // [{tubes, CAP, ts, label}, ...] tối đa 5 slot
+ activeCheckpoint: -1,
+ lastDeduction: null, // kết quả 🧠 Suy luận ô ? gần nhất, để hiển thị lại được
+};
+
+// Load checkpoints từ localStorage khi khởi động
+state.checkpoints = loadCheckpoints();
+
+const $ = id => document.getElementById(id);
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function getColor(id){return PALETTE_MAP[id] || null}
+function topValue(t){return t.length ? t[t.length-1] : null}
+function topRun(t){
+ if(!t.length) return 0;
+ const c = topValue(t); let n = 0;
+ for(let i = t.length-1; i >= 0 && t[i] === c; i--) n++;
+ return n;
+}
+function isComplete(t){return t.length === state.CAP && t.every(x => x === t[0] && x !== UNK)}
+function isSolved(s){return s.every(t => t.length === 0 || isComplete(t))}
+function hasUnknown(s){return s.some(t => t.includes(UNK))}
+
+/* ---------- ADAPTER sang water-sort-solver.js ----------
+   Toàn bộ lõi giải (luật, heuristic admissible, A* flat, suy luận ô ?, chẩn
+   đoán bàn chết) đã ở water-sort-solver.js — dùng chung với
+   water_sort_ultimate.html. Trước đây 2 file có HAI heuristic khác nhau và cả
+   hai đều không admissible; gộp 1 chỗ là loại hẳn lớp bug đó.
+   Bên dưới chỉ còn bí danh giữ nguyên tên để các nơi khác không phải sửa. */
+function getSolver() {
+  return WaterSortSolver.makeEngine({ CAP: state.CAP, UNK: UNK });
+}
+const exactSolve  = (tubes, opt) => getSolver().exactSolve(tubes, opt);
+const heuristic  = s => getSolver().heuristic(s);
+const rankScore   = s => getSolver().rankScore(s);
+const findAllUnknowns = s => getSolver().findAllUnknowns(s);
+const clearWinMemo = () => getSolver().resetAll();
+const safeLockedCount = s => s.reduce((n, t) => n + (getSolver().isComplete(t) ? 1 : 0), 0);
+const diagnoseDeadBoard = (clean, res) => getSolver().diagnoseDeadBoard(clean, res,
+  PALETTE.filter(p => p.id !== UNK).map(p => p.id));
+const deductUnknowns = (st, opt) => getSolver().deductUnknowns(st, opt,
+  PALETTE.filter(p => p.id !== UNK).map(p => p.id));
+const solveInWorker = (tubes, opt) => getSolver().solveInWorker(tubes, opt);
+const deductInWorker = (st, opt) => getSolver().deductInWorker(st, opt,
+  PALETTE.filter(p => p.id !== UNK).map(p => p.id));
+
+/* KIẾN TRÚC SEARCH (đã chốt): module water-sort-solver.js là nguồn duy nhất
+   cho verdict win/dead, heuristic admissible (heuristic) và xếp hạng
+   (rankScore). solveMultiplePlans/idaStar/moveScore bên dưới là planner của
+   UI cho đường partial/blocked_unknown — chúng dùng heuristic/rankScore của
+   module và tôn trọng vùng dead đã biết, không tự kết luận win/dead. */
+
+/* ---------- T1: gán 1 ô ? rồi kết luận ngay ----------
+   Sau mỗi lần gán, chạy exactSolve để trả lời trung thực thay vì bắt user
+   bấm lại solver. */
+function assignUnknown(ti, li, id){
+  saveHistory();
+  state.tubes[ti][li] = id;
+  renderAll();
+  const clean = state.tubes.map(t => t.filter(x => x != null));
+  if(isSolved(clean)){ setStatus("ok", "🎉 Bàn đã hoàn thành."); return; }
+  clearWinMemo();
+  // Try Web Worker first, fallback to sync
+  getSolver().solveInWorker(clean, {maxStates: 150000, budgetMs: 2500}).then(r => {
+    if(!r) {
+      r = exactSolve(clean, {maxStates: 150000, deadline: Date.now() + 2500});
+    }
+    if(r.verdict === "win"){
+     setStatus("ok", "✅ Ống " + (ti+1) + " lớp " + (li+1) + " = " + id + ".\n" +
+      "Bàn này THẮNG ĐƯỢC, tối ưu " + r.path.length + " bước. Bấm ▶ Chạy lời giải.");
+    }else if(r.verdict === "dead"){
+     setStatus("bad", "✅ Ống " + (ti+1) + " lớp " + (li+1) + " = " + id + ".\n" +
+      "Màu này KHÔNG làm bàn giải được — " + r.states.toLocaleString() +
+      " trạng thái đã duyệt hết, không còn đường nào tới đích.\n" +
+      "Bấm Undo rồi thử màu khác, hoặc bấm 🧠 Suy luận ô ?.");
+    }else{
+     setStatus("warn", "✅ Ống " + (ti+1) + " lớp " + (li+1) + " = " + id +
+      ".\nBàn này CHƯA kết luận được (đã duyệt " + r.states.toLocaleString() +
+      " trạng thái, chưa hết không gian).");
+    }
+    renderStrategy(clean);
+  });
+}
+
+/* ---------- T2/T3: suy luận ô ? có bằng chứng ----------
+   Bản cũ chỉ thử "single" rồi "roundrobin" trên missing.slice(0,3) — chọn 3
+   màu ĐẦU TIÊN theo thứ tự palette, hoàn toàn tuỳ ý.
+   Nay: exactSolve chứng minh từng cách gán, rồi xếp hạng theo số nước. */
+function runDeduction(){
+  const st = state.tubes.map(t => t.filter(x => x != null));
+  const all = findAllUnknowns(st);
+  if(!all.length){ setStatus("warn", "Không còn ô ? nào trên bàn."); return; }
+  setStatus("warn", "🧠 Đang kiểm chứng " + all.length + " ô ? (thử từng cách gán bằng exact solver)…");
+  const t0 = Date.now();
+  // Suy luận trong Web Worker thật (deductInWorker), fallback sync khi worker
+  // không dựng được (file://, CSP) hoặc quá hạn.
+  deductInWorker(st, {budget: 20000, maxStates: 300000}).then(d => {
+    if(!d) d = deductUnknowns(st, {budget: 20000, maxStates: 300000});
+    handleDeductionResult(d, t0, all);
+  });
+}
+function handleDeductionResult(d, t0, all){
+  const ms = Date.now() - t0;
+  state.lastDeduction = {verdict: d.verdict, ms, tested: d.tested, feasible: d.feasible,
+    total: d.totalAssign, truncated: d.truncated, unk: all.map(x => ({ti: x.ti, li: x.li})),
+    candidates: d.candidates.map(c => ({acc: c.acc, verdict: c.verdict, len: c.len, states: c.states}))};
+  const label = id => { const p = getColor(id); return p ? (p.symbol + " " + p.id) : id; };
+  const posTxt = d.candidates.length
+    ? d.candidates[0].acc.map((_, i) => "T" + (all[i].ti+1) + "#" + (all[i].li+1)).join("  ")
+    : "";
+
+  if(d.verdict === "count-infeasible"){
+   setStatus("bad", "❌ Vô lý về số học — ván này không thể thắng dù mở ô ? thế nào.\n" +
+    (d.reason || "") + "\nMỗi màu phải có đúng " + state.CAP + " ô để gom đủ một ống. Cần " +
+    d.needTotal + " ô để bù, bàn chỉ có " + d.unk + " ô ?.\n" +
+    "Cách khắc phục: sửa vài ô trên bàn hoặc thêm ống rỗng. (" + ms + "ms)");
+   return;
+  }
+  if(d.verdict === "all-dead"){
+   setStatus("bad", "❌ Mọi cách gán ô ? đều KHÔNG giải được.\n" +
+    "Đã kiểm chứng " + d.tested + " cách gán bằng exact solver — tất cả đều bị chứng minh là không có lời giải.\n" +
+    "Việc mở ô ? KHÔNG cứu được bàn này. Nguyên nhân ở bố cục, không ở ô ?.\n" +
+    "Cách khắc phục: thêm ống rỗng, hoặc sửa vài ô trên bàn. (" + ms + "ms)");
+   return;
+  }
+  if(d.verdict === "solvable"){
+   const wins = d.candidates.filter(c => c.verdict === "win");
+   const best = wins.reduce((a, b) => (b.len < a.len ? b : a));
+   const assignTxt = best.acc.map((c, i) => "T" + (all[i].ti+1) + "#" + (all[i].li+1) + " = " + label(c)).join("  ·  ");
+   let txt = "🧠 KẾT LUẬN CÓ BẰNG CHỨNG\n";
+   txt += "Đã thử " + d.tested + " cách gán (tổng " + d.totalAssign +
+    " cách hợp lệ" + (d.truncated ? ", đã giới hạn" : "") + "). Tìm ra " + wins.length + " cách giải được.\n";
+   txt += "✔ Gợi ý tối ưu (" + best.len + " nước): " + assignTxt + "\n";
+   if(wins.length > 1)
+    txt += "⚠ Có " + wins.length + " cách gán ĐỀU giải được → màu ẩn KHÔNG xác định duy nhất " +
+     "bằng tính " + '"giải được". Nếu chuỗi này không chạy trong game, hãy thử cách khác.';
+   else
+    txt += "Chỉ có 1 cách gán giải được → nhiều khả năng đây chính là màu ẩn thật.";
+   txt += "\n" + posTxt + "\nGán theo gợi ý này rồi bấm ▶ Chạy lời giải. (" + ms + "ms)";
+   setStatus("ok", txt);
+   return;
+  }
+  setStatus("warn", "🧠 Đã thử " + d.tested + "/" + d.totalAssign +
+   " cách gán: chưa cách nào kết luận được (hết ngân sách thời gian).\n" +
+   "Tăng thời gian chạy rồi bấm lại, hoặc mở ô ? và gán thử từng màu.");
+}
+
+function detectStrategy(s){
+ const total = s.reduce((n, t) => n + t.length, 0);
+ const unk = s.reduce((n, t) => n + t.filter(x => x === UNK).length, 0);
+ const ratio = total ? unk / total : 0;
+ let mode = "predict", desc = "";
+ if(ratio > 0.6){
+  mode = "priority";
+  desc = "Ô ẩn > 60%: ưu tiên giải ô ẩn càng nhiều càng tốt. Mỗi nước đi phải expose ít nhất 1 ô ẩn.";
+ } else if(ratio >= 0.2){
+  mode = "balanced";
+  desc = "Ô ẩn 20-60%: luôn giữ 1 ống rỗng dự phòng để tránh bí. Gom 1 màu/ống, tránh di chuyển 1 lớp qua lại.";
+ } else {
+  mode = "predict";
+  desc = "Ô ẩn < 20%: dự đoán màu ô ẩn qua suy luận (loại trừ màu đã đủ + không trùng lớp trên) rồi tìm lời giải.";
+ }
+ return { mode, ratio, unk, total, desc };
+}
+
+/* ============================================================
+   HEURISTIC - matching màu để đánh giá state
+   ============================================================ */
+function colorCount(s){
+ const c = {};
+ for(const t of s) for(const x of t){
+  if(x === UNK) continue;
+  c[x] = (c[x] || 0) + 1;
+ }
+ return c;
+}
+/* ============================================================
+   LOOP DETECTION - phạt nặng A→B→A lặp
+   ============================================================ */
+function detectLoopInPath(path){
+ if(path.length < 4) return false;
+ const last4 = path.slice(-4);
+ // Pattern: a→b, b→a, a→b, b→a
+ if(last4[0].from === last4[2].from && last4[0].to === last4[1].from &&
+    last4[1].to === last4[2].from && last4[2].to === last4[3].from &&
+    last4[3].to === last4[0].from) return true;
+ // 2-cycle repeated
+ if(last4[0].from === last4[2].to && last4[0].to === last4[2].from &&
+    last4[1].from === last4[3].to && last4[1].to === last4[3].from) return true;
+ return false;
+}
+function isCycleMove(path, m){
+ // Check if m would immediately undo last move
+ if(!path.length) return false;
+ const last = path[path.length-1];
+ if(last.from === m.to && last.to === m.from) return true;
+ return false;
+}
+
+/* ============================================================
+   UNKNOWN REVEAL - dự đoán màu ô ?
+   ============================================================ */
+function predictUnknowns(s){
+ // Mỗi ô ? có thể là 1 màu chưa đủ (mỗi màu có tối đa expectedCount ô)
+ const max = expectedCount(s);
+ const c = colorCount(s);
+ const candidates = [];
+ const knownColors = Object.keys(c);
+ for(const p of PALETTE){
+  if(p.id === UNK) continue;
+  if((c[p.id] || 0) >= max) continue; // màu đã đủ
+  candidates.push(p.id);
+ }
+ // For each ? position, return ordered candidates
+ return candidates;
+}
+
+/* ============================================================
+   MULTI-PLAN SOLVER
+   Tìm nhiều phương án khác nhau, đánh giá theo strategy + chống loop
+   ============================================================ */
+function stateKey(s){return s.map(t => t.join(",")).join("|")}
+
+function solveMultiplePlans(start, opts){
+ const maxDepth = opts.maxDepth || 50;
+ const maxTime = opts.maxTime || 8000;
+ const maxPlans = opts.maxPlans || 5;
+ const strategy = opts.strategy || detectStrategy(start).mode;
+ const deadline = Date.now() + maxTime;
+ const seen = new Set([stateKey(start)]);
+ const plans = [];
+
+ // P0: beam search chỉ cần XẾP HẠNG (thứ tự duyệt), không cần cận dưới, nên
+ // dùng rankScore() cho giàu thông tin hơn. Ngưỡng cắt nhánh của idaStar() bên
+ // dưới vẫn dùng heuristic() vì heuristic() mới là cận dưới hợp lệ.
+ const initialFrontier = [{s: clone(start), path: [], g: 0, h: rankScore(start)}];
+ initialFrontier[0].f = initialFrontier[0].g + initialFrontier[0].h;
+ let frontier = initialFrontier;
+ let expanded = 0;
+ let lastReport = Date.now();
+
+ /* ============================================================
+    MOVE RANKING - 3 STRATEGIES theo % ô ẩn
+    ============================================================ */
+ function rankMoves(node){
+  const moves = legalMoves(node.s);
+  const strat = detectStrategy(node.s);
+
+  const scored = moves.map(m => {
+   const ns = applyMove(node.s, m.from, m.to);
+   const fromBefore = node.s[m.from];
+   const toBefore = node.s[m.to];
+   const topC = topValue(fromBefore);
+   const runA = topRun(fromBefore);
+   let score = 0;
+
+   /* === UNIVERSAL: luôn tốt === */
+   if(isComplete(ns[m.to])) score += 120; // complete tube = rất tốt
+   if(runA >= 2) score += 8; // move cả 1 lớp cùng màu = hiệu quả
+   // (đã bỏ phạt isOverLimit: nó dựa trên ước lượng trần màu nên sai khi có ô ?
+   //  và việc màu vượt CAP đã được chặn ngay ở runSolver bằng kiểm tra thật)
+
+   /* === CYCLE / LOOP PENALTY (áp dụng mọi strategy) === */
+   if(isCycleMove(node.path, m)) score -= 250; // A→B rồi B→A ngay = thua
+   if(detectLoopInPath(node.path.concat(m))) score -= 100;
+
+   /* === STRATEGY-SPECIFIC === */
+   if(strat.mode === "priority"){
+    // >60% ẩn: MỖI MOVE PHẢI LỘ Ô ? 
+    // Logic: chỉ nhận move mà SAU move có ít nhất 1 ? được reveal (lộ)
+    // Reveal = top trước là non-? và top sau là ? (đã lộ)
+    let exposed = 0;
+    if(m.from !== m.to){
+     const fromAfter = ns[m.from];
+     const fromBeforeArr = fromBefore;
+     if(fromBeforeArr.length > 0 && fromBeforeArr[fromBeforeArr.length-1] !== UNK){
+      // we just took off a known color. Does that expose a ? below?
+      if(fromAfter.length > 0 && topValue(fromAfter) === UNK) exposed++;
+     }
+     // also: moved-to exposes ? if we placed under a ? stack? No, that's only adds to top.
+     // also: tube was UNK-only and now empty (rare)
+    }
+    if(exposed === 0) score -= 60; // KHÔNG lộ ô ? = move lãng phí
+    if(exposed >= 1) score += 80;
+    if(exposed >= 2) score += 150; // bonus nếu lộ 2+ ?
+    // Bỏ qua ưu tiên "move to empty" vì lúc này ? quan trọng hơn
+    if(toBefore.length === 0) score += 5;
+   } else if(strat.mode === "balanced"){
+    // 20-60% ẩn: GIỮ 1 ỐNG RỖNG DỰ PHÒNG
+    // Rất quan trọng: không dùng hết empty tube
+    const emptyBefore = node.s.filter(t => t.length === 0).length;
+    const emptyAfter = ns.filter(t => t.length === 0).length;
+    if(emptyBefore === 1 && toBefore.length === 0 && emptyAfter === 0){
+     // vừa dùng ống rỗng cuối cùng → dễ bí đường
+     score -= 200;
+    }
+    if(emptyAfter === 0 && strat.unk > 0.3) score -= 100; // >30% ẩn mà hết rỗng = rất nguy hiểm
+    // Hoàn thành 1 màu đầu tiên là tốt (strategy: complete 1 color then move on)
+    if(isComplete(ns[m.to])) score += 80; // tăng thêm vì mỗi màu hoàn thành = workspace mới
+    // Empty buffer được khuyến khích dùng có mục đích
+    if(toBefore.length === 0) score += 20;
+   } else {
+    // <20% ẩn: DỰ ĐOÁN XÁC SUẤT + GIẢI NHANH
+    // Ở đây coi như puzzle có thể suy ra màu ? qua logic (màu còn lại chưa đủ + không trùng lớp trên)
+    // Nên ta chấp nhận ? như màu linh hoạt, dùng full heuristic
+    // Hoàn thành ống = rất tốt
+    if(isComplete(ns[m.to])) score += 150;
+    // Gom màu về 1 ống
+    if(runA >= 2) score += 15;
+    // Move to empty = OK
+    if(toBefore.length === 0) score += 30;
+    // Hạn chế di chuyển 1 lớp giữa 2 ống (giảm nhiễu)
+    if(runA === 1 && toBefore.length > 0) score -= 5;
+   }
+
+   return { m, ns, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored;
+ }
+
+ // Beam search
+ let bestPlan = null;
+ for(let d = 0; d < maxDepth; d++){
+  if(state.cancelled){ state.cancelled = false; break; }
+  if(Date.now() > deadline) break;
+  if(Date.now() - lastReport > 200){
+   setSolverProgress("Đang tìm phương án (depth " + d + ")", expanded, plans.length, Date.now() - (deadline - maxTime));
+   lastReport = Date.now();
+  }
+  const next = [];
+  for(const node of frontier){
+   if(isSolved(node.s)){
+    if(!bestPlan || node.path.length < bestPlan.path.length){
+     bestPlan = {path: node.path, score: node.g, finalState: node.s, exposedUnknowns: countExposedUnknowns(start, node.s)};
+     plans.unshift(bestPlan);
+    } else {
+     const alt = {path: node.path, score: node.g, finalState: node.s, exposedUnknowns: countExposedUnknowns(start, node.s)};
+     if(plans.length < maxPlans) plans.push(alt);
+    }
+    continue;
+   }
+   if(bestPlan && node.path.length >= bestPlan.path.length) continue;
+
+   const moves = rankMoves(node);
+   for(const scored of moves){
+    if(isCycleMove(node.path, scored.m)) continue;
+    const k = stateKey(scored.ns);
+    if(seen.has(k)) continue;
+    seen.add(k);
+    expanded++;
+    const newNode = {
+     s: scored.ns,
+     path: node.path.concat(scored.m),
+     g: node.g + 1,
+     h: rankScore(scored.ns),
+     lastScore: scored.score
+    };
+    newNode.f = newNode.g + newNode.h;
+    next.push(newNode);
+   }
+  }
+  next.sort((a, b) => a.f - b.f);
+  // Adaptive beam width: more for fully-known states, less for high-? to prune hard
+  const beamWidth = strategy === "predict" ? 150 : strategy === "balanced" ? 80 : 40;
+  frontier = next.slice(0, beamWidth);
+  if(!frontier.length) break;
+  if(plans.length >= maxPlans) break;
+ }
+
+ /* ============================================================
+    FALLBACK - IDA* nếu beam search không tìm được
+    Dùng cho "predict" mode vì puzzle gần như fully known
+    ============================================================ */
+ if(plans.length === 0 && strategy === "predict"){
+  const idastarResult = idaStar(start, deadline);
+  if(idastarResult.type === "solved"){
+   plans.push({path: idastarResult.path, score: idastarResult.path.length, finalState: idastarResult.finalState, exposedUnknowns: 0});
+  }
+ }
+
+ /* ============================================================
+    FALLBACK - REVEAL SUGGESTION (khi ? block hoàn toàn)
+    Mỗi ? có thể là 1 trong các màu "chưa đủ". Thử từng assumption.
+    ============================================================ */
+ if(plans.length === 0){
+  // ALWAYS suggest peek if no plans and there are ?
+  const hasUnk = start.some(t => t.includes(UNK));
+  const legalNow = legalMoves(start);
+  if(hasUnk && legalNow.length === 0){
+   // No moves possible, must peek first
+   const targetIdx = findTopUnknownIndex(start);
+   if(targetIdx >= 0){
+    plans.push({
+     path: [{from: targetIdx.ti, to: targetIdx.ti, _reveal_suggest: true}],
+     score: 0,
+     finalState: start,
+     exposedUnknowns: 0,
+     _suggestion: "🔒 " + legalNow.length + " move khả dĩ. Mở ô ? ở Ống " + (targetIdx.ti+1) + " lớp " + (targetIdx.li+1) + " trước."
+    });
+   }
+  } else if(hasUnk && (strategy === "priority" || strategy === "balanced")){
+   // Has moves but solver stuck: try assume top ?
+   const assumedResult = solveWithAssumedUnknowns(start, deadline, maxPlans);
+   for(const p of assumedResult.plans){
+    plans.push(p);
+    if(plans.length >= maxPlans) break;
+   }
+   if(plans.length === 0){
+    // Still nothing - suggest peek
+    const targetIdx = findTopUnknownIndex(start);
+    if(targetIdx >= 0){
+     plans.push({
+      path: [{from: targetIdx.ti, to: targetIdx.ti, _reveal_suggest: true}],
+      score: 0,
+      finalState: start,
+      exposedUnknowns: 0,
+      _suggestion: "Solver không tìm được lời giải. Thử mở ô ? ở Ống " + (targetIdx.ti+1) + " lớp " + (targetIdx.li+1)
+     });
+    }
+   }
+  }
+ }
+
+ return { plans, expanded, best: bestPlan };
+}
+
+/* ============================================================
+   SOLVE WITH ASSUMED UNKNOWNS - thử từng khả năng màu cho ?
+   Dùng cho priority mode khi puzzle có nhiều ô ẩn
+   ============================================================ */
+function solveWithAssumedUnknowns(start, deadline, maxPlans){
+ const plans = [];
+ // Count distinct known colors
+ const c = colorCount(start);
+ const distinctColors = Object.keys(c);
+ // Total cells = sum of all positions
+ const totalCells = start.reduce((n, t) => n + t.length, 0);
+ const unkCount = start.reduce((n, t) => n + t.filter(x => x === UNK).length, 0);
+ // Distribute ? positions: fill with missing colors
+ // If a color has < ceil(totalCells / max(1, distinctColors+missing)) occurrences, treat as missing
+ // Simpler: assume ? are the colors NOT in c yet (or colors with < (CAP-1) occurrences)
+ // For this solver, we try 3 different "fill all ? with a single assumed color" + 1 "round-robin"
+
+ const triedFillStrategies = [];
+
+ // Strategy 1: all ? = same color (try top 3 missing colors)
+ const missing = [];
+ for(const p of PALETTE){
+  if(p.id === UNK) continue;
+  if(!c[p.id] || c[p.id] < state.CAP) missing.push(p.id);
+ }
+ for(const color of missing.slice(0, 3)){
+  // Only add if fillable: unkCount <= (CAP - c[color])
+  const need = state.CAP - (c[color] || 0);
+  if(unkCount <= need){
+   triedFillStrategies.push({type:"single", color: color});
+  }
+ }
+
+ // Strategy 2: round-robin fill (only if reasonable)
+ if(missing.length >= 2){
+  // Just try top 2 missing colors round-robin
+  const topMissing = missing.slice(0, Math.min(2, missing.length));
+  const totalNeed = topMissing.reduce((s, m) => s + (state.CAP - (c[m] || 0)), 0);
+  if(totalNeed >= unkCount){
+   triedFillStrategies.push({type:"roundrobin", colors: topMissing});
+  }
+ }
+
+ let best = null;
+ for(const strat of triedFillStrategies){
+  if(Date.now() > deadline) break;
+  // Build assumed state
+  const assumed = clone(start);
+  let colorIdx = 0;
+  for(let ti = 0; ti < assumed.length; ti++){
+   for(let li = 0; li < assumed[ti].length; li++){
+    if(assumed[ti][li] === UNK){
+     let pick;
+     if(strat.type === "single") pick = strat.color;
+     else pick = strat.colors[colorIdx % strat.colors.length];
+     assumed[ti][li] = pick;
+     colorIdx++;
+    }
+   }
+  }
+  // Check if assumed state is "consistent" (no over-limit)
+  const c2 = colorCount(assumed);
+  let over = false;
+  for(const k in c2){ if(c2[k] > state.CAP){ over = true; break; } }
+  if(over) continue;
+
+  // Run beam search
+  const subDeadline = Math.max(2000, deadline - Date.now() - 500);
+  const r = solveMultiplePlans(assumed, {
+   maxDepth: 30,
+   maxTime: Math.floor(subDeadline / triedFillStrategies.length),
+   maxPlans: 1,
+   strategy: "balanced"
+  });
+  if(r.best){
+   // Build plan: prefix with "reveal ?" moves
+   const revealMoves = [];
+   for(let ti = 0; ti < start.length; ti++){
+    for(let li = 0; li < start[ti].length; li++){
+     if(start[ti][li] === UNK){
+      revealMoves.push({from: ti, to: ti, _assume: assumed[ti][li]});
+     }
+    }
+   }
+   const fullPath = revealMoves.concat(r.best.path);
+   const alt = {
+    path: fullPath,
+    score: r.best.path.length + revealMoves.length,
+    finalState: r.best.finalState,
+    exposedUnknowns: countExposedUnknowns(start, r.best.finalState) + revealMoves.length,
+    _assumption: strat.type === "single" ? strat.color : strat.colors.join(",")
+   };
+   if(!best || alt.path.length < best.path.length) best = alt;
+  }
+ }
+ if(best){
+  plans.push(best);
+ }
+ return {plans};
+}
+
+function findTopUnknownIndex(s){
+ for(let ti = 0; ti < s.length; ti++){
+  const t = s[ti];
+  for(let li = t.length - 1; li >= 0; li--){
+   if(t[li] === UNK) return {ti, li};
+  }
+ }
+ return -1;
+}
+
+/* ============================================================
+   IDA* (Iterative Deepening A*) - memory-friendly exact solver
+   ============================================================ */
+function idaStar(start, deadline){
+ const path = [];
+ let threshold = heuristic(start);
+ let nodes = 0;
+ let minNext = Infinity;
+
+ function dfs(s, g){
+  if(Date.now() > deadline) return "timeout";
+  nodes++;
+  const f = g + heuristic(s);
+  if(f > threshold){ if(f < minNext) minNext = f; return "bound"; }
+  if(isSolved(s)) return "solved";
+  if(hasUnknown(s) && isBlockedByUnknownSafe(s)) return "blocked";
+  const moves = legalMoves(s).sort((a, b) => moveScore(s, a) - moveScore(s, b));
+  for(const m of moves){
+   const last = path[path.length - 1];
+   if(last && last.from === m.to && last.to === m.from) continue; // no A->B->A
+   const ns = applyMove(s, m.from, m.to);
+   path.push(m);
+   const r = dfs(ns, g + 1);
+   if(r === "solved") return "solved";
+   if(r === "timeout") return "timeout";
+   path.pop();
+  }
+  return "bound";
+ }
+
+ while(true){
+  if(Date.now() > deadline) return {type:"timeout", expanded:nodes, path:[], finalState:null};
+  minNext = Infinity;
+  const result = dfs(start, 0);
+  if(result === "solved"){
+   return {type:"solved", path: path.slice(), expanded:nodes, finalState: start};
+  }
+  if(result === "timeout") return {type:"timeout", expanded:nodes, path:[], finalState:null};
+  if(minNext === Infinity) return {type:"none", expanded:nodes, path:[], finalState:null};
+  threshold = minNext;
+ }
+}
+
+function isBlockedByUnknownSafe(s){
+ // Conservative: don't say blocked unless we're REALLY stuck
+ if(isSolved(s)) return false;
+ const moves = legalMoves(s);
+ if(moves.length > 0) return false;
+ // No legal moves at all = blocked
+ return true;
+}
+
+function moveScore(s, m){
+ const a = s[m.from], b = s[m.to], c = topValue(a);
+ let v = 0;
+ if(b.length === 0) v += 2;
+ if(b.length && topValue(b) === c) v -= 3;
+ if(a.length === topRun(a)) v -= 2;
+ if(b.length + topRun(a) === state.CAP) v -= 4;
+ return v;
+}
+
+function countExposedUnknowns(start, final){
+ // Count ? cells that were turned into known colors (assumed via reveal)
+ let n = 0;
+ for(let i = 0; i < start.length; i++){
+  const s = start[i], f = final[i];
+  // If tube got shorter and lost a ? layer (and we still see it solved), it was revealed
+  // Simple heuristic: count ? cells in start that are not ? in final
+  for(let j = 0; j < s.length; j++){
+   if(s[j] === UNK){
+    if(j < f.length && f[j] !== UNK) n++;
+    else if(j >= f.length) n++; // moved out, was revealed
+   }
+  }
+ }
+ return n;
+}
+
+/* ============================================================
+   UI RENDERING
+   ============================================================ */
+function renderEditor(){
+ const ed = $("tubeEditor");
+ ed.innerHTML = "";
+ state.tubes.forEach((t, ti) => {
+  const wrap = document.createElement("div");
+  wrap.className = "tube-input";
+  const lbl = document.createElement("div");
+  lbl.className = "label";
+  lbl.textContent = "Ống " + (ti+1);
+  wrap.appendChild(lbl);
+  const input = document.createElement("input");
+  input.value = t.join("").replace(/Q/g, "?");
+  input.title = "G/R/B/Y/O/W/D/? từ dưới lên (bottom → top)";
+  input.maxLength = state.CAP;
+  input.dataset.idx = ti;
+  input.onchange = e => {
+   const v = e.target.value.toUpperCase().split("").map(c => {
+    if(c === "?") return UNK;
+    if(PALETTE_MAP[c]) return c;
+    return null;
+   }).filter(x => x);
+   // pad with empty
+   while(v.length < state.CAP) v.push(null);
+   state.tubes[ti] = v.slice(0, state.CAP);
+   saveHistory();
+   renderAll();
+  };
+  input.onclick = e => { state.selectedTube = ti; renderEditor(); };
+  if(state.selectedTube === ti){
+   input.style.borderColor = "#facc15";
+   input.style.boxShadow = "0 0 8px #facc15";
+  }
+  wrap.appendChild(input);
+  ed.appendChild(wrap);
+ });
+}
+
+function renderPaletteRow(){
+ const row = $("paletteRow");
+ row.innerHTML = "";
+ for(const p of PALETTE){
+  const chip = document.createElement("button");
+  chip.className = "palette-chip" + (state.selectedColor === p.id ? " active" : "");
+  chip.style.background = p.bg;
+  if(p.textDark) chip.style.color = "#0f172a";
+  chip.textContent = p.symbol + " " + p.id;
+  chip.draggable = true;
+  chip.dataset.color = p.id;
+  chip.title = p.name + " — kéo thả vào ô, hoặc click để chọn";
+  chip.onclick = () => { state.selectedColor = p.id; renderPaletteRow(); };
+  chip.ondragstart = e => {
+   e.dataTransfer.setData("text/plain", p.id);
+   e.dataTransfer.effectAllowed = "copy";
+   chip.classList.add("dragging");
+  };
+  chip.ondragend = () => chip.classList.remove("dragging");
+  // Right-click để xoá icon custom
+  chip.oncontextmenu = e => {
+   e.preventDefault();
+   if(CUSTOM_PALETTE.find(x => x.id === p.id)){
+    if(confirm("Xoá icon '" + p.id + "' khỏi palette?")){
+     removeFromCustomPalette(p.id);
+     renderPaletteRow();
+     renderDisplay();
+     toast("Đã xoá icon " + p.id, "ok");
+    }
+   }
+  };
+  row.appendChild(chip);
+ }
+ // Nút + Thêm icon mới
+ const addBtn = document.createElement("button");
+ addBtn.className = "palette-chip add-new";
+ addBtn.textContent = "+ Thêm icon mới";
+ addBtn.title = "Thêm icon/màu mới vào palette (lưu localStorage)";
+ addBtn.onclick = openPaletteModal;
+ row.appendChild(addBtn);
+}
+
+/* Danh sách emoji mẫu cho picker */
+/* Danh sách emoji mẫu cho picker — sắp theo mức độ phù hợp game Water Sort
+   Hàng 1: biến thể từ video 2 (font iOS, game gốc)
+   Hàng 2: hình học cơ bản (vuông/tròn/tam giác)
+   Hàng 3: biến thể màu (đậm/nhạt, trái tim, kim cương)
+   Hàng 4: emoji tự nhiên (cây, hoa, động vật, trái cây) */
+const EMOJI_SAMPLES = [
+ // === Hàng 1: từ video 2 (mặc định game dùng) ===
+ "🟦","🟢","🟡","🟧","🟥","🟪","🟫","🟤",
+ // === Hàng 2: biến thể hình học cơ bản ===
+ "🔴","🔵","🟠","🟡","🟢","🟣","⚫","⚪",
+ "🔶","🔷","🔸","🔹","🔺","🔻","💠","🔘",
+ // === Hàng 3: trái tim / kim cương / giọt nước ===
+ "💚","❤","💛","💜","🧡","💙","🖤","🤍",
+ "💎","💧","💧","🔥","⭐","🌟","✨","⚡",
+ // === Hàng 4: chữ cái / ký tự đơn giản (nếu user thích) ===
+ "●","■","▲","◆","○","□","△","◇",
+ // === Hàng 5: emoji tự nhiên (nếu user muốn theme khác) ===
+ "🌸","🌺","🌻","🌹","🍀","🌿","🌙","☀",
+ "🍎","🍊","🍋","🍉","🍇","🍓","🐱","🐶",
+ // === Hàng cuối: ô ẩn / đặc biệt ===
+ "?","❓","❔"," ","○","◯"
+];
+const COLOR_SAMPLES = [
+ "#ef4444","#f97316","#eab308","#22c55e","#10b981","#14b8a6",
+ "#06b6d4","#0ea5e9","#3b82f6","#6366f1","#8b5cf6","#a855f7",
+ "#d946ef","#ec4899","#f43f5e","#64748b","#94a3b8","#475569",
+ "#0f172a","#ffffff","#fbbf24","#84cc16","#fde047","#fef3c7"
+];
+
+function renderEmojiPicker(){
+ const picker = $("emojiPicker");
+ if(!picker) return;
+ picker.innerHTML = "";
+ // Section header
+ const header = document.createElement("div");
+ header.style.cssText = "grid-column: 1 / -1;font-size: 10px;color: var(--color-fg-muted);text-transform: uppercase;letter-spacing: 0.06em;font-weight: 600;padding: 2px 4px;";
+ header.textContent = "Từ video gốc (game Water Sort iOS)";
+ picker.appendChild(header);
+ for(const e of EMOJI_SAMPLES){
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = e;
+  b.title = "Chọn " + e;
+  b.onclick = () => {
+   $("newColorSymbol").value = e;
+   picker.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+   b.classList.add("active");
+  };
+  picker.appendChild(b);
+ }
+}
+
+function renderColorPicker(){
+ const picker = $("colorPicker");
+ if(!picker) return;
+ picker.innerHTML = "";
+ for(const c of COLOR_SAMPLES){
+  const sw = document.createElement("button");
+  sw.type = "button";
+  sw.className = "color-swatch";
+  sw.style.background = c;
+  sw.title = c;
+  sw.onclick = () => {
+   $("newColorBg").value = c;
+   // Đánh dấu active
+   picker.querySelectorAll(".color-swatch").forEach(x => x.classList.remove("active"));
+   sw.classList.add("active");
+   // Auto check textDark nếu nền sáng
+   const rgb = hexToRgb(c);
+   if(rgb){
+    const lum = 0.299*rgb.r + 0.587*rgb.g + 0.114*rgb.b;
+    $("newColorTextDark").checked = lum > 160;
+   }
+  };
+  picker.appendChild(sw);
+ }
+}
+
+function hexToRgb(hex){
+ const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+ if(!m) return null;
+ return {r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16)};
+}
+
+function openPaletteModal(){
+ $("newColorId").value = "";
+ $("newColorName").value = "";
+ $("newColorSymbol").value = "";
+ $("newColorBg").value = "#a855f7";
+ $("newColorTextDark").checked = false;
+ renderEmojiPicker();
+ renderColorPicker();
+ $("paletteModal").classList.add("show");
+ setTimeout(() => $("newColorId").focus(), 50);
+}
+
+function savePaletteModal(){
+ const id = ($("newColorId").value || "").trim().toUpperCase();
+ const name = ($("newColorName").value || "").trim();
+ const symbol = ($("newColorSymbol").value || "").trim() || id;
+ const bg = $("newColorBg").value;
+ const textDark = $("newColorTextDark").checked;
+ if(!id || !/^[A-Z]$/.test(id)){
+  toast("Ký tự viết tắt phải là 1 chữ cái A-Z", "bad");
+  return;
+ }
+ if(PALETTE_MAP[id]){
+  toast("Ký tự " + id + " đã tồn tại trong palette", "bad");
+  return;
+ }
+ if(!name){
+  toast("Vui lòng nhập tên hiển thị", "bad");
+  return;
+ }
+ // Cảnh báo nếu symbol trống hoặc chỉ có space
+ if(!symbol.trim() || symbol.trim() === "?"){
+  if(!confirm("Icon trống/không rõ. Dùng ký tự viết tắt '" + id + "' làm icon tạm?")){
+   return;
+  }
+ }
+ addToCustomPalette({id, name, symbol, bg, textDark});
+ $("paletteModal").classList.remove("show");
+ renderPaletteRow();
+ renderDisplay();
+ toast("Đã thêm icon " + id + " (" + name + ")", "ok");
+}
+
+/* Plan 3: helper trộn màu hex (lighten/darken cho gradient cell) */
+function mixHex(color, mixWith, ratio){
+ const c = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color);
+ const w = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(mixWith);
+ if(!c || !w) return color;
+ const r = Math.round(parseInt(c[1],16) * (1-ratio) + parseInt(w[1],16) * ratio);
+ const g = Math.round(parseInt(c[2],16) * (1-ratio) + parseInt(w[2],16) * ratio);
+ const b = Math.round(parseInt(c[3],16) * (1-ratio) + parseInt(w[3],16) * ratio);
+ return "#" + [r,g,b].map(x => x.toString(16).padStart(2,"0")).join("");
+}
+
+function renderDisplay(){
+ const disp = $("tubeDisplay");
+ disp.innerHTML = "";
+ state.tubes.forEach((t, ti) => {
+  const wrap = document.createElement("div");
+  wrap.style.textAlign = "center";
+  const lbl = document.createElement("div");
+  lbl.className = "tube-vis-label";
+  lbl.textContent = "Ống " + (ti+1);
+  wrap.appendChild(lbl);
+  const tube = document.createElement("div");
+  tube.className = "tube-vis" + (isComplete(t) ? " locked" : "") + (t.length === 0 ? " empty" : "") + (state.selectedTube === ti ? " selected" : "");
+  tube.onclick = () => { state.selectedTube = ti; renderDisplay(); };
+  for(let i = 0; i < state.CAP; i++){
+   const cell = document.createElement("div");
+   cell.className = "cell";
+   const id = t[i];
+   if(id){
+    const p = getColor(id);
+    if(p){
+     // Plan 3: gradient 3 tông cho cell (light/base/dark)
+     cell.style.setProperty("--cell-color", p.bg);
+     cell.style.setProperty("--cell-color-light", mixHex(p.bg, "#ffffff", 0.18));
+     cell.style.setProperty("--cell-color-dark", mixHex(p.bg, "#000000", 0.20));
+     cell.style.background = p.bg;
+     if(p.textDark) cell.style.color = "#0f172a";
+     if(id === UNK){
+      cell.classList.add("unknown");
+      cell.textContent = "?";
+     } else {
+      cell.textContent = p.symbol;
+     }
+    }
+   }
+   cell.onclick = e => { e.stopPropagation(); onCellClick(ti, i); };
+   // Drag & drop handlers cho cell — cho phép thả palette vào
+   cell.ondragover = e => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; cell.classList.add("drag-over"); };
+   cell.ondragleave = () => cell.classList.remove("drag-over");
+   cell.ondrop = e => {
+    e.preventDefault();
+    cell.classList.remove("drag-over");
+    const colorId = e.dataTransfer.getData("text/plain");
+    if(!colorId || !PALETTE_MAP[colorId]) return;
+    setCellColor(ti, i, colorId);
+   };
+   tube.appendChild(cell);
+  }
+  if(isComplete(t)){
+   const lock = document.createElement("div");
+   lock.style.textAlign = "center";
+   lock.style.color = "#34d399";
+   lock.style.fontSize = "11px";
+   lock.textContent = "✓";
+   wrap.appendChild(lock);
+  }
+  wrap.appendChild(tube);
+  disp.appendChild(wrap);
+ });
+}
+
+function onCellClick(ti, li){
+ // Click thường: nếu đã chọn màu thì set luôn, mở modal khi chưa chọn
+ if(state.selectedColor && PALETTE_MAP[state.selectedColor]){
+  setCellColor(ti, li, state.selectedColor);
+ } else {
+  showColorModal(ti, li);
+ }
+}
+
+function setCellColor(ti, li, colorId){
+ if(!PALETTE_MAP[colorId]) return;
+ saveHistory();
+ const t = state.tubes[ti];
+ // Nếu li >= t.length thì mở rộng, nếu trong range thì set
+ while(t.length <= li) t.push(null);
+ t[li] = colorId;
+ // Nếu t[li+1] là null và t.length > li+1, giữ nguyên
+ renderAll();
+}
+
+function showColorModal(ti, li){
+ const t = state.tubes[ti];
+ if(li >= t.length){
+  $("modalTitle").textContent = "Chọn màu cho Ống " + (ti+1) + " lớp " + (li+1);
+ } else {
+  $("modalTitle").textContent = "Sửa Ống " + (ti+1) + " lớp " + (li+1) + " (hiện: " + (getColor(t[li])?.symbol || "?") + ")";
+ }
+ const grid = $("modalGrid");
+ grid.innerHTML = "";
+ for(const p of PALETTE){
+  const b = document.createElement("button");
+  b.style.background = p.bg;
+  if(p.textDark) b.style.color = "#0f172a";
+  b.textContent = p.symbol;
+  b.title = p.name;
+  b.onclick = () => {
+   saveHistory();
+   while(state.tubes[ti].length <= li) state.tubes[ti].push(null);
+   state.tubes[ti][li] = p.id;
+   $("modal").classList.remove("show");
+   renderAll();
+   toast("Đã đặt " + p.symbol + " vào Ống " + (ti+1) + " lớp " + (li+1), "ok");
+  };
+  grid.appendChild(b);
+ }
+ // Nút + Thêm icon mới
+ const addBtn = document.createElement("button");
+ addBtn.style.background = "var(--color-bg-muted)";
+ addBtn.style.color = "var(--color-fg)";
+ addBtn.textContent = "+";
+ addBtn.title = "Thêm icon / màu mới";
+ addBtn.onclick = () => {
+  $("modal").classList.remove("show");
+  openPaletteModal();
+ };
+ grid.appendChild(addBtn);
+ $("modalClear").onclick = () => {
+  saveHistory();
+  if(li < state.tubes[ti].length){
+   state.tubes[ti].splice(li, 1);
+  }
+  $("modal").classList.remove("show");
+  renderAll();
+  toast("Đã xóa lớp " + (li+1), "warn");
+ };
+ $("modal").classList.add("show");
+ state.modalTube = ti;
+ state.modalCell = li;
+}
+
+function renderStrategy(s){
+ const strat = detectStrategy(s);
+ const box = $("strategyBox");
+ box.className = "strategy-mode " + strat.mode;
+ let label = "", iconChar = "";
+ if(strat.mode === "priority"){
+  label = "ƯU TIÊN GIẢI Ô ẨN";
+  iconChar = "!";
+ } else if(strat.mode === "balanced"){
+  label = "CÂN BẰNG + DỰ PHÒNG";
+  iconChar = "=";
+ } else {
+  label = "DỰ ĐOÁN XÁC SUẤT";
+  iconChar = "π";
+ }
+ $("strategyIcon").textContent = iconChar;
+ $("strategyValue").textContent = label + " · " + strat.unk + "/" + strat.total + " ô ẩn (" + (strat.ratio * 100).toFixed(0) + "%)";
+ $("strategyDesc").textContent = strat.desc;
+ return strat;
+}
+
+function renderCandidates(plans){
+ const box = $("candidates");
+ const list = $("solutionList");
+ box.innerHTML = "";
+ if(!plans || !plans.length){
+  list.style.display = "none";
+  $("metricRow").style.display = "none";
+  box.innerHTML = '<p style="color: var(--color-fg-muted);text-align: center;padding: var(--space-4) 0;font-size: var(--fs-sm)">Chưa có phương án. Bấm "Tìm nhiều phương án" để chạy solver.</p>';
+  return;
+ }
+ // Chỉ hiển thị phương án tốt nhất (1 plan duy nhất)
+ const best = plans[0];
+ const moves = best.path;
+ const score = best.exposedUnknowns || 0;
+ $("metricRow").style.display = "grid";
+ list.style.display = "block";
+ $("mPlans").textContent = "1";
+ $("mBestLen").textContent = moves.length;
+
+ const c = document.createElement("div");
+ c.className = "candidate best";
+ c.innerHTML =
+  '<div class="candidate-head">' +
+   '<div class="candidate-title">⭐ Phương án tốt nhất</div>' +
+   '<div class="candidate-badge">' + moves.length + ' bước</div>' +
+  '</div>' +
+  '<div class="candidate-meta">' +
+   '<span>✓ ' + score + ' ô ẩn lộ</span>' +
+   (best._assumption ? '<span>· Giả định: ' + best._assumption + '</span>' : '') +
+  '</div>' +
+  '<div style="font-family: var(--font-mono);font-size: var(--fs-xs);color: var(--color-fg-muted);margin-top: 6px">' +
+   moves.slice(0, 8).map(m => "Ống " + (m.from+1) + " → " + (m.to+1)).join(" · ") + (moves.length > 8 ? " · …" : "") +
+  '</div>' +
+  '<div class="candidate-bar"><i style="width:' + Math.min(100, (1 - (moves.length / 50)) * 100) + '%"></i></div>' +
+  '<div class="controls" style="margin-top: 10px">' +
+   '<button data-idx="0" class="btn btn-primary btn-sm">▶ Chạy phương án này</button>' +
+  '</div>';
+ c.querySelector("button").onclick = () => animatePlan(best);
+ box.appendChild(c);
+}
+
+function renderSolutionPath(path){
+ const list = $("solutionList");
+ list.innerHTML = "";
+ if(!path || !path.length){
+  list.style.display = "none";
+  return;
+ }
+ list.style.display = "block";
+ path.forEach((m, i) => {
+  const el = document.createElement("div");
+  el.className = "move";
+  el.innerHTML = '<span class="from">Ống ' + (m.from+1) + '</span><span class="arrow">→</span><span class="to">Ống ' + (m.to+1) + '</span>';
+  el.dataset.step = i;
+  list.appendChild(el);
+ });
+}
+
+function setSolverProgress(phase, expanded, plans, ms){
+ const bar = $("solverProgress");
+ if(phase === null){ bar.classList.remove("show"); return; }
+ bar.classList.add("show");
+ $("solverPhase").textContent = phase;
+ $("solverStat").textContent = "expanded: " + expanded.toLocaleString() + " · plans: " + plans + " · " + ms + "ms";
+ let pct = 0;
+ if(phase.indexOf("xong") >= 0 || phase.indexOf("✓") >= 0) pct = 100;
+ else if(ms > 0) pct = Math.min(95, Math.round((ms / 8000) * 100));
+ $("solverBar").style.width = pct + "%";
+}
+
+/* ============================================================
+   STATUS BAR — dùng text icon
+   ============================================================ */
+const STATUS_PREFIX = {
+ ok: "✓",
+ warn: "⚠",
+ bad: "✗",
+ "": "·"
+};
+
+function setStatus(kind, msg){
+ const el = $("status");
+ el.className = "status " + (kind || "");
+ el.innerHTML = '<div class="status-icon show">' + (STATUS_PREFIX[kind || ""] || STATUS_PREFIX[""]) + '</div><div class="status-content">' + msg + '</div>';
+}
+
+/* ============================================================
+   TOAST — dùng text prefix
+   ============================================================ */
+function toast(msg, kind){
+ const c = $("toastContainer");
+ const el = document.createElement("div");
+ el.className = "toast " + (kind || "");
+ const prefix = STATUS_PREFIX[kind || ""] || "";
+ el.innerHTML = '<span class="toast-prefix">' + (prefix ? prefix + " " : "") + '</span><span>' + msg + '</span>';
+ c.appendChild(el);
+ requestAnimationFrame(() => el.classList.add("show"));
+ setTimeout(() => {
+  el.classList.remove("show");
+  setTimeout(() => el.remove(), 300);
+ }, kind === "bad" ? 4500 : 2800);
+}
+
+/* ============================================================
+   HISTORY
+   ============================================================ */
+function saveHistory(){
+ state.history.push({tubes: clone(state.tubes), CAP: state.CAP});
+ if(state.history.length > 100) state.history.shift();
+}
+function undo(){
+ if(!state.history.length) return toast("Không có gì để undo", "warn");
+ const last = state.history.pop();
+    state.tubes = last.tubes;
+    // T4: undo có thể đưa CAP về giá trị cũ => phán quyết cache theo CAP mất
+    // hiệu lực, phải xoá cùng bảng mã màu.
+    if(state.CAP !== last.CAP){ clearWinMemo(); }
+    state.CAP = last.CAP;
+ $("capInput").value = state.CAP;
+ renderAll();
+ toast("↶ Đã undo", "ok");
+}
+
+/* ============================================================
+   CHECKPOINT SYSTEM
+   Lưu state hiện tại vào slot, khôi phục khi bí
+   ============================================================ */
+const CHECKPOINT_KEY = "wss_checkpoints_v1";
+const MAX_CHECKPOINTS = 5;
+
+function loadCheckpoints(){
+ try{
+  const raw = localStorage.getItem(CHECKPOINT_KEY);
+  if(!raw) return [];
+  const arr = JSON.parse(raw);
+  return Array.isArray(arr) ? arr : [];
+ } catch(e){ return []; }
+}
+function persistCheckpoints(){
+ try{ localStorage.setItem(CHECKPOINT_KEY, JSON.stringify(state.checkpoints)); } catch(e){}
+}
+
+function saveCheckpoint(label){
+ // Tìm slot trống đầu tiên, nếu hết thì thay slot cuối
+ if(state.checkpoints.length < MAX_CHECKPOINTS){
+  state.checkpoints.push({
+   tubes: clone(state.tubes),
+   CAP: state.CAP,
+   ts: Date.now(),
+   label: label || ("Màn " + (state.checkpoints.length + 1))
+  });
+  state.activeCheckpoint = state.checkpoints.length - 1;
+ } else {
+  // Đã đầy → hỏi user có muốn thay slot cuối không
+  if(!confirm("Đã đủ " + MAX_CHECKPOINTS + " checkpoint. Thay thế checkpoint cũ nhất?")) return;
+  state.checkpoints.shift();
+  state.checkpoints.push({
+   tubes: clone(state.tubes),
+   CAP: state.CAP,
+   ts: Date.now(),
+   label: label || ("Màn " + MAX_CHECKPOINTS)
+  });
+  state.activeCheckpoint = state.checkpoints.length - 1;
+ }
+ persistCheckpoints();
+ renderCheckpointBar();
+ toast("💾 Đã lưu checkpoint " + state.activeCheckpoint, "ok");
+}
+
+function loadCheckpoint(idx){
+ const cp = state.checkpoints[idx];
+ if(!cp) return;
+    state.tubes = clone(cp.tubes);
+    if(state.CAP !== cp.CAP){ clearWinMemo(); state.lastDeduction = null; }
+    state.CAP = cp.CAP;
+ state.activeCheckpoint = idx;
+ $("capInput").value = state.CAP;
+ renderAll();
+ toast("↩ Đã khôi phục checkpoint " + (idx + 1), "ok");
+}
+
+function deleteCheckpoint(idx){
+ state.checkpoints.splice(idx, 1);
+ if(state.activeCheckpoint === idx) state.activeCheckpoint = -1;
+ else if(state.activeCheckpoint > idx) state.activeCheckpoint--;
+ persistCheckpoints();
+ renderCheckpointBar();
+}
+
+function clearAllCheckpoints(){
+ if(!state.checkpoints.length) return;
+ if(!confirm("Xoá tất cả " + state.checkpoints.length + " checkpoint?")) return;
+ state.checkpoints = [];
+ state.activeCheckpoint = -1;
+ persistCheckpoints();
+ renderCheckpointBar();
+ toast("Đã xoá hết checkpoint", "ok");
+}
+
+function renderCheckpointBar(){
+ const bar = $("checkpointBar");
+ if(!bar) return;
+ if(!state.checkpoints.length){
+  bar.classList.remove("show");
+  $("checkpointLoadBtn").disabled = true;
+  return;
+ }
+ bar.classList.add("show");
+ $("checkpointLoadBtn").disabled = false;
+
+ // Render info
+ const info = $("checkpointInfo");
+ const active = state.checkpoints[state.activeCheckpoint];
+ if(active){
+  const dt = new Date(active.ts);
+  const timeStr = dt.getHours().toString().padStart(2,"0") + ":" + dt.getMinutes().toString().padStart(2,"0");
+  info.innerHTML = "📌 <b>" + escapeHtml(active.label) + "</b> · " + timeStr + " · " + active.tubes.length + " ống × CAP=" + active.CAP;
+ } else {
+  info.innerHTML = "Có " + state.checkpoints.length + " checkpoint";
+ }
+
+ // Render slots
+ const slots = $("checkpointSlots");
+ slots.innerHTML = "";
+ state.checkpoints.forEach((cp, i) => {
+  const b = document.createElement("button");
+  b.className = "checkpoint-slot" + (cp.tubes.length > 0 ? " filled" : "") + (i === state.activeCheckpoint ? " active" : "");
+  b.textContent = (i + 1);
+  b.title = cp.label + " — click để khôi phục, double-click để xoá";
+  b.onclick = () => loadCheckpoint(i);
+  b.ondblclick = (e) => { e.preventDefault(); if(confirm("Xoá checkpoint " + (i+1) + "?")) deleteCheckpoint(i); };
+  slots.appendChild(b);
+ });
+}
+
+function escapeHtml(s){
+ return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c]);
+}
+
+/* ============================================================
+   RUNNING STATE — bật/tắt nút Stop khi solver/animation đang chạy
+   ============================================================ */
+function setRunning(running){
+ const stopBtn = $("stopBtn");
+ if(running){
+  stopBtn.classList.add("show");
+  $("solveBtn").disabled = true;
+  $("animateBtn").disabled = true;
+ } else {
+  stopBtn.classList.remove("show");
+  $("solveBtn").disabled = false;
+  $("animateBtn").disabled = !state.lastSolution;
+ }
+}
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+async function animatePlan(plan){
+ if(state.isAnimating) return;
+ if(!plan || !plan.path.length) return;
+ state.isAnimating = true;
+ state.cancelled = false;
+ setRunning(true);
+ // Reset highlights
+ document.querySelectorAll("#solutionList .move").forEach(el => el.classList.remove("current"));
+ for(let i = 0; i < plan.path.length; i++){
+  // Check cancel mỗi bước (sau khi sleep 200ms)
+  if(state.cancelled){
+   state.cancelled = false;
+   toast("⏹ Đã dừng tại bước " + (i+1) + "/" + plan.path.length, "warn");
+   break;
+  }
+  const m = plan.path[i];
+  if(!validMove(state.tubes, m.from, m.to)){
+   toast("Nước đi " + (i+1) + " không hợp lệ nữa (state đã đổi)", "bad");
+   break;
+  }
+  saveHistory();
+  state.tubes = applyMove(state.tubes, m.from, m.to);
+  renderDisplay();
+  // Highlight current step
+  const stepEl = document.querySelector('#solutionList .move[data-step="' + i + '"]');
+  if(stepEl) stepEl.classList.add("current");
+  // Wait 600ms nhưng check cancel mỗi 100ms
+  await new Promise(r => {
+   let waited = 0;
+   const tick = setInterval(() => {
+    if(state.cancelled || waited >= 600){
+     clearInterval(tick);
+     r();
+    }
+    waited += 100;
+   }, 100);
+  });
+  if(stepEl) stepEl.classList.remove("current");
+  if(state.cancelled){
+   state.cancelled = false;
+   toast("⏹ Đã dừng tại bước " + (i+1) + "/" + plan.path.length, "warn");
+   break;
+  }
+ }
+ state.isAnimating = false;
+ setRunning(false);
+ setStatus("ok", "Đã chạy " + state.tubes.length + " ống. Có thể chạy lại hoặc khôi phục checkpoint.");
+ renderAll();
+}
+
+/* ============================================================
+   MAIN: run solver
+   ============================================================ */
+function runSolver(){
+ const t00 = Date.now();
+ const clean = state.tubes.map(t => t.filter(x => x != null));
+ state.tubes = clean;
+ if(isSolved(clean)){ toast("Bàn đã giải xong!", "ok"); return; }
+ if(!clean.some(t => t.length)){
+  toast("Bàn rỗng, không cần giải", "warn"); return;
+ }
+ // Validate: kiểm tra màu nào vượt CAP không
+ const cc = colorCount(clean);
+ const overColors = Object.keys(cc).filter(k => cc[k] > state.CAP);
+ if(overColors.length > 0){
+  const list = overColors.map(k => k + "=" + cc[k]).join(", ");
+  setStatus("bad", "Bàn không hợp lệ: màu " + list + " vượt CAP=" + state.CAP + ". Mỗi màu chỉ xuất hiện tối đa " + state.CAP + " lần. Hãy sửa lại bàn trước khi giải.");
+  toast("Bàn không hợp lệ: " + overColors.length + " màu vượt CAP", "bad");
+  return;
+ }
+ // Validate: tổng ô có chia hết cho CAP không
+ const total = clean.reduce((n, t) => n + t.length, 0);
+ if(total % state.CAP !== 0){
+  setStatus("bad", "Bàn không hợp lệ: tổng " + total + " ô không chia hết cho CAP=" + state.CAP + " (cần bội số của " + state.CAP + ").");
+  toast("Tổng ô không chia hết cho CAP", "bad");
+  return;
+ }
+  const strat = renderStrategy(clean);
+
+/* ===== P0: PRECHECK — quyết định trước, tìm sau =====
+     Trước khi đốt 8 giây vào beam search, hỏi đúng câu hỏi:
+     bàn này có thắng được không?
+       win  -> trả lời luôn bằng đường đi TỐI ƯU, khỏi cần heuristic.
+       dead -> báo thẳng "không thể thắng" kèm chứng cứ, và KHÔNG gợi ý
+               nước đi (gợi ý khi đã biết là chết chỉ khiến người dùng lặp).
+       unknown -> chưa kết luận, mới chạy beam/IDA* như cũ. */
+  setSolverProgress("Đang kiểm tra bàn có thắng được không", 0, 0, 0);
+  // Try Web Worker first, fallback to sync
+  const preWorker = getSolver().solveInWorker;
+  if(preWorker){
+    preWorker(clean, {maxStates: 150000, budgetMs: 2500}).then(pre => {
+      if(!pre) pre = exactSolve(clean, {maxStates: 150000, deadline: Date.now() + 2500});
+      handlePrecheckResult(pre, clean, t00, strat);
+    });
+  }else{
+    const pre = exactSolve(clean, {maxStates: 150000, deadline: Date.now() + 2500});
+    handlePrecheckResult(pre, clean, t00, strat);
+  }
+}
+function handlePrecheckResult(pre, clean, t00, strat){
+  setSolverProgress(null);
+  if(pre.verdict === "win"){
+   state.candidates = [{path: pre.path, score: pre.path.length, finalState: null, exposedUnknowns: 0}];
+   state.lastSolution = pre.path;
+   $("animateBtn").disabled = false;
+   setStatus("ok", "🎉 Exact precheck tìm thấy lời giải TỐI ƯU: " + pre.path.length +
+    " bước (duyệt " + pre.states.toLocaleString() + " trạng thái). Đây là đường ngắn nhất.");
+   toast("Lời giải tối ưu: " + pre.path.length + " bước", "ok");
+   renderCandidates(state.candidates);
+   renderSolutionPath(pre.path);
+   $("mTime").textContent = (Date.now() - t00) + "ms";
+   return;
+  }
+  if(pre.verdict === "dead"){
+   state.lastSolution = null;
+   $("animateBtn").disabled = true;
+   setStatus("bad", diagnoseDeadBoard(clean, pre));
+   toast("Bàn này không thể thắng", "bad");
+   renderCandidates([]);
+   return;
+  }
+
+  setSolverProgress("Đang khởi động", 0, 0, 0);
+  const t0 = Date.now();
+  try {
+   const r = solveMultiplePlans(clean, {
+    maxDepth: 60,
+    maxTime: 8000,
+    maxPlans: 1,
+    strategy: strat.mode
+   });
+   setSolverProgress(null);
+   setRunning(false);
+   const elapsed = Date.now() - t0;
+   $("mTime").textContent = elapsed + "ms";
+   $("mExp").textContent = r.expanded.toLocaleString();
+   if(!r.plans.length){
+    // P0: KHÔNG còn nói chung chung "không tìm được trong Xms" — phân biệt
+    // "bàn chắc chắn không thắng được" với "chưa đủ thời gian/bộ nhớ".
+    const deep = exactSolve(clean, {maxStates: 400000, deadline: Date.now() + 4000});
+    if(deep.verdict === "win"){
+     state.candidates = [{path: deep.path, score: deep.path.length, finalState: null, exposedUnknowns: 0}];
+     state.lastSolution = deep.path;
+     $("animateBtn").disabled = false;
+     setStatus("ok", "🎉 Exact search mở rộng tìm thấy lời giải TỐI ƯU: " + deep.path.length + " bước.");
+     renderCandidates(state.candidates);
+     renderSolutionPath(deep.path);
+     return;
+    }
+    if(deep.verdict === "dead"){
+     state.lastSolution = null;
+     $("animateBtn").disabled = true;
+     setStatus("bad", diagnoseDeadBoard(clean, deep));
+     toast("Bàn này không thể thắng", "bad");
+     renderCandidates([]);
+     return;
+    }
+    // unknown: nói rõ là CHƯA CHỨNG MINH, và chỉ gợi ý mở ? / thêm ống
+    const hasUnk = clean.some(t => t.includes(UNK));
+    let msg = "⏱ CHƯA CHỨNG MINH ĐƯỢC (đã duyệt " + deep.states.toLocaleString() +
+     " trạng thái, vẫn chưa hết không gian). Đây KHÔNG phải kết luận bàn không giải được.\n";
+    if(hasUnk){
+     msg += "Còn ô ? chưa mở: hãy dùng nút Peek / sửa ô ? rồi chạy lại.\n";
+    }
+    msg += "Tăng thời gian chạy, thêm ống rỗng, hoặc sửa vài ô trên bàn rồi thử lại.";
+    setStatus("warn", msg);
+    toast("Chưa kết luận được (hết ngân sách)", "warn");
+    state.lastSolution = null;
+    $("animateBtn").disabled = true;
+    renderCandidates([]);
+    return;
+   }
+  state.candidates = r.plans;
+  state.lastSolution = r.plans[0].path;
+  $("animateBtn").disabled = false;
+  const firstPlan = r.plans[0];
+  if(firstPlan._suggestion){
+   setStatus("warn", firstPlan._suggestion);
+   toast(firstPlan._suggestion, "warn");
+   $("animateBtn").disabled = true;
+  } else {
+   setStatus("ok", "Tìm thấy " + r.plans.length + " phương án trong " + elapsed + "ms. Mỗi phương án có " + r.plans[0].path.length + "–" + r.plans[r.plans.length-1].path.length + " bước.");
+   toast("Tìm thấy " + r.plans.length + " phương án!", "ok");
+  }
+  renderCandidates(r.plans);
+  renderSolutionPath(r.plans[0].path);
+ } catch(e){
+   setSolverProgress(null);
+   setStatus("bad", "Lỗi: " + e.message);
+   toast("Lỗi solver: " + e.message, "bad");
+ }
+}
+
+/* ============================================================
+   REVEAL (peek 1 ?)
+   ============================================================ */
+function revealOneUnknown(){
+ /* T1: trước đây chỉ tìm ô ? ở ĐỈNH ống. Màn nào có ? ở đáy sẽ báo
+    "Không còn ô ?" và người dùng không mở được. Nay ưu tiên ô đang ở đỉnh
+    (dễ gỡ nhất), nếu không có ô nào ở đỉnh thì lấy bất kỳ ô ? nào và báo rõ
+    vị trí để người dùng gán trực tiếp trên bàn. */
+ const clean = state.tubes.map(t => t.filter(x => x != null));
+ const all = findAllUnknowns(clean);
+ if(!all.length) { toast("Không còn ô ?", "warn"); return; }
+ all.sort((a, b) => {
+  const atop = a.li === clean[a.ti].length - 1 ? 0 : 1;
+  const btop = b.li === clean[b.ti].length - 1 ? 0 : 1;
+  return atop - btop || a.ti - b.ti || a.li - b.li;
+ });
+ const target = all[0];
+ const isTop = target.li === clean[target.ti].length - 1;
+ if(!isTop){
+  // không có ô ? nào ở đỉnh -> hướng dẫn gán tay thay vì đoán sai
+  setStatus("warn", "🔓 " + all.length + " ô ? nằm ở ĐÁY ống, không rót được ra để đoán.\n" +
+   "Các vị trí: " + all.map(x => "T" + (x.ti+1) + "#" + (x.li+1)).join(", ") +
+   "\nBấm trực tiếp vào ô ? trên bàn để gán màu, hoặc bấm 🧠 Suy luận ô ? để tool kiểm chứng tất cả cách gán.");
+  toast("Ô ? nằm ở đáy — bấm vào ô ? trên bàn để gán màu", "warn");
+  return;
+ }
+ // Predict candidates
+ const cands = predictUnknowns(clean);
+ if(!cands.length) { toast("Không đoán được màu (đã đủ?)", "bad"); return; }
+ // Use the first (most common missing color)
+ saveHistory();
+ const color = cands[0];
+ const p = getColor(color);
+ clean[target.ti][target.li] = color;
+ state.tubes = clean;
+ renderAll();
+ renderStrategy(clean);
+ toast("Peek Ống " + (target.ti+1) + " lớp " + (target.li+1) + " → " + p.symbol, "ok");
+ // Auto re-solve
+ setTimeout(() => runSolver(), 300);
+}
+
+/* ============================================================
+   RENDER ALL
+   ============================================================ */
+function renderAll(){
+ renderEditor();
+ renderPaletteRow();
+ renderDisplay();
+ renderStrategy(state.tubes);
+ if(state.lastSolution) renderSolutionPath(state.lastSolution);
+ renderCheckpointBar();
+}
+
+/* ============================================================
+   EXAMPLE LOADER
+   ============================================================ */
+function loadExample(){
+ console.log("[loadExample] running");
+ // Video 2 frame 0 (màn 3) — 8 ống chứa + 2 rỗng = 10 ống
+ // Hàng trên 5 ống, hàng dưới 3 ống (1 chứa + 2 rỗng)
+ // Đọc từ dưới lên (bottom → top)
+ state.CAP = 4;
+ state.tubes = [
+  ["G","G","G","B"],          // T1 hàng trên cột 1
+  ["G","R","Y","R"],          // T2 hàng trên cột 2
+  ["W","D","G","G"],          // T3 hàng trên cột 3
+  ["G","R","Y","Y"],          // T4 hàng trên cột 4
+  ["G","O","W","B"],          // T5 hàng trên cột 5
+  ["W","Y","R","B"],          // T6 hàng dưới cột 1
+  [],                          // T7 hàng dưới cột 2 (rỗng)
+  [],                          // T8 hàng dưới cột 3 (rỗng)
+  [],                          // T9 (rỗng)
+  []                           // T10 (rỗng)
+ ];
+ $("capInput").value = 4;
+ $("tubeCountInput").value = 10;
+ renderAll();
+ // Tự động lưu checkpoint khi load example
+ saveCheckpoint("Mẫu frame 0 v2");
+ toast("Đã nạp mẫu frame 0 video 2 (màn 3)", "ok");
+ console.log("[loadExample] done, tubes:", state.tubes.length);
+}
+
+function loadSimpleExample(){
+ // Simple 4-tube 2-color puzzle (solvable)
+ state.CAP = 4;
+ state.tubes = [
+  ["O","B","O","B"],
+  ["B","O","B","O"],
+  [],
+  []
+ ];
+ $("capInput").value = 4;
+ $("tubeCountInput").value = 4;
+ renderAll();
+ toast("Đã nạp puzzle 4 ống đơn giản (2 màu)", "ok");
+}
+
+/* ============================================================
+   EVENT HANDLERS
+   ============================================================ */
+function rebuildTubes(){
+ const n = parseInt($("tubeCountInput").value) || 10;
+ const cap = parseInt($("capInput").value) || 4;
+ const capChanged = (state.CAP !== cap);
+ state.CAP = cap;
+ state.tubes = [];
+ for(let i = 0; i < n; i++) state.tubes.push([]);
+ $("capInput").value = cap;
+ // T4: đổi CAP làm mọi phán quyết trong _winMemo mất hiệu lực (heuristic và
+ // điều kiện thắng đều phụ thuộc state.CAP). Xoá cache + bảng mã màu cho sạch.
+ if(capChanged){ clearWinMemo(); state.lastDeduction = null; }
+ renderAll();
+}
+
+$("rebuildBtn").onclick = rebuildTubes;
+$("loadExampleBtn").onclick = loadExample;
+$("loadSimpleBtn").onclick = loadSimpleExample;
+document.querySelectorAll("[data-preset]").forEach(b => {
+ b.onclick = () => {
+  const n = parseInt(b.dataset.preset);
+  $("tubeCountInput").value = n;
+  rebuildTubes();
+  toast("Đã tạo bàn " + n + " ống", "ok");
+ };
+});
+$("addTubeBtn").onclick = () => { saveHistory(); state.tubes.push([]); renderAll(); };
+$("removeTubeBtn").onclick = () => { saveHistory(); if(state.tubes.length > 2) state.tubes.pop(); else toast("Cần ít nhất 2 ống","warn"); renderAll(); };
+$("clearAllBtn").onclick = () => { saveHistory(); state.tubes = state.tubes.map(() => []); renderAll(); };
+$("solveBtn").onclick = () => { state.cancelled = false; setRunning(true); runSolver(); };
+$("animateBtn").onclick = () => { if(state.lastSolution) animatePlan({path: state.lastSolution}); };
+$("stopBtn").onclick = () => {
+ state.cancelled = true;
+ toast("⏹ Đang dừng...", "warn");
+};
+ $("revealBtn").onclick = revealOneUnknown;
+ if($("deductBtn")) $("deductBtn").onclick = runDeduction;
+$("checkpointSaveBtn").onclick = () => {
+ const label = prompt("Tên checkpoint (để trống = tự đặt):", "");
+ if(label === null) return;
+ saveCheckpoint(label.trim() || undefined);
+};
+$("checkpointLoadBtn").onclick = () => {
+ if(state.activeCheckpoint >= 0){
+  loadCheckpoint(state.activeCheckpoint);
+ } else if(state.checkpoints.length > 0){
+  // Load slot mới nhất
+  loadCheckpoint(state.checkpoints.length - 1);
+ } else {
+  toast("Chưa có checkpoint. Bấm 💾 Lưu trước.", "warn");
+ }
+};
+$("checkpointClearBtn").onclick = clearAllCheckpoints;
+$("importTextBtn").onclick = () => {
+ const text = prompt("Nhập JSON tubes (VD: [[\"G\",\"D\",\"G\",\"B\"],[\"R\",\"Y\",\"R\",\"B\"],[]]):");
+ if(!text) return;
+ try {
+  const arr = JSON.parse(text);
+  if(Array.isArray(arr)){ state.tubes = arr; renderAll(); toast("Đã nạp " + arr.length + " ống", "ok"); }
+ } catch(e){ toast("JSON lỗi: " + e.message, "bad"); }
+};
+$("exportTextBtn").onclick = () => {
+ const json = JSON.stringify(state.tubes, null, 2);
+ prompt("Sao chép JSON tubes:", json);
+};
+$("modalClose").onclick = () => $("modal").classList.remove("show");
+$("modalX").onclick = () => $("modal").classList.remove("show");
+$("modal").onclick = e => { if(e.target === $("modal")) $("modal").classList.remove("show"); };
+$("paletteModalX").onclick = () => $("paletteModal").classList.remove("show");
+$("paletteModalCancel").onclick = () => $("paletteModal").classList.remove("show");
+$("paletteModalSave").onclick = savePaletteModal;
+$("paletteModal").onclick = e => { if(e.target === $("paletteModal")) $("paletteModal").classList.remove("show"); };
+
+document.addEventListener("keydown", e => {
+ if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z"){ e.preventDefault(); undo(); }
+ if(e.key === "Escape"){
+  $("modal").classList.remove("show");
+  $("paletteModal").classList.remove("show");
+ }
+ if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); runSolver(); }
+});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+loadExample();
+</script>
+</body>
+</html>
