@@ -415,7 +415,7 @@ export async function notifyAdmin(article: { title: string; slug: string }) {
 }
 
 function isScheduledNow(config: any): boolean {
-  // Kiểm tra schedule_days + schedule_hour (giờ VN UTC+7) — vercel cron 04:00 UTC = 11:00 VN, pg_cron hourly sẽ skip nếu không đúng giờ
+  // Kiểm tra schedule_days + schedule_hour (giờ VN UTC+7) — pg_cron 04:00 UTC = 11:00 VN
   try {
     const days: string[] = Array.isArray(config.schedule_days) ? config.schedule_days : (config.schedule_day ? [config.schedule_day] : ['THU'])
     const hour: number = typeof config.schedule_hour === 'number' ? config.schedule_hour : 12
@@ -425,14 +425,9 @@ function isScheduledNow(config: any): boolean {
     const dayMap = ['SUN','MON','TUE','WED','THU','FRI','SAT']
     const today = dayMap[vn.getDay()]
     const curHour = vn.getHours()
-    // Cho phép lệch 1 giờ để tránh miss do cron drift (ví dụ vercel 04:00 UTC ~11:00 VN)
     if (!days.includes(today)) return false
-    if (Math.abs(curHour - hour) > 1 && curHour !== hour) {
-      // Nếu schedule_hour = 11, nhưng cron chạy 04:00 UTC (11 VN) thì pass; nếu hourly cron chạy giờ khác thì skip
-      // Chỉ cho phép đúng giờ đã cấu hình
-      return false
-    }
-    return true
+    // Chỉ cho phép đúng giờ đã cấu hình (không lệch ±1) — tránh đăng nhiều bài khi cron chạy lệch
+    return curHour === hour
   } catch { return true }
 }
 
@@ -444,6 +439,21 @@ export async function runAutoSeo(opts?: { force?: boolean }): Promise<{ success:
     if (!config?.enabled) return { success: false, message: 'Auto SEO is disabled' };
     if (!opts?.force && !isScheduledNow(config)) {
       return { success: false, message: `Not scheduled now (days=${(config.schedule_days||[]).join(',')} hour=${config.schedule_hour})` };
+    }
+
+    // Idempotency: skip nếu hôm nay đã có bài auto_seo (tránh đăng trùng khi nhiều cron gọi cùng lúc)
+    if (!opts?.force) {
+      const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+      const startOfToday = new Date(vnNow);
+      startOfToday.setHours(0, 0, 0, 0);
+      const { data: todayArticles, error: todayErr } = await supabase
+        .from('seo_articles')
+        .select('id', { count: 'exact', head: true })
+        .eq('topic_source', 'auto_seo')
+        .gte('created_at', startOfToday.toISOString());
+      if (!todayErr && (todayArticles?.length ?? 0) > 0) {
+        return { success: false, message: 'Already published today (idempotency guard)' };
+      }
     }
 
     // ensure pool is refilled before picking (weekly safeguard + handles "hết tiêu đề" incident)
