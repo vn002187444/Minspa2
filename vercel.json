@@ -1,11 +1,6 @@
 {
   "ignoreCommand": "git diff --quiet HEAD~1 -- . ':(exclude)*.md' ':(exclude)docs/**' ':(exclude).agents/**' ':(exclude).github/**' ':(exclude)LICENSE' 2>/dev/null && exit 0 || exit 1",
-  "crons": [
-    {
-      "path": "/api/cron/dance-publish",
-      "schedule": "0 5 * * *"
-    }
-  ],
+  "crons": [],
   "env": {
     "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
   },
