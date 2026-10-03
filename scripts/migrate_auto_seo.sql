@@ -51,7 +51,7 @@ AS $$
 DECLARE
   app_url text := 'https://minhair.vercel.app';
 BEGIN
-  PERFORM extensions.http_post(
+  PERFORM net.http_post(
     url := app_url || '/api/cron/seo-publish',
     headers := '{"Content-Type": "application/json", "x-supabase-cron": "true"}'::jsonb,
     body := '{}'::jsonb

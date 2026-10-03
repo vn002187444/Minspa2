@@ -442,16 +442,20 @@ export async function runAutoSeo(opts?: { force?: boolean }): Promise<{ success:
     }
 
     // Idempotency: skip nếu hôm nay đã có bài auto_seo (tránh đăng trùng khi nhiều cron gọi cùng lúc)
+    // NOTE: head:true trả về data=[] nên PHẢI dùng `count`, không dùng data.length
     if (!opts?.force) {
-      const vnNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
-      const startOfToday = new Date(vnNow);
-      startOfToday.setHours(0, 0, 0, 0);
-      const { data: todayArticles, error: todayErr } = await supabase
+      // Mốc 00:00 giờ VN (UTC+7), tính theo UTC để lọc created_at — độc lập timezone server
+      const SHIFT_MS = 7 * 3600 * 1000;
+      const vnNow = new Date(Date.now() + SHIFT_MS);
+      const startOfVnDayUTC = new Date(
+        Date.UTC(vnNow.getUTCFullYear(), vnNow.getUTCMonth(), vnNow.getUTCDate()) - SHIFT_MS
+      ).toISOString();
+      const { count: todayCount, error: todayErr } = await supabase
         .from('seo_articles')
         .select('id', { count: 'exact', head: true })
         .eq('topic_source', 'auto_seo')
-        .gte('created_at', startOfToday.toISOString());
-      if (!todayErr && (todayArticles?.length ?? 0) > 0) {
+        .gte('created_at', startOfVnDayUTC);
+      if (!todayErr && (todayCount ?? 0) > 0) {
         return { success: false, message: 'Already published today (idempotency guard)' };
       }
     }

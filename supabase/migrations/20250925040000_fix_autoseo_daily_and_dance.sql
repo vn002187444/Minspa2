@@ -31,7 +31,7 @@ CREATE OR REPLACE FUNCTION public.trigger_dance_publish()
 RETURNS text LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE app_url text := 'https://minhair.vercel.app';
 BEGIN
-  PERFORM extensions.http_post(
+  PERFORM net.http_post(
     url := app_url || '/api/cron/dance-publish',
     headers := '{"Content-Type": "application/json", "x-supabase-cron": "true"}'::jsonb,
     body := '{}'::jsonb
