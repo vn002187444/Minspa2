@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runAutoSeo } from '@/lib/auto-seo';
 import { getSession } from '@/utils/auth';
 
-export const maxDuration = 60;
+export const maxDuration = 10;
 
 async function isAuthorized(req: NextRequest): Promise<boolean> {
   const authHeader = req.headers.get('authorization') || '';

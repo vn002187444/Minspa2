@@ -186,8 +186,8 @@ function ensureHeadingStructureAndBacklinks(content: string, title: string, site
   let out = content.replace(/\r/g, '').trim().normalize('NFC');
 
   // 1. Tách heading dính liền đoạn văn: "câu. ## Tiêu đề" -> "câu.\n\n## Tiêu đề"
-  out = out.replace(/(?<=[^\n])\n\s*(##\s+)/g, '\n\n$1');
-  out = out.replace(/(?<=[^\n])\n\s*(###\s+)/g, '\n\n$1');
+  out = out.replace(/([^\n])\n\s*(##\s+)/g, '$1\n\n$2');
+  out = out.replace(/([^\n])\n\s*(###\s+)/g, '$1\n\n$2');
   // 2. Chuẩn hoá H1 -> H2 (title đã là H1, cấm H1 trong content)
   out = out.replace(/^#\s+(.*)$/gm, '## $1');
   // 3. Bỏ ** bold bọc ngoài heading (heading đã bold via prose-h2/h3)

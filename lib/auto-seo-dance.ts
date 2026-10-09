@@ -128,8 +128,8 @@ Tin mới: Dàn dựng nhảy đám cưới -> ${base}/dan-dung-tiet-muc-nhay-da
 
 function ensureDanceHeadings(content:string, siteLinks:string[]):string{
   let out=content.replace(/\r/g,'').trim().normalize('NFC')
-  out=out.replace(/(?<=[^\n])\n\s*(##\s+)/g, '\n\n$1')
-  out=out.replace(/(?<=[^\n])\n\s*(###\s+)/g, '\n\n$1')
+  out=out.replace(/([^\n])\n\s*(##\s+)/g, '$1\n\n$2')
+  out=out.replace(/([^\n])\n\s*(###\s+)/g, '$1\n\n$2')
   out=out.replace(/^#\s+(.*)$/gm,'## $1')
   out=out.replace(/^##\s*\*\*(.*?)\*\*\s*$/gm,'## $1')
   out=out.replace(/^###\s*\*\*(.*?)\*\*\s*$/gm,'### $1')

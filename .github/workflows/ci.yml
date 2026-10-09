@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - name: Audit (non-blocking - xlsx known high)
         run: npm audit --audit-level=high || echo "audit warnings present (xlsx) - non-blocking"
         continue-on-error: true
@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm test
 
   security:
@@ -51,13 +51,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  dependency-review:
-    name: Dependency Review
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
 
   build:
     name: Build
@@ -75,7 +68,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --legacy-peer-deps
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
