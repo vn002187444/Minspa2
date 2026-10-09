@@ -3,15 +3,13 @@ import { useState, useEffect } from 'react';
 import { Megaphone, Rocket, X } from 'lucide-react';
 
 const KEY = 'min_campaign_active';
-const THEMES_KEY = 'min_theme_config';
-
 export default function CampaignActivationButton({ variant = 'admin' }: { variant?: 'admin' | 'floating' }) {
   const [active, setActive] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     setActive(localStorage.getItem(KEY) === '1');
+    setMounted(true);
   }, []);
 
   const toggle = () => {

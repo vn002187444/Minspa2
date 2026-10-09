@@ -30,7 +30,7 @@ PHONG CÁCH VIẾT:
 ĐỊNH DẠNG MARKDOWN (hệ thống chỉ render được ## và ###):
 - ## cho section chính, ### cho sub-section.
 - KHÔNG BAO GIỜ dùng # (H1).
-- ### dạng: ### **Tiêu đề con:**
+- TUYỆT ĐỐI KHÔNG sử dụng thẻ in đậm (**) cho tiêu đề H2, H3 (ví dụ KHÔNG viết "## **Lợi ích**" mà phải viết "## Lợi ích").
 - Mỗi heading có 1 dòng trống trước và sau.
 - Mỗi đoạn văn cách nhau 1 dòng trống.
 - Dùng list (- item) khi liệt kê 3+ mục.
@@ -41,7 +41,7 @@ const ARTICLE_WRITER_SCHEMA = {
   properties: {
     title: { type: "string", description: "Tiêu đề SEO, tối đa 70 ký tự, chứa từ khóa chính" },
     summary: { type: "string", description: "Meta description, tối đa 160 ký tự, tóm tắt + CTA" },
-    content: { type: "string", description: "Markdown: mở bài không heading, 3-4 phần ## có ### bên trong, kết bài CTA. KHÔNG dùng # (H1). ### dạng ### **Tiêu đề:**. Tối đa 800 từ." },
+    content: { type: "string", description: "Markdown: mở bài không heading, 3-4 phần ## có ### bên trong, kết bài CTA. KHÔNG dùng # (H1). KHÔNG dùng in đậm (**) ở tiêu đề. Tối đa 800 từ." },
     image_alt: { type: "string", description: "Mô tả alt text cho ảnh, 5-10 từ, chứa từ khóa chính" },
   },
   required: ["title", "summary", "content"],
@@ -231,7 +231,7 @@ ${researchText}
 === YÊU CẦU ===
 - Mở bài 2-3 đoạn ngắn (không heading), bắt đầu bằng câu hỏi gần gũi.
 - 3-4 phần ##, mỗi phần có 2-3 ### con.
-- ### dạng ### **Tiêu đề con:**, mỗi ### có 2-3 đoạn ngắn.
+- TUYỆT ĐỐI KHÔNG dùng in đậm (**) cho tiêu đề H2, H3 (VD: KHÔNG viết "## **Tiêu đề**" mà viết "## Tiêu đề"), mỗi ### có 2-3 đoạn ngắn.
 - KHÔNG dùng # (H1).
 - Chèn backlink nội bộ tự nhiên:
 ${backlinkRulesStr}

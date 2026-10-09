@@ -3,6 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { sendPushNotification } from '@/utils/push';
 import { format } from 'date-fns';
 
+export const maxDuration = 60;
+
 export async function GET(req: Request) {
   // Auth: either Vercel Cron secret hoặc Supabase pg_cron internal call
   const authHeader = req.headers.get('authorization') || '';

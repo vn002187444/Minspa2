@@ -45,8 +45,8 @@ function markdownToHtml(text: string): string {
   // Chuẩn hoá heading dính liền đoạn văn: "câu. ## Tiêu đề" -> "\n\n## Tiêu đề"
   // và "câu. ### Tiêu đề" -> "\n\n### Tiêu đề" (bao gồm trường hợp thiếu space sau #)
   html = html
-    .replace(/([^\n])\s*###\s+/g, '$1\n\n### ')
-    .replace(/([^\n])\s*##\s+/g, '$1\n\n## ')
+    .replace(/(?<=[^\n])\n\s*(###\s+)/g, '\n\n$1')
+    .replace(/(?<=[^\n])\n\s*(##\s+)/g, '\n\n$1')
     .replace(/([^\n])\s*---+\s*/g, '$1\n\n---\n\n')
     .replace(/([^\n])\s*>\s/g, '$1\n\n> ');
   // Tách theo dòng để không nuốt H3/paragraph vào H2 khi thiếu blank line

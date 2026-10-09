@@ -57,12 +57,6 @@ export default function AnimeMascot() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
-    if (isHovered) {
-      setEmotion(EMOTIONS[Math.floor(Math.random() * EMOTIONS.length)])
-    }
-  }, [isHovered])
-
   const shuffle = useCallback(() => {
     if (images.length === 0 || shuffling) return
     setShuffling(true)
@@ -116,7 +110,10 @@ export default function AnimeMascot() {
               ? { repeat: Infinity, duration: 2, ease: 'easeInOut' }
               : {}
         }
-        onHoverStart={() => setIsHovered(true)}
+        onHoverStart={() => {
+          setIsHovered(true)
+          setEmotion(EMOTIONS[Math.floor(Math.random() * EMOTIONS.length)])
+        }}
         onHoverEnd={() => setIsHovered(false)}
         onTap={shuffle}
         style={{ opacity: isHovered ? 0.3 : 1 }}

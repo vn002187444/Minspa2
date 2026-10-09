@@ -48,7 +48,7 @@ export default function PwaSupport() {
         setNotificationPermission(Notification.permission);
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         if (Notification.permission !== 'granted' && !isStandalone && isNotifCooldownPassed()) {
-          setShowNotificationWidget(true);
+          setTimeout(() => setShowNotificationWidget(true), 3500);
         }
       }
     };

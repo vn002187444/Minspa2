@@ -17,7 +17,7 @@ QUY TẮC BẮT BUỘC — Bài viết phải đạt chuẩn SEO, GEO, AEO:
 2. CẤU TRÚC HEADING (TUYỆT ĐỐI TUÂN THỦ):
 - H1 là \`title\` (KHÔNG BAO GIỜ viết H1 trong content, cấm dùng "# ").
 - Content CHỈ dùng H2 (## ) và H3 (### ). Cấm H1, H4+.
-- Tiêu đề H2/H3 viết THUẦN TEXT, KHÔNG bọc **bold** (ví dụ đúng: "## Lợi ích nổi bật", sai: "## **Lợi ích nổi bật**").
+- Tiêu đề H2/H3 viết THUẦN TEXT, TUYỆT ĐỐI KHÔNG sử dụng thẻ in đậm (**) cho tiêu đề H2, H3 (ví dụ KHÔNG viết "## **Lợi ích**" mà phải viết "## Lợi ích").
 - Mỗi H2 và H3 phải nằm trên DÒNG RIÊNG, TRƯỚC và SAU đều có 1 dòng trống (\\n\\n).
 - Tối thiểu 3 H2, mỗi H2 nên có 1-2 H3 con khi phù hợp. Thứ tự H1 -> H2 -> H3, không nhảy cấp.
 - Mỗi đoạn (paragraph, heading, list, blockquote) cách nhau 1 dòng trống.
@@ -186,8 +186,8 @@ function ensureHeadingStructureAndBacklinks(content: string, title: string, site
   let out = content.replace(/\r/g, '').trim().normalize('NFC');
 
   // 1. Tách heading dính liền đoạn văn: "câu. ## Tiêu đề" -> "câu.\n\n## Tiêu đề"
-  out = out.replace(/([^\n])\s*##\s+/g, '$1\n\n## ');
-  out = out.replace(/([^\n])\s*###\s+/g, '$1\n\n### ');
+  out = out.replace(/(?<=[^\n])\n\s*(##\s+)/g, '\n\n$1');
+  out = out.replace(/(?<=[^\n])\n\s*(###\s+)/g, '\n\n$1');
   // 2. Chuẩn hoá H1 -> H2 (title đã là H1, cấm H1 trong content)
   out = out.replace(/^#\s+(.*)$/gm, '## $1');
   // 3. Bỏ ** bold bọc ngoài heading (heading đã bold via prose-h2/h3)
@@ -272,7 +272,7 @@ YÊU CẦU OUTPUT (TUÂN THỦ NGHIÊM NGẶT):
   • Dòng 1-3: sapo 2-3 câu (KHÔNG heading), tóm tắt lợi ích + Lavita Charm/Thủ Đức.
   • Sau sapo là dòng trống, rồi "## H2 thuần text" (không **), dòng trống, 40-60 từ trả lời trực tiếp câu hỏi H2, rồi nội dung.
   • Mỗi H2 (tối thiểu 3) có 1-2 H3 con (### thuần text). Mỗi heading/list/paragraph đều cách nhau 1 dòng trống.
-  • CẤM "# " (H1) trong content, CẤM "**" bọc heading.
+  • CẤM "# " (H1) trong content, TUYỆT ĐỐI KHÔNG bọc "**" vào heading.
   • Rải 2-3 backlink [anchor tự nhiên](/dich-vu/slug) hoặc /blog/slug đã cho (1 link nửa đầu, 1 link nửa sau).
   • Kết bài: CTA [đặt lịch ngay](/booking) + hotline.
   • Ví dụ cấu trúc đúng:
