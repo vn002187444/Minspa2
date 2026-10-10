@@ -65,7 +65,10 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
   const MOBILE_NAV_ITEMS = getMobileNavItems(t);
 
   useEffect(() => {
-    const handleScroll = () => {
+    let ticking = false;
+    let rafId: number | null = null;
+
+    const updateScrollState = () => {
       const currentScrollY = window.scrollY;
       const prevScrollY = lastScrollY.current;
 
@@ -78,10 +81,24 @@ export default function HeaderNav({ logoUrl }: HeaderNavProps) {
       }
       
       lastScrollY.current = currentScrollY;
+      ticking = false;
+    };
+
+    // ⚡ Bolt: Throttling scroll event using requestAnimationFrame to improve performance and prevent layout thrashing
+    const handleScroll = () => {
+      if (!ticking) {
+        rafId = window.requestAnimationFrame(updateScrollState);
+        ticking = true;
+      }
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   useEffect(() => {
