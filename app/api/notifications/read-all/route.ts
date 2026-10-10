@@ -3,7 +3,7 @@ import { getSession } from '@/utils/auth';
 import { createClient } from '@/utils/supabase/server';
 import { rateLimit } from '@/lib/rate-limit';
 
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
     const session = await getSession();
     if (!session) {

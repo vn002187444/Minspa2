@@ -14,7 +14,7 @@ QUY TẮC BẮT BUỘC SEO/GEO/AEO:
 - Trước khi viết, phải review site context Minstudio.vn được cung cấp (courses, rooms, news) để bám sát dịch vụ/thông tin có thật, không bịa.
 - Trả về JSON đúng schema, đồng thời ngầm sinh keywords cho Minstudio.vn (lồng vào title/meta/content).
 - Tiếng Việt có dấu (NFC), giọng trẻ trung, năng động, thân thiện.
-- H1 là title (cấm # trong content). Content chỉ ## H2 và ### H3 thuần text (không **), mỗi heading 1 dòng riêng + 1 dòng trống trước/sau.
+- H1 là title (cấm # trong content). Content chỉ ## H2 và ### H3 thuần text (TUYỆT ĐỐI KHÔNG sử dụng thẻ in đậm ** cho tiêu đề H2, H3), mỗi heading 1 dòng riêng + 1 dòng trống trước/sau.
 - Tối thiểu 3 H2, mỗi H2 1-2 H3, 800-1200 từ, sapo 2-3 câu không heading (có Lavita Charm/Thủ Đức 2-3 lần), 40-60 từ đầu mỗi H2 trả lời trực tiếp.
 - BACKLINK BẮT BUỘC tới Minstudio.vn: rải 2-3 link dạng [anchor](${MINSTUDIO_BASE}/courses) / /rooms / /news/<slug> / /hiphop / /dance-kids v.v. đã cho, anchor tự nhiên chứa từ khóa dance. Có thể thêm 1 link nội bộ minhair /blog nếu liên quan.
 - Luôn có CTA tới Minstudio: [đặt lịch học thử](${MINSTUDIO_BASE}/register) hoặc /booking và hotline 0934 323 878.
@@ -128,8 +128,8 @@ Tin mới: Dàn dựng nhảy đám cưới -> ${base}/dan-dung-tiet-muc-nhay-da
 
 function ensureDanceHeadings(content:string, siteLinks:string[]):string{
   let out=content.replace(/\r/g,'').trim().normalize('NFC')
-  out=out.replace(/([^\n])\s*##\s+/g,'$1\n\n## ')
-  out=out.replace(/([^\n])\s*###\s+/g,'$1\n\n### ')
+  out=out.replace(/([^\n])\n\s*(##\s+)/g, '$1\n\n$2')
+  out=out.replace(/([^\n])\n\s*(###\s+)/g, '$1\n\n$2')
   out=out.replace(/^#\s+(.*)$/gm,'## $1')
   out=out.replace(/^##\s*\*\*(.*?)\*\*\s*$/gm,'## $1')
   out=out.replace(/^###\s*\*\*(.*?)\*\*\s*$/gm,'### $1')

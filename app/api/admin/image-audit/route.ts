@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/utils/auth'
 import { auditImageDuplicates, auditOffTopicImages } from '@/lib/image-audit'
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   const session = await getSession()
   if (!session || (session.user.role !== 'ADMIN' && session.user.role !== 'MANAGER')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

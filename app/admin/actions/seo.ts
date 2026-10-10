@@ -175,8 +175,8 @@ export async function deleteSeoArticle(id: string) {
 
 function normalizeSeoContentForPublish(raw: string): string {
   let out = raw.replace(/\r/g, '').trim().normalize('NFC');
-  out = out.replace(/([^\n])\s*##\s+/g, '$1\n\n## ');
-  out = out.replace(/([^\n])\s*###\s+/g, '$1\n\n### ');
+  out = out.replace(/([^\n])\n\s*(##\s+)/g, '$1\n\n$2');
+  out = out.replace(/([^\n])\n\s*(###\s+)/g, '$1\n\n$2');
   out = out.replace(/^#\s+(.*)$/gm, '## $1');
   out = out.replace(/^##\s*\*\*(.*?)\*\*\s*$/gm, '## $1');
   out = out.replace(/^###\s*\*\*(.*?)\*\*\s*$/gm, '### $1');
