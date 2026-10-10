@@ -11,6 +11,7 @@ import {
   deleteBlogPost, 
   getCurrentSessionUser 
 } from '../../blog/actions';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { 
   BookOpen, Edit3, Trash2, ArrowLeft, 
   Sparkles, CheckCircle, AlertTriangle, Image as ImageIcon,
@@ -1122,7 +1123,7 @@ export default function AdminBlogPage() {
                 <p className="text-sm text-stone-500 leading-relaxed font-medium">{summary}</p>
               )}
               <div className="prose prose-stone max-w-none text-sm leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: content || '<p class="text-stone-400 italic">(Chưa có nội dung)</p>' }}
+                dangerouslySetInnerHTML={{ __html: content ? sanitizeHtml(content) : '<p class="text-stone-400 italic">(Chưa có nội dung)</p>' }}
               />
             </div>
             <div className="sticky bottom-0 bg-white border-t border-[#EADDCD] px-6 py-4 flex justify-end">
