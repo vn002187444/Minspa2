@@ -89,6 +89,7 @@ export default function GlobalSearch() {
           <button 
             onClick={() => setQuery('')}
             className="absolute right-3 p-1 hover:bg-stone-100 rounded-full transition-colors"
+            aria-label="Xóa tìm kiếm"
           >
             <X className="w-3.5 h-3.5 text-stone-400" />
           </button>

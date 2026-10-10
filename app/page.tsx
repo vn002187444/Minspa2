@@ -784,6 +784,7 @@ export default async function Home() {
                   type="button"
                   className="bg-[#8D6E53] hover:bg-[#5C4033] text-white p-2 rounded-lg transition-colors cursor-pointer shrink-0"
                   title="Đăng ký"
+                  aria-label="Đăng ký"
                 >
                   <ArrowUpRight className="w-4 h-4" />
                 </button>
