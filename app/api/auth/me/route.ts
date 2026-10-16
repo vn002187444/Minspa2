@@ -11,7 +11,7 @@ export async function GET() {
       authenticated: true,
       user: session.user,
     });
-    res.headers.set('Cache-Control', 'private, max-age=30');
+    res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
     return res;
   } catch {
     return NextResponse.json({ authenticated: false }, { status: 401 });

@@ -64,8 +64,9 @@ export default function LoginPage() {
 
     try {
       const data = await loginUser(null, formData);
-      if (data?.success && data.redirect) {
-        window.location.href = data.redirect;
+      const targetUrl = data?.redirectUrl || (data as any)?.redirect;
+      if (data?.success && targetUrl) {
+        window.location.href = targetUrl;
         return;
       }
       if (data && !data.success) {

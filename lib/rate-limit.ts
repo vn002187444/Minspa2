@@ -13,8 +13,8 @@ export interface RateLimitResult {
  * @param failClosed If true, block requests when DB is unavailable (for critical endpoints like login)
  */
 export async function rateLimit(key: string, limit: number = 10, windowSeconds: number = 60, failClosed: boolean = false): Promise<RateLimitResult> {
-  // Critical endpoints (login) should fail closed when DB is down
-  const isCritical = failClosed || key.startsWith('login:');
+  // Critical endpoints should fail closed when DB is down, but login should fail open to prevent lockouts on DB issues
+  const isCritical = failClosed;
   const supabase = await createClient();
   const now = new Date();
 

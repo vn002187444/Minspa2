@@ -84,7 +84,7 @@ export async function loginUser(prevState: unknown, formData: FormData) {
     }
 
     const dest = await doLogin(normUsername, normPassword);
-    return { success: true, redirect: dest };
+    return { success: true, redirect: dest, redirectUrl: dest };
   } catch (error) {
     if (error instanceof Error && 'digest' in error && typeof (error as any).digest === 'string' && (error as any).digest.startsWith('NEXT_REDIRECT')) {
       throw error;

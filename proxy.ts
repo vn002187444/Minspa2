@@ -84,10 +84,10 @@ export async function proxy(request: NextRequest) {
     }
     const user = parsed.user;
 
-    if (authPath.startsWith("/admin") && user.role !== "ADMIN" && user.role !== "MANAGER") {
+    if (authPath.startsWith("/admin") && user.role?.toUpperCase() !== "ADMIN" && user.role?.toUpperCase() !== "MANAGER") {
       return NextResponse.redirect(new URL("/login?auth_err=1", request.url));
     }
-    if (authPath.startsWith("/staff") && user.role !== "STAFF" && user.role !== "MANAGER") {
+    if (authPath.startsWith("/staff") && user.role?.toUpperCase() !== "STAFF" && user.role?.toUpperCase() !== "MANAGER") {
       return NextResponse.redirect(new URL("/login?auth_err=1", request.url));
     }
   }
