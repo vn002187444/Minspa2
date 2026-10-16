@@ -1,7 +1,6 @@
 'use server'
 
 import { z } from 'zod';
-import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
 import { createSession } from '@/utils/auth';
@@ -23,6 +22,13 @@ async function doLogin(username: string, password: string): Promise<string> {
     .single();
 
   if (error || !user) {
+    // Diagnostic log (server-only): phân biệt RLS/key thiếu vs sai credentials.
+    // Không trả chi tiết cho client để tránh lộ thông tin.
+    console.error('[AUTH] users query failed:', {
+      code: (error as { code?: string } | null)?.code ?? null,
+      message: error instanceof Error ? error.message : String(error ?? 'no-user-row'),
+      hint: 'If code=PGRST116 or empty with anon key → missing service-role key or RLS block',
+    });
     throw new Error('Sai tên đăng nhập hoặc mật khẩu');
   }
 

@@ -33,13 +33,25 @@ function getSupabaseUrl(): string {
 }
 
 /**
- * Privileged client — uses SERVICE_ROLE_KEY, BYPASSES RLS.
+ * Privileged client — uses SERVICE_ROLE_KEY (or new-format SUPABASE_SECRET_KEY), BYPASSES RLS.
  * Chỉ dùng cho: cron jobs, admin actions, login flow.
  * Không dùng cho queries thường của user (sẽ bỏ qua RLS).
  */
 export const createServiceClient = async () => {
   const supabaseUrl = getSupabaseUrl();
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  // NOTE: Supabase hiện cấp key mới dạng sb_secret_* qua SUPABASE_SECRET_KEY.
+  // Vercel có thể chỉ set 1 trong 2 biến → chấp nhận cả hai để login không
+  // rơi vào anon key (bị RLS chặn bảng users → query trả rỗng → "Sai mật khẩu").
+  const serviceKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  if (!serviceKey) {
+    console.error(
+      '[SUPABASE] SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SECRET_KEY is missing — ' +
+        'falling back to ANON key. RLS will block `users`/`rate_limits` queries ' +
+        'and login will fail. Set the service key in Vercel → Project → Settings → Environment Variables.'
+    );
+  }
+  const supabaseKey = serviceKey || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseKey) throw new Error('SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY is missing.');
   return buildClient(supabaseUrl, supabaseKey);
 };
