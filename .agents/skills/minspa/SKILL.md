@@ -37,12 +37,12 @@ description: >-
 16. **Verify SQL before running:** Test DDL syntax in a safe way before applying to production. `CREATE INDEX IF NOT EXISTS`, `ALTER TABLE ... IF NOT EXISTS` are safe but `ALTER PUBLICATION ... ADD TABLE IF NOT EXISTS` is NOT universally supported (fails through PgBouncer). When in doubt, use a DO block with existence checks.
 
 ## 3. Auth System
-- **Custom JWT** stored in `session` cookie (httpOnly, secure, sameSite=lax)
-- **Middleware:** `middleware.ts` — protects `/admin/*` routes with JWT verification
-- **Login:** `/app/login/actions.ts` — server actions that return JWT
-- **Logout:** Clear `session` cookie
-- **Admin bypass:** Route handler `/api/auth/me` as fallback
-- **Password:** bcrypt hash via `lib/password.ts` stored in `users.password_hash` column
+- **Custom JWT** stored in `session` cookie (`httpOnly`, `secure`, `sameSite=lax`, 7d expiry)
+- **Proxy (Middleware):** `proxy.ts` (Next.js 16 convention) — protects `/admin/*` and `/staff/*` with sliding session and JWT verification
+- **Login:** `/app/login/actions.ts` (`loginUser`) — returns `{ success: true, redirect: dest }`, client redirects via `window.location.href` to ensure cookie flush
+- **Logout:** Clear `session` cookie with `sameSite: 'lax'`
+- **Admin bypass & info:** Route handler `/api/auth/me` as fallback
+- **Password:** `lib/password.ts` with bcrypt hash (`verifyPassword` + `hashPassword`), handles bcrypt hashes and safe fallback for legacy unhashed passwords with automatic upgrade upon successful login
 
 ## 4. Database Quick Ref (31 tables)
 Main tables: `users`, `services`, `appointments`, `appointment_services`, `audit_logs`, `blogs`, `blog_views`, `blog_stats`, `customers`, `treatment_packages`, `customer_packages`, `package_usage_logs`, `notifications`, `time_slot_locks`, `reviews`, `seo_settings`, `seo_articles`, `banner_settings`, `bank_settings`, `attendance`, `attendance_reminders_log`, `random_booking_reminders_log`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache`

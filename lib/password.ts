@@ -9,8 +9,17 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 /**
- * Verify a plaintext password against a hash
+ * Verify a plaintext password against a hash (or fallback plaintext)
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return await bcrypt.compare(password, hash);
+  if (!password || !hash) return false;
+  if (hash.startsWith('$2a$') || hash.startsWith('$2b$') || hash.startsWith('$2y$')) {
+    try {
+      return await bcrypt.compare(password, hash);
+    } catch {
+      return false;
+    }
+  }
+  // Fallback for unmigrated plaintext passwords
+  return password === hash;
 }

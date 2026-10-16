@@ -50,7 +50,7 @@ export async function createSession(user: { id: string; role: string; username: 
     expires,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60,
   });
@@ -68,7 +68,7 @@ export function setSessionCookie(response: NextResponse, token: string) {
   response.cookies.set('session', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
     maxAge: 7 * 24 * 60 * 60,
   });
@@ -81,7 +81,7 @@ export async function logout() {
     maxAge: 0,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
     path: '/',
   });
 }
