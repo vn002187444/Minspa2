@@ -41,7 +41,7 @@ export {
 } from "./finance";
 
 export {
-  getReviews, changePassword,
+  getReviews, changePassword, changePin,
   getBannerSettings, saveBannerSettings,
   getThemeSettings, saveThemeSettings,
   getMascotSettings, saveMascotSettings,

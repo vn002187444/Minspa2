@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Key } from 'lucide-react';
-import { changePassword } from '../actions';
+import { changePassword, changePin } from '../actions';
 import PushNotificationManager from '@/components/PushNotificationManager';
 import { Button } from '@/components/ui/Button';
 
@@ -12,6 +12,43 @@ export default function TabPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinMsg, setPinMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinMsg(null);
+    if (!newPin || !confirmPin) {
+      setPinMsg({ type: 'error', text: 'Vui lòng điền đầy đủ mã PIN.' });
+      return;
+    }
+    if (newPin !== confirmPin) {
+      setPinMsg({ type: 'error', text: 'Mã PIN và xác nhận mã PIN không khớp nhau.' });
+      return;
+    }
+    if (newPin.length < 4 || newPin.length > 6 || !/^\d+$/.test(newPin)) {
+      setPinMsg({ type: 'error', text: 'Mã PIN phải từ 4 đến 6 chữ số.' });
+      return;
+    }
+    setPinLoading(true);
+    try {
+      const res = await changePin(newPin);
+      if (res.success) {
+        setPinMsg({ type: 'success', text: 'Đổi mã PIN thành công!' });
+        setNewPin('');
+        setConfirmPin('');
+      } else {
+        setPinMsg({ type: 'error', text: res.error || 'Có lỗi xảy ra.' });
+      }
+    } catch {
+      setPinMsg({ type: 'error', text: 'Lỗi kết nối máy chủ.' });
+    } finally {
+      setPinLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +105,30 @@ export default function TabPassword() {
           </Button>
         </div>
       </form>
+
+      <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-2 mt-6">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2"><Key className="w-6 h-6 text-pink-500" /> Đổi mã PIN Đăng Nhập Nhanh</h2>
+        <p className="text-sm text-gray-500">Cập nhật mã PIN mới (4-6 chữ số) để đăng nhập nhanh chóng.</p>
+      </div>
+      <form onSubmit={handlePinSubmit} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5 mt-6">
+        {pinMsg && (
+          <div className={`p-4 rounded-xl text-sm font-semibold ${pinMsg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>{pinMsg.text}</div>
+        )}
+        <div>
+          <label htmlFor="pin_new" className="block text-sm font-semibold text-gray-700 mb-1.5">Mã PIN mới</label>
+          <input id="pin_new" type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, ''))} placeholder="Ví dụ: 686868" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
+        </div>
+        <div>
+          <label htmlFor="pin_confirm" className="block text-sm font-semibold text-gray-700 mb-1.5">Xác nhận mã PIN mới</label>
+          <input id="pin_confirm" type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, ''))} placeholder="Xác nhận lại mã PIN mới" className="w-full p-4 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all placeholder:text-gray-400 font-medium font-semibold" />
+        </div>
+        <div className="pt-4 border-t border-gray-100 flex justify-end">
+          <Button type="submit" disabled={pinLoading} isLoading={pinLoading} className="px-8">
+            Cập nhật Mã PIN
+          </Button>
+        </div>
+      </form>
+
       <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm space-y-5 mt-6">
         <h3 className="text-lg font-bold text-gray-900 pb-2 border-b border-gray-100 mb-4">Cài đặt thông báo (Admin)</h3>
         <p className="text-sm text-gray-600 font-medium pb-2">Đăng ký thiết bị này để nhận các thông báo tức thời về đặt lịch mới, huỷ lịch hoặc thay đổi dịch vụ của khách.</p>

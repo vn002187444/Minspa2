@@ -262,3 +262,30 @@ export async function reorderFaqs(sortedIds: string[]) {
   revalidatePath('/admin');
   revalidatePath('/');
 }
+
+export async function changePin(newPin: string) {
+  const session = await getSession();
+  if (!session) {
+    return { success: false, error: 'Chưa đăng nhập hoặc phiên làm việc hết hạn' };
+  }
+  
+  if (!newPin || newPin.length < 4 || newPin.length > 6 || !/^\d+$/.test(newPin)) {
+    return { success: false, error: 'Mã PIN phải từ 4 đến 6 chữ số' };
+  }
+
+  const userId = session.user.id;
+  const supabase = await createClient();
+
+  const hashedNewPin = await hashPassword(newPin);
+  const { error: updateErr } = await supabase
+    .from('users')
+    .update({ pin_hash: hashedNewPin })
+    .eq('id', userId);
+
+  if (updateErr) {
+    return { success: false, error: 'Lỗi cập nhật mã PIN mới: ' + updateErr.message };
+  }
+
+  revalidatePath('/admin');
+  return { success: true };
+}

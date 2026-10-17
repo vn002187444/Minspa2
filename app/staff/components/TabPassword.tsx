@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { changePassword } from '@/app/staff/actions';
+import { changePassword, changePin } from '@/app/staff/actions';
 
 export default function TabPassword() {
   const [oldPassword, setOldPassword] = useState("");
@@ -9,6 +9,47 @@ export default function TabPassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [pinLoading, setPinLoading] = useState(false);
+  const [pinMsg, setPinMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinMsg(null);
+
+    if (!newPin || !confirmPin) {
+      setPinMsg({ type: "error", text: "Vui lòng điền đầy đủ mã PIN." });
+      return;
+    }
+
+    if (newPin !== confirmPin) {
+      setPinMsg({ type: "error", text: "Mã PIN và xác nhận mã PIN không khớp nhau." });
+      return;
+    }
+
+    if (newPin.length < 4 || newPin.length > 6 || !/^\d+$/.test(newPin)) {
+      setPinMsg({ type: "error", text: "Mã PIN phải từ 4 đến 6 chữ số." });
+      return;
+    }
+
+    setPinLoading(true);
+    try {
+      const res = await changePin(newPin);
+      if (res.success) {
+        setPinMsg({ type: "success", text: "Đổi mã PIN thành công!" });
+        setNewPin("");
+        setConfirmPin("");
+        toast.success("Mã PIN đã được cập nhật thành công!");
+      } else {
+        setPinMsg({ type: "error", text: res.error || "Có lỗi xảy ra." });
+      }
+    } catch {
+      setPinMsg({ type: "error", text: "Có lỗi xảy ra. Vui lòng thử lại." });
+    }
+    setPinLoading(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +116,37 @@ export default function TabPassword() {
             className="w-full bg-gray-900 hover:bg-black text-white py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase shadow-sm transition-all disabled:opacity-50 cursor-pointer min-h-[44px]"
           >
             {loading ? "Đang xử lý..." : "Cập nhật mật khẩu"}
+          </button>
+        </form>
+      </div>
+
+      <div className="bg-white p-8 rounded-2xl border border-gray-100 shadow-sm mt-6">
+        <h2 className="text-sm font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <svg className="w-5 h-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+          Đổi mã PIN Đăng Nhập Nhanh
+        </h2>
+
+        {pinMsg && (
+          <div className={`p-4 rounded-xl text-xs font-semibold mb-4 ${pinMsg.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-600"}`}>
+            {pinMsg.text}
+          </div>
+        )}
+
+        <form onSubmit={handlePinSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="new-pin" className="block text-xs font-bold text-gray-500 mb-1">Mã PIN mới</label>
+            <input id="new-pin" type="password" inputMode="numeric" maxLength={6} value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/[^0-9]/g, ''))} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all" placeholder="Nhập mã PIN (4-6 chữ số)" />
+          </div>
+          <div>
+            <label htmlFor="confirm-pin" className="block text-xs font-bold text-gray-500 mb-1">Xác nhận mã PIN mới</label>
+            <input id="confirm-pin" type="password" inputMode="numeric" maxLength={6} value={confirmPin} onChange={(e) => setConfirmPin(e.target.value.replace(/[^0-9]/g, ''))} className="w-full p-3 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-pink-500 focus:bg-white transition-all bg-gray-50" placeholder="Xác nhận mã PIN" />
+          </div>
+          <button
+            type="submit"
+            disabled={pinLoading}
+            className="w-full bg-gray-900 hover:bg-black text-white py-3.5 rounded-xl text-xs font-bold tracking-widest uppercase shadow-sm transition-all disabled:opacity-50 cursor-pointer min-h-[44px]"
+          >
+            {pinLoading ? "Đang xử lý..." : "Cập nhật mã PIN"}
           </button>
         </form>
       </div>

@@ -77,6 +77,27 @@ export async function loginWithPin(pin: string) {
       return { success: false, message: 'Quá nhiều lần thử. Vui lòng thử lại sau 60 giây.' };
     }
 
+    const supabase = await createClient();
+    
+    // Custom PIN logic
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, role, username, pin_hash, is_active')
+      .eq('is_active', true)
+      .not('pin_hash', 'is', null);
+
+    if (!error && users && users.length > 0) {
+      for (const u of users) {
+        if (u.pin_hash && await verifyPassword(normPin, u.pin_hash)) {
+          const userRoleNormalized = (u.role || '').trim().toUpperCase();
+          await createSession({ id: u.id, role: userRoleNormalized, username: u.username });
+          const dest = (userRoleNormalized === 'ADMIN' || userRoleNormalized === 'MANAGER') ? '/admin' : '/staff';
+          return { success: true, redirect: dest, redirectUrl: dest };
+        }
+      }
+    }
+
+    // Default PIN logic fallback
     if (normPin === '123456') {
       const dest = await doLogin('admin', 'admin');
       return { success: true, redirect: dest, redirectUrl: dest };
