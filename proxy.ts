@@ -3,12 +3,13 @@ import { decrypt, encrypt } from "@/utils/auth";
 import { DEFAULT_LOCALE, LANGUAGES } from "@/lib/i18n/config";
 
 const LOCALES = Object.keys(LANGUAGES); // vi, en, ko, zh-CN, ja, th, fr, de, es
-const CANONICAL_HOST = "minhair.vercel.app";
+const CANONICAL_HOST = "spa.minds.io.vn";
 
 export async function proxy(request: NextRequest) {
-  // Domain canonical: redirect min-nail-hair.vercel.app -> minhair.vercel.app (308)
+  // Domain canonical: redirect alternate hosts -> spa.minds.io.vn (308)
   const host = request.headers.get("host") || "";
-  if (host && host !== CANONICAL_HOST && (host.includes("min-nail-hair") || host.includes("minnailhair"))) {
+  const isAltHost = host.includes("min-nail-hair") || host.includes("minnailhair") || host === "minhair.vercel.app";
+  if (host && host !== CANONICAL_HOST && isAltHost) {
     const url = new URL(request.url);
     url.host = CANONICAL_HOST;
     url.protocol = "https:";

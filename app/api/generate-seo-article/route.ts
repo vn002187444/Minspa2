@@ -53,10 +53,10 @@ THÔNG TIN THƯƠNG HIỆU:
 - Tên: Min Nail & Hair (Min Salon)
 - Địa chỉ: Chung cư Lavita Charm, Đường số 1, Trường Thọ, Thủ Đức, TP.HCM
 - Dịch vụ: gội đầu dưỡng sinh thảo dược, nail nghệ thuật, massage body
-- Đặt lịch: https://minhair.vercel.app/booking
+- Đặt lịch: https://spa.minds.io.vn/booking
 
 CẤU TRÚC: Mở bài 2-3 đoạn ngắn (không heading), 3-4 phần ## có 2-3 ### mỗi phần, kết bài CTA.
-QUY TẮC: ## section chính, ### sub-section dạng ### **Tiêu đề:**. KHÔNG dùng #. Mỗi block cách nhau 1 dòng trống. Internal link markdown [đặt lịch ngay](https://minhair.vercel.app/booking).`;
+QUY TẮC: ## section chính, ### sub-section dạng ### **Tiêu đề:**. KHÔNG dùng #. Mỗi block cách nhau 1 dòng trống. Internal link markdown [đặt lịch ngay](https://spa.minds.io.vn/booking).`;
 
     const result = await callGemini({
       systemInstruction: SYSTEM_INSTRUCTION,
@@ -102,7 +102,7 @@ Tọa lạc tại **Chung cư Lavita Charm, Đường số 1, Trường Thọ, T
 
 ## **Đặt lịch ngay hôm nay:**
 
-Đừng bỏ lỡ cơ hội trải nghiệm dịch vụ tuyệt vời tại Min Nail & Hair. [Đặt lịch ngay](https://minhair.vercel.app/booking) để nhận ưu đãi đặc biệt dành cho khách hàng mới!`;
+Đừng bỏ lỡ cơ hội trải nghiệm dịch vụ tuyệt vời tại Min Nail & Hair. [Đặt lịch ngay](https://spa.minds.io.vn/booking) để nhận ưu đãi đặc biệt dành cho khách hàng mới!`;
 
     return NextResponse.json({ article: fallbackArticle, isFallback: true });
   }

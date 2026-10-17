@@ -12,7 +12,7 @@ interface ServiceSchemaProps {
   logoUrl?: string;
 }
 
-export default function ServiceSchema({ services, logoUrl = 'https://minhair.vercel.app/icons/icon-512.png' }: ServiceSchemaProps) {
+export default function ServiceSchema({ services, logoUrl = 'https://spa.minds.io.vn/icons/icon-512.png' }: ServiceSchemaProps) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "ItemList",

@@ -5,7 +5,9 @@
     "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
   },
   "redirects": [
-    { "source": "/(.*)", "has": [{ "type": "host", "value": "min-nail-hair.vercel.app" }], "destination": "https://minhair.vercel.app/$1", "permanent": true },
-    { "source": "/(.*)", "has": [{ "type": "host", "value": "minnailhair.vn" }], "destination": "https://minhair.vercel.app/$1", "permanent": true }
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "min-nail-hair.vercel.app" }], "destination": "https://spa.minds.io.vn/$1", "permanent": true },
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "minhair.vercel.app" }], "destination": "https://spa.minds.io.vn/$1", "permanent": true },
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "minnailhair.vn" }], "destination": "https://spa.minds.io.vn/$1", "permanent": true },
+    { "source": "/(.*)", "has": [{ "type": "host", "value": "www.minnailhair.vn" }], "destination": "https://spa.minds.io.vn/$1", "permanent": true }
   ]
 }

@@ -11,7 +11,7 @@ interface ProductSchemaProps {
   logoUrl?: string;
 }
 
-export default function ProductSchema({ services, logoUrl = 'https://minhair.vercel.app/icons/icon-512.png' }: ProductSchemaProps) {
+export default function ProductSchema({ services, logoUrl = 'https://spa.minds.io.vn/icons/icon-512.png' }: ProductSchemaProps) {
   const schema = {
     "@context": "https://schema.org",
     "@graph": services.map((svc) => ({

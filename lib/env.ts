@@ -52,6 +52,6 @@ export function getBaseUrl(): string {
   if (typeof process.env.NEXT_PUBLIC_APP_URL === 'string' && process.env.NEXT_PUBLIC_APP_URL.length > 0) {
     return process.env.NEXT_PUBLIC_APP_URL;
   }
-  if (process.env.NODE_ENV === 'production') return 'https://minhair.vercel.app';
+  if (process.env.NODE_ENV === 'production') return 'https://spa.minds.io.vn';
   return 'http://localhost:3000';
 }

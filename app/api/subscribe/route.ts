@@ -3,8 +3,9 @@ import { getSession } from '@/utils/auth';
 import { createClient } from '@/utils/supabase/server';
 
 const ALLOWED_ORIGINS = [
+  'https://spa.minds.io.vn',
+  'https://www.spa.minds.io.vn',
   'https://minhair.vercel.app',
-  'https://www.minhair.vercel.app',
   'http://localhost:3000',
 ];
 

@@ -3,21 +3,23 @@ import { createClient } from '@/utils/supabase/server';
 import { getBaseUrl } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { slugify } from '@/lib/slugify';
-import { LANGUAGES } from '@/lib/i18n/config';
+import { LANGUAGES, DEFAULT_LOCALE } from '@/lib/i18n/config';
 
 export const revalidate = 43200;
 
 // Helper để sinh hreflang alternates cho sitemap (đáp ứng yêu cầu B full 9 locales)
 // Next MetadataRoute.Sitemap hỗ trợ `alternates: { languages: {...} }` -> render <xhtml:link>
 function withHreflang(url: string): MetadataRoute.Sitemap[number]['alternates'] {
+  // Tách origin/path bằng URL để tránh lỗi: url.replace('/', '') chỉ xóa dấu '/'
+  // đầu tiên trong 'https://' -> hỏng thành 'https:/...' (Search Console: URL không hợp lệ).
+  const { origin, pathname } = new URL(url);
+  const path = pathname === '/' ? '' : pathname;
   const langs: Record<string, string> = {};
   for (const loc of Object.keys(LANGUAGES)) {
     // Mỗi locale có URL riêng /{locale}{path}
-    const path = url.replace(/^https?:\/\/[^/]+/, '') || '/';
-    const base = url.replace(path, '');
-    langs[loc] = `${base}/${loc}${path === '/' ? '' : path}`;
+    langs[loc] = `${origin}/${loc}${path}`;
   }
-  langs['x-default'] = `${url.replace(/\/$/, '')}/vi`;
+  langs['x-default'] = `${origin}/${DEFAULT_LOCALE}${path}`;
   return { languages: langs };
 }
 

@@ -59,7 +59,7 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const service = await getServiceBySlug(slug);
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spa.minds.io.vn';
   if (!service) {
     return { title: 'Không tìm thấy dịch vụ | Min Nail & Hair' };
   }
@@ -89,7 +89,7 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
   const service = await getServiceBySlug(slug);
   if (!service) notFound();
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://minhair.vercel.app';
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://spa.minds.io.vn';
   const related = await getRelatedServices(service.category, service.id);
   const serviceUrl = `${baseUrl}/dich-vu/${slugify(service.name)}`;
 
@@ -151,7 +151,7 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
       {
         "@type": "Question",
         "name": "Đặt lịch như thế nào?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Đặt trực tuyến tại minhair.vercel.app/booking hoặc hotline 0934 323 878. Chọn ngày giờ và kỹ thuật viên yêu thích." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Đặt trực tuyến tại spa.minds.io.vn/booking hoặc hotline 0934 323 878. Chọn ngày giờ và kỹ thuật viên yêu thích." }
       }
     ]
   };

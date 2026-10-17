@@ -404,7 +404,7 @@ export async function saveArticleRecord(supabase: any, article: {
 }
 
 export async function notifyAdmin(article: { title: string; slug: string }) {
-  const url = `https://minhair.vercel.app/blog/${article.slug}`;
+  const url = `https://spa.minds.io.vn/blog/${article.slug}`;
   await Promise.allSettled([
     sendEmail({
       to: process.env.ADMIN_EMAIL || 'minnailhair@gmail.com',

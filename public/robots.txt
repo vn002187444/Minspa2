@@ -7,4 +7,4 @@ Disallow: /staff
 Disallow: /api/
 Disallow: /login
 
-Sitemap: https://minhair.vercel.app/sitemap.xml
+Sitemap: https://spa.minds.io.vn/sitemap.xml
