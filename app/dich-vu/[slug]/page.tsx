@@ -257,7 +257,6 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
               <span className="font-display font-black uppercase tracking-wider">MIN SALON</span>
             </Link>
             <div className="flex items-center gap-2">
-              <Link href="/" className="text-xs font-bold text-[#8D6E53] flex items-center gap-1"><ArrowLeft className="w-3.5 h-3.5" /> Trang chủ</Link>
               <Link href="/booking" className="text-xs font-bold bg-[#8D6E53] text-white px-4 py-2.5 rounded-full uppercase">Đặt lịch</Link>
             </div>
           </div>

@@ -3,7 +3,7 @@ import { useEffect, useState, startTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Sparkles, User, Lock, AlertCircle, ArrowRight, LogIn, ArrowLeft } from 'lucide-react';
-import { loginUser } from './actions';
+import { loginUser, loginWithPin } from './actions';
 import { z } from 'zod';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/lib/logger';
@@ -14,6 +14,8 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("");
   const [isPending, setIsPending] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [loginMethod, setLoginMethod] = useState<'password' | 'pin'>('password');
+  const [pin, setPin] = useState('');
 
   const loginFormSchema = z.object({
     username: z.string().min(1, 'Vui lòng nhập tên đăng nhập').max(100),
@@ -49,28 +51,45 @@ export default function LoginPage() {
     setErrorMsg("");
     setFieldErrors({});
 
-    const formData = new FormData(e.currentTarget);
-    const raw = { username: String(formData.get('username') ?? ''), password: String(formData.get('password') ?? '') };
-    const parsed = loginFormSchema.safeParse(raw);
-    if (!parsed.success) {
-      const fieldErr: Record<string, string> = {};
-      for (const issue of parsed.error.issues) {
-        fieldErr[issue.path[0] as string] = issue.message;
-      }
-      setFieldErrors(fieldErr);
-      setIsPending(false);
-      return;
-    }
-
     try {
-      const data = await loginUser(null, formData);
-      const targetUrl = data?.redirectUrl || (data as any)?.redirect;
-      if (data?.success && targetUrl) {
-        window.location.href = targetUrl;
-        return;
-      }
-      if (data && !data.success) {
-        setErrorMsg(data.message || 'Sai tên đăng nhập hoặc mật khẩu.');
+      if (loginMethod === 'pin') {
+        if (!pin || pin.length < 4) {
+          setErrorMsg('Vui lòng nhập mã PIN hợp lệ.');
+          setIsPending(false);
+          return;
+        }
+        const data = await loginWithPin(pin);
+        const targetUrl = data?.redirectUrl || (data as any)?.redirect;
+        if (data?.success && targetUrl) {
+          window.location.href = targetUrl;
+          return;
+        }
+        if (data && !data.success) {
+          setErrorMsg(data.message || 'Mã PIN không chính xác.');
+        }
+      } else {
+        const formData = new FormData(e.currentTarget);
+        const raw = { username: String(formData.get('username') ?? ''), password: String(formData.get('password') ?? '') };
+        const parsed = loginFormSchema.safeParse(raw);
+        if (!parsed.success) {
+          const fieldErr: Record<string, string> = {};
+          for (const issue of parsed.error.issues) {
+            fieldErr[issue.path[0] as string] = issue.message;
+          }
+          setFieldErrors(fieldErr);
+          setIsPending(false);
+          return;
+        }
+
+        const data = await loginUser(null, formData);
+        const targetUrl = data?.redirectUrl || (data as any)?.redirect;
+        if (data?.success && targetUrl) {
+          window.location.href = targetUrl;
+          return;
+        }
+        if (data && !data.success) {
+          setErrorMsg(data.message || 'Sai tên đăng nhập hoặc mật khẩu.');
+        }
       }
     } catch (err: unknown) {
       if (err instanceof Error && 'digest' in err && (err as { digest?: string }).digest?.startsWith('NEXT_REDIRECT')) throw err;
@@ -92,7 +111,7 @@ export default function LoginPage() {
         <div className="p-8">
           <div className="mb-6 flex justify-start">
             <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-gray-900 transition-colors">
-              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> ← Quay lại trang chủ
+              <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Quay lại trang chủ
             </Link>
           </div>
           <div className="w-20 h-20 bg-gray-900 rounded-[2rem] flex items-center justify-center mx-auto mb-6 relative overflow-hidden shadow-lg shadow-gray-200/50">
@@ -109,15 +128,15 @@ export default function LoginPage() {
 
           <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-xs border border-emerald-100 flex flex-col gap-2 relative group animate-in fade-in duration-200">
             <p className="font-semibold flex items-center gap-1"><Sparkles className="w-3" aria-hidden="true" /> Tài khoản thử nghiệm nhanh (Quick Credentials):</p>
-            <p>• Admin: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">admin</span> / mật khẩu: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">Admin</span> hoặc <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">admin</span></p>
-            <p>• Staff: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">staff1</span> / mật khẩu: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">Staff@1</span> hoặc <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">staff1</span></p>
+            <p>• Admin: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">admin</span> / mật khẩu: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">••••••</span></p>
+            <p>• Staff: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">staff1</span> / mật khẩu: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">staff1</span></p>
             <p className="mt-1 text-[10px] text-emerald-700/85 italic border-t border-emerald-200/50 pt-1.5">• Mẹo: Nếu trình duyệt của bạn chặn cookie bên thứ ba (Third-party Cookies) trong khung preview này, hãy nhấn nút <span className="font-semibold">Mở trong tab mới (Open in new tab)</span> ở góc trên bên phải màn hình để đăng nhập trơn tru nhất!</p>
             <Button 
                type="button"
                onClick={() => {
                   const u = document.querySelector('input[name="username"]') as HTMLInputElement;
                   const p = document.querySelector('input[name="password"]') as HTMLInputElement;
-                  if(u && p) { u.value='admin'; p.value='admin'; }
+                  if(u && p) { u.value='staff1'; p.value='staff1'; }
                }} 
                className="absolute top-4 right-4 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 min-h-[44px]" 
                variant="primary" 
@@ -148,7 +167,26 @@ export default function LoginPage() {
             </div>
           )}
 
+          <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+            <button
+              type="button"
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${loginMethod === 'password' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setLoginMethod('password')}
+            >
+              Mật khẩu
+            </button>
+            <button
+              type="button"
+              className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${loginMethod === 'pin' ? 'bg-white shadow-sm text-gray-900' : 'text-gray-500 hover:text-gray-700'}`}
+              onClick={() => setLoginMethod('pin')}
+            >
+              Mã PIN
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            {loginMethod === 'password' ? (
+              <>
               <div>
                 <label htmlFor="login_username" className="block text-sm font-medium text-gray-700 mb-1.5 ml-1">
                   Tài khoản
@@ -203,6 +241,31 @@ export default function LoginPage() {
                   <p id="password-error" className="mt-1 text-xs text-red-500 ml-1">{fieldErrors.password}</p>
                 )}
               </div>
+              </>
+            ) : (
+              <div>
+                <label htmlFor="login_pin" className="block text-sm font-medium text-gray-700 mb-1.5 ml-1 text-center">
+                  Nhập mã PIN
+                </label>
+                <div className="relative max-w-[240px] mx-auto">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                    <Lock className="h-5 w-5" aria-hidden="true" />
+                  </div>
+                  <input
+                    id="login_pin"
+                    name="pin"
+                    type="password"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    maxLength={6}
+                    value={pin}
+                    onChange={(e) => setPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:ring-2 focus:ring-pink-500/20 focus:border-pink-500 transition-all outline-none text-center font-bold tracking-[0.5em] text-lg"
+                    placeholder="••••••"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="pt-2">
               <Button

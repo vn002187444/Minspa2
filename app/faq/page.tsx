@@ -3,7 +3,7 @@ import BottomNavigation from '@/components/BottomNavigation';
 import Link from 'next/link';
 import BreadcrumbSchema from '@/components/BreadcrumbSchema';
 import FaqSection from '@/components/FaqSection';
-import { HelpCircle, ArrowRight, MessageCircle, Mail } from 'lucide-react';
+import { HelpCircle, ArrowRight, MessageCircle, Mail, ArrowLeft } from 'lucide-react';
 import { getBaseUrl } from '@/lib/env';
 
 export const revalidate = 3600;
@@ -58,7 +58,7 @@ export default function FaqPage() {
             </div>
             <div className="flex items-center gap-3">
               <Link href="/" className="text-xs font-bold text-[#8D6E53] hover:text-[#3A2E2B] flex items-center gap-1 transition-all">
-                ← Về Trang Chủ
+                <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Về Trang Chủ
               </Link>
               <Link href="/booking" className="text-xs font-bold bg-[#8D6E53] text-white hover:bg-[#3A2E2B] px-4 py-2.5 rounded-full uppercase tracking-wider shadow-md transition-all">
                 Booking ⚡

@@ -61,6 +61,7 @@ function invalidateCustomerCache(phone: string) {
 export default function BookingPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
+  const [countdown, setCountdown] = useState(5);
   
   // Step 1: Customer Info
   const [phone, setPhone] = useState('');
@@ -98,6 +99,22 @@ export default function BookingPage() {
   const [isLoadingServices, setIsLoadingServices] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [isCampaign, setIsCampaign] = useState(false);
+
+  useEffect(() => {
+    if (step === 3) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            router.push('/blog');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [step, router]);
 
   useEffect(() => {
     startTransition(() => {
@@ -939,11 +956,14 @@ className={`snap-start shrink-0 px-3.5 py-2.5 rounded-full text-[11px] font-semi
                       <CheckCircle2 className="w-8 h-8" aria-hidden="true" />
                     </div>
                    <h2 className="text-xl font-display font-bold text-[#3A2E2B] mb-2">Gửi Lịch Hẹn Thành Công!</h2>
-                   <p className="text-sm text-gray-500 mb-8 max-w-xs leading-relaxed font-medium">
+                   <p className="text-sm text-gray-500 mb-4 max-w-xs leading-relaxed font-medium">
                      Cảm ơn quý khách <strong id="customer-name-lbl" className="text-[#3A2E2B] font-semibold">{name}</strong>. Lịch hẹn lúc <strong className="text-[#3A2E2B]">{selectedTime}</strong> ngày <strong className="text-[#3A2E2B]">{format(new Date(selectedDate), 'dd/MM/yyyy')}</strong> đã được hệ thống Min ghi nhận.
                    </p>
-                    <Button variant="secondary" size="md" onClick={() => router.push('/')}>
-                       Xem Bảng Giá Khác
+                   <p className="text-xs text-gray-400 mb-6 italic">
+                     Đang tự động chuyển hướng sang mục Cẩm Nang Làm Đẹp sau {countdown} giây...
+                   </p>
+                    <Button variant="secondary" size="md" onClick={() => router.push('/blog')}>
+                       Đọc Cẩm Nang Làm Đẹp Trong Lúc Chờ ({countdown})
                     </Button>
                     </>
                    )}

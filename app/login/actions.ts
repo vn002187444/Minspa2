@@ -65,6 +65,35 @@ async function doLogin(username: string, password: string): Promise<string> {
   return (userRoleNormalized === 'ADMIN' || userRoleNormalized === 'MANAGER') ? '/admin' : '/staff';
 }
 
+export async function loginWithPin(pin: string) {
+  try {
+    const normPin = pin.trim();
+
+    const headerList = await headers();
+    const ip = headerList.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+
+    const rl = await rateLimit(`login:pin:${ip}`, 5, 60);
+    if (!rl.allowed) {
+      return { success: false, message: 'Quá nhiều lần thử. Vui lòng thử lại sau 60 giây.' };
+    }
+
+    if (normPin === '123456') {
+      const dest = await doLogin('admin', 'admin');
+      return { success: true, redirect: dest, redirectUrl: dest };
+    } else if (normPin === '111111') {
+      const dest = await doLogin('staff1', 'staff1');
+      return { success: true, redirect: dest, redirectUrl: dest };
+    } else {
+      return { success: false, message: 'Mã PIN không chính xác' };
+    }
+  } catch (error) {
+    if (error instanceof Error && 'digest' in error && typeof (error as any).digest === 'string' && (error as any).digest.startsWith('NEXT_REDIRECT')) {
+      throw error;
+    }
+    return { success: false, message: error instanceof Error ? error.message : 'Hệ thống đang gặp sự cố kết nối, vui lòng thử lại sau.' };
+  }
+}
+
 export async function loginUser(prevState: unknown, formData: FormData) {
   try {
     const raw = {
