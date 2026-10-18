@@ -11,8 +11,16 @@ interface CacheEntry {
 const memoryCache = new Map<string, CacheEntry>();
 const DEFAULT_TTL_MS = 30_000;
 
-let redis: InstanceType<typeof import('@upstash/redis').Redis> | null = null;
-function getRedis() {
+interface RedisClient {
+  get<T>(key: string): Promise<T | null>;
+  set(key: string, value: unknown, opts?: { ex?: number; px?: number }): Promise<unknown>;
+  del(...keys: string[]): Promise<unknown>;
+  scan?(cursor: number, opts?: { match?: string; count?: number }): Promise<[string | number, string[]]>;
+  flushdb?(): Promise<unknown>;
+}
+
+let redis: RedisClient | null = null;
+function getRedis(): RedisClient | null {
   if (redis !== null) return redis;
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
@@ -89,7 +97,7 @@ export async function invalidateCache(pattern?: string): Promise<void> {
       // Fall through to memory
     }
   } else if (r && !pattern) {
-    try { await r.flushdb(); return; } catch {}
+    try { if (r.flushdb) await r.flushdb(); return; } catch {}
   }
   if (!pattern) {
     memoryCache.clear();
