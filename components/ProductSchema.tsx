@@ -30,9 +30,11 @@ export default function ProductSchema({ services, logoUrl = 'https://spa.minds.i
         "price": String(svc.price),
         "priceCurrency": "VND",
         "availability": "https://schema.org/InStock",
+        "validFrom": `${new Date().getFullYear()}-01-01`,
+        "priceValidUntil": `${new Date().getFullYear() + 1}-12-31`,
         "hasMerchantReturnPolicy": {
           "@type": "MerchantReturnPolicy",
-          "applicableTo": "Product",
+          "applicableCountry": "VN",
           "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
         },
         "shippingDetails": {
@@ -46,6 +48,21 @@ export default function ProductSchema({ services, logoUrl = 'https://spa.minds.i
           "shippingDestination": {
             "@type": "DefinedRegion",
             "addressCountry": "VN",
+          },
+          "deliveryTime": {
+            "@type": "ShippingDeliveryTime",
+            "handlingTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 0,
+              "unitCode": "DAY"
+            },
+            "transitTime": {
+              "@type": "QuantitativeValue",
+              "minValue": 0,
+              "maxValue": 0,
+              "unitCode": "DAY"
+            }
           },
         },
       },

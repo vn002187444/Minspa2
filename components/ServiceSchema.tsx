@@ -35,9 +35,11 @@ export default function ServiceSchema({ services, logoUrl = 'https://spa.minds.i
           price: String(svc.price),
           priceCurrency: "VND",
           availability: "https://schema.org/InStock",
+          validFrom: `${new Date().getFullYear()}-01-01`,
+          priceValidUntil: `${new Date().getFullYear() + 1}-12-31`,
           hasMerchantReturnPolicy: {
             "@type": "MerchantReturnPolicy",
-            "applicableTo": "Service",
+            "applicableCountry": "VN",
             "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted",
           },
           shippingDetails: {

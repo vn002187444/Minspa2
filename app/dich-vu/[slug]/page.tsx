@@ -120,7 +120,9 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
       "price": service.price,
       "priceCurrency": "VND",
       "availability": "https://schema.org/InStock",
-      "url": serviceUrl
+      "url": serviceUrl,
+      "validFrom": `${new Date().getFullYear()}-01-01`,
+      "priceValidUntil": `${new Date().getFullYear() + 1}-12-31`
     }
   };
 
@@ -191,8 +193,41 @@ export default async function DichVuDetailPage({ params }: { params: Promise<{ s
       "priceCurrency": "VND",
       "price": String(service.price),
       "availability": "https://schema.org/InStock",
+      "validFrom": `${new Date().getFullYear()}-01-01`,
       "priceValidUntil": new Date(new Date().getFullYear()+1, 11, 31).toISOString().split('T')[0],
-      "seller": { "@type": "Organization", "name": "Min Nail & Hair" }
+      "seller": { "@type": "Organization", "name": "Min Nail & Hair" },
+      "hasMerchantReturnPolicy": {
+        "@type": "MerchantReturnPolicy",
+        "applicableCountry": "VN",
+        "returnPolicyCategory": "https://schema.org/MerchantReturnNotPermitted"
+      },
+      "shippingDetails": {
+        "@type": "OfferShippingDetails",
+        "shippingRate": {
+          "@type": "MonetaryAmount",
+          "value": 0,
+          "currency": "VND"
+        },
+        "shippingDestination": {
+          "@type": "DefinedRegion",
+          "addressCountry": "VN"
+        },
+        "deliveryTime": {
+          "@type": "ShippingDeliveryTime",
+          "handlingTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 0,
+            "maxValue": 0,
+            "unitCode": "DAY"
+          },
+          "transitTime": {
+            "@type": "QuantitativeValue",
+            "minValue": 0,
+            "maxValue": 0,
+            "unitCode": "DAY"
+          }
+        }
+      }
     },
     "aggregateRating": {
       "@type": "AggregateRating",
