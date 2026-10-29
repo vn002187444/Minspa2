@@ -3,12 +3,22 @@
   "mcp": {
     "chrome-devtools": {
       "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+      "command": ["npx", "-y", "chrome-devtools-mcp@1.12.0"],
+      "environment": {
+        "CHROME_PATH": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+      },
+      "timeout": 120000,
       "enabled": true
     },
     "playwright": {
       "type": "local",
-      "command": ["npx", "@playwright/mcp"],
+      "command": [
+        "node",
+        "node_modules/@playwright/mcp/cli.js",
+        "--browser",
+        "chrome"
+      ],
+      "timeout": 120000,
       "enabled": true
     }
   }

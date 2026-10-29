@@ -7,3 +7,4 @@ tsconfig.tsbuildinfo
 data/demo_db.json
 .vercel
 .env*
+.playwright-mcp/
