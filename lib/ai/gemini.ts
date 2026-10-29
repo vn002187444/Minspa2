@@ -6,7 +6,10 @@ const MODELS = {
   fallback: "gemini-2.5-flash-lite",
 } as const;
 
-const TIMEOUT_MS = 12000;
+// Model đầu (gemini-3.1-flash-lite) thỉnh thoảng trả lời chậm > 12s / bị abort;
+// chờ 8s để còn kịp chuyển sang model fallback trong ngân sách 60s của cron.
+const TIMEOUT_MS = 8000;
+const FALLBACK_TIMEOUT_MS = 16000;
 
 interface JsonSchema {
   type: string;
@@ -34,15 +37,6 @@ interface CallGeminiResult {
   fromCache?: boolean;
 }
 
-function isQuotaError(err: any): boolean {
-  return (
-    err?.status === 429 ||
-    err?.message?.includes("quota") ||
-    err?.message?.includes("RESOURCE_EXHAUSTED") ||
-    err?.message?.includes("429")
-  );
-}
-
 function hashKey(str: string): string {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -66,15 +60,20 @@ export async function callGemini(options: CallGeminiOptions): Promise<CallGemini
   const key = process.env.GEMINI_API_KEY;
   if (!key) return { text: null, sources: [], modelUsed: MODELS.primary };
 
-  const ai = new GoogleGenAI({
-    apiKey: key,
-    httpOptions: { headers: { "User-Agent": "aistudio-build" }, timeout: options.timeout || TIMEOUT_MS },
-  });
-
   const modelsToTry = [MODELS.primary, MODELS.fallback];
 
   for (const model of modelsToTry) {
     try {
+      const isLast = model === modelsToTry[modelsToTry.length - 1];
+      const ai = new GoogleGenAI({
+        apiKey: key,
+        httpOptions: {
+          headers: { "User-Agent": "aistudio-build" },
+          timeout:
+            options.timeout || (isLast ? FALLBACK_TIMEOUT_MS : TIMEOUT_MS),
+        },
+      });
+
       const genConfig: Record<string, any> = {
         ...options.config,
         safetySettings: [
@@ -122,10 +121,11 @@ export async function callGemini(options: CallGeminiOptions): Promise<CallGemini
 
       return result;
     } catch (err: unknown) {
+      // Fallback với MỌI lỗi (timeout/abort/5xx/quota), không chỉ quota:
+      // trước đây timeout ở model đầu trả null luôn → AutoSEO "Article generation
+      // returned empty" dù model fallback vẫn hoạt động bình thường.
       console.warn(`[GEMINI] ${model} failed:`, err instanceof Error ? err.message : String(err));
-      if (!isQuotaError(err) || model === modelsToTry[modelsToTry.length - 1]) {
-        return { text: null, sources: [], modelUsed: model, fromCache: false };
-      }
+      continue;
     }
   }
 
