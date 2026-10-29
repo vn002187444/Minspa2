@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runAutoSeo } from '@/lib/auto-seo';
 import { getSession } from '@/utils/auth';
 
-export const maxDuration = 10;
+// AutoSEO cần > 10s: 2 lần gọi Gemini (timeout 12s/lần: research + viết bài)
+// + tìm ảnh + ghi blog. Vercel Hobby cho phép tối đa 60s → đặt 60.
+// Trước 2026-10-09 để 60s; commit 139d08c hạ xuống 10s khiến mọi lượt cron
+// 11:00 VN bị FUNCTION_INVOCATION_TIMEOUT (504) → không đăng bài từ 17/10.
+export const maxDuration = 60;
 
 async function isAuthorized(req: NextRequest): Promise<boolean> {
   const authHeader = req.headers.get('authorization') || '';
