@@ -275,11 +275,14 @@
 }
 
 /* iOS Safari safe text sizing and horizontal overflow prevention */
-html,
-body {
+html {
   -webkit-text-size-adjust: 100%;
+}
+
+body {
   overflow-x: hidden;
-  max-width: 100%;
+  max-width: 100vw;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Safe area inset CSS variables for iOS notched devices */

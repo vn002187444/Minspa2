@@ -40,6 +40,8 @@ const baseConfig: NextConfig = {
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'images.pexels.com' },
       { protocol: 'https', hostname: '**.supabase.co' },
+      { protocol: 'https', hostname: 'img.vietqr.io' },
+      { protocol: 'https', hostname: 'api.vietqr.io' },
     ],
   },
   logging: {
@@ -75,11 +77,11 @@ const baseConfig: NextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://img.vietqr.io https://api.vietqr.io https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
           },
           {
             key: 'Content-Security-Policy-Report-Only',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://www.googletagmanager.com https://*.google-analytics.com https://va.vercel-scripts.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https://images.unsplash.com https://images.pexels.com https://*.supabase.co https://img.vietqr.io https://api.vietqr.io https://*.google-analytics.com https://www.googletagmanager.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://api.open-meteo.com https://*.googleapis.com https://www.googletagmanager.com https://images.unsplash.com https://images.pexels.com https://va.vercel-scripts.com; font-src 'self' data: https://fonts.gstatic.com; frame-src 'self'; frame-ancestors 'self'; form-action 'self';",
           },
         ],
       },

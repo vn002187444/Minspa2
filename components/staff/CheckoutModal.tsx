@@ -127,6 +127,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
       }
     }
     loadPkgInfo()
+    loadBankConfig()
   }, [appt])
 
   async function loadBankConfig() {
@@ -181,7 +182,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
 
   const hasBankConfig = bankConfig && bankConfig.bank_id && bankConfig.account_number
   const qrUrl = hasBankConfig
-    ? `https://img.vietqr.io/image/${bankConfig.bank_id}-${bankConfig.account_number}-compact2.png?amount=${grandTotal}&addInfo=${encodeURIComponent(memoText)}&accountName=${encodeURIComponent(bankConfig.account_owner || "")}`
+    ? `https://img.vietqr.io/image/${bankConfig.bank_id}-${bankConfig.account_number}-compact2.svg?amount=${grandTotal}&addInfo=${encodeURIComponent(memoText)}&accountName=${encodeURIComponent(bankConfig.account_owner || "")}`
     : ""
 
   async function handleConfirmPayment() {
@@ -606,7 +607,7 @@ export default function CheckoutModal({ appt, allServices, onClose, onComplete }
           <div className="space-y-4">
             <div className="bg-gray-50 border border-gray-100 rounded-3xl p-4 flex flex-col items-center justify-center">
               <div className="bg-white p-3 rounded-2xl border border-gray-200 shadow-sm max-w-[200px] aspect-square relative flex items-center justify-center">
-                <Image src={qrUrl} alt="VietQR" fill className="object-contain" referrerPolicy="no-referrer" unoptimized />
+                <img src={qrUrl} alt="VietQR" className="w-full h-full object-contain" loading="eager" decoding="async" crossOrigin="anonymous" />
               </div>
             </div>
 
