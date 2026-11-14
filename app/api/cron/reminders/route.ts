@@ -8,7 +8,7 @@ export const maxDuration = 10;
 export async function GET(req: Request) {
   // Auth: either Vercel Cron secret hoặc Supabase pg_cron internal call
   const authHeader = req.headers.get('authorization') || '';
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}` && req.headers.get('x-supabase-cron') !== 'true') {
+  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}` ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

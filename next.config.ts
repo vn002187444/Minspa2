@@ -18,7 +18,7 @@ const baseConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   trailingSlash: false,
   // URL đẹp cho 2 tool Water Sort mới (file tĩnh trong public/, giữ bản cũ nguyên).

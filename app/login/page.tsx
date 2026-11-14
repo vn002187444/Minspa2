@@ -126,6 +126,7 @@ export default function LoginPage() {
             Min Nail & Hair Management
           </p>
 
+          {process.env.NODE_ENV !== 'production' && (
           <div className="mb-6 p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-xs border border-emerald-100 flex flex-col gap-2 relative group animate-in fade-in duration-200">
             <p className="font-semibold flex items-center gap-1"><Sparkles className="w-3" aria-hidden="true" /> Tài khoản thử nghiệm nhanh (Quick Credentials):</p>
             <p>• Admin: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">admin</span> / mật khẩu: <span className="font-mono bg-emerald-100 px-1 py-0.5 rounded font-bold">••••••</span></p>
@@ -144,6 +145,7 @@ export default function LoginPage() {
                <LogIn className="w-3" aria-hidden="true" /> Auto-Fill
             </Button>
           </div>
+          )}
 
           {errorMsg && (
             <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-2xl flex items-start gap-3 text-sm border border-red-100">

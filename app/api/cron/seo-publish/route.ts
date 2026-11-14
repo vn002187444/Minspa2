@@ -14,8 +14,7 @@ async function isAuthorized(req: NextRequest): Promise<boolean> {
     process.env.CRON_SECRET &&
     authHeader === `Bearer ${process.env.CRON_SECRET}`
   ) return true;
-  if (req.headers.get('x-supabase-cron') === 'true') return true;
-  // Allow admin sessions (triggered from Admin UI)
+    // Allow admin sessions (triggered from Admin UI)
   try {
     const session = await getSession();
     if (session?.user?.role === 'ADMIN') return true;

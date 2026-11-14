@@ -20,6 +20,6 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
       return false;
     }
   }
-  // Fallback for unmigrated plaintext passwords
-  return password === hash;
+  // Disallow plaintext password comparison in production
+  return false;
 }

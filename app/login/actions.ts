@@ -39,19 +39,14 @@ async function doLogin(username: string, password: string): Promise<string> {
   const userRoleNormalized = (user.role || '').trim().toUpperCase();
   let isPasswordCorrect = await verifyPassword(password, user.password_hash);
 
-  // Fallback for admin if password is 'admin', 'Admin', or 'Min123@'
-  if (!isPasswordCorrect && username.toLowerCase() === 'admin') {
-    if (password === 'admin' || password === 'Admin' || password === 'Min123@') {
-      isPasswordCorrect = true;
-    }
-  }
+
 
   if (!isPasswordCorrect) {
     throw new Error('Sai tên đăng nhập hoặc mật khẩu');
   }
 
   // Auto-upgrade unhashed / plaintext passwords to secure bcrypt
-  if (!user.password_hash?.startsWith('$2') || (username.toLowerCase() === 'admin' && (password === 'admin' || password === 'Admin'))) {
+  if (!user.password_hash?.startsWith('$2')) {
     try {
       const newHash = await hashPassword(password);
       await supabase.from('users').update({ password_hash: newHash }).eq('id', user.id);
@@ -97,16 +92,7 @@ export async function loginWithPin(pin: string) {
       }
     }
 
-    // Default PIN logic fallback
-    if (normPin === '123456') {
-      const dest = await doLogin('admin', 'admin');
-      return { success: true, redirect: dest, redirectUrl: dest };
-    } else if (normPin === '111111') {
-      const dest = await doLogin('staff1', 'staff1');
-      return { success: true, redirect: dest, redirectUrl: dest };
-    } else {
-      return { success: false, message: 'Mã PIN không chính xác' };
-    }
+    return { success: false, message: 'Mã PIN không chính xác hoặc chưa được thiết lập' };
   } catch (error) {
     if (error instanceof Error && 'digest' in error && typeof (error as any).digest === 'string' && (error as any).digest.startsWith('NEXT_REDIRECT')) {
       throw error;
