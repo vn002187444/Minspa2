@@ -274,9 +274,12 @@
   }
 }
 
-/* iOS Safari safe text sizing */
-html {
+/* iOS Safari safe text sizing and horizontal overflow prevention */
+html,
+body {
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* Safe area inset CSS variables for iOS notched devices */

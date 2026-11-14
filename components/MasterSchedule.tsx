@@ -81,6 +81,9 @@ export default function MasterSchedule({ mode, dateOverride }: MasterSchedulePro
       }).format(new Date());
       startTransition(() => { setSelectedDate(todayStr); });
     }
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      startTransition(() => { setViewType('list'); });
+    }
     startTransition(() => { setIsMounted(true); });
   }, [dateOverride]);
 

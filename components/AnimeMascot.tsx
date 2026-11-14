@@ -70,7 +70,7 @@ export default function AnimeMascot() {
 
   return (
     <div
-      className="fixed bottom-0 right-5 z-40 pointer-events-none md:z-50"
+      className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] right-3 z-40 pointer-events-none md:bottom-0 md:right-5 md:z-50"
       draggable={false}
     >
       <AnimatePresence>
@@ -80,11 +80,11 @@ export default function AnimeMascot() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.8 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="absolute bottom-full right-0 mb-3 bg-white rounded-2xl rounded-br-sm px-4 py-2.5 shadow-lg border border-pink-100 max-w-[200px] text-center pointer-events-auto"
+            className="absolute bottom-full right-0 mb-3 bg-white/95 backdrop-blur-md rounded-2xl rounded-br-sm px-4 py-2.5 shadow-lg border border-pink-100/80 max-w-[200px] text-center pointer-events-auto"
           >
             <p className="text-xs font-bold text-pink-600 whitespace-nowrap">🎀 Mascot</p>
             <p className="text-[11px] text-gray-500 mt-0.5 italic">{emotion}</p>
-            <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-white border-r border-b border-pink-100 rotate-45" />
+            <div className="absolute -bottom-1.5 right-6 w-3 h-3 bg-white/95 border-r border-b border-pink-100/80 rotate-45" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -124,7 +124,7 @@ export default function AnimeMascot() {
           width={160}
           height={220}
           sizes="160px"
-          className="max-h-[220px] w-auto h-auto animate-float pointer-events-none select-none"
+          className="max-h-[170px] sm:max-h-[190px] md:max-h-[220px] w-auto h-auto animate-float pointer-events-none select-none drop-shadow-md"
           draggable={false}
           loading="lazy"
           decoding="async"

@@ -22,7 +22,7 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
   // Determine if we are on Homepage, Staff dashboard, or Admin dashboard
   const isStaff = pathname?.startsWith('/staff');
   const isAdmin = pathname?.startsWith('/admin');
-  const isHome = !isStaff && !isAdmin && (pathname === '/' || pathname?.startsWith('/blog') || pathname === '/booking' || pathname === '/about' || pathname === '/faq');
+  const isHome = !isStaff && !isAdmin && (pathname === '/' || pathname?.startsWith('/blog') || pathname === '/booking' || pathname === '/about' || pathname === '/faq' || pathname?.startsWith('/dich-vu') || pathname === '/game' || pathname === '/notifications');
 
   // Handle local tab transitions or external link navigation
   const handleAdminTabChange = (tabId: string) => {
@@ -41,44 +41,62 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
     }
   };
 
-  // Render navigation item
+  // Render navigation item (for button actions with iOS haptic feedback feeling)
   const renderItem = (icon: React.ReactNode, label: string, onClick: () => void, isActive: boolean) => (
     <button
       onClick={onClick}
       aria-current={isActive ? 'page' : undefined}
       aria-label={label}
-      className={`flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1.5 transition-all duration-300 relative ${
+      className={`group flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1 transition-all duration-200 active:scale-95 select-none relative ${
         isActive 
-          ? 'text-[#5C4033] font-bold scale-105' 
+          ? 'text-[#5C4033] font-bold' 
           : 'text-stone-400 hover:text-stone-600'
       }`}
     >
-      <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-[#FAF0E6] text-[#8D6E53]' : 'bg-transparent'}`}>
+      <div className={`p-1.5 rounded-2xl transition-all duration-300 flex items-center justify-center ${
+        isActive 
+          ? 'bg-[#8D6E53]/15 text-[#5C4033] shadow-sm ring-1 ring-[#8D6E53]/20' 
+          : 'bg-transparent text-stone-400 group-hover:text-stone-600'
+      }`}>
         {icon}
       </div>
-      <span className="text-[11px] mt-0.5 font-medium font-sans truncate w-full text-center px-0.5">{label}</span>
+      <span className={`text-[10px] leading-tight mt-0.5 tracking-tight font-medium font-sans truncate w-full text-center px-0.5 transition-colors ${
+        isActive ? 'text-[#5C4033] font-semibold' : 'text-stone-500'
+      }`}>
+        {label}
+      </span>
       {isActive && (
-        <span className="absolute bottom-0 w-6 h-[3px] bg-[#8D6E53] rounded-full" />
+        <span className="absolute bottom-0.5 w-5 h-[2.5px] bg-[#8D6E53] rounded-full shadow-[0_1px_4px_rgba(141,110,83,0.4)]" />
       )}
     </button>
   );
 
+  // Render link navigation item (for routing with iOS haptic feedback feeling)
   const renderLinkItem = (icon: React.ReactNode, label: string, href: string, isActive: boolean) => (
     <Link
       href={href}
       aria-current={isActive ? 'page' : undefined}
-      className={`flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1.5 transition-all duration-300 relative ${
+      aria-label={label}
+      className={`group flex flex-col items-center justify-center flex-1 min-w-0 min-h-[44px] py-1 transition-all duration-200 active:scale-95 select-none relative ${
         isActive 
-          ? 'text-[#5C4033] font-bold scale-105' 
+          ? 'text-[#5C4033] font-bold' 
           : 'text-stone-400 hover:text-stone-600'
       }`}
     >
-      <div className={`p-1.5 rounded-xl transition-all duration-300 ${isActive ? 'bg-[#FAF0E6] text-[#8D6E53]' : 'bg-transparent'}`}>
+      <div className={`p-1.5 rounded-2xl transition-all duration-300 flex items-center justify-center ${
+        isActive 
+          ? 'bg-[#8D6E53]/15 text-[#5C4033] shadow-sm ring-1 ring-[#8D6E53]/20' 
+          : 'bg-transparent text-stone-400 group-hover:text-stone-600'
+      }`}>
         {icon}
       </div>
-      <span className="text-[11px] mt-0.5 font-medium font-sans truncate w-full text-center px-0.5">{label}</span>
+      <span className={`text-[10px] leading-tight mt-0.5 tracking-tight font-medium font-sans truncate w-full text-center px-0.5 transition-colors ${
+        isActive ? 'text-[#5C4033] font-semibold' : 'text-stone-500'
+      }`}>
+        {label}
+      </span>
       {isActive && (
-        <span className="absolute bottom-0 w-6 h-[3px] bg-[#8D6E53] rounded-full" />
+        <span className="absolute bottom-0.5 w-5 h-[2.5px] bg-[#8D6E53] rounded-full shadow-[0_1px_4px_rgba(141,110,83,0.4)]" />
       )}
     </Link>
   );
@@ -86,9 +104,13 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
   return (
     <>
       {/* Spacer to prevent bottom content being covered by the sticky bar on mobile devices */}
-      <div className="md:hidden h-[calc(4rem+env(safe-area-inset-bottom))]" />
+      <div className="md:hidden h-[calc(4.5rem+env(safe-area-inset-bottom))]" />
 
-      <nav className="fixed bottom-0 inset-x-0 w-full z-50 bg-[#FAF6F0]/95 backdrop-blur-md border-t border-[#EADDCD] px-1 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-4px_20px_rgba(0,0,0,0.06)] md:hidden">
+      <nav 
+        role="navigation"
+        aria-label="Bottom Navigation"
+        className="fixed bottom-0 inset-x-0 w-full z-50 bg-white/75 backdrop-blur-xl backdrop-saturate-180 border-t border-white/40 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-1.5 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center justify-around md:hidden"
+      >
         {/* HOMEPAGE / BLOGS / BOOKINGS ROUTING BAR */}
         {isHome && (
           <>

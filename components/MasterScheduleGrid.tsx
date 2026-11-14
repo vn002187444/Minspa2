@@ -43,12 +43,12 @@ export default React.memo(function MasterScheduleGrid({
   }
 
   return (
-    <div className="overflow-x-auto border border-[#EADDCD] rounded-2xl scrollbar-thin relative">
+    <div className="overflow-x-auto border border-[#EADDCD] rounded-2xl scrollbar-thin relative max-h-[600px] overflow-y-auto">
       <div className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-white/80 to-transparent z-10 md:hidden" />
       <table className="w-full border-collapse text-left min-w-[800px] table-fixed">
-        <thead>
+        <thead className="sticky top-0 z-20 shadow-xs">
           <tr className="bg-[#FAF6F0] border-b border-[#EADDCD]">
-            <th className="sticky left-0 bg-[#FAF6F0] z-10 p-3 text-xs font-bold uppercase tracking-wider text-gray-500 w-36 border-r border-[#EADDCD]">
+            <th className="sticky left-0 top-0 bg-[#FAF6F0] z-30 p-3 text-xs font-bold uppercase tracking-wider text-gray-500 w-36 border-r border-[#EADDCD]">
               Kỹ Thuật Viên
             </th>
             {activeTimeSlots.map((slot) => (

@@ -38,6 +38,40 @@ function stripHeadingBold(text: string): string {
   return text.replace(/^\s*\*\*(.*?)\*\*\s*:?\s*$/, '$1').replace(/^\s*\*\*(.*?)\*\*\s*$/, '$1').trim();
 }
 
+function slugifyHeading(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-');
+}
+
+interface TocItem {
+  id: string;
+  text: string;
+  level: 2 | 3;
+}
+
+function extractHeadings(content: string): TocItem[] {
+  if (!content) return [];
+  const headings: TocItem[] = [];
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+  for (const line of lines) {
+    const t = line.trim();
+    if (t.startsWith('## ')) {
+      const text = stripHeadingBold(t.replace(/^##\s+/, ''));
+      if (text) headings.push({ id: slugifyHeading(text), text, level: 2 });
+    } else if (t.startsWith('### ')) {
+      const text = stripHeadingBold(t.replace(/^###\s+/, ''));
+      if (text) headings.push({ id: slugifyHeading(text), text, level: 3 });
+    }
+  }
+  return headings;
+}
+
 function markdownToHtml(text: string): string {
   let html = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   // Escape HTML special chars (must be before markdown processing)
@@ -108,20 +142,23 @@ function markdownToHtml(text: string): string {
     if (t.startsWith('### ')) {
       flushPara(); flushList(); flushBq();
       const inner = stripHeadingBold(t.replace(/^###\s+/, ''));
-      out.push(`<h3>${inlineMarkdown(inner)}</h3>`);
+      const id = slugifyHeading(inner);
+      out.push(`<h3 id="${id}">${inlineMarkdown(inner)}</h3>`);
       continue;
     }
     if (t.startsWith('## ')) {
       flushPara(); flushList(); flushBq();
       const inner = stripHeadingBold(t.replace(/^##\s+/, ''));
-      out.push(`<h2>${inlineMarkdown(inner)}</h2>`);
+      const id = slugifyHeading(inner);
+      out.push(`<h2 id="${id}">${inlineMarkdown(inner)}</h2>`);
       continue;
     }
     // fallback: line starts with single # (AI lỡ dùng H1) -> treat as H2
     if (t.startsWith('# ')) {
       flushPara(); flushList(); flushBq();
       const inner = stripHeadingBold(t.replace(/^#\s+/, ''));
-      out.push(`<h2>${inlineMarkdown(inner)}</h2>`);
+      const id = slugifyHeading(inner);
+      out.push(`<h2 id="${id}">${inlineMarkdown(inner)}</h2>`);
       continue;
     }
     if (/^[\*\-]\s/.test(t)) {
@@ -240,6 +277,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
 
   const wordCount = post.content ? post.content.trim().split(/\s+/).filter(Boolean).length : 0;
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+  const toc = extractHeadings(post.content || '');
 
   const baseUrl = getBaseUrl();
 
@@ -341,18 +379,34 @@ export default async function BlogPostDetailPage({ params }: Props) {
 
             {/* Title & Summary */}
             <div className="space-y-4 max-w-full">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-stone-100 pb-2 max-w-full">
+              <div className="border-b border-stone-100 pb-2 max-w-full">
                 <h1 className="text-2xl md:text-4xl font-display font-black text-[#5C4033] leading-tight max-w-full">
                   {post.title}
                 </h1>
-                <div className="shrink-0">
-                  <ShareButton title={post.title} />
-                </div>
               </div>
               <p className="text-sm md:text-base italic text-stone-600 bg-[#FAF6F0] p-4 rounded-2xl border-l-4 border-[#8D6E53]/80 leading-relaxed font-medium max-w-full">
                 {post.summary}
               </p>
             </div>
+
+            {/* Table of Contents */}
+            {toc.length >= 2 && (
+              <nav aria-label="Mục lục bài viết" className="my-6 p-4 md:p-5 bg-[#FAF6F0] rounded-2xl border border-[#EADDCD] text-xs space-y-3">
+                <div className="flex items-center gap-2 font-display font-bold text-[#5C4033] text-sm uppercase tracking-wider">
+                  <BookOpen className="w-4 h-4 text-[#8D6E53]" />
+                  <span>Mục lục nội dung</span>
+                </div>
+                <ul className="space-y-1.5 pl-1">
+                  {toc.map((item, idx) => (
+                    <li key={idx} className={item.level === 3 ? "pl-4 text-stone-600" : "font-semibold text-[#8D6E53]"}>
+                      <a href={`#${item.id}`} className="hover:text-[#5C4033] hover:underline transition-colors flex items-center gap-1.5">
+                        <span className="text-[10px] text-stone-400">●</span> {item.text}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
 
             {/* Rich text output */}
             <div className="prose prose-stone max-w-full prose-headings:font-display prose-headings:text-[#5C4033] prose-h2:text-xl prose-h2:md:text-2xl prose-h2:border-b prose-h2:border-stone-100 prose-h2:pb-1 prose-h2:mt-8 prose-h2:mb-3 prose-h3:text-lg prose-h3:md:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-p:text-stone-700 prose-p:leading-relaxed prose-p:text-sm prose-p:md:text-base prose-a:text-[#8D6E53] prose-a:font-semibold prose-a:underline hover:prose-a:no-underline prose-strong:text-[#5C4033] prose-strong:font-bold prose-img:rounded-xl prose-img:mx-auto prose-img:my-6 prose-blockquote:border-l-[#8D6E53] prose-blockquote:bg-[#FAF6F0] prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:rounded-r-2xl prose-blockquote:italic prose-blockquote:text-stone-600 prose-li:text-stone-700 prose-li:marker:text-[#8D6E53] pt-2">
@@ -372,7 +426,7 @@ export default async function BlogPostDetailPage({ params }: Props) {
               </span>
               <h4 className="font-bold text-base text-[#5C4033]">Bấm máy Đặt Lịch hoặc Chọn gói combo làm đẹp ngay hôm nay!</h4>
               <p className="text-xs text-stone-600 leading-relaxed">
-                Đăng ký online tại Min Nail &amp; Hair giúp thợ chuẩn bị phòng bấm huyệt, chuẩn bị đá nóng và nước gội thảo dước nóng tốt nhất cho bạn!
+                Đăng ký online tại Min Nail &amp; Hair giúp thợ chuẩn bị phòng bấm huyệt, chuẩn bị đá nóng và nước gội thảo dược nóng tốt nhất cho bạn!
               </p>
               <div className="pt-2">
                 <Link 
