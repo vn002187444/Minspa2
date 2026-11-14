@@ -1128,7 +1128,7 @@ function AppointmentCard({
 
 function HistoryModal({ history, customerName, onClose }: any) {
   return (
-    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-[60] flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:h-auto md:max-h-[85dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
           <h3 className="font-display font-medium text-lg text-gray-900">
@@ -1192,7 +1192,7 @@ function CompletedDetailModal({ appt, onClose }: any) {
   const tip = appt?.tip_amount || 0;
 
   return (
-    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-[60] flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:h-auto md:max-h-[85dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
           <h3 className="font-display font-medium text-lg text-gray-900">Chi tiết đơn hàng</h3>
@@ -1278,7 +1278,7 @@ function EditTipModal({ appt, onClose, onSaved }: any) {
   };
 
   return (
-    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
+    <div className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-[60] flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:h-auto md:max-h-[85dvh] md:max-w-md flex flex-col overflow-hidden shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
           <h3 className="font-display font-medium text-lg text-gray-900">Sửa tiền Tip</h3>

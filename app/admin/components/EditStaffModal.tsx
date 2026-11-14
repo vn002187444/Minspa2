@@ -69,8 +69,8 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: E
   };
 
   return (
-    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Sửa thông tin nhân viên">
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95">
+    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Sửa thông tin nhân viên">
+      <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-[82dvh] overflow-y-auto mb-[calc(env(safe-area-inset-bottom)+1rem)]">
         <h3 className="font-display font-bold text-lg text-gray-900 mb-6">
           Sửa thông tin nhân viên
         </h3>

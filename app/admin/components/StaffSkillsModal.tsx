@@ -105,7 +105,7 @@ export default function StaffSkillsModal({ staffId, staffName, onClose, onReload
 
   if (loading) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
         <div className="bg-white p-8 rounded-3xl shadow-xl flex flex-col items-center gap-4">
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-500"></div>
           <p className="text-sm font-medium text-gray-500">Đang tải dữ liệu kỹ năng...</p>

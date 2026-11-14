@@ -90,8 +90,8 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
   };
 
   return (
-    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}>
-      <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-[90dvh] overflow-y-auto scrollbar-none">
+    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}>
+      <div className="bg-white rounded-3xl w-full max-w-md p-6 animate-in zoom-in-95 max-h-[82dvh] mb-[calc(env(safe-area-inset-bottom)+1rem)] overflow-y-auto scrollbar-none">
         <h3 className="font-display font-bold text-lg text-gray-900 mb-6">
           {form.id ? "Sửa dịch vụ" : "Thêm dịch vụ"}
         </h3>
@@ -244,15 +244,15 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
             </label>
             <div className="space-y-3">
               {form.image_url && (
-                <div className="relative w-full h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
+                <div className="relative w-full h-32 sm:h-36 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
                   <Image src={form.image_url} alt={form.name} fill className="object-cover" sizes="(max-width: 400px) 100vw, 400px" />
                   <button type="button" onClick={() => setForm({ ...form, image_url: '' })}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 transition-colors shadow-md cursor-pointer"
                   >&times;</button>
                 </div>
               )}
-               <div className="flex gap-2">
-                  <label htmlFor="svc-imageUrl" className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-sm font-medium text-gray-600">
+               <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                  <label htmlFor="svc-imageUrl" className="flex-1 flex items-center justify-center gap-2 px-2 py-2 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors cursor-pointer text-xs font-medium text-gray-600 flex-col sm:flex-row">
                     <ImageIcon className="w-4 h-4" />
                     Tải ảnh lên
                     <input id="svc-imageUrl" type="file" accept="image/*" className="hidden" onChange={async (e) => {
@@ -278,7 +278,7 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
                  <button 
                    type="button" 
                    onClick={() => setShowS3Browser(true)}
-                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer text-sm font-medium text-blue-700"
+                   className="flex-1 flex items-center justify-center gap-2 px-2 py-2 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors cursor-pointer text-xs font-medium text-blue-700 flex-col sm:flex-row"
                  >
                    <Database className="w-4 h-4" />
                    Chọn từ S3
@@ -312,7 +312,7 @@ export default function ServiceModal({ service, onClose, onReload }: ServiceModa
                      } catch { setErrorMsg("Lỗi kết nối khi tạo ảnh"); }
                      finally { setIsGenerating(false); }
                    }} disabled={isGenerating}
-                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-pink-50 border border-pink-200 rounded-xl hover:bg-pink-100 transition-colors cursor-pointer text-sm font-medium text-pink-700 disabled:opacity-50"
+                     className="flex-1 flex items-center justify-center gap-2 px-2 py-2 bg-pink-50 border border-pink-200 rounded-xl hover:bg-pink-100 transition-colors cursor-pointer text-xs font-medium text-pink-700 disabled:opacity-50 flex-col sm:flex-row"
                    >
                      {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                      {selectedProvider === 'gemini' ? 'AI vẽ ảnh' : 'Tìm ảnh'}

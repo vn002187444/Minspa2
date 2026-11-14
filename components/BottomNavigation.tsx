@@ -109,7 +109,7 @@ export default function BottomNavigation({ activeTab, setActiveTab, onMenuClick 
       <nav 
         role="navigation"
         aria-label="Bottom Navigation"
-        className="fixed bottom-0 inset-x-0 w-full z-50 bg-white/75 backdrop-blur-xl backdrop-saturate-180 border-t border-white/40 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-1.5 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center justify-around md:hidden"
+        className="fixed bottom-0 inset-x-0 w-full z-40 bg-white/75 backdrop-blur-xl backdrop-saturate-180 border-t border-white/40 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] px-1.5 pt-1.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center justify-around md:hidden"
       >
         {/* HOMEPAGE / BLOGS / BOOKINGS ROUTING BAR */}
         {isHome && (

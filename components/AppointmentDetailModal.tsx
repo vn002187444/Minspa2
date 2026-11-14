@@ -80,7 +80,7 @@ export default function AppointmentDetailModal({
 
   return (
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-label={isEditingSelected ? 'Sửa thông tin đặt lịch' : 'Chi tiết lịch hẹn'}

@@ -17,7 +17,7 @@ export default function SwapModal({ appt: _appt, otherStaff, onClose, onSwap }: 
   const trapRef = useFocusTrap(true);
 
   return (
-    <div ref={trapRef} role="dialog" aria-modal="true" aria-label="Chuyển giao đơn" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-50 flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
+    <div ref={trapRef} role="dialog" aria-modal="true" aria-label="Chuyển giao đơn" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} className="fixed inset-0 bg-white md:bg-black/60 md:backdrop-blur-sm z-[60] flex flex-col md:items-center md:justify-center p-0 md:p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full h-full md:h-auto md:max-w-sm p-6 shadow-2xl rounded-none md:rounded-3xl border-0 md:border border-gray-100 animate-in slide-in-from-bottom-5 duration-300 flex flex-col justify-between md:justify-start">
         <div className="flex flex-col gap-2">
           <div className="flex justify-between items-center mb-2">

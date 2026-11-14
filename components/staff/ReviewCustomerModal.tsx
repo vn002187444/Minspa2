@@ -50,7 +50,7 @@ export default function ReviewCustomerModal({ appointmentId, customerName, onClo
   };
 
   return (
-    <div ref={trapRef} role="dialog" aria-modal="true" aria-label="Đánh giá khách hàng" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div ref={trapRef} role="dialog" aria-modal="true" aria-label="Đánh giá khách hàng" onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }} className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">

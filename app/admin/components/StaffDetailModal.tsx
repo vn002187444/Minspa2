@@ -21,8 +21,8 @@ interface StaffDetailModalProps {
 export default function StaffDetailModal({ staff, stats, onClose }: StaffDetailModalProps) {
   const trapRef = useFocusTrap(true);
   return (
-    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Chi tiết nhân viên: ${staff.full_name}`}>
-      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90dvh] overflow-hidden animate-in zoom-in-95 flex flex-col">
+    <div ref={trapRef} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={`Chi tiết nhân viên: ${staff.full_name}`}>
+      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[82dvh] mb-[calc(env(safe-area-inset-bottom)+1rem)] overflow-hidden animate-in zoom-in-95 flex flex-col">
         <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-900 text-white">
           <div>
             <h3 className="font-display font-bold text-xl">
