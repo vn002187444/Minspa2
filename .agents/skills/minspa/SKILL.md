@@ -8,6 +8,8 @@ description: >-
 
 ## 1. Project Overview
 - **Name:** Min Nail & Hair Salon
+- **Active Workspace:** `G:\My Drive\Project\minspa` (Backup staging: `c:\Users\Admin\Downloads\minspa`)
+- **Package Manager Policy:** `rule:pnpm:global_store` — dùng pnpm store chung `C:\Users\Admin\AppData\Local\pnpm\store\v11` (hoặc `npm --prefer-offline`)
 - **Stack:** Next.js 16 (React 19) + Supabase (PostgreSQL) + TypeScript
 - **Deploy:** Vercel (free tier)
 - **Auth:** Custom JWT (NOT Supabase Auth) — `app/login/` + middleware

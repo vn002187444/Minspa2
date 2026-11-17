@@ -208,3 +208,19 @@ Sau mỗi bug fix hoặc phát hiện hành vi không rõ ràng:
 - URL đẹp qua `rewrites()` trong `next.config.ts`: `/solver-ios`, `/solver-ultimate`
 - `/game` link 2 tool mới; bản cũ `public/water-sort.html` giữ nguyên, không đụng
 - CSP `script-src` cần `https://cdn.jsdelivr.net` (Ultimate nạp Tesseract OCR ảnh)
+
+---
+
+## 12. Workspace Location & Dependency Policy (BẮT BUỘC CHO TẤT CẢ SUBAGENTS)
+
+- **Active Workspace:** `G:\My Drive\Project\minspa`
+- **Backup Staging:** `c:\Users\Admin\Downloads\minspa`
+- **Google Drive Sync Protection:** TUYỆT ĐỐI KHÔNG sync `node_modules` hoặc cache `.next` lên Google Drive để tránh nghẽn I/O và treo tiến trình sync.
+- **Quy chuẩn Cài đặt Dependencies (`rule:pnpm:global_store`):**
+  - Khi cần chạy hoặc cài packages, bắt buộc sử dụng kho lưu trữ cục bộ: `pnpm install` (liên kết cứng từ `C:\Users\Admin\AppData\Local\pnpm\store\v11`) hoặc `npm install --prefer-offline`.
+  - Nghiêm cấm chạy full network install tải mới hàng nghìn packages gây lãng phí băng thông và làm chậm máy.
+- **Trách nhiệm Subagents:**
+  - `opencode-frontend`: Toàn bộ thao tác component, UI, styling phải thực hiện tại `G:\My Drive\Project\minspa`.
+  - `commandcode-ops`: Mọi lệnh terminal (typecheck `tsc`, build `npm run build`, lint, test) phải chạy tại thư mục `G:\My Drive\Project\minspa`.
+  - `jules-cloud-worker`: Căn cứ git remote `git@github.com:vn002187444/Minspa2.git` từ workspace này.
+
