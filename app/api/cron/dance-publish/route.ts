@@ -5,7 +5,6 @@ import { getSession } from '@/utils/auth'
 async function isAuthorized(req: NextRequest): Promise<boolean> {
   const authHeader = req.headers.get('authorization') || ''
   if (process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
-  if (req.headers.get('x-supabase-cron') === 'true') return true
   try { const session = await getSession(); if (session?.user?.role === 'ADMIN') return true } catch {}
   return false
 }

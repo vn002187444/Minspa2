@@ -26,6 +26,9 @@
 | **Phase 8 partial** tailwind.config.ts — safelist optimized, tailwindcss-animate removed | Config updated | `tailwind.config.ts` |
 | **CRITICAL FIX: Cron 405 error** — `triggerCronJob` sent `POST` but 3 cron routes only export `GET` → 405. Fixed: `POST` → `GET`, removed Content-Type header, timeout 10s → 30s | Admin cron buttons now work | `app/admin/actions/operations.ts:218-227` |
 | **Database gap analysis** — 37 tables verified, rate_limits/ai_cache confirmed in schema, customer_packages.updated_at healthy | Full audit completed | `database.sql` |
+| **Bảo mật Auth & Backdoor Cleanup** — Xóa bỏ hoàn toàn fallback mật khẩu admin/Min123@ và plaintext, bắt buộc hash bcrypt `$2b$10$...` | Triệt tiêu 100% backdoor | `app/login/actions.ts`, `lib/password.ts` |
+| **Bảo mật Cron Routes** — Xóa bỏ bypass `x-supabase-cron: true` trôi nổi trên cả 5 cron routes; bắt buộc `Authorization: Bearer <CRON_SECRET>` | Chặn gọi trái phép cron | `app/api/cron/*` (5 routes) |
+| **Chuẩn hóa AI & Kế hoạch Multi-Agent** — Thống nhất model `gemini-3.1-flash-lite`, lưu trữ `UPGRADE_PLAN.md`, thiết lập kế hoạch multi-agent | Đồng bộ Single Source of Truth | `docs/MULTI_AGENT_IMPLEMENTATION_PLAN.md`, `lib/ai/gemini.ts`, `docs/archive/` |
 | **CRITICAL FIX: tasks.status CHECK** — Changed mixed-case `('pending','in_progress','completed','cancelled','REJECTED')` → all UPPERCASE `('PENDING','IN_PROGRESS','COMPLETED','CANCELLED','REJECTED')` to match codebase | Schema aligned with code | `database.sql:459-460` |
 | **CRITICAL FIX: Cron 405 error** — `triggerCronJob` sent `POST` but 3 cron routes only export `GET` → 405 Method Not Allowed. Fixed: `POST` → `GET`, removed `Content-Type` header, timeout 10s → 30s | Admin cron buttons now work | `app/admin/actions/operations.ts:218-227` |
 | **Build verified** — `next build` (Turbopack) passes: 43 pages, 0 TS errors, 0 lint errors | Build clean | — |

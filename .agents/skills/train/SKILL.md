@@ -1,3 +1,8 @@
+---
+name: train
+description: Teach the agent how to extract lessons from interactions, create tools (MCP servers), and create or update skills automatically after bug fixes or architectural decisions.
+---
+
 # Train — Agent Self-Learning Skill
 
 ## Purpose

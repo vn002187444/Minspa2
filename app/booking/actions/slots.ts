@@ -76,8 +76,11 @@ export async function getAvailableStaff(date: string, time: string, durationMinu
     }
   }
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const isTomorrowOrLater = date > todayStr;
+
   const freeStaff = allStaff.filter((staff: { id: string; full_name: string }) =>
-    presentStaffIds.has(staff.id) && !busyStaffIds.has(staff.id)
+    (isTomorrowOrLater || presentStaffIds.has(staff.id)) && !busyStaffIds.has(staff.id)
   );
   return freeStaff;
 }

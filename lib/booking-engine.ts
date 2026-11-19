@@ -448,16 +448,19 @@ export async function getSlotAvailabilityWithNames(
   const durationMinutes = totalDuration > 0 ? totalDuration : 30;
 
   const nowVN = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+  const todayVN = `${nowVN.getFullYear()}-${String(nowVN.getMonth() + 1).padStart(2, '0')}-${String(nowVN.getDate()).padStart(2, '0')}`;
+  const isToday = date === todayVN;
   const currentMinutes = nowVN.getHours() * 60 + nowVN.getMinutes();
 
   const slots: SlotAvailability[] = [];
 
   for (let h = 9; h <= 20; h++) {
-    for (let m = 0; m <= 30; m += 30) {
+    for (let m = 0; m < 60; m += 15) {
+      if (h === 20 && m > 30) break;
       const time = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
       const slotMinutes = h * 60 + m;
 
-      if (slotMinutes < currentMinutes) {
+      if (isToday && slotMinutes < currentMinutes) {
         slots.push({ time, status: 'past', availableStaff: 0, totalStaff, availableStaffNames: [], isRecommended: false });
         continue;
       }

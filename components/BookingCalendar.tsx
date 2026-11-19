@@ -92,7 +92,7 @@ export default memo(function BookingCalendar({
           </span>
         </div>
 
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 p-3 max-h-48 overflow-y-auto">
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 p-3 max-h-64 overflow-y-auto">
           {visibleSlots.map((slot) => {
             const isFull = slot.status === 'fully_booked' || slot.status === 'no_staff_present';
             const isSelected = selectedTime === slot.time;

@@ -7,6 +7,8 @@ import { getPublicServices, getPublicSeoSettings } from './actions/public';
 import { checkCustomerHistory } from './actions/customer';
 import { getCustomerNotifications, markCustomerNotificationRead, markAllCustomerNotificationsRead } from './actions/notifications';
 import { getCustomerCareSuggestion } from './actions/suggestions';
+import { lookupCustomerAndGetAiRecommendations } from './actions/personalized-booking';
+import type { ServiceSuggestion } from '@/types/booking-ai';
 import { getAvailableStaff, getSlotAvailability } from './actions/slots';
 import type { SlotInfo } from './actions/slots';
 import { submitBooking } from './actions/booking';
@@ -69,6 +71,8 @@ export default function BookingPage() {
   const [isCheckingPhone, setIsCheckingPhone] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState<ServiceSuggestion[]>([]);
+  const [isNewCustomer, setIsNewCustomer] = useState<boolean | null>(null);
   const [customerNotifs, setCustomerNotifs] = useState<any[]>([]);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   
@@ -223,6 +227,7 @@ export default function BookingPage() {
       if (found) {
         setName(foundName);
         setCustomerId(id);
+        setIsNewCustomer(false);
         if (typeof window !== 'undefined') {
           storage.set('min_salon_customer_id', id);
           storage.set('min_salon_customer_phone', phone);
@@ -238,6 +243,7 @@ export default function BookingPage() {
         }
       } else {
         setCustomerId(null);
+        setIsNewCustomer(true);
         setActivePackages([]);
         setGroupedPackages({});
         setSelectedPackageId(null);
@@ -246,11 +252,18 @@ export default function BookingPage() {
       }
 
       setIsAiLoading(true);
-      const suggestion = await getCustomerCareSuggestion(phone);
-      setAiSuggestion(stripHtml(suggestion || ''));
+      const aiRes = await lookupCustomerAndGetAiRecommendations(phone);
+      if (aiRes.success && aiRes.aiRecommendation) {
+        setAiSuggestion(stripHtml(aiRes.aiRecommendation.welcomeMessage || ''));
+        setAiRecommendations(aiRes.aiRecommendation.suggestions || []);
+      } else {
+        const suggestion = await getCustomerCareSuggestion(phone);
+        setAiSuggestion(stripHtml(suggestion || ''));
+      }
       setIsAiLoading(false);
     } catch (e) {
       console.error(e);
+      setIsAiLoading(false);
     }
     
     setIsCheckingPhone(false);
@@ -693,7 +706,7 @@ export default function BookingPage() {
                      </div>
                    )}
 
-                    <label htmlFor="phone-input" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">Số điện thoại khách hàng</label>
+                    <label htmlFor="phone-input" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">Số điện thoại quý khách</label>
                     <div className="relative">
                       <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" aria-hidden="true" />
                       <input 
@@ -708,27 +721,59 @@ export default function BookingPage() {
                    </div>
                  </div>
                  
-                  <div>
-                    <label htmlFor="name-input" className="block text-xs font-bold tracking-wider uppercase text-gray-500 mb-1.5">
-                     Họ & Tên quý khách {isCheckingPhone && <span className="text-amber-600 text-xs animate-pulse font-normal"> (Đang tra cứu lịch sử...)</span>}
-                   </label>
-                   <div className="relative">
-                     <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" aria-hidden="true" />
-                      <input 
-                        id="name-input"
-                        type="text"
-                       value={name}
-                       onChange={(e) => setName(e.target.value)}
-                       placeholder="Ví dụ: Nguyễn Phương Vy"
-                       className="w-full pl-11 pr-4 py-3 bg-[#FAF6F0] border border-[#EADDCD] rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent outline-none transition-all text-sm font-medium"
-                     />
+                 {/* Personalized Customer Status / Name Input */}
+                 {isNewCustomer === false && name ? (
+                   <div className="p-3.5 bg-gradient-to-r from-[#FAF0E6] to-amber-50/60 rounded-2xl border border-[#EADDCD] flex items-center justify-between animate-in fade-in">
+                     <div className="flex items-center gap-2.5">
+                       <div className="w-9 h-9 rounded-full bg-[#8D6E53] text-white flex items-center justify-center font-bold text-sm">
+                         {name.charAt(0)}
+                       </div>
+                       <div>
+                         <div className="flex items-center gap-1.5">
+                           <span className="font-bold text-sm text-[#3A2E2B]">{name}</span>
+                           <span className="px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-full">Khách quen</span>
+                         </div>
+                         <p className="text-[11px] text-gray-500">{phone}</p>
+                       </div>
+                     </div>
+                     <button
+                       type="button"
+                       onClick={() => setIsNewCustomer(true)}
+                       className="text-xs text-[#8D6E53] hover:underline font-medium px-2 py-1"
+                     >
+                       Đổi tên
+                     </button>
                    </div>
-                 </div>
+                 ) : (
+                   <div>
+                     <div className="flex items-center justify-between mb-1.5">
+                       <label htmlFor="name-input" className="block text-xs font-bold tracking-wider uppercase text-gray-500">
+                        Họ & Tên quý khách {isCheckingPhone && <span className="text-amber-600 text-xs animate-pulse font-normal"> (Đang tra cứu lịch sử...)</span>}
+                       </label>
+                       {isNewCustomer === true && (
+                         <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                           Khách hàng mới
+                         </span>
+                       )}
+                     </div>
+                     <div className="relative">
+                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8D6E53]" aria-hidden="true" />
+                       <input 
+                         id="name-input"
+                         type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Ví dụ: Nguyễn Phương Vy"
+                        className="w-full pl-11 pr-4 py-3 bg-[#FAF6F0] border border-[#EADDCD] rounded-xl focus:bg-white focus:ring-2 focus:ring-[#8D6E53] focus:border-transparent outline-none transition-all text-sm font-medium"
+                      />
+                     </div>
+                   </div>
+                 )}
 
                  {isAiLoading && (
                    <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 flex items-center justify-center gap-2">
                      <Sparkles className="w-4 h-4 text-amber-600 animate-spin" aria-hidden="true" />
-                     <span className="text-xs text-[#8D6E53] font-semibold tracking-wider">Min đang chuẩn bị lời chào cho chị...</span>
+                     <span className="text-xs text-[#8D6E53] font-semibold tracking-wider">Min đang chuẩn bị gợi ý dịch vụ cho chị...</span>
                    </div>
                  )}
 
@@ -736,9 +781,64 @@ export default function BookingPage() {
                     <div className="p-4 bg-[#FAF0E6] flex gap-3 origin-left animate-in fade-in zoom-in-95 duration-500 border border-[#EADDCD] rounded-2xl">
                        <div className="mt-0.5"><Sparkles className="w-4 h-4 text-[#8D6E53]" aria-hidden="true" /></div>
                        <div>
-                          <p className="text-[10px] font-bold text-[#8D6E53] mb-1 uppercase tracking-widest flex items-center gap-1">✨ Chào chị quay lại</p>
+                          <p className="text-[10px] font-bold text-[#8D6E53] mb-1 uppercase tracking-widest flex items-center gap-1">✨ Trợ lý Min Nail & Hair</p>
                          <p className="text-xs text-[#3A2E2B] leading-relaxed font-semibold italic">{aiSuggestion}</p>
                        </div>
+                    </div>
+                  )}
+
+                  {/* AI Recommendations Bento Grid */}
+                  {aiRecommendations.length > 0 && !isAiLoading && (
+                    <div className="space-y-2 animate-in fade-in duration-300">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold tracking-wider uppercase text-[#8D6E53] flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5" /> Gợi ý riêng cho bạn hôm nay
+                        </span>
+                        <span className="text-[10px] text-gray-400 font-medium">Gemini 3.1 Flash Lite</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {aiRecommendations.map(rec => {
+                          const isSelected = selectedServices.includes(rec.serviceId);
+                          return (
+                            <div
+                              key={rec.serviceId}
+                              onClick={() => {
+                                setSelectedServices(prev =>
+                                  isSelected ? prev.filter(id => id !== rec.serviceId) : [...prev, rec.serviceId]
+                                );
+                              }}
+                              className={`p-3 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                                isSelected
+                                  ? 'bg-amber-50/80 border-amber-500 ring-2 ring-amber-300'
+                                  : 'bg-white border-[#EADDCD] hover:border-[#8D6E53] shadow-sm'
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <span className="text-[10px] px-2 py-0.5 bg-[#FAF6F0] text-[#8D6E53] rounded-full font-bold">
+                                    {rec.category} • {rec.duration}p
+                                  </span>
+                                  <span className="text-xs font-bold text-[#8D6E53]">
+                                    {Number(rec.price).toLocaleString('vi-VN')}₫
+                                  </span>
+                                </div>
+                                <h4 className="font-bold text-xs text-gray-900">{rec.serviceName}</h4>
+                                <p className="text-[11px] text-gray-500 italic mt-0.5">"{rec.reason}"</p>
+                              </div>
+                              <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+                                <span className={`font-semibold ${isSelected ? 'text-amber-700' : 'text-gray-400'}`}>
+                                  {isSelected ? '✓ Đã chọn dịch vụ này' : '+ Chạm để chọn'}
+                                </span>
+                                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${
+                                  isSelected ? 'bg-amber-500 text-white' : 'border border-gray-300 text-transparent'
+                                }`}>
+                                  ✓
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                   
