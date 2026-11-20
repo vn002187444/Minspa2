@@ -21,7 +21,7 @@ export async function calculateAndSaveMonthlyPayroll(month: number, year: number
     // 1. Fetch all active staff
     const { data: staffList, error: staffError } = await supabase
       .from('users')
-      .select('id, full_name, username, role')
+      .select('id, full_name, username, role, base_salary')
       .in('role', ['STAFF', 'MANAGER'])
       .eq('is_active', true);
 
@@ -86,9 +86,12 @@ export async function calculateAndSaveMonthlyPayroll(month: number, year: number
       // Work days from attendance
       const staffWorkDays = new Set((attendanceList || []).filter(a => a.staff_id === staff.id).map(a => a.date)).size;
 
-      // Preserve existing manual adjustments
+      // Preserve existing manual adjustments or fetch staff's configured base salary
       const existing = existingMap.get(staff.id);
-      const baseSalary = existing?.base_salary ? Number(existing.base_salary) : DEFAULT_BASE_SALARY;
+      const staffBaseSalary = (staff as any).base_salary && Number((staff as any).base_salary) > 0
+        ? Number((staff as any).base_salary)
+        : DEFAULT_BASE_SALARY;
+      const baseSalary = existing?.base_salary ? Number(existing.base_salary) : staffBaseSalary;
       const bonusAmount = existing?.bonus_amount ? Number(existing.bonus_amount) : 0;
       const deductionAmount = existing?.deduction_amount ? Number(existing.deduction_amount) : 0;
       const status = existing?.status || 'DRAFT';
@@ -311,7 +314,7 @@ export async function generatePayrollExcelBase64(month: number, year: number): P
     // Headers
     const headers = [
       'STT', 'Mã NV', 'Họ Và Tên', 'Ngày Công', 'Đơn Hoàn Thành',
-      'Lương Cứng', 'Hoa Hồng (20%)', 'Tiền Tip', 'Thưởng', 'Phạt/Ứng', 'Thực Nhận', 'Trạng Thái', 'Ghi Chú'
+      'Lương Cứng', 'Hoa Hồng (20%)', 'Tip CK', 'Thưởng', 'Phạt/Ứng', 'Thực Nhận', 'Trạng Thái', 'Ghi Chú'
     ];
     const headerRow = sheet.addRow(headers);
     headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };

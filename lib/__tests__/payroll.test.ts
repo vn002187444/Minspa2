@@ -75,3 +75,34 @@ describe('Date Utilities for Payroll', () => {
     expect(new Date(2026, 12, 0).getDate()).toBe(31); // Dec has 31 days
   });
 });
+
+describe('Staff Base Salary Resolution', () => {
+  const resolveBaseSalary = (
+    existingSnapshotBase: number | null | undefined,
+    staffConfiguredBase: number | null | undefined,
+    defaultBase: number = 5000000
+  ) => {
+    const staffBase = staffConfiguredBase && staffConfiguredBase > 0 ? staffConfiguredBase : defaultBase;
+    return existingSnapshotBase != null && existingSnapshotBase > 0 ? existingSnapshotBase : staffBase;
+  };
+
+  it('should use staff profile base salary when no snapshot override exists', () => {
+    // Senior staff with 8,000,000 base salary
+    const base = resolveBaseSalary(null, 8000000);
+    expect(base).toBe(8000000);
+  });
+
+  it('should fallback to default 5,000,000 when staff has 0 or null base salary', () => {
+    const base = resolveBaseSalary(null, 0);
+    expect(base).toBe(5000000);
+
+    const baseNull = resolveBaseSalary(null, null);
+    expect(baseNull).toBe(5000000);
+  });
+
+  it('should preserve snapshot override when existing snapshot is present', () => {
+    // Staff configured 6,000,000, but snapshot was adjusted to 7,500,000
+    const base = resolveBaseSalary(7500000, 6000000);
+    expect(base).toBe(7500000);
+  });
+});

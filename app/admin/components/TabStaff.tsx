@@ -233,6 +233,7 @@ export default function TabStaff({
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
                     <div className="flex justify-between"><span className="text-gray-400">CCCD</span><span className="font-mono">{staff.cccd || 'N/A'}</span></div>
+                    <div className="flex justify-between"><span className="text-gray-400">Lương cứng</span><span className="font-semibold text-gray-800">{((staff.base_salary && Number(staff.base_salary) > 0) ? Number(staff.base_salary) : 5000000).toLocaleString("vi")}đ</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">Doanh thu</span><span className="font-bold text-gray-900">{(stats.totalRevenue || 0).toLocaleString("vi")}đ</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">Hoa hồng</span><span className="font-bold text-emerald-600">{(stats.totalCommission || 0).toLocaleString("vi")}đ</span></div>
                     <div className="flex justify-between"><span className="text-gray-400">Tiền Tip</span><span className="font-bold text-pink-500">{(stats.totalTip || 0).toLocaleString("vi")}đ</span></div>
@@ -293,6 +294,7 @@ export default function TabStaff({
                     <th className="p-4 pl-6">Nhân viên</th>
                     <th className="p-4 text-center">Trạng thái</th>
                     <th className="p-4 hidden md:table-cell">Số CCCD</th>
+                    <th className="p-4 text-right hidden lg:table-cell">Lương cứng</th>
                     <th className="p-4 text-right hidden sm:table-cell">Doanh thu</th>
                     <th className="p-4 text-right hidden lg:table-cell">Hoa hồng</th>
                     <th className="p-4 text-right hidden xl:table-cell">Tiền Tip</th>
@@ -303,7 +305,7 @@ export default function TabStaff({
                 <tbody className="divide-y divide-gray-100 text-sm text-gray-700">
                   {filteredStaffs.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-8 text-center text-gray-500 font-medium">
+                      <td colSpan={9} className="p-8 text-center text-gray-500 font-medium">
                         Không tìm thấy nhân viên nào
                       </td>
                     </tr>
@@ -346,6 +348,9 @@ export default function TabStaff({
                         </td>
                           <td className="p-4 font-mono text-gray-500 hidden md:table-cell">
                           {staff.cccd || "N/A"}
+                        </td>
+                        <td className="p-4 text-right font-semibold text-gray-700 hidden lg:table-cell">
+                          {((staff.base_salary && Number(staff.base_salary) > 0) ? Number(staff.base_salary) : 5000000).toLocaleString("vi")}đ
                         </td>
                         <td className="p-4 text-right font-bold text-gray-900 hidden sm:table-cell">
                           {(stats.totalRevenue || 0).toLocaleString("vi")}đ

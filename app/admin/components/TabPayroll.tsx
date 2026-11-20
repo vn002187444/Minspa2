@@ -254,7 +254,7 @@ export default function TabPayroll() {
         {/* Total Tips */}
         <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Tổng Tiền Tip Khách Tặng</span>
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Tip Chuyển Khoản (Tiệm thu hộ)</span>
             <div className="p-2 bg-pink-50 text-pink-600 rounded-xl">
               <HeartHandshake className="w-4 h-4" />
             </div>
@@ -262,7 +262,7 @@ export default function TabPayroll() {
           <p className="text-2xl font-extrabold text-pink-600 mt-2">
             {formatVND(summary?.total_tips || 0)}
           </p>
-          <p className="text-xs text-gray-400 mt-2">100% thuộc về nhân viên làm dịch vụ</p>
+          <p className="text-xs text-gray-400 mt-2">100% tip chuyển khoản trả lại KTV (tiền mặt không qua tiệm)</p>
         </div>
 
         {/* Total Base & Adjustments */}
@@ -331,7 +331,7 @@ export default function TabPayroll() {
                   <th className="py-3.5 px-3 text-center">Đơn</th>
                   <th className="py-3.5 px-3 text-right">Lương Cứng</th>
                   <th className="py-3.5 px-3 text-right">Hoa Hồng (20%)</th>
-                  <th className="py-3.5 px-3 text-right">Tiền Tip</th>
+                  <th className="py-3.5 px-3 text-right">Tip CK (₫)</th>
                   <th className="py-3.5 px-3 text-right">Thưởng / Phạt</th>
                   <th className="py-3.5 px-4 text-right">Thực Nhận</th>
                   <th className="py-3.5 px-3 text-center">Trạng Thái</th>

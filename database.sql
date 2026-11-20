@@ -11,6 +11,9 @@ CREATE TABLE users (
   cccd VARCHAR(20),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   notification_token JSONB,
+  base_salary DECIMAL(12, 2) NOT NULL DEFAULT 5000000,
+  bank_account VARCHAR(50),
+  bank_name VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   CONSTRAINT users_role_cccd_check CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
 );

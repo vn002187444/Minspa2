@@ -18,6 +18,7 @@ export default function AddStaffModal({ onClose, onReload }: AddStaffModalProps)
     password: "",
     cccd: "",
     role: "STAFF",
+    baseSalary: "5000000",
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -26,7 +27,14 @@ export default function AddStaffModal({ onClose, onReload }: AddStaffModalProps)
     e.preventDefault();
     setErrorMsg("");
     setLoading(true);
-    const res = await createStaff(form);
+    const res = await createStaff({
+      fullName: form.fullName,
+      username: form.username,
+      password: form.password,
+      cccd: form.cccd,
+      role: form.role,
+      base_salary: Number(form.baseSalary) || 5000000,
+    });
     if (res.success) {
       onReload();
       onClose();
@@ -115,6 +123,27 @@ export default function AddStaffModal({ onClose, onReload }: AddStaffModalProps)
               <option value="STAFF">Nhân viên (STAFF)</option>
               <option value="MANAGER">Quản lý (MANAGER)</option>
             </select>
+          </div>
+          <div>
+            <label htmlFor="addStaff-baseSalary" className="block text-sm font-medium text-gray-700 mb-1">
+              Lương cứng cơ bản (VNĐ/tháng)
+            </label>
+            <div className="relative">
+              <input
+                id="addStaff-baseSalary"
+                type="number"
+                min="0"
+                step="100000"
+                value={form.baseSalary}
+                onChange={(e) => setForm({ ...form, baseSalary: e.target.value })}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none text-sm font-mono font-semibold text-gray-800"
+                placeholder="Ví dụ: 5000000"
+              />
+              <span className="absolute right-3 top-3.5 text-xs text-gray-400 font-bold">VNĐ</span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Mức lương cơ bản dùng để chốt bảng lương tự động cho nhân viên.
+            </p>
           </div>
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
