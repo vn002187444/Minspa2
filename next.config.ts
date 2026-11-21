@@ -7,7 +7,6 @@ const baseConfig: NextConfig = {
     root: process.cwd(),
   },
   experimental: {
-    agentUpgrade: 'security',
     optimizeCss: true,
     optimizePackageImports: ['lucide-react', 'date-fns', 'motion'],
     serverActions: {
