@@ -11,6 +11,9 @@ CREATE TABLE users (
   cccd VARCHAR(20),
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   notification_token JSONB,
+  base_salary DECIMAL(12, 2) NOT NULL DEFAULT 5000000,
+  bank_account VARCHAR(50),
+  bank_name VARCHAR(100),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
   CONSTRAINT users_role_cccd_check CHECK (role IN ('ADMIN', 'MANAGER') OR (role = 'STAFF' AND cccd IS NOT NULL))
 );
@@ -577,18 +580,63 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Payroll Records Table (Monthly Snapshot)
+CREATE TABLE IF NOT EXISTS payroll_records (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  staff_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  month INT NOT NULL CHECK (month >= 1 AND month <= 12),
+  year INT NOT NULL CHECK (year >= 2024),
+  base_salary NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  commission_rate NUMERIC(5, 2) NOT NULL DEFAULT 0.20,
+  commission_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  tip_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  bonus_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  deduction_amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  net_salary NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  work_days NUMERIC(5, 1) NOT NULL DEFAULT 0,
+  completed_orders INT NOT NULL DEFAULT 0,
+  status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT', 'CONFIRMED', 'PAID')),
+  paid_at TIMESTAMP WITH TIME ZONE,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()),
+  CONSTRAINT payroll_records_staff_month_year_unique UNIQUE (staff_id, month, year)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payroll_records_staff_month_year ON payroll_records(staff_id, month, year);
+CREATE INDEX IF NOT EXISTS idx_payroll_records_month_year ON payroll_records(month, year);
+
+ALTER TABLE payroll_records ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'payroll_records' AND policyname = 'service_role_all_payroll'
+  ) THEN
+    CREATE POLICY "service_role_all_payroll" ON payroll_records
+      FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'payroll_records' AND policyname = 'staff_view_own_payroll'
+  ) THEN
+    CREATE POLICY "staff_view_own_payroll" ON payroll_records
+      FOR SELECT USING (auth.uid() = staff_id);
+  END IF;
+END $$;
+
 -- ========================================
--- Database Review Summary (June 2026)
+-- Database Review Summary (November 2026)
 -- ========================================
--- TOTAL TABLES: 31 (all ✅ RLS enabled)
+-- TOTAL TABLES: 32 (all ✅ RLS enabled)
 --
 -- Bảng có Realtime (8): appointments, appointment_services, attendance,
 --   auto_assign_logs, notifications, staff_skills, tasks, time_slot_locks
 --
--- Bảng KHÔNG có Realtime (23): ai_cache, attendance_reminders_log,
+-- Bảng KHÔNG có Realtime (24): ai_cache, attendance_reminders_log,
 --   audit_logs, auto_seo_config, bank_settings, banner_settings, blog_stats,
 --   blog_views, blogs, customer_packages, customers, package_usage_logs,
---   random_booking_reminders_log, rate_limits, reviews, seo_articles,
+--   payroll_records, random_booking_reminders_log, rate_limits, reviews, seo_articles,
 --   seo_settings, services, slot_limits, treatment_packages,
 --   unaccepted_booking_reminders_log, uncompleted_booking_reminders_log, users
 

@@ -13,6 +13,7 @@ interface EditStaffModalStaff {
   username: string;
   cccd: string;
   role: string;
+  base_salary?: number | null;
 }
 
 interface EditStaffModalProps {
@@ -29,6 +30,7 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: E
     username: staff.username || "",
     cccd: staff.cccd || "",
     role: staff.role || "STAFF",
+    baseSalary: (staff as any).base_salary != null ? String((staff as any).base_salary) : "5000000",
   });
   const [loading, setLoading] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -45,6 +47,7 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: E
       username: form.username,
       cccd: form.cccd,
       role: form.role,
+      base_salary: Number(form.baseSalary) || 0,
     });
     if (res.success) {
       onReload();
@@ -135,6 +138,26 @@ export default function EditStaffModal({ staff, userRole, onClose, onReload }: E
               className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-mono tracking-wide"
               placeholder="Nhập 12 số CCCD"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Lương cứng cơ bản (VNĐ/tháng)
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                step="100000"
+                value={form.baseSalary}
+                onChange={(e) => setForm({ ...form, baseSalary: e.target.value })}
+                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-pink-500 outline-none transition-all text-sm font-mono font-semibold text-gray-800"
+                placeholder="Ví dụ: 5000000"
+              />
+              <span className="absolute right-3 top-3.5 text-xs text-gray-400 font-bold">VNĐ</span>
+            </div>
+            <p className="text-[11px] text-gray-500 mt-1">
+              Dùng để tính lương cứng tự động cho nhân viên mỗi kỳ bảng lương.
+            </p>
           </div>
           {userRole === 'ADMIN' && (
           <div>

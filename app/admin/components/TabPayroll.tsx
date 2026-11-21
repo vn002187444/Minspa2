@@ -1,501 +1,520 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Wallet, Calculator, Save, CheckCircle2, Search, X, Edit2, Banknote } from 'lucide-react';
-import { getStaffPayrollInfo, calculatePayroll, getSalaryPayments, savePayrollCalculations, processPayrollPayment, updateStaffSalary } from '../actions';
-
-type RangeType = 'month' | 'last_month' | 'custom';
+import { useState, useEffect, useTransition } from 'react';
+import {
+  Wallet,
+  Calculator,
+  Download,
+  CheckCircle2,
+  AlertCircle,
+  TrendingUp,
+  Award,
+  HeartHandshake,
+  Calendar,
+  FileSpreadsheet,
+  Edit3,
+  RefreshCw,
+  Search,
+  X
+} from 'lucide-react';
+import {
+  getMonthlyPayroll,
+  calculateAndSaveMonthlyPayroll,
+  updatePayrollAdjustment,
+  generatePayrollExcelBase64
+} from '../actions/payroll';
+import { PayrollRecord, PayrollSummary, PayrollStatus } from '@/types/payroll';
+import { Button } from '@/components/ui/Button';
 
 export default function TabPayroll() {
-  const [rangeType, setRangeType] = useState<RangeType>('month');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [staffList, setStaffList] = useState<any[]>([]);
-  const [calculatedRows, setCalculatedRows] = useState<any[] | null>(null);
-  const [savedPayments, setSavedPayments] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [successMsg, setSuccessMsg] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
 
-  // Edit staff salary modal
-  const [editModal, setEditModal] = useState<{ staff: any } | null>(null);
-  const [editBaseSalary, setEditBaseSalary] = useState(0);
-  const [editBankAccount, setEditBankAccount] = useState('');
-  const [editBankName, setEditBankName] = useState('');
+  const [records, setRecords] = useState<PayrollRecord[]>([]);
+  const [summary, setSummary] = useState<PayrollSummary | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [errorMsg, setErrorMsg] = useState<string>('');
+  const [successMsg, setSuccessMsg] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
-  const calculateDates = (type: string) => {
-    const now = new Date();
-    let start = new Date();
-    let end = new Date();
-    if (type === 'month') {
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      end = new Date();
-    } else if (type === 'last_month') {
-      start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      end = new Date(now.getFullYear(), now.getMonth(), 0);
-    }
-    start.setHours(0, 0, 0, 0);
-    end.setHours(23, 59, 59, 999);
-    return {
-      start: start.toISOString(),
-      end: end.toISOString(),
-      startInput: start.toISOString().split('T')[0],
-      endInput: end.toISOString().split('T')[0],
-    };
-  };
+  const [isPending, startTransition] = useTransition();
 
-  const loadStaff = async () => {
-    try {
-      const list = await getStaffPayrollInfo();
-      setStaffList(list);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Lỗi tải danh sách nhân viên');
-    }
-  };
+  // Adjustment Modal state
+  const [editingRecord, setEditingRecord] = useState<PayrollRecord | null>(null);
+  const [adjBonus, setAdjBonus] = useState<number>(0);
+  const [adjDeduction, setAdjDeduction] = useState<number>(0);
+  const [adjNotes, setAdjNotes] = useState<string>('');
+  const [adjStatus, setAdjStatus] = useState<PayrollStatus>('DRAFT');
 
-  const fetchPayments = async (startInput: string, endInput: string) => {
-    try {
-      const payments = await getSalaryPayments(startInput, endInput);
-      setSavedPayments(payments);
-    } catch {
-      // silent
-    }
-  };
-
-  const handleCalculate = async () => {
+  const loadData = async (m = selectedMonth, y = selectedYear) => {
     setLoading(true);
-    setError('');
-    setSuccessMsg('');
+    setErrorMsg('');
     try {
-      const rows = await calculatePayroll(startDate, endDate);
-      setCalculatedRows(rows);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Lỗi tính lương');
-    }
-    setLoading(false);
-  };
-
-  const handleSave = async () => {
-    if (!calculatedRows || calculatedRows.length === 0) return;
-    setSaving(true);
-    setError('');
-    setSuccessMsg('');
-    try {
-      await savePayrollCalculations(startDate, endDate, calculatedRows);
-      setSuccessMsg('Đã lưu bảng lương thành công!');
-      setCalculatedRows(null);
-      fetchPayments(startDate, endDate);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Lỗi lưu bảng lương');
-    }
-    setSaving(false);
-  };
-
-  const handlePay = async (id: string) => {
-    setLoading(true);
-    setError('');
-    setSuccessMsg('');
-    try {
-      await processPayrollPayment(id);
-      setSuccessMsg('Đã xác nhận thanh toán!');
-      fetchPayments(startDate, endDate);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Lỗi thanh toán');
-    }
-    setLoading(false);
-  };
-
-  const openEditModal = (staff: { id: string; baseSalary: number; fullName: string; bankAccount?: string; bankName?: string }) => {
-    setEditModal({ staff });
-    setEditBaseSalary(staff.baseSalary);
-    setEditBankAccount(staff.bankAccount || '');
-    setEditBankName(staff.bankName || '');
-  };
-
-  const handleSaveStaff = async () => {
-    if (!editModal) return;
-    setError('');
-    setSuccessMsg('');
-    try {
-      await updateStaffSalary(editModal.staff.id, editBaseSalary, editBankAccount, editBankName);
-      setSuccessMsg(`Đã cập nhật lương ${editModal.staff.fullName}`);
-      setEditModal(null);
-      loadStaff();
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Lỗi cập nhật');
+      const res = await getMonthlyPayroll(m, y);
+      if (res.success) {
+        setRecords(res.records);
+        setSummary(res.summary);
+      } else {
+        setErrorMsg(res.error || 'Không thể tải dữ liệu bảng lương');
+      }
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Lỗi kết nối');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (rangeType !== 'custom') {
-      const dates = calculateDates(rangeType);
-      setTimeout(() => {
-        setStartDate(dates.startInput);
-        setEndDate(dates.endInput);
-      }, 0);
-      setTimeout(() => {
-        loadStaff();
-        fetchPayments(dates.startInput, dates.endInput);
-      }, 0);
-    }
-  }, [rangeType]);
+    loadData(selectedMonth, selectedYear);
+  }, [selectedMonth, selectedYear]);
 
-  const handleCustomSearch = () => {
-    if (!startDate || !endDate) { setError('Chọn ngày'); return; }
-    loadStaff();
-    fetchPayments(startDate, endDate);
-    setCalculatedRows(null);
+  const handleRecalculate = () => {
+    startTransition(async () => {
+      setErrorMsg('');
+      setSuccessMsg('');
+      const res = await calculateAndSaveMonthlyPayroll(selectedMonth, selectedYear);
+      if (res.success) {
+        setSuccessMsg(`Đã tính toán và cập nhật bảng lương cho ${res.count || 0} nhân viên!`);
+        await loadData(selectedMonth, selectedYear);
+      } else {
+        setErrorMsg(res.error || 'Lỗi tính toán bảng lương');
+      }
+    });
   };
 
-  const netPay = (row: { baseSalary: number; totalCommission: number; totalTips: number; totalPackageCommission: number }) => row.baseSalary + row.totalCommission + row.totalTips + row.totalPackageCommission;
+  const handleExportExcel = async () => {
+    startTransition(async () => {
+      setErrorMsg('');
+      const res = await generatePayrollExcelBase64(selectedMonth, selectedYear);
+      if (res.success && res.base64 && res.filename) {
+        const link = document.createElement('a');
+        link.href = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${res.base64}`;
+        link.download = res.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setSuccessMsg(`Đã xuất file ${res.filename} thành công!`);
+      } else {
+        setErrorMsg(res.error || 'Không thể xuất file Excel');
+      }
+    });
+  };
 
-  const formatCurrency = (v: number) => new Intl.NumberFormat('vi-VN').format(v) + '₫';
+  const openAdjustModal = (rec: PayrollRecord) => {
+    setEditingRecord(rec);
+    setAdjBonus(rec.bonus_amount || 0);
+    setAdjDeduction(rec.deduction_amount || 0);
+    setAdjNotes(rec.notes || '');
+    setAdjStatus(rec.status || 'DRAFT');
+  };
 
-  const filteredStaff = staffList.filter((s) =>
-    s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.username.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSaveAdjustment = async () => {
+    if (!editingRecord) return;
+    startTransition(async () => {
+      setErrorMsg('');
+      setSuccessMsg('');
+      const res = await updatePayrollAdjustment({
+        id: editingRecord.id,
+        bonus_amount: adjBonus,
+        deduction_amount: adjDeduction,
+        notes: adjNotes,
+        status: adjStatus
+      });
+      if (res.success) {
+        setSuccessMsg(`Đã lưu điều chỉnh cho ${editingRecord.staff?.full_name || 'nhân viên'}`);
+        setEditingRecord(null);
+        await loadData(selectedMonth, selectedYear);
+      } else {
+        setErrorMsg(res.error || 'Lỗi lưu điều chỉnh');
+      }
+    });
+  };
+
+  const formatVND = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN').format(Math.round(amount)) + '₫';
+  };
+
+  const filteredRecords = records.filter(r => {
+    const name = r.staff?.full_name?.toLowerCase() || '';
+    const username = r.staff?.username?.toLowerCase() || '';
+    const term = searchTerm.toLowerCase();
+    return name.includes(term) || username.includes(term);
+  });
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">{error}</div>
+    <div className="space-y-6">
+      {/* Header & Controls */}
+      <div className="bg-white/80 backdrop-blur-md rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="p-2.5 bg-[#832729]/10 text-[#832729] rounded-2xl">
+              <Wallet className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 tracking-tight">Quản Lý Bảng Lương Nhân Sự</h2>
+              <p className="text-xs text-gray-500">Lương cứng + Hoa hồng 20% + Tiền tip + Thưởng - Phạt/Tạm ứng</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Month & Year Selectors */}
+          <div className="flex items-center bg-gray-50 rounded-2xl p-1 border border-gray-200">
+            <Calendar className="w-4 h-4 text-gray-400 ml-2 mr-1" />
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="bg-transparent text-sm font-semibold text-gray-700 py-1.5 px-2 outline-none cursor-pointer"
+            >
+              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                <option key={m} value={m}>Tháng {m}</option>
+              ))}
+            </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="bg-transparent text-sm font-semibold text-gray-700 py-1.5 px-2 outline-none cursor-pointer border-l border-gray-200"
+            >
+              {[2024, 2025, 2026, 2027].map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRecalculate}
+            isLoading={isPending}
+            className="rounded-2xl border-gray-200 hover:border-[#832729] hover:text-[#832729]"
+          >
+            <RefreshCw className="w-4 h-4 mr-1.5" />
+            Tính lại lương
+          </Button>
+
+          <Button
+            size="sm"
+            onClick={handleExportExcel}
+            isLoading={isPending}
+            className="rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            <FileSpreadsheet className="w-4 h-4 mr-1.5" />
+            Xuất Excel (.xlsx)
+          </Button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      {errorMsg && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{errorMsg}</span>
+        </div>
       )}
       {successMsg && (
-        <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4" /> {successMsg}
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-2xl text-sm flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+          <span>{successMsg}</span>
         </div>
       )}
 
-      {/* Period Selector */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-          <Wallet className="w-5 h-5 text-[#8D6E53]" /> Bảng lương
-        </h2>
-        <div className="flex flex-wrap items-center gap-3">
-          <select
-            value={rangeType}
-            onChange={(e) => setRangeType(e.target.value as RangeType)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white"
-          >
-            <option value="month">Tháng này</option>
-            <option value="last_month">Tháng trước</option>
-            <option value="custom">Tuỳ chọn</option>
-          </select>
-          {rangeType === 'custom' && (
-            <>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]" />
-              <span className="text-gray-400">→</span>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="border border-gray-300 rounded-lg px-3 py-2 text-sm min-h-[44px]" />
-              <button onClick={handleCustomSearch} className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors cursor-pointer">
-                Xem
-              </button>
-            </>
-          )}
+      {/* KPI Bento Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total Net Salary */}
+        <div className="bg-gradient-to-br from-[#832729] to-[#5a1a1b] text-white rounded-3xl p-5 shadow-lg shadow-[#832729]/10 relative overflow-hidden">
+          <div className="absolute right-3 top-3 opacity-15">
+            <Wallet className="w-16 h-16" />
+          </div>
+          <span className="text-xs uppercase tracking-wider text-rose-200 font-semibold">Tổng Quỹ Lương Thực Nhận</span>
+          <p className="text-2xl font-extrabold mt-2 tracking-tight">
+            {formatVND(summary?.total_net_salary || 0)}
+          </p>
+          <div className="flex items-center gap-2 mt-3 text-xs text-rose-200">
+            <span>{summary?.total_staff || 0} nhân sự</span>
+            <span>•</span>
+            <span>{summary?.total_completed_orders || 0} đơn hoàn thành</span>
+          </div>
+        </div>
+
+        {/* Total Commission */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Hoa Hồng Dịch Vụ (20%)</span>
+            <div className="p-2 bg-amber-50 text-amber-600 rounded-xl">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-gray-900 mt-2">
+            {formatVND(summary?.total_commission || 0)}
+          </p>
+          <p className="text-xs text-gray-400 mt-2">Trích 20% trên tổng giá trị đơn</p>
+        </div>
+
+        {/* Total Tips */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Tip Chuyển Khoản (Tiệm thu hộ)</span>
+            <div className="p-2 bg-pink-50 text-pink-600 rounded-xl">
+              <HeartHandshake className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-pink-600 mt-2">
+            {formatVND(summary?.total_tips || 0)}
+          </p>
+          <p className="text-xs text-gray-400 mt-2">100% tip chuyển khoản trả lại KTV (tiền mặt không qua tiệm)</p>
+        </div>
+
+        {/* Total Base & Adjustments */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider text-gray-500 font-semibold">Lương Cứng & Thưởng Phạt</span>
+            <div className="p-2 bg-blue-50 text-blue-600 rounded-xl">
+              <Award className="w-4 h-4" />
+            </div>
+          </div>
+          <p className="text-2xl font-extrabold text-gray-900 mt-2">
+            {formatVND(summary?.total_base_salary || 0)}
+          </p>
+          <div className="flex items-center gap-2 mt-2 text-xs">
+            <span className="text-emerald-600 font-medium">+{formatVND(summary?.total_bonuses || 0)} thưởng</span>
+            <span className="text-gray-300">/</span>
+            <span className="text-red-500 font-medium">-{formatVND(summary?.total_deductions || 0)} phạt</span>
+          </div>
         </div>
       </div>
 
-      {/* Staff List + Salary Config */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <h3 className="font-semibold text-gray-700 mb-3">Cấu hình lương nhân viên</h3>
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text" placeholder="Tìm nhân viên..." value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm"
-          />
+      {/* Main Table Card */}
+      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Table Toolbar */}
+        <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-gray-900">Chi Tiết Lương Nhân Viên Tháng {selectedMonth}/{selectedYear}</h3>
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+              {filteredRecords.length} nhân sự
+            </span>
+          </div>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Tìm theo tên nhân viên..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 border border-gray-200 rounded-2xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#832729]/20 focus:border-[#832729] transition-all"
+            />
+          </div>
         </div>
-        {/* Mobile card view */}
-        <div className="mt-4 space-y-3 md:hidden">
-          {filteredStaff.length === 0 ? (
-            <div className="bg-white border border-dashed border-gray-200 rounded-xl p-6 text-center">
-              <p className="text-gray-400 text-sm">Không có nhân viên</p>
-            </div>
-          ) : filteredStaff.map((s) => (
-            <div key={s.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                <span className="font-bold text-gray-900">{s.fullName}</span>
-                <span className="text-gray-400 text-xs">({s.role})</span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-                <div className="flex justify-between"><span className="text-gray-400">Lương CB</span><span>{formatCurrency(s.baseSalary)}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Số TK</span><span className="text-gray-500">{s.bankAccount || '—'}</span></div>
-                <div className="flex justify-between"><span className="text-gray-400">Ngân hàng</span><span className="text-gray-500">{s.bankName || '—'}</span></div>
-              </div>
-              <div className="flex justify-end pt-1 border-t border-gray-100">
-                <button onClick={() => openEditModal(s)} className="p-2 text-gray-400 hover:text-[#8D6E53] transition-colors cursor-pointer" title="Sửa lương">
-                  <Edit2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Desktop table */}
-        <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">Nhân viên</th>
-                <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Lương cơ bản</th>
-                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">Số TK</th>
-                <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">Ngân hàng</th>
-                <th className="px-3 py-2 w-12" />
-              </tr>
-            </thead>
-            <tbody>
-              {filteredStaff.map((s) => (
-                <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="px-3 py-2 font-medium">{s.fullName} <span className="text-gray-400 text-xs">({s.role})</span></td>
-                  <td className="px-3 py-2 text-right">{formatCurrency(s.baseSalary)}</td>
-                  <td className="px-3 py-2 text-gray-500">{s.bankAccount || '—'}</td>
-                  <td className="px-3 py-2 text-gray-500">{s.bankName || '—'}</td>
-                  <td className="px-3 py-2">
-                    <button onClick={() => openEditModal(s)} className="p-1.5 text-gray-400 hover:text-[#8D6E53] transition-colors cursor-pointer" title="Sửa lương">
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredStaff.length === 0 && (
-                <tr><td colSpan={5} className="px-3 py-4 text-center text-gray-400 text-sm">Không có nhân viên</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      {/* Calculate Payroll */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <button
-          onClick={handleCalculate}
-          disabled={loading}
-          className="flex items-center gap-2 px-6 py-3 bg-[#8D6E53] text-white rounded-xl font-medium hover:bg-[#7a5e47] transition-colors disabled:opacity-50 cursor-pointer"
-        >
-          <Calculator className="w-5 h-5" />
-          {loading ? 'Đang tính...' : 'Tính lương'}
-        </button>
-
-        {calculatedRows && calculatedRows.length > 0 && (
-          <>
-            {/* Mobile card view */}
-            <div className="mt-4 space-y-3 md:hidden">
-              {calculatedRows.map((row) => (
-                <div key={row.staffId} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                    <span className="font-bold text-gray-900">{row.fullName}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-400">Lương CB</span><span>{formatCurrency(row.baseSalary)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">Hoa hồng</span><span>{formatCurrency(row.totalCommission)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">Tip</span><span>{formatCurrency(row.totalTips)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">HH Gói</span><span>{formatCurrency(row.totalPackageCommission)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">Tổng đơn</span><span>{formatCurrency(row.totalSales)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">Số đơn</span><span>{row.appointmentCount}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">Vắng</span><span className={row.absentDays > 0 ? 'text-red-500' : ''}>{row.absentDays > 0 ? row.absentDays : '—'}</span></div>
-                    <div className="flex justify-between font-bold"><span className="text-[#8D6E53]">Thực lãnh</span><span className="text-[#8D6E53]">{formatCurrency(netPay(row))}</span></div>
-                  </div>
-                </div>
-              ))}
-              {/* Mobile totals */}
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm font-bold">
-                  <div className="flex justify-between"><span className="text-gray-500">Tổng lương</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.baseSalary, 0))}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Tổng HH</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalCommission, 0))}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Tổng Tip</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalTips, 0))}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-500">Tổng đơn</span><span>{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalSales, 0))}</span></div>
-                </div>
-                <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between text-[#8D6E53] font-black text-base">
-                  <span>Tổng thực lãnh</span>
-                  <span>{formatCurrency(calculatedRows.reduce((s, r) => s + netPay(r), 0))}</span>
-                </div>
-              </div>
+        {/* Table Content */}
+        {loading ? (
+          <div className="py-20 flex flex-col items-center justify-center gap-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#832729]" />
+            <p className="text-xs text-gray-400">Đang tính toán dữ liệu bảng lương...</p>
+          </div>
+        ) : filteredRecords.length === 0 ? (
+          <div className="py-16 text-center">
+            <div className="w-12 h-12 bg-gray-50 text-gray-400 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Wallet className="w-6 h-6" />
             </div>
-
-            {/* Desktop table */}
-            <div className="overflow-x-auto mt-4 hidden md:block">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">Nhân viên</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Lương CB</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Hoa hồng</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Tip</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">HH Gói</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Tổng đơn</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Số đơn</th>
-                    <th className="text-center px-3 py-2 text-xs font-bold text-gray-500 uppercase">Vắng</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-[#8D6E53] uppercase">Thực lãnh</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {calculatedRows.map((row) => (
-                    <tr key={row.staffId} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-3 py-2 font-medium">{row.fullName}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.baseSalary)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.totalCommission)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.totalTips)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.totalPackageCommission)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(row.totalSales)}</td>
-                      <td className="px-3 py-2 text-right">{row.appointmentCount}</td>
-                      <td className="px-3 py-2 text-center text-red-500">{row.absentDays > 0 ? row.absentDays : '—'}</td>
-                      <td className="px-3 py-2 text-right font-bold text-[#8D6E53]">{formatCurrency(netPay(row))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-gray-50 font-bold">
-                    <td className="px-3 py-2">Tổng</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(calculatedRows.reduce((s, r) => s + r.baseSalary, 0))}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalCommission, 0))}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalTips, 0))}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalPackageCommission, 0))}</td>
-                    <td className="px-3 py-2 text-right">{formatCurrency(calculatedRows.reduce((s, r) => s + r.totalSales, 0))}</td>
-                    <td className="px-3 py-2 text-right">{calculatedRows.reduce((s, r) => s + r.appointmentCount, 0)}</td>
-                    <td />
-                    <td className="px-3 py-2 text-right text-[#8D6E53]">{formatCurrency(calculatedRows.reduce((s, r) => s + netPay(r), 0))}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="mt-4 flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              <Save className="w-5 h-5" />
-              {saving ? 'Đang lưu...' : 'Lưu bảng lương'}
-            </button>
-          </>
-        )}
-        {calculatedRows && calculatedRows.length === 0 && (
-          <p className="mt-4 text-gray-400 text-sm">Không có dữ liệu trong kỳ này.</p>
-        )}
-      </div>
-
-      {/* Saved Payments */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-        <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <Banknote className="w-5 h-5 text-green-600" /> Bảng lương đã lưu
-        </h3>
-        {savedPayments.length === 0 ? (
-          <p className="text-gray-400 text-sm">Chưa có bảng lương nào được lưu.</p>
+            <p className="text-sm font-semibold text-gray-700">Chưa có bản ghi lương</p>
+            <p className="text-xs text-gray-400 mt-1">Bấm "Tính lại lương" ở trên để tổng hợp dữ liệu tháng này</p>
+          </div>
         ) : (
-          <>
-            {/* Mobile card view */}
-            <div className="mt-4 space-y-3 md:hidden">
-              {savedPayments.map((p) => (
-                <div key={p.id} className="bg-white border border-gray-200 rounded-xl p-4 space-y-2">
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                    <span className="font-bold text-gray-900">{p.fullName}</span>
-                    {p.status === 'PAID' ? (
-                      <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold border-b border-gray-100">
+                <tr>
+                  <th className="py-3.5 px-4">Nhân Viên</th>
+                  <th className="py-3.5 px-3 text-center">Công</th>
+                  <th className="py-3.5 px-3 text-center">Đơn</th>
+                  <th className="py-3.5 px-3 text-right">Lương Cứng</th>
+                  <th className="py-3.5 px-3 text-right">Hoa Hồng (20%)</th>
+                  <th className="py-3.5 px-3 text-right">Tip CK (₫)</th>
+                  <th className="py-3.5 px-3 text-right">Thưởng / Phạt</th>
+                  <th className="py-3.5 px-4 text-right">Thực Nhận</th>
+                  <th className="py-3.5 px-3 text-center">Trạng Thái</th>
+                  <th className="py-3.5 px-4 text-center">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredRecords.map((r) => (
+                  <tr key={r.id} className="hover:bg-gray-50/70 transition-colors">
+                    {/* Staff Name */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#832729]/10 text-[#832729] font-bold text-xs flex items-center justify-center">
+                          {r.staff?.full_name?.charAt(0) || 'N'}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900 leading-tight">{r.staff?.full_name || 'N/A'}</p>
+                          <p className="text-xs text-gray-400">@{r.staff?.username || 'user'}</p>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Work Days */}
+                    <td className="py-3.5 px-3 text-center font-medium text-gray-700">
+                      <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
+                        {r.work_days} ngày
                       </span>
-                    ) : (
-                      <span className="text-yellow-600 text-xs font-medium">Chờ</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-                    <div className="flex justify-between"><span className="text-gray-400">Lương CB</span><span>{formatCurrency(p.baseSalary)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">Hoa hồng</span><span>{formatCurrency(p.totalCommission)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">Tip</span><span>{formatCurrency(p.totalTips)}</span></div>
-                    <div className="flex justify-between"><span className="text-gray-400">HH Gói</span><span>{formatCurrency(p.totalPackageCommission)}</span></div>
-                  </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-                    <span className="font-bold text-green-600">{formatCurrency(p.netPay)}</span>
-                    {p.status === 'PENDING' && (
+                    </td>
+
+                    {/* Orders */}
+                    <td className="py-3.5 px-3 text-center font-medium text-gray-700">
+                      <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-bold">
+                        {r.completed_orders} đơn
+                      </span>
+                    </td>
+
+                    {/* Base Salary */}
+                    <td className="py-3.5 px-3 text-right font-medium text-gray-700">
+                      {formatVND(r.base_salary)}
+                    </td>
+
+                    {/* Commission */}
+                    <td className="py-3.5 px-3 text-right font-semibold text-emerald-600">
+                      +{formatVND(r.commission_amount)}
+                    </td>
+
+                    {/* Tips */}
+                    <td className="py-3.5 px-3 text-right font-medium text-pink-600">
+                      +{formatVND(r.tip_amount)}
+                    </td>
+
+                    {/* Bonus & Deduction */}
+                    <td className="py-3.5 px-3 text-right text-xs">
+                      {r.bonus_amount > 0 && (
+                        <div className="text-emerald-600 font-semibold">+{formatVND(r.bonus_amount)}</div>
+                      )}
+                      {r.deduction_amount > 0 && (
+                        <div className="text-red-500 font-semibold">-{formatVND(r.deduction_amount)}</div>
+                      )}
+                      {r.bonus_amount === 0 && r.deduction_amount === 0 && (
+                        <span className="text-gray-300">—</span>
+                      )}
+                    </td>
+
+                    {/* Net Salary */}
+                    <td className="py-3.5 px-4 text-right">
+                      <span className="font-extrabold text-base text-[#832729]">
+                        {formatVND(r.net_salary)}
+                      </span>
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-3.5 px-3 text-center">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        r.status === 'PAID'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          : r.status === 'CONFIRMED'
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      }`}>
+                        {r.status === 'PAID' ? 'Đã chi trả' : (r.status === 'CONFIRMED' ? 'Đã duyệt' : 'Tạm tính')}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-3.5 px-4 text-center">
                       <button
-                        onClick={() => handlePay(p.id)}
-                        disabled={loading}
-                        className="flex items-center gap-1 px-3 py-2.5 min-h-[44px] bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
+                        onClick={() => openAdjustModal(r)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
+                        <Edit3 className="w-3.5 h-3.5" />
+                        Điều chỉnh
                       </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Desktop table */}
-            <div className="overflow-x-auto hidden md:block">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-3 py-2 text-xs font-bold text-gray-500 uppercase">Nhân viên</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Lương CB</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Hoa hồng</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Tip</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">HH Gói</th>
-                    <th className="text-right px-3 py-2 text-xs font-bold text-gray-500 uppercase">Thực lãnh</th>
-                    <th className="text-center px-3 py-2 text-xs font-bold text-gray-500 uppercase">Trạng thái</th>
-                    <th className="px-3 py-2 w-24" />
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {savedPayments.map((p) => (
-                    <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                      <td className="px-3 py-2 font-medium">{p.fullName}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(p.baseSalary)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(p.totalCommission)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(p.totalTips)}</td>
-                      <td className="px-3 py-2 text-right">{formatCurrency(p.totalPackageCommission)}</td>
-                      <td className="px-3 py-2 text-right font-bold text-green-600">{formatCurrency(p.netPay)}</td>
-                      <td className="px-3 py-2 text-center">
-                        {p.status === 'PAID' ? (
-                          <span className="inline-flex items-center gap-1 text-green-600 text-xs font-medium">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
-                          </span>
-                        ) : (
-                          <span className="text-yellow-600 text-xs font-medium">Chờ</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2">
-                        {p.status === 'PENDING' && (
-                          <button
-                            onClick={() => handlePay(p.id)}
-                            disabled={loading}
-                            className="flex items-center gap-1 px-3 py-2.5 min-h-[44px] bg-green-600 text-white text-xs rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 cursor-pointer"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Đã trả
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* Edit Staff Salary Modal */}
-      {editModal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setEditModal(null)}>
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">{editModal.staff.fullName}</h3>
-              <button onClick={() => setEditModal(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-5 h-5" /></button>
+      {/* Adjustment Modal */}
+      {editingRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-md p-6 overflow-hidden">
+            <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg">Điều Chỉnh Lương</h3>
+                <p className="text-xs text-gray-500">{editingRecord.staff?.full_name} • Tháng {selectedMonth}/{selectedYear}</p>
+              </div>
+              <button
+                onClick={() => setEditingRecord(null)}
+                className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-4 pt-4">
               <div>
-                <label htmlFor="payroll-baseSalary" className="block text-sm font-medium text-gray-600 mb-1">Lương cơ bản (VNĐ)</label>
-                <input id="payroll-baseSalary" type="number" value={editBaseSalary} onChange={(e) => setEditBaseSalary(Number(e.target.value))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Tiền Thưởng (VND)</label>
+                <input
+                  type="number"
+                  value={adjBonus}
+                  onChange={(e) => setAdjBonus(Math.max(0, Number(e.target.value)))}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#832729]/20"
+                />
               </div>
+
               <div>
-                <label htmlFor="payroll-bankAccount" className="block text-sm font-medium text-gray-600 mb-1">Số tài khoản</label>
-                <input id="payroll-bankAccount" type="text" value={editBankAccount} onChange={(e) => setEditBankAccount(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Khấu Trừ / Phạt / Tạm Ứng (VND)</label>
+                <input
+                  type="number"
+                  value={adjDeduction}
+                  onChange={(e) => setAdjDeduction(Math.max(0, Number(e.target.value)))}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20"
+                />
               </div>
+
               <div>
-                <label htmlFor="payroll-bankName" className="block text-sm font-medium text-gray-600 mb-1">Ngân hàng</label>
-                <input id="payroll-bankName" type="text" value={editBankName} onChange={(e) => setEditBankName(e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm" />
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Trạng Thái Chi Trả</label>
+                <select
+                  value={adjStatus}
+                  onChange={(e) => setAdjStatus(e.target.value as PayrollStatus)}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#832729]/20"
+                >
+                  <option value="DRAFT">Tạm tính (DRAFT)</option>
+                  <option value="CONFIRMED">Đã xác nhận (CONFIRMED)</option>
+                  <option value="PAID">Đã chi trả thành công (PAID)</option>
+                </select>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setEditModal(null)} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors cursor-pointer">Huỷ</button>
-                <button onClick={handleSaveStaff} className="flex-1 px-4 py-2.5 bg-[#8D6E53] text-white rounded-xl text-sm font-medium hover:bg-[#7a5e47] transition-colors cursor-pointer">Lưu</button>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Ghi Chú Lý Do</label>
+                <textarea
+                  rows={2}
+                  value={adjNotes}
+                  onChange={(e) => setAdjNotes(e.target.value)}
+                  placeholder="Lý do thưởng/phạt hoặc ghi chú chuyển khoản..."
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#832729]/20"
+                />
+              </div>
+
+              {/* Dynamic Preview Calculation */}
+              <div className="bg-gray-50 rounded-2xl p-3 text-xs space-y-1">
+                <div className="flex justify-between text-gray-500">
+                  <span>Lương cứng + Hoa hồng + Tip:</span>
+                  <span>{formatVND(editingRecord.base_salary + editingRecord.commission_amount + editingRecord.tip_amount)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-sm text-[#832729] pt-1 border-t border-gray-200">
+                  <span>Thực Nhận Dự Kiến:</span>
+                  <span>{formatVND(Math.max(0, editingRecord.base_salary + editingRecord.commission_amount + editingRecord.tip_amount + adjBonus - adjDeduction))}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <Button variant="ghost" size="sm" onClick={() => setEditingRecord(null)}>
+                  Hủy
+                </Button>
+                <Button size="sm" onClick={handleSaveAdjustment} isLoading={isPending} className="bg-[#832729] hover:bg-[#681d1f] text-white">
+                  Lưu thay đổi
+                </Button>
               </div>
             </div>
           </div>

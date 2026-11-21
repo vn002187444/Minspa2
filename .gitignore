@@ -8,3 +8,8 @@ data/demo_db.json
 .vercel
 .env*
 .playwright-mcp/
+
+# Lighthouse & Audit reports
+*.report.*
+lighthouse-reports/
+lighthouse-report.json

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
 import { createSession } from '@/utils/auth';
-import { verifyPassword, hashPassword } from '@/lib/password';
+import { verifyPassword } from '@/lib/password';
 import { rateLimit } from '@/lib/rate-limit';
 
 const loginSchema = z.object({
@@ -37,22 +37,10 @@ async function doLogin(username: string, password: string): Promise<string> {
   }
 
   const userRoleNormalized = (user.role || '').trim().toUpperCase();
-  let isPasswordCorrect = await verifyPassword(password, user.password_hash);
-
-
+  const isPasswordCorrect = await verifyPassword(password, user.password_hash);
 
   if (!isPasswordCorrect) {
     throw new Error('Sai tên đăng nhập hoặc mật khẩu');
-  }
-
-  // Auto-upgrade unhashed / plaintext passwords to secure bcrypt
-  if (!user.password_hash?.startsWith('$2')) {
-    try {
-      const newHash = await hashPassword(password);
-      await supabase.from('users').update({ password_hash: newHash }).eq('id', user.id);
-    } catch (e) {
-      console.warn('[AUTH] Could not upgrade password hash:', e);
-    }
   }
 
   await createSession({ id: user.id, role: userRoleNormalized, username: user.username });

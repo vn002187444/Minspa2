@@ -39,6 +39,10 @@ export interface StaffInput {
   full_name?: string;
   role?: string;
   cccd?: string;
+  base_salary?: number;
+  baseSalary?: number;
+  bank_account?: string;
+  bank_name?: string;
 }
 
 export interface ServiceInput {

@@ -44,12 +44,12 @@ description: >-
 - **Login:** `/app/login/actions.ts` (`loginUser`) — returns `{ success: true, redirect: dest }`, client redirects via `window.location.href` to ensure cookie flush
 - **Logout:** Clear `session` cookie with `sameSite: 'lax'`
 - **Admin bypass & info:** Route handler `/api/auth/me` as fallback
-- **Password:** `lib/password.ts` with bcrypt hash (`verifyPassword` + `hashPassword`), handles bcrypt hashes and safe fallback for legacy unhashed passwords with automatic upgrade upon successful login
+- **Password:** `lib/password.ts` with bcrypt hash (`verifyPassword` + `hashPassword`), strictly requires bcrypt hashes (`$2b$10$...`) with zero fallback to plaintext to prevent bypass.
 
-## 4. Database Quick Ref (31 tables)
-Main tables: `users`, `services`, `appointments`, `appointment_services`, `audit_logs`, `blogs`, `blog_views`, `blog_stats`, `customers`, `treatment_packages`, `customer_packages`, `package_usage_logs`, `notifications`, `time_slot_locks`, `reviews`, `seo_settings`, `seo_articles`, `banner_settings`, `bank_settings`, `attendance`, `attendance_reminders_log`, `random_booking_reminders_log`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache`
+## 4. Database Quick Ref (32 tables)
+Main tables: `users`, `services`, `appointments`, `appointment_services`, `audit_logs`, `blogs`, `blog_views`, `blog_stats`, `customers`, `treatment_packages`, `customer_packages`, `package_usage_logs`, `notifications`, `time_slot_locks`, `reviews`, `seo_settings`, `seo_articles`, `banner_settings`, `bank_settings`, `attendance`, `attendance_reminders_log`, `random_booking_reminders_log`, `unaccepted_booking_reminders_log`, `uncompleted_booking_reminders_log`, `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache`, `payroll_records`
 
-Migration-only tables (not in original `database.sql`): `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache` — these were added via migration files and synced back to `database.sql`.
+Migration-only tables (not in original `database.sql`): `staff_skills`, `auto_assign_logs`, `slot_limits`, `tasks`, `auto_seo_config`, `rate_limits`, `ai_cache`, `payroll_records` — these were added via migration files and synced back to `database.sql`.
 
 Key conventions:
 - `created_at`/`updated_at` timestamps (prefer `timezone('utc', now())`)

@@ -12,7 +12,7 @@ export async function getStaffs() {
   const supabase = await createClient();
   try {
     const { data, error } = await supabase.from('users')
-      .select('id, username, full_name, role, cccd, is_active, created_at')
+      .select('id, username, full_name, role, cccd, is_active, created_at, base_salary, bank_account, bank_name')
       .in('role', ['STAFF', 'MANAGER'])
       .order('created_at', { ascending: false })
       .limit(100);
@@ -42,12 +42,19 @@ export async function createStaff(staffData: StaffInput) {
   await checkAdminOrManager();
   const supabase = await createClient();
   const hashedPw = await hashPassword((staffData.password || '').trim());
+  const baseSalary = staffData.base_salary !== undefined
+    ? Number(staffData.base_salary)
+    : (staffData.baseSalary !== undefined ? Number(staffData.baseSalary) : 5000000);
+
   const { error } = await supabase.from('users').insert({
     role: staffData.role || 'STAFF',
     username: (staffData.username || '').trim().toLowerCase(),
     password_hash: hashedPw,
     full_name: (staffData.fullName || '').trim(),
-    cccd: (staffData.cccd || '').trim()
+    cccd: (staffData.cccd || '').trim(),
+    base_salary: baseSalary,
+    bank_account: staffData.bank_account?.trim() || null,
+    bank_name: staffData.bank_name?.trim() || null
   });
   if (error) return { success: false, error: error.message };
   return { success: true };
@@ -80,6 +87,10 @@ export async function updateStaff(staffId: string, staffData: StaffInput) {
 
   if (staffData.role) updates.role = staffData.role;
   if (staffData.cccd !== undefined) updates.cccd = newCccd;
+  if (staffData.base_salary !== undefined) updates.base_salary = Number(staffData.base_salary);
+  else if (staffData.baseSalary !== undefined) updates.base_salary = Number(staffData.baseSalary);
+  if (staffData.bank_account !== undefined) updates.bank_account = staffData.bank_account?.trim() || null;
+  if (staffData.bank_name !== undefined) updates.bank_name = staffData.bank_name?.trim() || null;
 
   const { error } = await supabase.from('users').update(updates).eq('id', staffId);
 
